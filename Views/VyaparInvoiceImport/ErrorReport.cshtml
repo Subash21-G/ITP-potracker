@@ -1,0 +1,652 @@
+﻿@model List<POTracker.Models.VyaparInvoiceImportRow>
+
+@{
+    ViewData["Title"] = "Invoice Import Report";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var rows =
+        Model ??
+        new List<POTracker.Models.VyaparInvoiceImportRow>();
+
+    bool IsSuccess(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        return string.Equals(
+            row.Status,
+            "Success",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    bool IsDeleted(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        return string.Equals(
+            row.Status,
+            "Deleted",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    bool IsPending(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        return !IsSuccess(row) &&
+               !IsDeleted(row);
+    }
+
+    int totalRows =
+        rows.Count;
+
+    int successRows =
+        rows.Count(IsSuccess);
+
+    int pendingRows =
+        rows.Count(IsPending);
+
+    int deletedRows =
+        rows.Count(IsDeleted);
+
+    decimal totalQty =
+        rows.Sum(x => x.InvoiceQty);
+
+    int successPercent =
+        GetPercent(successRows, totalRows);
+
+    int pendingPercent =
+        GetPercent(pendingRows, totalRows);
+
+    string StatusText(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        if (IsSuccess(row))
+        {
+            return "Success";
+        }
+
+        if (IsDeleted(row))
+        {
+            return "Deleted";
+        }
+
+        return "Pending";
+    }
+
+    string StatusClass(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        if (IsSuccess(row))
+        {
+            return "ier-status-success";
+        }
+
+        if (IsDeleted(row))
+        {
+            return "ier-status-neutral";
+        }
+
+        return "ier-status-warning";
+    }
+
+    string MessageClass(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        if (IsSuccess(row))
+        {
+            return "ier-message-success";
+        }
+
+        if (IsDeleted(row))
+        {
+            return "ier-message-neutral";
+        }
+
+        return "ier-message-warning";
+    }
+
+    string ReportMessage(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        if (!string.IsNullOrWhiteSpace(
+                row.ErrorMessage))
+        {
+            return row.ErrorMessage.Trim();
+        }
+
+        if (IsSuccess(row))
+        {
+            return "Imported successfully.";
+        }
+
+        if (IsDeleted(row))
+        {
+            return "The related invoice was deleted.";
+        }
+
+        return "Stored as Pending for review or automatic matching.";
+    }
+
+    string FilterValue(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        if (IsSuccess(row))
+        {
+            return "success";
+        }
+
+        if (IsDeleted(row))
+        {
+            return "deleted";
+        }
+
+        return "pending";
+    }
+
+    string SearchValue(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        return string.Join(
+                " ",
+                new[]
+                {
+                    row.PONumber,
+                    row.LineItem,
+                    row.MaterialNumber,
+                    row.InvoiceNumber,
+                    StatusText(row),
+                    row.ErrorMessage
+                }
+                .Where(x =>
+                    !string.IsNullOrWhiteSpace(x)))
+            .ToLowerInvariant();
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/invoice-error-report-premium.css"
+          asp-append-version="true" />
+}
+
+<div class="ier-page">
+
+    <section class="ier-header">
+        <div>
+            <span class="ier-kicker">
+                Vyapar invoice import
+            </span>
+
+            <h1>Invoice Import Report</h1>
+
+            <p>
+                Every unsuccessful row is shown as Pending
+                with its exact reason.
+            </p>
+        </div>
+
+        <div class="ier-header-actions">
+            <a asp-action="History"
+               asp-controller="VyaparInvoiceImport"
+               class="ier-btn ier-btn-light">
+                Back to History
+            </a>
+
+            <a asp-action="Upload"
+               asp-controller="VyaparInvoiceImport"
+               class="ier-btn ier-btn-primary">
+                Upload Invoice
+            </a>
+
+            <a asp-action="InvoiceList"
+               asp-controller="VyaparInvoiceImport"
+               class="ier-btn ier-btn-light">
+                Manage Invoices
+            </a>
+        </div>
+    </section>
+
+    <section class="ier-summary-grid">
+        <article class="ier-summary-card ier-summary-violet">
+            <span>Total Rows</span>
+            <strong>@totalRows</strong>
+            <small>Rows processed</small>
+        </article>
+
+        <article class="ier-summary-card ier-summary-green">
+            <span>Success Rows</span>
+            <strong>@successRows</strong>
+            <small>Matched and updated</small>
+        </article>
+
+        <article class="ier-summary-card ier-summary-amber">
+            <span>Pending Rows</span>
+            <strong>@pendingRows</strong>
+            <small>Waiting or needs review</small>
+        </article>
+
+        <article class="ier-summary-card ier-summary-neutral">
+            <span>Deleted Rows</span>
+            <strong>@deletedRows</strong>
+            <small>Invoice deleted later</small>
+        </article>
+
+        <article class="ier-summary-card ier-summary-blue">
+            <span>Total Invoice Qty</span>
+            <strong>@totalQty.ToString("0.##")</strong>
+            <small>Quantity in this report</small>
+        </article>
+    </section>
+
+    <section class="ier-two-column">
+        <div class="ier-card">
+            <div class="ier-section-head">
+                <div>
+                    <span class="ier-kicker">
+                        Import progress
+                    </span>
+
+                    <h2>Result Overview</h2>
+                </div>
+            </div>
+
+            <div class="ier-progress-list">
+                <div class="ier-progress-row">
+                    <div class="ier-progress-label">
+                        <span>Success</span>
+                        <strong>@successPercent%</strong>
+                    </div>
+
+                    <div class="ier-progress-track">
+                        <i class="ier-progress-green"
+                           style="width:@successPercent%"></i>
+                    </div>
+                </div>
+
+                <div class="ier-progress-row">
+                    <div class="ier-progress-label">
+                        <span>Pending</span>
+                        <strong>@pendingPercent%</strong>
+                    </div>
+
+                    <div class="ier-progress-track">
+                        <i class="ier-progress-amber"
+                           style="width:@pendingPercent%"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ier-card">
+            <div class="ier-section-head">
+                <div>
+                    <span class="ier-kicker">
+                        Status guidance
+                    </span>
+
+                    <h2>Report Meaning</h2>
+                </div>
+            </div>
+
+            <div class="ier-guidance-list">
+                <article class="ier-guidance ier-guidance-success">
+                    <strong>Success</strong>
+
+                    <p>
+                        PO, material and line item matched.
+                        Quantities were updated.
+                    </p>
+                </article>
+
+                <article class="ier-guidance ier-guidance-warning">
+                    <strong>Pending</strong>
+
+                    <p>
+                        PO missing, material missing, mismatch,
+                        duplicate, invalid quantity or no safe match.
+                        Read the exact reason in the Message column.
+                    </p>
+                </article>
+
+                <article class="ier-guidance ier-guidance-neutral">
+                    <strong>Deleted</strong>
+
+                    <p>
+                        The related invoice was deleted later.
+                    </p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="ier-card">
+        <div class="ier-section-head">
+            <div>
+                <span class="ier-kicker">
+                    Find report row
+                </span>
+
+                <h2>Search and Filter</h2>
+            </div>
+
+            <span class="ier-count-badge"
+                  id="visibleRowCount">
+                @totalRows Row(s)
+            </span>
+        </div>
+
+        <div class="ier-filter-grid">
+            <div class="ier-filter-field ier-filter-search">
+                <label for="reportSearch">
+                    Search
+                </label>
+
+                <input type="search"
+                       id="reportSearch"
+                       placeholder="PO, material, invoice or reason..." />
+            </div>
+
+            <div class="ier-filter-field">
+                <label for="statusFilter">
+                    Import Status
+                </label>
+
+                <select id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="success">Success</option>
+                    <option value="pending">Pending</option>
+                    <option value="deleted">Deleted</option>
+                </select>
+            </div>
+
+            <div class="ier-filter-actions">
+                <button type="button"
+                        class="ier-btn ier-btn-light"
+                        id="clearFiltersButton">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="ier-card">
+        <div class="ier-section-head">
+            <div>
+                <span class="ier-kicker">
+                    Row details
+                </span>
+
+                <h2>Row-wise Import Report</h2>
+
+                <p>
+                    Message shows why a row remains Pending.
+                </p>
+            </div>
+        </div>
+
+        @if (rows.Count == 0)
+        {
+            <div class="ier-empty-state">
+                <h3>No report rows found</h3>
+            </div>
+        }
+        else
+        {
+            <div class="ier-table-wrap">
+                <table class="ier-table"
+                       id="importReportTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>PO No</th>
+                            <th>Line Item</th>
+                            <th>Material No</th>
+                            <th>Invoice No</th>
+                            <th>Invoice Qty</th>
+                            <th>Status</th>
+                            <th>Exact Message / Reason</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+
+                        @foreach (var row in rows)
+                        {
+                            string message =
+                                ReportMessage(row);
+
+                            <tr data-status="@FilterValue(row)"
+                                data-search="@SearchValue(row)">
+                                <td>@index</td>
+
+                                <td>
+                                    <strong class="ier-po-number">
+                                        @(string.IsNullOrWhiteSpace(
+                                            row.PONumber)
+                                            ? "-"
+                                            : row.PONumber)
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(
+                                        row.LineItem)
+                                        ? "-"
+                                        : row.LineItem)
+                                </td>
+
+                                <td>
+                                    <strong class="ier-material-number">
+                                        @(string.IsNullOrWhiteSpace(
+                                            row.MaterialNumber)
+                                            ? "-"
+                                            : row.MaterialNumber)
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(
+                                        row.InvoiceNumber)
+                                        ? "-"
+                                        : row.InvoiceNumber)
+                                </td>
+
+                                <td>
+                                    <strong class="ier-qty">
+                                        @row.InvoiceQty.ToString("0.##")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <span class="ier-status @StatusClass(row)">
+                                        @StatusText(row)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="ier-message @MessageClass(row)"
+                                          title="@message">
+                                        @message
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(
+                                        row.MaterialNumber))
+                                    {
+                                        <a asp-action="InvoiceStatus"
+                                           asp-controller="VyaparInvoiceImport"
+                                           asp-route-search="@row.MaterialNumber"
+                                           class="ier-action-link">
+                                            Check Material
+                                        </a>
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(
+                                        row.PONumber))
+                                    {
+                                        <a asp-action="InvoiceStatus"
+                                           asp-controller="VyaparInvoiceImport"
+                                           asp-route-search="@row.PONumber"
+                                           class="ier-action-link">
+                                            Check PO
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="ier-muted">
+                                            No reference
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+
+                            index++;
+                        }
+                    </tbody>
+
+                    <tfoot>
+                        <tr>
+                            <th colspan="5"
+                                class="ier-text-right">
+                                Total
+                            </th>
+
+                            <th>@totalQty.ToString("0.##")</th>
+                            <th colspan="3"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="ier-no-results"
+                 id="noFilterResults"
+                 hidden>
+                No report rows match the selected filters.
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            "use strict";
+
+            const table =
+                document.getElementById(
+                    "importReportTable");
+
+            if (!table) {
+                return;
+            }
+
+            const searchInput =
+                document.getElementById(
+                    "reportSearch");
+
+            const statusFilter =
+                document.getElementById(
+                    "statusFilter");
+
+            const clearButton =
+                document.getElementById(
+                    "clearFiltersButton");
+
+            const visibleCount =
+                document.getElementById(
+                    "visibleRowCount");
+
+            const noResults =
+                document.getElementById(
+                    "noFilterResults");
+
+            const rows =
+                Array.from(
+                    table.querySelectorAll(
+                        "tbody tr"));
+
+            const applyFilters = () => {
+                const search =
+                    searchInput?.value
+                        .trim()
+                        .toLowerCase() ?? "";
+
+                const status =
+                    statusFilter?.value
+                        .trim()
+                        .toLowerCase() ?? "";
+
+                let shown = 0;
+
+                rows.forEach((row) => {
+                    const searchMatch =
+                        !search ||
+                        (row.dataset.search ?? "")
+                            .includes(search);
+
+                    const statusMatch =
+                        !status ||
+                        row.dataset.status === status;
+
+                    const visible =
+                        searchMatch &&
+                        statusMatch;
+
+                    row.hidden =
+                        !visible;
+
+                    if (visible) {
+                        shown++;
+                    }
+                });
+
+                if (visibleCount) {
+                    visibleCount.textContent =
+                        `${shown} Row(s)`;
+                }
+
+                if (noResults) {
+                    noResults.hidden =
+                        shown > 0;
+                }
+            };
+
+            searchInput?.addEventListener(
+                "input",
+                applyFilters);
+
+            statusFilter?.addEventListener(
+                "change",
+                applyFilters);
+
+            clearButton?.addEventListener(
+                "click",
+                () => {
+                    if (searchInput) {
+                        searchInput.value = "";
+                    }
+
+                    if (statusFilter) {
+                        statusFilter.value = "";
+                    }
+
+                    applyFilters();
+                });
+        })();
+    </script>
+}
+
+@functions {
+    int GetPercent(int value, int total)
+    {
+        if (total <= 0)
+        {
+            return 0;
+        }
+
+        return Convert.ToInt32(
+            Math.Round(
+                (decimal)value / total * 100));
+    }
+}

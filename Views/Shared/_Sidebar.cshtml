@@ -1,0 +1,118 @@
+﻿@using Microsoft.AspNetCore.Http
+
+@{
+    var role = Context.Session.GetString("Role");
+}
+
+@if (role == "Admin")
+{
+    <li class="nav-item">
+
+        <a class="nav-link"
+           href="/Calendar/Index">
+
+            <i class="bi bi-calendar-event"></i>
+
+            Production Calendar
+
+        </a>
+
+    </li>
+
+    <li class="nav-item">
+
+        <a class="nav-link"
+           href="/Report/MaterialsExcel">
+
+            <i class="bi bi-file-earmark-excel"></i>
+
+            Export Excel
+
+        </a>
+
+    </li>
+
+    <li class="nav-item">
+
+        <a class="nav-link"
+           href="/Report/MaterialsPdf">
+
+            <i class="bi bi-file-earmark-pdf"></i>
+
+            Export PDF
+
+        </a>
+
+    </li>
+
+    <li class="nav-item">
+
+        <a class="nav-link"
+           href="/Report/Index">
+
+            <i class="bi bi-file-earmark-bar-graph"></i>
+
+            Reports
+
+        </a>
+
+    </li>
+
+    <li class="nav-item">
+
+        <a class="nav-link"
+           href="/Alert/Index">
+
+            <i class="bi bi-bell-fill"></i>
+
+            Smart Alerts
+
+        </a>
+
+    </li>
+}
+
+@if (role == "Production")
+{
+    <li class="nav-item">
+
+        <a class="nav-link"
+           href="/Calendar/Index">
+
+            <i class="bi bi-calendar-event"></i>
+
+            Production Calendar
+
+        </a>
+
+    </li>
+
+    <li class="nav-item">
+
+        <a class="nav-link"
+           href="/Alert/Index">
+
+            <i class="bi bi-bell-fill"></i>
+
+            Smart Alerts
+
+        </a>
+
+    </li>
+}
+
+@if (role == "Viewer")
+{
+    <li class="nav-item">
+
+        <a class="nav-link"
+           href="/Dashboard/Index">
+
+            <i class="bi bi-speedometer2"></i>
+
+            Dashboard
+
+        </a>
+
+    </li>
+}

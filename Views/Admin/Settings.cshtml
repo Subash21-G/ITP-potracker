@@ -1,0 +1,31 @@
+@{
+    ViewData["Title"] = "Settings";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Master Settings</h1>
+        <p>Status values, owners, alert rules and system defaults</p>
+    </div>
+    <a href="/Admin/Users" class="btn-secondary">Users</a>
+</div>
+
+<div class="premium-split">
+    <div class="premium-panel">
+        <h2>Process Status</h2>
+        <p><span class="status-gray">Pending</span> <span class="status-blue">In Process</span> <span class="status-yellow">Hold</span> <span class="status-green">Completed</span></p>
+    </div>
+    <div class="premium-panel">
+        <h2>Dispatch Status</h2>
+        <p><span class="status-gray">Pending</span> <span class="status-yellow">Partial</span> <span class="status-blue">Ready</span> <span class="status-green">Dispatched</span></p>
+    </div>
+    <div class="premium-panel">
+        <h2>Alert Rules</h2>
+        <p>Process start: delivery date - 1 month<br />Dispatch reminder: delivery date - 7 days<br />Overdue: after delivery date</p>
+    </div>
+    <div class="premium-panel">
+        <h2>Owners</h2>
+        <p>Paramaguru, Gokulnath, Sam, Abdul, Kalai</p>
+    </div>
+</div>

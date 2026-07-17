@@ -1,0 +1,864 @@
+﻿@model List<POTracker.Models.Material>
+
+@{
+    ViewData["Title"] = "Invoice Status";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var materials =
+        Model ?? new List<POTracker.Models.Material>();
+
+    string search =
+        ViewBag.Search as string ?? "";
+
+    int totalMaterials =
+        materials.Count;
+
+    int fullyInvoiced =
+        materials.Count(x =>
+            string.Equals(
+                x.InvoiceStatus,
+                "Fully Invoiced",
+                StringComparison.OrdinalIgnoreCase));
+
+    int partialInvoiced =
+        materials.Count(x =>
+            string.Equals(
+                x.InvoiceStatus,
+                "Partially Invoiced",
+                StringComparison.OrdinalIgnoreCase));
+
+    int notInvoiced =
+        materials.Count(x =>
+            string.IsNullOrWhiteSpace(x.InvoiceStatus) ||
+            string.Equals(
+                x.InvoiceStatus,
+                "Not Invoiced",
+                StringComparison.OrdinalIgnoreCase));
+
+    int fullyDispatched =
+        materials.Count(x =>
+            string.Equals(
+                x.DispatchStatus,
+                "Dispatched",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                x.DispatchStatus,
+                "Completed",
+                StringComparison.OrdinalIgnoreCase));
+
+    int partialDispatched =
+        materials.Count(x =>
+            string.Equals(
+                x.DispatchStatus,
+                "Partial",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                x.DispatchStatus,
+                "Running",
+                StringComparison.OrdinalIgnoreCase));
+
+    int pendingDispatch =
+        materials.Count(x =>
+            string.IsNullOrWhiteSpace(x.DispatchStatus) ||
+            string.Equals(
+                x.DispatchStatus,
+                "Pending",
+                StringComparison.OrdinalIgnoreCase));
+
+    decimal totalPOQty =
+        materials.Sum(x => x.Qty);
+
+    decimal totalInvoiceQty =
+        materials.Sum(x => x.InvoiceQty);
+
+    decimal totalBalanceQty =
+        materials.Sum(x => Math.Max(0, x.BalanceQty));
+
+    decimal totalDispatchQty =
+        materials.Sum(x => x.DispatchQty);
+
+    decimal totalPendingDispatchQty =
+        materials.Sum(x => Math.Max(0, x.PendingQty));
+
+    int fullyPercent =
+        GetPercent(
+            fullyInvoiced,
+            totalMaterials);
+
+    int partialPercent =
+        GetPercent(
+            partialInvoiced,
+            totalMaterials);
+
+    int pendingPercent =
+        GetPercent(
+            notInvoiced,
+            totalMaterials);
+
+    string InvoiceStatusClass(string? status)
+    {
+        if (string.Equals(
+                status,
+                "Fully Invoiced",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "ivs-status-success";
+        }
+
+        if (string.Equals(
+                status,
+                "Partially Invoiced",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "ivs-status-info";
+        }
+
+        return "ivs-status-warning";
+    }
+
+    string InvoiceStatusText(string? status)
+    {
+        return string.IsNullOrWhiteSpace(status)
+            ? "Not Invoiced"
+            : status;
+    }
+
+    string DispatchStatusClass(string? status)
+    {
+        if (string.Equals(
+                status,
+                "Dispatched",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                status,
+                "Completed",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "ivs-status-success";
+        }
+
+        if (string.Equals(
+                status,
+                "Partial",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                status,
+                "Running",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "ivs-status-info";
+        }
+
+        return "ivs-status-danger";
+    }
+
+    string DispatchStatusText(string? status)
+    {
+        return string.IsNullOrWhiteSpace(status)
+            ? "Pending"
+            : status;
+    }
+
+    string FilterValue(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? ""
+            : value.Trim().ToLowerInvariant();
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/invoice-status-premium.css"
+          asp-append-version="true" />
+}
+
+<div class="ivs-page">
+
+    <!-- =========================================================
+         PAGE HEADER
+    ========================================================== -->
+
+    <section class="ivs-header">
+
+        <div>
+            <span class="ivs-kicker">
+                Material invoice tracking
+            </span>
+
+            <h1>Invoice Status</h1>
+
+            <p>
+                Track PO quantity, invoice balance,
+                dispatch balance and completion status
+                for every material.
+            </p>
+        </div>
+
+        <div class="ivs-header-actions">
+
+            <a asp-action="Upload"
+               asp-controller="VyaparInvoiceImport"
+               class="ivs-btn ivs-btn-primary">
+                Upload Invoice
+            </a>
+
+            <a asp-action="InvoiceList"
+               asp-controller="VyaparInvoiceImport"
+               class="ivs-btn ivs-btn-light">
+                Imported Invoices
+            </a>
+
+            <a asp-action="History"
+               asp-controller="VyaparInvoiceImport"
+               class="ivs-btn ivs-btn-light">
+                Import History
+            </a>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         SUMMARY CARDS
+    ========================================================== -->
+
+    <section class="ivs-summary-grid">
+
+        <article class="ivs-summary-card ivs-summary-violet">
+            <span>Total Materials</span>
+            <strong>@totalMaterials</strong>
+            <small>PO material records</small>
+        </article>
+
+        <article class="ivs-summary-card ivs-summary-green">
+            <span>Fully Invoiced</span>
+            <strong>@fullyInvoiced</strong>
+            <small>Invoice balance completed</small>
+        </article>
+
+        <article class="ivs-summary-card ivs-summary-blue">
+            <span>Partially Invoiced</span>
+            <strong>@partialInvoiced</strong>
+            <small>Partially billed materials</small>
+        </article>
+
+        <article class="ivs-summary-card ivs-summary-amber">
+            <span>Not Invoiced</span>
+            <strong>@notInvoiced</strong>
+            <small>Awaiting invoice</small>
+        </article>
+
+        <article class="ivs-summary-card ivs-summary-teal">
+            <span>Total Invoice Qty</span>
+            <strong>@totalInvoiceQty.ToString("0.##")</strong>
+            <small>Combined invoiced quantity</small>
+        </article>
+
+        <article class="ivs-summary-card ivs-summary-rose">
+            <span>Invoice Balance</span>
+            <strong>@totalBalanceQty.ToString("0.##")</strong>
+            <small>Quantity pending invoice</small>
+        </article>
+
+        <article class="ivs-summary-card ivs-summary-cyan">
+            <span>Dispatch Qty</span>
+            <strong>@totalDispatchQty.ToString("0.##")</strong>
+            <small>Combined dispatched quantity</small>
+        </article>
+
+        <article class="ivs-summary-card ivs-summary-red">
+            <span>Dispatch Balance</span>
+            <strong>@totalPendingDispatchQty.ToString("0.##")</strong>
+            <small>Quantity pending dispatch</small>
+        </article>
+    </section>
+
+    <!-- =========================================================
+         COMPLETION + SEARCH
+    ========================================================== -->
+
+    <section class="ivs-two-column">
+
+        <div class="ivs-card">
+
+            <div class="ivs-section-head">
+                <div>
+                    <span class="ivs-kicker">
+                        Invoice progress
+                    </span>
+
+                    <h2>Completion Overview</h2>
+                </div>
+            </div>
+
+            <div class="ivs-progress-list">
+
+                <div class="ivs-progress-row">
+
+                    <div class="ivs-progress-label">
+                        <span>Fully Invoiced</span>
+                        <strong>@fullyPercent%</strong>
+                    </div>
+
+                    <div class="ivs-progress-track">
+                        <i class="ivs-progress-green"
+                           style="width:@fullyPercent%">
+                        </i>
+                    </div>
+                </div>
+
+                <div class="ivs-progress-row">
+
+                    <div class="ivs-progress-label">
+                        <span>Partially Invoiced</span>
+                        <strong>@partialPercent%</strong>
+                    </div>
+
+                    <div class="ivs-progress-track">
+                        <i class="ivs-progress-blue"
+                           style="width:@partialPercent%">
+                        </i>
+                    </div>
+                </div>
+
+                <div class="ivs-progress-row">
+
+                    <div class="ivs-progress-label">
+                        <span>Not Invoiced</span>
+                        <strong>@pendingPercent%</strong>
+                    </div>
+
+                    <div class="ivs-progress-track">
+                        <i class="ivs-progress-amber"
+                           style="width:@pendingPercent%">
+                        </i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ivs-mini-stats">
+
+                <div>
+                    <span>Fully Dispatched</span>
+                    <strong>@fullyDispatched</strong>
+                </div>
+
+                <div>
+                    <span>Partial Dispatch</span>
+                    <strong>@partialDispatched</strong>
+                </div>
+
+                <div>
+                    <span>Pending Dispatch</span>
+                    <strong>@pendingDispatch</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="ivs-card">
+
+            <div class="ivs-section-head">
+                <div>
+                    <span class="ivs-kicker">
+                        Search and filter
+                    </span>
+
+                    <h2>Find Material</h2>
+                </div>
+            </div>
+
+            <form asp-action="InvoiceStatus"
+                  asp-controller="VyaparInvoiceImport"
+                  method="get"
+                  class="ivs-search-form">
+
+                <input type="text"
+                       name="search"
+                       value="@search"
+                       class="ivs-search-input"
+                       placeholder="Search PO, material, line item or description..." />
+
+                <button type="submit"
+                        class="ivs-btn ivs-btn-primary">
+                    Search
+                </button>
+
+                <a asp-action="InvoiceStatus"
+                   asp-controller="VyaparInvoiceImport"
+                   class="ivs-btn ivs-btn-light">
+                    Clear
+                </a>
+            </form>
+
+            <div class="ivs-filter-grid">
+
+                <div class="ivs-filter-field">
+                    <label for="invoiceStatusFilter">
+                        Invoice Status
+                    </label>
+
+                    <select id="invoiceStatusFilter">
+                        <option value="">All Invoice Status</option>
+                        <option value="fully invoiced">Fully Invoiced</option>
+                        <option value="partially invoiced">Partially Invoiced</option>
+                        <option value="not invoiced">Not Invoiced</option>
+                    </select>
+                </div>
+
+                <div class="ivs-filter-field">
+                    <label for="dispatchStatusFilter">
+                        Dispatch Status
+                    </label>
+
+                    <select id="dispatchStatusFilter">
+                        <option value="">All Dispatch Status</option>
+                        <option value="dispatched">Dispatched</option>
+                        <option value="partial">Partial</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="ivs-note">
+                Invoice import success ஆனவுடன் InvoiceQty,
+                BalanceQty, DispatchQty மற்றும் PendingQty
+                automatic-ஆக update ஆகும்.
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         MATERIAL STATUS TABLE
+    ========================================================== -->
+
+    <section class="ivs-card">
+
+        <div class="ivs-section-head">
+
+            <div>
+                <span class="ivs-kicker">
+                    Material status
+                </span>
+
+                <h2>Material Invoice Status List</h2>
+
+                <p>
+                    Material-wise PO, invoice and dispatch
+                    quantity tracking.
+                </p>
+            </div>
+
+            <span class="ivs-count-badge"
+                  id="visibleMaterialCount">
+                @totalMaterials Material(s)
+            </span>
+        </div>
+
+        @if (materials.Count == 0)
+        {
+            <div class="ivs-empty-state">
+
+                <div class="ivs-empty-icon">
+                    I
+                </div>
+
+                <h3>No material invoice status found</h3>
+
+                <p>
+                    Upload an invoice or clear the search
+                    to view material invoice status.
+                </p>
+
+                <a asp-action="Upload"
+                   asp-controller="VyaparInvoiceImport"
+                   class="ivs-btn ivs-btn-primary">
+                    Upload Invoice
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="ivs-table-wrap">
+
+                <table class="ivs-table"
+                       id="invoiceStatusTable">
+
+                    <thead>
+                        <tr>
+                            <th>PO No</th>
+                            <th>Handler / Person</th>
+                            <th>PO Date</th>
+                            <th>PO Received Date</th>
+                            <th>Line Item</th>
+                            <th>Material No</th>
+                            <th>HSN/SAC</th>
+                            <th>Description</th>
+                            <th>PO Qty</th>
+                            <th>Invoice Qty</th>
+                            <th>Invoice Balance</th>
+                            <th>Invoice Status</th>
+                            <th>Dispatch Qty</th>
+                            <th>Dispatch Balance</th>
+                            <th>Dispatch Status</th>
+                            <th>Delivery Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var item in materials)
+                        {
+                            var purchaseOrder =
+                                item.PurchaseOrder;
+
+                            var handler =
+                                purchaseOrder?.BuyerContactPerson;
+
+                            var poDate =
+                                purchaseOrder?.PODate
+                                ?? item.PODate;
+
+                            var poReceivedDate =
+                                purchaseOrder?.ReceivedDate
+                                ?? item.ReceivingDate;
+
+                            var description =
+                                !string.IsNullOrWhiteSpace(
+                                    item.ShortDescription)
+                                    ? item.ShortDescription
+                                    : item.BriefDescription;
+
+                            var invoiceStatus =
+                                InvoiceStatusText(
+                                    item.InvoiceStatus);
+
+                            var dispatchStatus =
+                                DispatchStatusText(
+                                    item.DispatchStatus);
+
+                            var invoiceBalance =
+                                Math.Max(
+                                    0,
+                                    item.BalanceQty);
+
+                            var dispatchBalance =
+                                Math.Max(
+                                    0,
+                                    item.PendingQty);
+
+                            <tr data-invoice-status="@FilterValue(invoiceStatus)"
+                                data-dispatch-status="@FilterValue(dispatchStatus)">
+
+                                <td>
+                                    <strong class="ivs-po-number">
+                                        @(purchaseOrder?.PONumber ?? "-")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(handler))
+                                    {
+                                        <span class="ivs-handler">
+                                            @handler
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ivs-muted">
+                                            Not assigned
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (poDate.HasValue)
+                                    {
+                                        <span class="ivs-date">
+                                            @poDate.Value.ToString("dd-MMM-yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ivs-muted">
+                                            Not set
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (poReceivedDate.HasValue)
+                                    {
+                                        <span class="ivs-date ivs-date-received">
+                                            @poReceivedDate.Value.ToString("dd-MMM-yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ivs-muted">
+                                            Not set
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="ivs-line-item">
+                                        @(string.IsNullOrWhiteSpace(item.LineItem)
+                                            ? "-"
+                                            : item.LineItem)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <a asp-controller="Material"
+                                       asp-action="Details"
+                                       asp-route-id="@item.Id"
+                                       class="ivs-material-number">
+                                        @(item.MaterialNo ?? "-")
+                                    </a>
+                                </td>
+
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(item.HsnSacCode)
+                                        ? "-"
+                                        : item.HsnSacCode)
+                                </td>
+
+                                <td>
+                                    <span class="ivs-description"
+                                          title="@description">
+                                        @(string.IsNullOrWhiteSpace(description)
+                                            ? "-"
+                                            : description)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <strong class="ivs-qty">
+                                        @item.Qty.ToString("0.##")
+                                    </strong>
+
+                                    @if (!string.IsNullOrWhiteSpace(item.Unit))
+                                    {
+                                        <small class="ivs-unit">
+                                            @item.Unit
+                                        </small>
+                                    }
+                                </td>
+
+                                <td>
+                                    <strong class="ivs-qty ivs-qty-success">
+                                        @item.InvoiceQty.ToString("0.##")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <strong class="ivs-qty @(invoiceBalance > 0 ? "ivs-qty-danger" : "ivs-qty-success")">
+                                        @invoiceBalance.ToString("0.##")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <span class="ivs-status @InvoiceStatusClass(item.InvoiceStatus)">
+                                        @invoiceStatus
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <strong class="ivs-qty ivs-qty-success">
+                                        @item.DispatchQty.ToString("0.##")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <strong class="ivs-qty @(dispatchBalance > 0 ? "ivs-qty-danger" : "ivs-qty-success")">
+                                        @dispatchBalance.ToString("0.##")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <span class="ivs-status @DispatchStatusClass(item.DispatchStatus)">
+                                        @dispatchStatus
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @if (item.DeliveryDate.HasValue)
+                                    {
+                                        <span class="ivs-date">
+                                            @item.DeliveryDate.Value.ToString("dd-MMM-yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ivs-muted">
+                                            Not set
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <a asp-controller="Material"
+                                       asp-action="Details"
+                                       asp-route-id="@item.Id"
+                                       class="ivs-details-link">
+                                        Details
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+
+                    <tfoot>
+                        <tr>
+                            <th colspan="8"
+                                class="ivs-text-right">
+                                Total
+                            </th>
+
+                            <th>
+                                @totalPOQty.ToString("0.##")
+                            </th>
+
+                            <th>
+                                @totalInvoiceQty.ToString("0.##")
+                            </th>
+
+                            <th>
+                                @totalBalanceQty.ToString("0.##")
+                            </th>
+
+                            <th></th>
+
+                            <th>
+                                @totalDispatchQty.ToString("0.##")
+                            </th>
+
+                            <th>
+                                @totalPendingDispatchQty.ToString("0.##")
+                            </th>
+
+                            <th colspan="3"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="ivs-no-filter-results"
+                 id="noFilterResults"
+                 hidden>
+                No materials match the selected invoice
+                and dispatch filters.
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            "use strict";
+
+            const invoiceFilter =
+                document.getElementById(
+                    "invoiceStatusFilter");
+
+            const dispatchFilter =
+                document.getElementById(
+                    "dispatchStatusFilter");
+
+            const table =
+                document.getElementById(
+                    "invoiceStatusTable");
+
+            const visibleCount =
+                document.getElementById(
+                    "visibleMaterialCount");
+
+            const noResults =
+                document.getElementById(
+                    "noFilterResults");
+
+            if (!table) {
+                return;
+            }
+
+            const rows =
+                Array.from(
+                    table.querySelectorAll(
+                        "tbody tr"));
+
+            const applyFilters = () => {
+                const invoiceValue =
+                    invoiceFilter?.value
+                        .trim()
+                        .toLowerCase() ?? "";
+
+                const dispatchValue =
+                    dispatchFilter?.value
+                        .trim()
+                        .toLowerCase() ?? "";
+
+                let shown = 0;
+
+                rows.forEach((row) => {
+                    const rowInvoice =
+                        row.dataset.invoiceStatus ?? "";
+
+                    const rowDispatch =
+                        row.dataset.dispatchStatus ?? "";
+
+                    const invoiceMatch =
+                        !invoiceValue ||
+                        rowInvoice === invoiceValue;
+
+                    const dispatchMatch =
+                        !dispatchValue ||
+                        rowDispatch === dispatchValue;
+
+                    const display =
+                        invoiceMatch &&
+                        dispatchMatch;
+
+                    row.hidden =
+                        !display;
+
+                    if (display) {
+                        shown++;
+                    }
+                });
+
+                if (visibleCount) {
+                    visibleCount.textContent =
+                        `${shown} Material(s)`;
+                }
+
+                if (noResults) {
+                    noResults.hidden =
+                        shown > 0;
+                }
+            };
+
+            invoiceFilter?.addEventListener(
+                "change",
+                applyFilters);
+
+            dispatchFilter?.addEventListener(
+                "change",
+                applyFilters);
+        })();
+    </script>
+}
+
+@functions {
+    int GetPercent(int value, int total)
+    {
+        if (total <= 0)
+        {
+            return 0;
+        }
+
+        return Convert.ToInt32(
+            Math.Round(
+                (decimal)value / total * 100));
+    }
+}

@@ -1,0 +1,916 @@
+﻿@model POTracker.ViewModels.MaterialImportPreviewViewModel
+
+@{
+    ViewData["Title"] = "Material Import Preview";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var canImport = Model.ValidRows > 0 && Model.InvalidRows == 0;
+}
+
+<style>
+    .mip-page {
+        --mip-primary: #4f6df5;
+        --mip-primary-dark: #3853d8;
+        --mip-text: #172033;
+        --mip-muted: #68738a;
+        --mip-border: #dfe5f0;
+        --mip-success: #14845f;
+        --mip-danger: #c0392b;
+        --mip-warning: #ad6b00;
+        display: grid;
+        gap: 20px;
+        color: var(--mip-text);
+    }
+
+        .mip-page *,
+        .mip-page *::before,
+        .mip-page *::after {
+            box-sizing: border-box;
+        }
+
+    .mip-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: flex-start;
+        padding: 23px;
+        border: 1px solid #dce3f3;
+        border-radius: 18px;
+        background: radial-gradient(circle at 92% 8%, rgba(79,109,245,.17), transparent 31%), linear-gradient(135deg, #fff, #f6f8ff);
+        box-shadow: 0 10px 28px rgba(24,39,75,.06);
+    }
+
+    .mip-kicker {
+        color: var(--mip-primary-dark);
+        font-size: 12px;
+        font-weight: 850;
+        letter-spacing: .075em;
+        text-transform: uppercase;
+    }
+
+    .mip-head h2 {
+        margin: 7px 0 0;
+        font-size: clamp(23px, 3vw, 32px);
+    }
+
+    .mip-head p {
+        margin: 8px 0 0;
+        color: var(--mip-muted);
+        line-height: 1.6;
+    }
+
+    .mip-file {
+        display: inline-flex;
+        max-width: 100%;
+        margin-top: 13px;
+        padding: 8px 11px;
+        gap: 8px;
+        align-items: center;
+        border: 1px solid #dce2ef;
+        border-radius: 10px;
+        color: #44516a;
+        background: #fff;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .mip-head-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .mip-button {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 15px;
+        border: 1px solid transparent;
+        border-radius: 11px;
+        font: inherit;
+        font-weight: 780;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+        .mip-button:hover {
+            transform: translateY(-1px);
+        }
+
+    .mip-button-primary {
+        color: #fff;
+        background: linear-gradient(135deg, var(--mip-primary), var(--mip-primary-dark));
+        box-shadow: 0 8px 18px rgba(79,109,245,.22);
+    }
+
+    .mip-button-secondary {
+        color: #27324a;
+        border-color: #d9e0ed;
+        background: #fff;
+    }
+
+    .mip-button-danger {
+        color: #9c2d23;
+        border-color: #efc8c3;
+        background: #fff4f2;
+    }
+
+    .mip-button:disabled {
+        transform: none;
+        opacity: .5;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    .mip-alert {
+        padding: 14px 16px;
+        border-radius: 12px;
+        font-weight: 650;
+        line-height: 1.5;
+    }
+
+    .mip-alert-danger {
+        color: #8f241a;
+        border: 1px solid #f0c4bf;
+        background: #fff1ef;
+    }
+
+    .mip-alert-warning {
+        color: #75500d;
+        border: 1px solid #eed49e;
+        background: #fff9eb;
+    }
+
+    .mip-stats {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 13px;
+    }
+
+    .mip-stat {
+        padding: 17px;
+        border: 1px solid var(--mip-border);
+        border-radius: 15px;
+        background: #fff;
+        box-shadow: 0 8px 22px rgba(24,39,75,.045);
+    }
+
+    .mip-stat-label {
+        color: var(--mip-muted);
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+    }
+
+    .mip-stat-value {
+        margin-top: 7px;
+        font-size: 24px;
+        font-weight: 850;
+        line-height: 1.1;
+    }
+
+    .mip-stat.valid .mip-stat-value {
+        color: var(--mip-success);
+    }
+
+    .mip-stat.invalid .mip-stat-value {
+        color: var(--mip-danger);
+    }
+
+    .mip-panel {
+        overflow: hidden;
+        border: 1px solid var(--mip-border);
+        border-radius: 17px;
+        background: #fff;
+        box-shadow: 0 10px 27px rgba(24,39,75,.05);
+    }
+
+    .mip-toolbar {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 17px;
+        border-bottom: 1px solid #e5e9f1;
+        background: #fbfcfe;
+    }
+
+    .mip-toolbar-left {
+        display: flex;
+        min-width: 0;
+        flex: 1;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .mip-search {
+        width: min(430px, 100%);
+        min-height: 40px;
+        padding: 9px 12px;
+        border: 1px solid #d7deeb;
+        border-radius: 10px;
+        outline: none;
+        font: inherit;
+        color: #27324a;
+        background: #fff;
+    }
+
+        .mip-search:focus,
+        .mip-select:focus {
+            border-color: #8195f5;
+            box-shadow: 0 0 0 3px rgba(79,109,245,.12);
+        }
+
+    .mip-select {
+        min-height: 40px;
+        padding: 8px 31px 8px 11px;
+        border: 1px solid #d7deeb;
+        border-radius: 10px;
+        outline: none;
+        font: inherit;
+        color: #27324a;
+        background: #fff;
+    }
+
+    .mip-result-count {
+        color: var(--mip-muted);
+        font-size: 13px;
+        font-weight: 650;
+        white-space: nowrap;
+    }
+
+    .mip-table-wrap {
+        overflow: auto;
+        max-height: 64vh;
+    }
+
+    .mip-table {
+        width: 100%;
+        min-width: 1620px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+        .mip-table th,
+        .mip-table td {
+            padding: 11px 12px;
+            border-bottom: 1px solid #e7ebf3;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .mip-table th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            color: #536079;
+            background: #f3f5f9;
+            font-size: 10px;
+            font-weight: 850;
+            letter-spacing: .045em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .mip-table td {
+            color: #2d374d;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+    .mip-row-invalid {
+        background: #fff8f7;
+    }
+
+    .mip-row-number {
+        color: #66728a;
+        font-weight: 800;
+    }
+
+    .mip-main-cell {
+        min-width: 120px;
+        font-weight: 760;
+    }
+
+    .mip-description {
+        max-width: 320px;
+        color: #4b5870;
+    }
+
+        .mip-description details {
+            cursor: pointer;
+        }
+
+        .mip-description summary {
+            color: #3d55c7;
+            font-weight: 750;
+        }
+
+    .mip-description-text {
+        margin-top: 7px;
+        max-height: 130px;
+        overflow: auto;
+        padding: 8px;
+        border-radius: 8px;
+        background: #f6f7fa;
+        white-space: pre-wrap;
+    }
+
+    .mip-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 820;
+        white-space: nowrap;
+    }
+
+    .mip-status-valid {
+        color: #0c704e;
+        background: #e9f8f1;
+    }
+
+    .mip-status-invalid {
+        color: #9b2e24;
+        background: #ffebe8;
+    }
+
+    .mip-errors {
+        min-width: 270px;
+        color: #982e25;
+        font-size: 11px;
+    }
+
+        .mip-errors ul {
+            margin: 0;
+            padding-left: 17px;
+        }
+
+    .mip-empty {
+        display: none;
+        padding: 38px 20px;
+        color: var(--mip-muted);
+        text-align: center;
+    }
+
+    .mip-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        align-items: center;
+        padding: 15px 17px;
+        border-top: 1px solid #e5e9f1;
+        background: #fbfcfe;
+    }
+
+    .mip-pagination {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+    }
+
+    .mip-page-button {
+        min-width: 38px;
+        min-height: 36px;
+        border: 1px solid #d6deeb;
+        border-radius: 9px;
+        color: #33405a;
+        background: #fff;
+        font: inherit;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+        .mip-page-button:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+    .mip-page-info {
+        min-width: 110px;
+        color: var(--mip-muted);
+        font-size: 13px;
+        font-weight: 650;
+        text-align: center;
+    }
+
+    .mip-sticky-actions {
+        position: sticky;
+        bottom: 12px;
+        z-index: 10;
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        align-items: center;
+        padding: 14px 16px;
+        border: 1px solid #d8dfec;
+        border-radius: 15px;
+        background: rgba(255,255,255,.96);
+        box-shadow: 0 12px 35px rgba(24,39,75,.15);
+        backdrop-filter: blur(8px);
+    }
+
+    .mip-action-message {
+        color: var(--mip-muted);
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+        .mip-action-message strong {
+            display: block;
+            color: #27324a;
+        }
+
+    .mip-action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .mip-loader {
+        width: 17px;
+        height: 17px;
+        display: none;
+        border: 2px solid rgba(255,255,255,.45);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: mipSpin .7s linear infinite;
+    }
+
+    .is-submitting .mip-loader {
+        display: inline-block;
+    }
+
+    @@keyframes mipSpin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @@media (max-width: 1100px) {
+        .mip-stats {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 760px) {
+        .mip-head,
+        .mip-toolbar,
+        .mip-footer,
+        .mip-sticky-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .mip-head-actions,
+        .mip-action-buttons {
+            justify-content: stretch;
+        }
+
+            .mip-head-actions .mip-button,
+            .mip-action-buttons .mip-button,
+            .mip-action-buttons form {
+                flex: 1 1 150px;
+            }
+
+                .mip-action-buttons form .mip-button {
+                    width: 100%;
+                }
+
+        .mip-stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .mip-toolbar-left {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .mip-search,
+        .mip-select {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 460px) {
+        .mip-stats {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="mip-page">
+
+    <section class="mip-head">
+        <div>
+            <div class="mip-kicker">Excel validation completed</div>
+            <h2>Material Import Preview</h2>
+            <p>Review all rows before committing them to the database.</p>
+
+            <div class="mip-file" title="@Model.OriginalFileName">
+                📄 @Model.OriginalFileName
+            </div>
+        </div>
+
+        <div class="mip-head-actions">
+            <a asp-controller="Import"
+               asp-action="Index"
+               class="mip-button mip-button-secondary">
+                ← Upload Another
+            </a>
+
+            <a asp-controller="Import"
+               asp-action="DownloadTemplate"
+               class="mip-button mip-button-secondary">
+                ⬇ Template
+            </a>
+        </div>
+    </section>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="mip-alert mip-alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    @if (Model.InvalidRows > 0)
+    {
+        <div class="mip-alert mip-alert-warning">
+            <strong>@Model.InvalidRows invalid row(s) found.</strong>
+            Correct the source Excel file and upload it again. Database import is disabled until every row is valid.
+        </div>
+    }
+
+    <section class="mip-stats">
+        <div class="mip-stat">
+            <div class="mip-stat-label">Total rows</div>
+            <div class="mip-stat-value">@Model.TotalRows</div>
+        </div>
+
+        <div class="mip-stat valid">
+            <div class="mip-stat-label">Valid rows</div>
+            <div class="mip-stat-value">@Model.ValidRows</div>
+        </div>
+
+        <div class="mip-stat invalid">
+            <div class="mip-stat-label">Invalid rows</div>
+            <div class="mip-stat-value">@Model.InvalidRows</div>
+        </div>
+
+        <div class="mip-stat">
+            <div class="mip-stat-label">Total quantity</div>
+            <div class="mip-stat-value">@Model.TotalQuantity.ToString("0.##")</div>
+        </div>
+
+        <div class="mip-stat">
+            <div class="mip-stat-label">Total value</div>
+            <div class="mip-stat-value">@Model.TotalValue.ToString("N2")</div>
+        </div>
+    </section>
+
+    <section class="mip-panel">
+        <div class="mip-toolbar">
+            <div class="mip-toolbar-left">
+                <input type="search"
+                       class="mip-search"
+                       id="previewSearch"
+                       placeholder="Search PO, material, purchaser, line item, description..." />
+
+                <select class="mip-select" id="statusFilter">
+                    <option value="all">All rows</option>
+                    <option value="valid">Valid only</option>
+                    <option value="invalid">Invalid only</option>
+                </select>
+
+                <select class="mip-select" id="pageSize">
+                    <option value="25">25 rows</option>
+                    <option value="50" selected>50 rows</option>
+                    <option value="100">100 rows</option>
+                    <option value="200">200 rows</option>
+                </select>
+            </div>
+
+            <div class="mip-result-count" id="resultCount"></div>
+        </div>
+
+        <div class="mip-table-wrap">
+            <table class="mip-table">
+                <thead>
+                    <tr>
+                        <th>Excel Row</th>
+                        <th>Status</th>
+                        <th>Purchaser</th>
+                        <th>PO No.</th>
+                        <th>Line Item</th>
+                        <th>Material No.</th>
+                        <th>HSN/SAC</th>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Unit</th>
+                        <th>Dep</th>
+                        <th>Value</th>
+                        <th>Total</th>
+                        <th>Delivery</th>
+                        <th>Drawing</th>
+                        <th>Dashboard</th>
+                        <th>Validation Errors</th>
+                    </tr>
+                </thead>
+
+                <tbody id="previewRows">
+                    @foreach (var row in Model.Rows)
+                    {
+                        var searchText = string.Join(" ", new[]
+                        {
+                            row.PurchaserName,
+                            row.PONumber,
+                            row.LineItem,
+                            row.MaterialNo,
+                            row.HsnSacCode,
+                            row.ShortDescription,
+                            row.BriefDescription,
+                            row.DrawingNo,
+                            row.AssignedDashboard,
+                            row.ErrorMessage
+                        }).ToLowerInvariant();
+
+                        <tr class="mip-data-row @(row.IsValid ? "" : "mip-row-invalid")"
+                            data-status="@(row.IsValid ? "valid" : "invalid")"
+                            data-search="@searchText">
+
+                            <td class="mip-row-number">@row.RowNumber</td>
+
+                            <td>
+                                @if (row.IsValid)
+                                {
+                                    <span class="mip-status mip-status-valid">✓ Valid</span>
+                                }
+                                else
+                                {
+                                    <span class="mip-status mip-status-invalid">! Invalid</span>
+                                }
+                            </td>
+
+                            <td class="mip-main-cell">
+                                @row.PurchaserName
+                                @if (!string.IsNullOrWhiteSpace(row.ContactPerson))
+                                {
+                                    <div style="margin-top:4px;color:#6b768b;font-weight:500;">
+                                        @row.ContactPerson
+                                    </div>
+                                }
+                            </td>
+
+                            <td class="mip-main-cell">@row.PONumber</td>
+                            <td>@row.LineItem</td>
+                            <td class="mip-main-cell">@row.MaterialNo</td>
+                            <td>@row.HsnSacCode</td>
+
+                            <td class="mip-description">
+                                <strong>@row.ShortDescription</strong>
+
+                                @if (!string.IsNullOrWhiteSpace(row.BriefDescription))
+                                {
+                                    <details>
+                                        <summary>View details</summary>
+                                        <div class="mip-description-text">@row.BriefDescription</div>
+                                    </details>
+                                }
+                            </td>
+
+                            <td>@row.Qty.ToString("0.##")</td>
+                            <td>@row.Unit</td>
+                            <td>@row.Dep</td>
+                            <td>@row.ValueOfGoods.ToString("N2") @row.PriceUnit</td>
+                            <td>@row.TotalValue.ToString("N2")</td>
+                            <td>@(row.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                            <td>@row.DrawingNo</td>
+                            <td>@row.AssignedDashboard</td>
+
+                            <td class="mip-errors">
+                                @if (row.Errors.Count > 0)
+                                {
+                                    <ul>
+                                        @foreach (var error in row.Errors)
+                                        {
+                                            <li>@error</li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <span style="color:#14845f;">No errors</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="mip-empty" id="emptyState">
+                No rows match the current search or filter.
+            </div>
+        </div>
+
+        <div class="mip-footer">
+            <div class="mip-result-count" id="pageResultText"></div>
+
+            <div class="mip-pagination">
+                <button type="button"
+                        class="mip-page-button"
+                        id="previousPage">
+                    ‹
+                </button>
+
+                <div class="mip-page-info" id="pageInfo"></div>
+
+                <button type="button"
+                        class="mip-page-button"
+                        id="nextPage">
+                    ›
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="mip-sticky-actions">
+        <div class="mip-action-message">
+            @if (canImport)
+            {
+                <strong>Ready to import @Model.ValidRows material row(s)</strong>
+                <span>Existing records will be updated while invoice and dispatch quantities are preserved.</span>
+            }
+            else
+            {
+                <strong>Import is currently blocked</strong>
+                <span>Fix invalid Excel rows and upload the corrected file again.</span>
+            }
+        </div>
+
+        <div class="mip-action-buttons">
+            <form asp-controller="Import"
+                  asp-action="Cancel"
+                  method="post"
+                  id="cancelImportForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="batchId" value="@Model.BatchId" />
+
+                <button type="submit"
+                        class="mip-button mip-button-danger">
+                    Cancel Import
+                </button>
+            </form>
+
+            <form asp-controller="Import"
+                  asp-action="Commit"
+                  method="post"
+                  id="commitImportForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="batchId" value="@Model.BatchId" />
+
+                <button type="submit"
+                        class="mip-button mip-button-primary"
+                        id="commitButton"
+                        disabled="@(!canImport)">
+                    <span class="mip-loader"></span>
+                    <span id="commitButtonText">
+                        Import @Model.ValidRows Material(s)
+                    </span>
+                </button>
+            </form>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const allRows = Array.from(document.querySelectorAll(".mip-data-row"));
+            const searchInput = document.getElementById("previewSearch");
+            const statusFilter = document.getElementById("statusFilter");
+            const pageSizeSelect = document.getElementById("pageSize");
+            const resultCount = document.getElementById("resultCount");
+            const pageResultText = document.getElementById("pageResultText");
+            const pageInfo = document.getElementById("pageInfo");
+            const previousButton = document.getElementById("previousPage");
+            const nextButton = document.getElementById("nextPage");
+            const emptyState = document.getElementById("emptyState");
+            const commitForm = document.getElementById("commitImportForm");
+            const commitButton = document.getElementById("commitButton");
+            const commitButtonText = document.getElementById("commitButtonText");
+            const cancelForm = document.getElementById("cancelImportForm");
+
+            let currentPage = 1;
+
+            function filteredRows() {
+                const search = searchInput.value.trim().toLowerCase();
+                const status = statusFilter.value;
+
+                return allRows.filter(row => {
+                    const matchesStatus =
+                        status === "all" || row.dataset.status === status;
+
+                    const matchesSearch =
+                        !search || (row.dataset.search || "").includes(search);
+
+                    return matchesStatus && matchesSearch;
+                });
+            }
+
+            function render() {
+                const rows = filteredRows();
+                const pageSize = Number(pageSizeSelect.value);
+                const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+
+                if (currentPage > pageCount) currentPage = pageCount;
+
+                const start = (currentPage - 1) * pageSize;
+                const end = Math.min(start + pageSize, rows.length);
+                const visibleSet = new Set(rows.slice(start, end));
+
+                allRows.forEach(row => {
+                    row.style.display = visibleSet.has(row) ? "" : "none";
+                });
+
+                resultCount.textContent = `${rows.length} row(s) found`;
+                pageResultText.textContent =
+                    rows.length === 0
+                        ? "No matching rows"
+                        : `Showing ${start + 1}-${end} of ${rows.length}`;
+
+                pageInfo.textContent = `Page ${currentPage} of ${pageCount}`;
+                previousButton.disabled = currentPage <= 1;
+                nextButton.disabled = currentPage >= pageCount;
+                emptyState.style.display = rows.length === 0 ? "block" : "none";
+            }
+
+            function resetAndRender() {
+                currentPage = 1;
+                render();
+            }
+
+            searchInput.addEventListener("input", resetAndRender);
+            statusFilter.addEventListener("change", resetAndRender);
+            pageSizeSelect.addEventListener("change", resetAndRender);
+
+            previousButton.addEventListener("click", () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    render();
+                }
+            });
+
+            nextButton.addEventListener("click", () => {
+                const count = filteredRows().length;
+                const pageSize = Number(pageSizeSelect.value);
+                const pageCount = Math.max(1, Math.ceil(count / pageSize));
+
+                if (currentPage < pageCount) {
+                    currentPage++;
+                    render();
+                }
+            });
+
+            commitForm?.addEventListener("submit", event => {
+                if (commitButton.disabled) {
+                    event.preventDefault();
+                    return;
+                }
+
+                const confirmed = window.confirm(
+                    "Import all validated rows into the database?"
+                );
+
+                if (!confirmed) {
+                    event.preventDefault();
+                    return;
+                }
+
+                commitButton.disabled = true;
+                commitButton.classList.add("is-submitting");
+                commitButtonText.textContent = "Importing...";
+            });
+
+            cancelForm?.addEventListener("submit", event => {
+                const confirmed = window.confirm(
+                    "Cancel this preview and delete its temporary import batch?"
+                );
+
+                if (!confirmed) {
+                    event.preventDefault();
+                }
+            });
+
+            render();
+        })();
+    </script>
+}

@@ -1,0 +1,282 @@
+﻿@model POTracker.Models.Material
+
+@{
+    ViewData["Title"] = "Edit Material";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="form-container">
+
+    <div class="page-header">
+        <div>
+            <h1>Edit Material</h1>
+            <p>Update material, process and dispatch details</p>
+        </div>
+
+        <a href="/Material/Index" class="btn-secondary">Back</a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="premium-form">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="PDFFilePath" />
+        <input type="hidden" asp-for="DrawingFilePath" />
+        <input type="hidden" asp-for="CreatedDate" />
+        <input type="hidden" asp-for="PODate" />
+        <input type="hidden" asp-for="ProcessStartDate" />
+        <input type="hidden" asp-for="AlertDate" />
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Purchase Order</label>
+                <select asp-for="PurchaseOrderId" asp-items="ViewBag.PurchaseOrders" required>
+                    <option value="">Select PO</option>
+                </select>
+                <span asp-validation-for="PurchaseOrderId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Line Item</label>
+                <input asp-for="LineItem" />
+                <span asp-validation-for="LineItem" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Material No</label>
+                <input asp-for="MaterialNo" required />
+                <span asp-validation-for="MaterialNo" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>HSN/SAC Code</label>
+                <input asp-for="HsnSacCode" placeholder="Example: 7318.19.00" />
+                <span asp-validation-for="HsnSacCode" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Short Description</label>
+                <input asp-for="ShortDescription" />
+                <span asp-validation-for="ShortDescription" class="text-danger"></span>
+            </div>
+
+            <div class="form-group full">
+                <label>Brief Description / Full Details</label>
+                <textarea asp-for="BriefDescription"></textarea>
+                <span asp-validation-for="BriefDescription" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Qty</label>
+                <input asp-for="Qty" type="number" step="0.01" />
+                <span asp-validation-for="Qty" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Unit</label>
+                <input asp-for="Unit" />
+                <span asp-validation-for="Unit" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Dep</label>
+                <input asp-for="Dep" />
+                <span asp-validation-for="Dep" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Dispatch Qty</label>
+                <input asp-for="DispatchQty" type="number" step="0.01" />
+                <span asp-validation-for="DispatchQty" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Pending Qty</label>
+                <input asp-for="PendingQty" type="number" step="0.01" />
+                <span asp-validation-for="PendingQty" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Stock Qty</label>
+                <input asp-for="StockQty" type="number" step="0.01" />
+                <span asp-validation-for="StockQty" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Cost</label>
+                <input asp-for="Cost" type="number" step="0.01" />
+                <span asp-validation-for="Cost" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Value of Goods</label>
+                <input asp-for="ValueOfGoods" type="number" step="0.01" />
+                <span asp-validation-for="ValueOfGoods" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Price Unit</label>
+                <input asp-for="PriceUnit" />
+                <span asp-validation-for="PriceUnit" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Total Value</label>
+                <input asp-for="TotalValue" type="number" step="0.01" />
+                <span asp-validation-for="TotalValue" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>RM Grade</label>
+                <input asp-for="RMGrade" />
+                <span asp-validation-for="RMGrade" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>RM Source</label>
+                <input asp-for="RMSource" />
+                <span asp-validation-for="RMSource" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>RM Process</label>
+                <input asp-for="RMProcess" />
+                <span asp-validation-for="RMProcess" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Surface Finish</label>
+                <input asp-for="SurfaceFinish" />
+                <span asp-validation-for="SurfaceFinish" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Machining Type</label>
+                <input asp-for="MachiningType" />
+                <span asp-validation-for="MachiningType" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Process Time</label>
+                <input asp-for="ProcessTime" />
+                <span asp-validation-for="ProcessTime" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Material Process Time</label>
+                <input asp-for="MaterialProcessTime" />
+                <span asp-validation-for="MaterialProcessTime" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Receiving Date</label>
+                <input asp-for="ReceivingDate" type="date" />
+                <span asp-validation-for="ReceivingDate" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Delivery Date</label>
+                <input asp-for="DeliveryDate" type="date" />
+                <span asp-validation-for="DeliveryDate" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Dispatch Date</label>
+                <input asp-for="DispatchDate" type="date" />
+                <span asp-validation-for="DispatchDate" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Drawing No</label>
+                <input asp-for="DrawingNo" />
+                <span asp-validation-for="DrawingNo" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Drawing Version</label>
+                <input asp-for="DrawingVersion" />
+                <span asp-validation-for="DrawingVersion" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Drawing Updated Date</label>
+                <input asp-for="DrawingUpdatedDate" type="date" />
+                <span asp-validation-for="DrawingUpdatedDate" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Process Status</label>
+                <select asp-for="ProcessStatus">
+                    <option value="Pending">Pending</option>
+                    <option value="In Process">In Process</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Hold">Hold</option>
+                </select>
+                <span asp-validation-for="ProcessStatus" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Dispatch Status</label>
+                <select asp-for="DispatchStatus">
+                    <option value="Pending">Pending</option>
+                    <option value="Partial">Partial</option>
+                    <option value="Dispatched">Dispatched</option>
+                </select>
+                <span asp-validation-for="DispatchStatus" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Assigned Dashboard</label>
+                <select asp-for="AssignedDashboard">
+                    <option value="">Select</option>
+                    <option value="Paramaguru">Paramaguru</option>
+                    <option value="Gokulnath">Gokulnath</option>
+                    <option value="Sam">Sam</option>
+                    <option value="Abdul">Abdul</option>
+                    <option value="Kalai">Kalai</option>
+                </select>
+                <span asp-validation-for="AssignedDashboard" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Replace PO PDF</label>
+                <input type="file" name="pdfFile" accept=".pdf" />
+
+                @if (!string.IsNullOrEmpty(Model.PDFFilePath))
+                {
+                    <a href="@Model.PDFFilePath" target="_blank">View Current PDF</a>
+                }
+            </div>
+
+            <div class="form-group">
+                <label>Replace Drawing File</label>
+                <input type="file" name="drawingFile" accept=".pdf,.dwg,.dxf,.step,.stp,.jpg,.jpeg,.png" />
+
+                @if (!string.IsNullOrEmpty(Model.DrawingFilePath))
+                {
+                    <a href="@Model.DrawingFilePath" target="_blank">View Current Drawing</a>
+                }
+            </div>
+
+            <div class="form-group full">
+                <label>Remark</label>
+                <textarea asp-for="Remark"></textarea>
+                <span asp-validation-for="Remark" class="text-danger"></span>
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Update Material</button>
+            <a href="/Material/Index" class="btn-secondary">Cancel</a>
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

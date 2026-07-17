@@ -1,0 +1,710 @@
+﻿/* =========================================================
+   PURCHASE ORDER DETAILS — PREMIUM UI
+   Unique pod-* classes avoid conflicts with global styles.
+========================================================= */
+
+.pod-page {
+    display: grid;
+    gap: 18px;
+    color: var(--rp-text, #1b1b28);
+}
+
+    .pod-page *,
+    .pod-page *::before,
+    .pod-page *::after {
+        box-sizing: border-box;
+    }
+
+/* =========================================================
+   COMMON SURFACES
+========================================================= */
+
+.pod-header,
+.pod-card,
+.pod-summary-card {
+    border: 1px solid var(--rp-border, #e2e3eb);
+    background: #ffffff;
+    box-shadow: var( --rp-shadow-sm, 0 6px 18px rgba(32, 28, 60, .08) );
+}
+
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+
+.pod-header {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 22px;
+    padding: 23px 24px;
+    border-radius: 20px;
+}
+
+    .pod-header::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 4px;
+        content: "";
+        background: linear-gradient( 90deg, #6d4aff, #d9468f, #0ea5a8 );
+    }
+
+.pod-kicker {
+    display: block;
+    color: #6d4aff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.pod-header h1 {
+    margin: 7px 0 0;
+    color: #1b1b28;
+    font-size: clamp(26px, 3vw, 34px);
+    font-weight: 700;
+    letter-spacing: -.025em;
+}
+
+.pod-header p {
+    max-width: 760px;
+    margin: 8px 0 0;
+    color: #747181;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+.pod-header-actions,
+.pod-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.pod-btn {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.pod-btn-primary {
+    color: #ffffff;
+    background: linear-gradient( 135deg, #6d4aff, #d9468f );
+    box-shadow: 0 6px 16px rgba(109, 74, 255, .18);
+}
+
+.pod-btn-light {
+    border-color: #e2e3eb;
+    color: #3a3848;
+    background: #ffffff;
+}
+
+.pod-btn-primary:hover {
+    color: #ffffff;
+    filter: brightness(.98);
+}
+
+.pod-btn-light:hover {
+    border-color: #6d4aff;
+    color: #4c2fd4;
+}
+
+/* =========================================================
+   MAIN CARDS
+========================================================= */
+
+.pod-card {
+    overflow: hidden;
+    padding: 20px;
+    border-radius: 17px;
+}
+
+.pod-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ececf2;
+}
+
+    .pod-section-head h2,
+    .pod-section-head h3 {
+        margin: 5px 0 0;
+        color: #1b1b28;
+        font-weight: 700;
+    }
+
+    .pod-section-head h2 {
+        font-size: 24px;
+        letter-spacing: -.02em;
+    }
+
+    .pod-section-head h3 {
+        font-size: 18px;
+    }
+
+    .pod-section-head p {
+        margin: 6px 0 0;
+        color: #85818e;
+        font-size: 10px;
+        line-height: 1.55;
+    }
+
+/* =========================================================
+   PO PDF
+========================================================= */
+
+.pod-pdf-link {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 11px;
+    border: 1px solid #f1c5d3;
+    border-radius: 9px;
+    color: #c81e4b;
+    background: #fff0f4;
+    font-size: 10px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+    .pod-pdf-link:hover {
+        color: #ffffff;
+        background: #c81e4b;
+    }
+
+/* =========================================================
+   PO DETAIL GRID
+========================================================= */
+
+.pod-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 17px;
+}
+
+.pod-detail-item {
+    min-height: 88px;
+    padding: 14px;
+    border: 1px solid #ececf2;
+    border-left: 3px solid #6d4aff;
+    border-radius: 11px;
+    background: #fbfbfd;
+}
+
+    .pod-detail-item span,
+    .pod-detail-item strong {
+        display: block;
+    }
+
+    .pod-detail-item span {
+        color: #85818e;
+        font-size: 9px;
+        font-weight: 600;
+    }
+
+    .pod-detail-item strong {
+        margin-top: 7px;
+        overflow-wrap: anywhere;
+        color: #1b1b28;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.45;
+    }
+
+.pod-po-date {
+    border-left-color: #2563eb;
+    background: #f8faff;
+}
+
+.pod-received-date {
+    border-left-color: #0ea5a8;
+    background: #f6fffd;
+}
+
+/* =========================================================
+   SUMMARY CARDS
+========================================================= */
+
+.pod-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.pod-summary-card {
+    position: relative;
+    overflow: hidden;
+    min-height: 112px;
+    padding: 16px;
+    border-top: 3px solid currentColor;
+    border-radius: 15px;
+}
+
+    .pod-summary-card::after {
+        position: absolute;
+        right: -24px;
+        bottom: -34px;
+        width: 92px;
+        height: 92px;
+        content: "";
+        border-radius: 50%;
+        background: currentColor;
+        opacity: .045;
+    }
+
+    .pod-summary-card span,
+    .pod-summary-card strong,
+    .pod-summary-card small {
+        position: relative;
+        z-index: 1;
+        display: block;
+    }
+
+    .pod-summary-card span {
+        color: #6f6b7c;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    .pod-summary-card strong {
+        margin-top: 7px;
+        color: #1b1b28 !important;
+        font-size: 23px;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .pod-summary-card small {
+        margin-top: 6px;
+        color: #93909d;
+        font-size: 9px;
+        line-height: 1.45;
+    }
+
+.pod-summary-violet {
+    color: #6d4aff;
+}
+
+.pod-summary-green {
+    color: #15803d;
+}
+
+.pod-summary-amber {
+    color: #b26a00;
+}
+
+.pod-summary-red {
+    color: #dc2626;
+}
+
+.pod-summary-blue {
+    color: #2563eb;
+}
+
+.pod-summary-rose {
+    color: #c81e4b;
+}
+
+.pod-summary-teal {
+    color: #0e8f92;
+}
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.pod-empty-state {
+    padding: 52px 20px;
+    text-align: center;
+}
+
+.pod-empty-icon {
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto;
+    border-radius: 17px;
+    color: #ffffff;
+    background: linear-gradient( 135deg, #6d4aff, #d9468f );
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.pod-empty-state h3 {
+    margin: 14px 0 0;
+    color: #1b1b28;
+    font-size: 17px;
+}
+
+.pod-empty-state p {
+    margin: 6px 0 16px;
+    color: #85818e;
+    font-size: 11px;
+}
+
+/* =========================================================
+   TABLE WRAPPER
+========================================================= */
+
+.pod-table-wrap {
+    margin-top: 16px;
+    overflow: auto;
+    border: 1px solid #ececf2;
+    border-radius: 12px;
+}
+
+.pod-table {
+    width: 100%;
+    min-width: 1750px;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+    .pod-table th,
+    .pod-table td {
+        padding: 11px 12px;
+        border-bottom: 1px solid #ececf2;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    .pod-table th {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        color: #555263;
+        background: #f5f4fa;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: .045em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .pod-table td {
+        color: #3a3848;
+        background: #ffffff;
+        font-size: 10px;
+    }
+
+    .pod-table tbody tr:hover td {
+        background: #faf9ff;
+    }
+
+    .pod-table tfoot th {
+        color: #34313f;
+        background: #fbfbfd;
+    }
+
+.pod-overdue-row td:first-child {
+    box-shadow: inset 3px 0 0 #c81e4b;
+}
+
+/* =========================================================
+   MATERIAL TABLE CONTENT
+========================================================= */
+
+.pod-line-item {
+    display: inline-flex;
+    padding: 4px 7px;
+    border-radius: 7px;
+    color: #555263;
+    background: #f1f1f5;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.pod-material-number {
+    display: block;
+    color: #4c2fd4;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+    .pod-material-number:hover {
+        text-decoration: underline;
+    }
+
+.pod-drawing {
+    display: block;
+    max-width: 180px;
+    margin-top: 4px;
+    overflow: hidden;
+    color: #85818e;
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pod-description {
+    display: block;
+    max-width: 250px;
+    overflow: hidden;
+    color: #555263;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pod-quantity {
+    display: block;
+    color: #22212d;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.pod-quantity-warning {
+    color: #b26a00;
+}
+
+.pod-quantity-danger {
+    color: #c81e4b;
+}
+
+.pod-unit {
+    display: block;
+    margin-top: 4px;
+    color: #85818e;
+    font-size: 8px;
+}
+
+.pod-date {
+    display: inline-flex;
+    padding: 5px 7px;
+    border: 1px solid #cdd9ff;
+    border-radius: 8px;
+    color: #2563eb;
+    background: #eef4ff;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.pod-date-overdue {
+    border-color: #f1c5d3;
+    color: #c81e4b;
+    background: #fff0f4;
+}
+
+.pod-overdue-text {
+    display: block;
+    margin-top: 5px;
+    color: #c81e4b;
+    font-size: 8px;
+    font-weight: 700;
+}
+
+.pod-unassigned {
+    color: #9995a1;
+    font-size: 9px;
+    font-style: italic;
+    white-space: nowrap;
+}
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+
+.pod-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 7px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.pod-status-success {
+    border-color: #bfe8cf;
+    color: #15803d;
+    background: #ecfdf3;
+}
+
+.pod-status-info {
+    border-color: #bfd0ff;
+    color: #2563eb;
+    background: #eef4ff;
+}
+
+.pod-status-warning {
+    border-color: #efd6a3;
+    color: #9a5b00;
+    background: #fff7e6;
+}
+
+.pod-status-danger {
+    border-color: #f1c5d3;
+    color: #c81e4b;
+    background: #fff0f4;
+}
+
+.pod-status-neutral {
+    border-color: #dedde5;
+    color: #6d6977;
+    background: #f4f4f7;
+}
+
+/* =========================================================
+   ROW ACTIONS
+========================================================= */
+
+.pod-row-actions {
+    flex-wrap: nowrap;
+}
+
+.pod-row-btn {
+    min-height: 29px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.pod-row-view {
+    border-color: #d9ceff;
+    color: #4c2fd4;
+    background: #f0ecff;
+}
+
+.pod-row-edit {
+    border-color: #bfd0ff;
+    color: #2563eb;
+    background: #eef4ff;
+}
+
+.pod-row-dispatch {
+    border-color: #bfe8cf;
+    color: #15803d;
+    background: #ecfdf3;
+}
+
+.pod-row-view:hover {
+    color: #ffffff;
+    background: #6d4aff;
+}
+
+.pod-row-edit:hover {
+    color: #ffffff;
+    background: #2563eb;
+}
+
+.pod-row-dispatch:hover {
+    color: #ffffff;
+    background: #15803d;
+}
+
+.pod-text-right {
+    text-align: right !important;
+}
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+.pod-btn:focus-visible,
+.pod-pdf-link:focus-visible,
+.pod-row-btn:focus-visible {
+    outline: 2px solid #6d4aff;
+    outline-offset: 2px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1450px) {
+    .pod-detail-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .pod-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1050px) {
+    .pod-detail-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .pod-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .pod-header,
+    .pod-section-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .pod-header-actions {
+        width: 100%;
+    }
+
+        .pod-header-actions .pod-btn {
+            flex: 1 1 150px;
+        }
+
+    .pod-detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .pod-card {
+        padding: 16px;
+    }
+
+    .pod-header {
+        padding: 20px;
+    }
+
+    .pod-detail-grid,
+    .pod-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pod-header-actions,
+    .pod-row-actions {
+        flex-direction: column;
+    }
+
+        .pod-header-actions .pod-btn,
+        .pod-row-actions .pod-row-btn {
+            width: 100%;
+        }
+}

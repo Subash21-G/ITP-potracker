@@ -1,0 +1,504 @@
+﻿@using Microsoft.AspNetCore.Html
+@model List<POTracker.Models.Material>
+
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var materials = Model ?? new List<POTracker.Models.Material>();
+
+    var fullName = Context.Session.GetString("FullName");
+    if (string.IsNullOrWhiteSpace(fullName))
+    {
+        fullName = "Subash";
+    }
+
+    int totalPurchasers = ViewBag.TotalPurchasers ?? 0;
+    int totalPOs = ViewBag.TotalPOs ?? 0;
+    int totalMaterials = ViewBag.TotalMaterials ?? materials.Count;
+    int pendingMaterials = ViewBag.PendingMaterials ?? materials.Count(x => x.ProcessStatus == "Pending");
+    int lowStock = ViewBag.LowStock ?? 0;
+    int todayAlerts = ViewBag.TodayAlerts ?? 0;
+
+    int overdueCount = ViewBag.OverdueCount ?? 0;
+    int deliveryWithin7DaysCount = ViewBag.DeliveryWithin7DaysCount ?? 0;
+    int processStartAlertCount = ViewBag.ProcessStartAlertCount ?? 0;
+    int dispatchPendingCount = ViewBag.DispatchPendingCount ?? materials.Count(x => x.DispatchStatus == "Pending");
+
+    int completedCount = ViewBag.CompletedCount ?? materials.Count(x => x.ProcessStatus == "Completed");
+    int runningCount = ViewBag.RunningCount ?? materials.Count(x => x.ProcessStatus == "In Process" || x.ProcessStatus == "In Progress");
+    int pendingCount = ViewBag.PendingCount ?? materials.Count(x => x.ProcessStatus == "Pending");
+
+    int dispatchCompleted = ViewBag.DispatchCompleted ?? materials.Count(x => x.DispatchStatus == "Dispatched");
+    int dispatchPartial = ViewBag.DispatchPartial ?? materials.Count(x => x.DispatchStatus == "Partial");
+    int dispatchPending = ViewBag.DispatchPending ?? materials.Count(x => x.DispatchStatus == "Pending");
+
+    int fullyInvoiced = materials.Count(x => x.InvoiceStatus == "Fully Invoiced");
+    int partiallyInvoiced = materials.Count(x => x.InvoiceStatus == "Partially Invoiced");
+    int notInvoiced = materials.Count(x => string.IsNullOrWhiteSpace(x.InvoiceStatus) || x.InvoiceStatus == "Not Invoiced");
+
+    decimal totalPOQty = materials.Sum(x => x.Qty);
+    decimal totalInvoiceQty = materials.Sum(x => x.InvoiceQty);
+    decimal totalDispatchQty = materials.Sum(x => x.DispatchQty);
+    decimal totalPendingQty = materials.Sum(x => x.PendingQty);
+
+    var recentMaterials = materials
+        .OrderByDescending(x => x.Id)
+        .Take(12)
+        .ToList();
+}
+
+<div class="dashboard-container">
+
+    <div class="page-header">
+        <div>
+            <h1>PO Tracker Dashboard</h1>
+            <p>Production, invoice, dispatch and material management overview</p>
+        </div>
+
+        <div class="dashboard-actions">
+            <a href="/Report/MaterialsExcel" class="btn-primary">
+                Export Excel
+            </a>
+
+            <a href="/Report/MaterialsPdf" class="btn-secondary">
+                Export PDF
+            </a>
+
+            <span class="status-badge">
+                Welcome, @fullName
+            </span>
+        </div>
+    </div>
+
+    <div class="alert-dashboard-grid">
+
+        <a href="/Purchaser/Index" class="dashboard-alert-card blue-alert">
+            <h3>@totalPurchasers</h3>
+            <p>Total Purchasers</p>
+        </a>
+
+        <a href="/PurchaseOrder/Index" class="dashboard-alert-card green-card">
+            <h3>@totalPOs</h3>
+            <p>Total Purchase Orders</p>
+        </a>
+
+        <a href="/Material/Index" class="dashboard-alert-card yellow-alert">
+            <h3>@totalMaterials</h3>
+            <p>Total Materials</p>
+        </a>
+
+        <a href="/Material/Index" class="dashboard-alert-card red-alert">
+            <h3>@pendingMaterials</h3>
+            <p>Pending Materials</p>
+        </a>
+
+    </div>
+
+    <div class="alert-dashboard-grid">
+
+        <a href="/Alert/Index" class="dashboard-alert-card red-alert">
+            <h3>@overdueCount</h3>
+            <p>Overdue Materials</p>
+        </a>
+
+        <a href="/Alert/Index" class="dashboard-alert-card yellow-alert">
+            <h3>@deliveryWithin7DaysCount</h3>
+            <p>Delivery Within 7 Days</p>
+        </a>
+
+        <a href="/Alert/Index" class="dashboard-alert-card blue-alert">
+            <h3>@processStartAlertCount</h3>
+            <p>Process Start Alerts</p>
+        </a>
+
+        <a href="/Dispatch/Index" class="dashboard-alert-card dark-alert">
+            <h3>@dispatchPendingCount</h3>
+            <p>Dispatch Pending</p>
+        </a>
+
+    </div>
+    <div class="premium-grid">
+
+        <div class="metric-card">
+            <span>Total PO Qty</span>
+            <strong>@totalPOQty.ToString("0.##")</strong>
+        </div>
+
+        <div class="metric-card">
+            <span>Total Invoice Qty</span>
+            <strong>@totalInvoiceQty.ToString("0.##")</strong>
+        </div>
+
+        <div class="metric-card">
+            <span>Total Dispatch Qty</span>
+            <strong>@totalDispatchQty.ToString("0.##")</strong>
+        </div>
+
+        <div class="metric-card">
+            <span>Total Pending Qty</span>
+            <strong>@totalPendingQty.ToString("0.##")</strong>
+        </div>
+
+        <div class="metric-card">
+            <span>Low Stock</span>
+            <strong>@lowStock</strong>
+        </div>
+
+        <div class="metric-card">
+            <span>Today Alerts</span>
+            <strong>@todayAlerts</strong>
+        </div>
+
+    </div>
+
+    <div class="premium-split">
+
+        <div class="premium-panel">
+            <h2>Invoice Status Summary</h2>
+
+            <div class="progress-row">
+                <span>Fully</span>
+                <div class="bar">
+                    <i style="width:@GetPercent(fullyInvoiced, totalMaterials)%"></i>
+                </div>
+                <strong>@fullyInvoiced</strong>
+            </div>
+
+            <div class="progress-row">
+                <span>Partial</span>
+                <div class="bar">
+                    <i style="width:@GetPercent(partiallyInvoiced, totalMaterials)%"></i>
+                </div>
+                <strong>@partiallyInvoiced</strong>
+            </div>
+
+            <div class="progress-row">
+                <span>Pending</span>
+                <div class="bar">
+                    <i style="width:@GetPercent(notInvoiced, totalMaterials)%"></i>
+                </div>
+                <strong>@notInvoiced</strong>
+            </div>
+        </div>
+
+        <div class="premium-panel">
+            <h2>Dispatch Status Summary</h2>
+
+            <div class="progress-row">
+                <span>Dispatched</span>
+                <div class="bar">
+                    <i style="width:@GetPercent(dispatchCompleted, totalMaterials)%"></i>
+                </div>
+                <strong>@dispatchCompleted</strong>
+            </div>
+
+            <div class="progress-row">
+                <span>Partial</span>
+                <div class="bar">
+                    <i style="width:@GetPercent(dispatchPartial, totalMaterials)%"></i>
+                </div>
+                <strong>@dispatchPartial</strong>
+            </div>
+
+            <div class="progress-row">
+                <span>Pending</span>
+                <div class="bar">
+                    <i style="width:@GetPercent(dispatchPending, totalMaterials)%"></i>
+                </div>
+                <strong>@dispatchPending</strong>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="chart-grid">
+
+        <div class="chart-card">
+            <h2>Process Status Overview</h2>
+            <canvas id="processChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h2>Dispatch Status Overview</h2>
+            <canvas id="dispatchChart"></canvas>
+        </div>
+
+    </div>
+    <div class="table-section">
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:16px;">
+            <div>
+                <h2 style="margin:0;">Recent Materials</h2>
+                <p style="margin:6px 0 0; color:#64748b; font-weight:600;">
+                    Latest materials imported or created in the PO tracker.
+                </p>
+            </div>
+
+            <a href="/Material/Index" class="btn-primary">
+                View All Materials
+            </a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>PO No</th>
+                        <th>Purchaser</th>
+                        <th>Line Item</th>
+                        <th>Material No</th>
+                        <th>Description</th>
+                        <th>PO Qty</th>
+                        <th>Invoice Qty</th>
+                        <th>Dispatch Qty</th>
+                        <th>Pending Qty</th>
+                        <th>Delivery Date</th>
+                        <th>Invoice</th>
+                        <th>Dispatch</th>
+                        <th>Process</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (recentMaterials.Any())
+                    {
+                        foreach (var item in recentMaterials)
+                        {
+                            <tr>
+                                <td class="fw-bold">
+                                    @(item.PurchaseOrder?.PONumber ?? "-")
+                                </td>
+
+                                <td>
+                                    @(item.PurchaseOrder?.Purchaser?.PurchaserName ?? "-")
+                                </td>
+
+                                <td>
+                                    @(item.LineItem ?? "-")
+                                </td>
+
+                                <td class="fw-bold">
+                                    @(item.MaterialNo ?? "-")
+                                </td>
+
+                                <td>
+                                    @(item.ShortDescription ?? item.BriefDescription ?? "-")
+                                </td>
+
+                                <td>
+                                    @item.Qty.ToString("0.##")
+                                </td>
+
+                                <td>
+                                    @if (item.InvoiceQty > 0)
+                                    {
+                                        <span style="color:#166534;font-weight:900;">
+                                            @item.InvoiceQty.ToString("0.##")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span>0</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (item.DispatchQty > 0)
+                                    {
+                                        <span style="color:#166534;font-weight:900;">
+                                            @item.DispatchQty.ToString("0.##")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span>0</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (item.PendingQty > 0)
+                                    {
+                                        <span style="color:#b91c1c;font-weight:900;">
+                                            @item.PendingQty.ToString("0.##")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:#166534;font-weight:900;">0</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")
+                                </td>
+
+                                <td>
+                                    @GetInvoiceBadge(item.InvoiceStatus)
+                                </td>
+
+                                <td>
+                                    @GetDispatchBadge(item.DispatchStatus)
+                                </td>
+
+                                <td>
+                                    @GetProcessBadge(item.ProcessStatus)
+                                </td>
+
+                                <td>
+                                    <a href="/Material/Details/@item.Id" class="action-edit">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="14" style="text-align:center; padding:28px;">
+                                No material data found.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</div>
+@functions {
+    int GetPercent(int value, int total)
+    {
+        if (total <= 0)
+        {
+            return 0;
+        }
+
+        return Convert.ToInt32(Math.Round((decimal)value / total * 100));
+    }
+
+    IHtmlContent GetInvoiceBadge(string? status)
+    {
+        status = string.IsNullOrWhiteSpace(status) ? "Not Invoiced" : status;
+
+        if (status == "Fully Invoiced")
+        {
+            return new HtmlString("<span class='status-green'>Fully Invoiced</span>");
+        }
+
+        if (status == "Partially Invoiced")
+        {
+            return new HtmlString("<span class='status-blue'>Partially Invoiced</span>");
+        }
+
+        return new HtmlString("<span class='status-yellow'>Not Invoiced</span>");
+    }
+
+    IHtmlContent GetDispatchBadge(string? status)
+    {
+        status = string.IsNullOrWhiteSpace(status) ? "Pending" : status;
+
+        if (status == "Dispatched")
+        {
+            return new HtmlString("<span class='status-green'>Dispatched</span>");
+        }
+
+        if (status == "Partial")
+        {
+            return new HtmlString("<span class='status-blue'>Partial</span>");
+        }
+
+        return new HtmlString("<span class='status-red'>Pending</span>");
+    }
+
+    IHtmlContent GetProcessBadge(string? status)
+    {
+        status = string.IsNullOrWhiteSpace(status) ? "Pending" : status;
+
+        if (status == "Completed")
+        {
+            return new HtmlString("<span class='status-green'>Completed</span>");
+        }
+
+        if (status == "In Process" || status == "In Progress")
+        {
+            return new HtmlString("<span class='status-blue'>In Process</span>");
+        }
+
+        return new HtmlString("<span class='status-yellow'>Pending</span>");
+    }
+}
+
+@section Scripts {
+    <script>
+        const processChart = document.getElementById('processChart');
+
+        if (processChart) {
+            new Chart(processChart, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'In Process', 'Pending'],
+                    datasets: [{
+                        data: [
+                            @completedCount,
+                            @runningCount,
+                            @pendingCount
+                        ],
+                        backgroundColor: [
+                            '#16a34a',
+                            '#f59e0b',
+                            '#dc2626'
+                        ]
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        const dispatchChart = document.getElementById('dispatchChart');
+
+        if (dispatchChart) {
+            new Chart(dispatchChart, {
+                type: 'bar',
+                data: {
+                    labels: ['Dispatched', 'Partial', 'Pending'],
+                    datasets: [{
+                        label: 'Dispatch Status',
+                        data: [
+                            @dispatchCompleted,
+                            @dispatchPartial,
+                            @dispatchPending
+                        ],
+                        backgroundColor: [
+                            '#2563eb',
+                            '#f59e0b',
+                            '#dc2626'
+                        ],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+}

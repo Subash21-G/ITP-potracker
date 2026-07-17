@@ -1,0 +1,407 @@
+﻿@{
+    ViewData["Title"] = "Smart Alerts";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var processStartAlerts = ViewBag.ProcessStartAlerts as List<POTracker.Models.Material>;
+    var overdueMaterials = ViewBag.OverdueMaterials as List<POTracker.Models.Material>;
+    var deliveryWithin7Days = ViewBag.DeliveryWithin7Days as List<POTracker.Models.Material>;
+    var pendingProcess = ViewBag.PendingProcess as List<POTracker.Models.Material>;
+    var dispatchPending = ViewBag.DispatchPending as List<POTracker.Models.Material>;
+    var dispatchDateAlerts = ViewBag.DispatchDateAlerts as List<POTracker.Models.Material>;
+    var lowStock = ViewBag.LowStock as List<POTracker.Models.Material>;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Smart Alerts</h1>
+        <p>Process, delivery, dispatch and stock alert tracking</p>
+    </div>
+</div>
+
+<div class="alert-summary-grid">
+
+    <div class="alert-card blue-alert">
+        <h2>@(processStartAlerts?.Count ?? 0)</h2>
+        <p>Process Start Alerts</p>
+    </div>
+
+    <div class="alert-card red-alert">
+        <h2>@(overdueMaterials?.Count ?? 0)</h2>
+        <p>Overdue Materials</p>
+    </div>
+
+    <div class="alert-card yellow-alert">
+        <h2>@(deliveryWithin7Days?.Count ?? 0)</h2>
+        <p>Delivery Within 7 Days</p>
+    </div>
+
+    <div class="alert-card dark-alert">
+        <h2>@(dispatchPending?.Count ?? 0)</h2>
+        <p>Dispatch Pending</p>
+    </div>
+
+</div>
+
+<div class="table-section alert-table-section">
+    <h2>Process Start Alerts - One Month Before Delivery</h2>
+
+    @if (processStartAlerts != null && processStartAlerts.Count > 0)
+    {
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Material No</th>
+                    <th>Description</th>
+                    <th>Delivery Date</th>
+                    <th>Alert Date</th>
+                    <th>Process</th>
+                    <th>Dispatch</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int i = 1;
+                }
+
+                @foreach (var item in processStartAlerts)
+                {
+                    <tr>
+                        <td>@i</td>
+                        <td><strong>@item.MaterialNo</strong></td>
+                        <td>@item.ShortDescription</td>
+                        <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@(item.AlertDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@item.ProcessStatus</td>
+                        <td>@item.DispatchStatus</td>
+                        <td>@item.StockQty</td>
+                        <td><a href="/Material/Details/@item.Id" class="action-view">View</a></td>
+                    </tr>
+
+                    i++;
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-box">
+            <h3>No alerts</h3>
+            <p>No process start alerts found.</p>
+        </div>
+    }
+</div>
+
+<div class="table-section alert-table-section">
+    <h2>Overdue Materials</h2>
+
+    @if (overdueMaterials != null && overdueMaterials.Count > 0)
+    {
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Material No</th>
+                    <th>Description</th>
+                    <th>Delivery Date</th>
+                    <th>Alert Date</th>
+                    <th>Process</th>
+                    <th>Dispatch</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int i = 1;
+                }
+
+                @foreach (var item in overdueMaterials)
+                {
+                    <tr>
+                        <td>@i</td>
+                        <td><strong>@item.MaterialNo</strong></td>
+                        <td>@item.ShortDescription</td>
+                        <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@(item.AlertDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@item.ProcessStatus</td>
+                        <td>@item.DispatchStatus</td>
+                        <td>@item.StockQty</td>
+                        <td><a href="/Material/Details/@item.Id" class="action-view">View</a></td>
+                    </tr>
+
+                    i++;
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-box">
+            <h3>No alerts</h3>
+            <p>No overdue materials found.</p>
+        </div>
+    }
+</div>
+
+<div class="table-section alert-table-section">
+    <h2>Delivery Within 7 Days</h2>
+
+    @if (deliveryWithin7Days != null && deliveryWithin7Days.Count > 0)
+    {
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Material No</th>
+                    <th>Description</th>
+                    <th>Delivery Date</th>
+                    <th>Alert Date</th>
+                    <th>Process</th>
+                    <th>Dispatch</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int i = 1;
+                }
+
+                @foreach (var item in deliveryWithin7Days)
+                {
+                    <tr>
+                        <td>@i</td>
+                        <td><strong>@item.MaterialNo</strong></td>
+                        <td>@item.ShortDescription</td>
+                        <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@(item.AlertDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@item.ProcessStatus</td>
+                        <td>@item.DispatchStatus</td>
+                        <td>@item.StockQty</td>
+                        <td><a href="/Material/Details/@item.Id" class="action-view">View</a></td>
+                    </tr>
+
+                    i++;
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-box">
+            <h3>No alerts</h3>
+            <p>No deliveries within 7 days found.</p>
+        </div>
+    }
+</div>
+
+<div class="table-section alert-table-section">
+    <h2>Pending Process Materials</h2>
+
+    @if (pendingProcess != null && pendingProcess.Count > 0)
+    {
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Material No</th>
+                    <th>Description</th>
+                    <th>Delivery Date</th>
+                    <th>Alert Date</th>
+                    <th>Process</th>
+                    <th>Dispatch</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int i = 1;
+                }
+
+                @foreach (var item in pendingProcess)
+                {
+                    <tr>
+                        <td>@i</td>
+                        <td><strong>@item.MaterialNo</strong></td>
+                        <td>@item.ShortDescription</td>
+                        <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@(item.AlertDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@item.ProcessStatus</td>
+                        <td>@item.DispatchStatus</td>
+                        <td>@item.StockQty</td>
+                        <td><a href="/Material/Details/@item.Id" class="action-view">View</a></td>
+                    </tr>
+
+                    i++;
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-box">
+            <h3>No alerts</h3>
+            <p>No pending process materials found.</p>
+        </div>
+    }
+</div>
+
+<div class="table-section alert-table-section">
+    <h2>Dispatch Pending Materials</h2>
+
+    @if (dispatchPending != null && dispatchPending.Count > 0)
+    {
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Material No</th>
+                    <th>Description</th>
+                    <th>Delivery Date</th>
+                    <th>Alert Date</th>
+                    <th>Process</th>
+                    <th>Dispatch</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int i = 1;
+                }
+
+                @foreach (var item in dispatchPending)
+                {
+                    <tr>
+                        <td>@i</td>
+                        <td><strong>@item.MaterialNo</strong></td>
+                        <td>@item.ShortDescription</td>
+                        <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@(item.AlertDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@item.ProcessStatus</td>
+                        <td>@item.DispatchStatus</td>
+                        <td>@item.StockQty</td>
+                        <td><a href="/Material/Details/@item.Id" class="action-view">View</a></td>
+                    </tr>
+
+                    i++;
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-box">
+            <h3>No alerts</h3>
+            <p>No dispatch pending materials found.</p>
+        </div>
+    }
+</div>
+
+<div class="table-section alert-table-section">
+    <h2>Dispatch Date Alerts</h2>
+
+    @if (dispatchDateAlerts != null && dispatchDateAlerts.Count > 0)
+    {
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Material No</th>
+                    <th>Description</th>
+                    <th>Delivery Date</th>
+                    <th>Dispatch Date</th>
+                    <th>Process</th>
+                    <th>Dispatch</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int i = 1;
+                }
+
+                @foreach (var item in dispatchDateAlerts)
+                {
+                    <tr>
+                        <td>@i</td>
+                        <td><strong>@item.MaterialNo</strong></td>
+                        <td>@item.ShortDescription</td>
+                        <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@(item.DispatchDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@item.ProcessStatus</td>
+                        <td>@item.DispatchStatus</td>
+                        <td>@item.StockQty</td>
+                        <td><a href="/Material/Details/@item.Id" class="action-view">View</a></td>
+                    </tr>
+
+                    i++;
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-box">
+            <h3>No alerts</h3>
+            <p>No dispatch date alerts found.</p>
+        </div>
+    }
+</div>
+
+<div class="table-section alert-table-section">
+    <h2>Low Stock Materials</h2>
+
+    @if (lowStock != null && lowStock.Count > 0)
+    {
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Material No</th>
+                    <th>Description</th>
+                    <th>Delivery Date</th>
+                    <th>Alert Date</th>
+                    <th>Process</th>
+                    <th>Dispatch</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int i = 1;
+                }
+
+                @foreach (var item in lowStock)
+                {
+                    <tr>
+                        <td>@i</td>
+                        <td><strong>@item.MaterialNo</strong></td>
+                        <td>@item.ShortDescription</td>
+                        <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@(item.AlertDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@item.ProcessStatus</td>
+                        <td>@item.DispatchStatus</td>
+                        <td>@item.StockQty</td>
+                        <td><a href="/Material/Details/@item.Id" class="action-view">View</a></td>
+                    </tr>
+
+                    i++;
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-box">
+            <h3>No alerts</h3>
+            <p>No low stock materials found.</p>
+        </div>
+    }
+</div>

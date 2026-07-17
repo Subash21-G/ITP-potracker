@@ -1,0 +1,569 @@
+﻿@using Microsoft.AspNetCore.Http
+
+@{
+    string? currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    string? currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    string fullName = Context.Session.GetString("FullName") ?? "Subash";
+    string role = Context.Session.GetString("Role") ?? "Admin";
+
+    string userInitial = string.IsNullOrWhiteSpace(fullName)
+        ? "U"
+        : fullName.Trim()[0].ToString().ToUpperInvariant();
+
+    bool IsActive(string controller)
+    {
+        return string.Equals(
+            currentController,
+            controller,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    bool IsActiveAction(string controller, string action)
+    {
+        return string.Equals(
+                   currentController,
+                   controller,
+                   StringComparison.OrdinalIgnoreCase)
+               && string.Equals(
+                   currentAction,
+                   action,
+                   StringComparison.OrdinalIgnoreCase);
+    }
+
+    bool invoiceMenuActive =
+        IsActive("VyaparInvoiceImport");
+
+    string invoiceMenuExpanded =
+        invoiceMenuActive
+            ? "true"
+            : "false";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <meta name="theme-color"
+          content="#6d28d9" />
+
+    <title>@ViewData["Title"] - PO Tracker</title>
+
+    <link rel="stylesheet"
+          href="~/css/dashboard.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+
+    <!-- Load this after all existing global CSS files. -->
+    <link rel="stylesheet"
+          href="~/css/vibrant-premium.css"
+          asp-append-version="true" />
+
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css"
+          rel="stylesheet" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+<body>
+    <div class="vp-background" aria-hidden="true">
+        <span class="vp-orb vp-orb-one"></span>
+        <span class="vp-orb vp-orb-two"></span>
+        <span class="vp-orb vp-orb-three"></span>
+    </div>
+
+    <div class="app-shell">
+
+        <button class="sidebar-overlay"
+                id="sidebarOverlay"
+                type="button"
+                aria-label="Close navigation"></button>
+
+        <aside class="sidebar"
+               id="sidebar"
+               aria-label="Primary navigation">
+
+            <div class="sidebar-brand">
+                <a asp-controller="Dashboard"
+                   asp-action="Index"
+                   class="brand-link">
+
+                    <div class="brand-icon"
+                         aria-hidden="true">
+                        <span class="brand-icon-inner">P</span>
+                    </div>
+
+                    <div class="brand-copy">
+                        <h2>PO Tracker</h2>
+                        <span>Production Intelligence</span>
+                    </div>
+                </a>
+
+                <button class="sidebar-close"
+                        id="sidebarClose"
+                        type="button"
+                        aria-label="Close sidebar">
+                    ×
+                </button>
+            </div>
+
+            <div class="sidebar-status">
+                <span class="status-live-dot"></span>
+
+                <div>
+                    <strong>System online</strong>
+                    <span>All modules available</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+
+                <div class="nav-section-title">
+                    <span>Workspace</span>
+                </div>
+
+                <a asp-controller="Dashboard"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Dashboard") ? "active" : "")">
+                    <span class="nav-icon nav-violet">⌂</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+
+                <a asp-controller="Purchaser"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Purchaser") ? "active" : "")">
+                    <span class="nav-icon nav-pink">👥</span>
+                    <span class="nav-label">Purchasers</span>
+                </a>
+
+                <a asp-controller="PurchaseOrder"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("PurchaseOrder") ? "active" : "")">
+                    <span class="nav-icon nav-blue">▤</span>
+                    <span class="nav-label">Purchase Orders</span>
+                </a>
+
+                <a asp-controller="Material"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Material") ? "active" : "")">
+                    <span class="nav-icon nav-cyan">◆</span>
+                    <span class="nav-label">Materials</span>
+                </a>
+
+                <a asp-controller="PendingMaterial"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("PendingMaterial") ? "active" : "")">
+                    <span class="nav-icon nav-orange">⌛</span>
+                    <span class="nav-label">Pending Materials</span>
+                </a>
+
+                <div class="nav-section-title">
+                    <span>Import & Tracking</span>
+                </div>
+
+                <a asp-controller="POImport"
+                   asp-action="Upload"
+                   class="nav-link @(IsActive("POImport") ? "active" : "")">
+                    <span class="nav-icon nav-orange">⇩</span>
+                    <span class="nav-label">PO PDF Import</span>
+                </a>
+
+                <a asp-controller="Import"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Import") ? "active" : "")">
+                    <span class="nav-icon nav-green">⇧</span>
+                    <span class="nav-label">Material Excel Import</span>
+                </a>
+
+                <div class="nav-group @(invoiceMenuActive ? "active open" : "")"
+                     data-nav-group>
+
+                    <button type="button"
+                            class="nav-link nav-group-toggle @(invoiceMenuActive ? "active" : "")"
+                            data-nav-group-toggle
+                            aria-expanded="@invoiceMenuExpanded"
+                            aria-controls="invoiceManagementMenu">
+
+                        <span class="nav-icon nav-pink">₹</span>
+
+                        <span class="nav-label">
+                            Invoice Management
+                        </span>
+
+                        <span class="nav-chevron"
+                              aria-hidden="true">
+                            ›
+                        </span>
+                    </button>
+
+                    <div class="nav-submenu"
+                         id="invoiceManagementMenu"
+                         data-nav-submenu>
+
+                        <a asp-controller="VyaparInvoiceImport"
+                           asp-action="Upload"
+                           class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "Upload") ? "active" : "")">
+
+                            <span class="nav-subdot"
+                                  aria-hidden="true">
+                            </span>
+
+                            <span>Upload Invoice</span>
+                        </a>
+
+                        <a asp-controller="VyaparInvoiceImport"
+                           asp-action="InvoiceList"
+                           class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "InvoiceList") ? "active" : "")">
+
+                            <span class="nav-subdot"
+                                  aria-hidden="true">
+                            </span>
+
+                            <span>Imported Invoices</span>
+                        </a>
+
+                        <a asp-controller="VyaparInvoiceImport"
+                           asp-action="InvoiceStatus"
+                           class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "InvoiceStatus") ? "active" : "")">
+
+                            <span class="nav-subdot"
+                                  aria-hidden="true">
+                            </span>
+
+                            <span>Invoice Status</span>
+                        </a>
+
+                        <a asp-controller="VyaparInvoiceImport"
+                           asp-action="History"
+                           class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "History") || IsActiveAction("VyaparInvoiceImport", "ErrorReport") ? "active" : "")">
+
+                            <span class="nav-subdot"
+                                  aria-hidden="true">
+                            </span>
+
+                            <span>Import History</span>
+                        </a>
+                    </div>
+                </div>
+
+                <a asp-controller="Dispatch"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Dispatch") ? "active" : "")">
+                    <span class="nav-icon nav-orange">▰</span>
+                    <span class="nav-label">Dispatch</span>
+                </a>
+
+                <a asp-controller="ProcessQueue"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("ProcessQueue") ? "active" : "")">
+                    <span class="nav-icon nav-cyan">⚙</span>
+                    <span class="nav-label">Process Queue</span>
+                </a>
+
+                <div class="nav-section-title">
+                    <span>Stock & Documents</span>
+                </div>
+
+                <a asp-controller="Stock"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Stock") ? "active" : "")">
+                    <span class="nav-icon nav-green">▦</span>
+                    <span class="nav-label">Stocks</span>
+                </a>
+
+                <a asp-controller="Drawing"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Drawing") ? "active" : "")">
+                    <span class="nav-icon nav-violet">✧</span>
+                    <span class="nav-label">Drawings</span>
+                </a>
+
+                <a asp-controller="Calendar"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Calendar") ? "active" : "")">
+                    <span class="nav-icon nav-blue">□</span>
+                    <span class="nav-label">Calendar</span>
+                </a>
+
+                <a asp-controller="Alert"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Alert") ? "active" : "")">
+                    <span class="nav-icon nav-orange">!</span>
+                    <span class="nav-label">Alerts</span>
+                </a>
+
+                <a asp-controller="Notification"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Notification") ? "active" : "")">
+                    <span class="nav-icon nav-pink">●</span>
+                    <span class="nav-label">Notifications</span>
+                </a>
+
+                <div class="nav-section-title">
+                    <span>Administration</span>
+                </div>
+
+                <a asp-controller="Analytics"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Analytics") ? "active" : "")">
+                    <span class="nav-icon nav-cyan">↗</span>
+                    <span class="nav-label">Analytics</span>
+                </a>
+
+                <a asp-controller="Audit"
+                   asp-action="Index"
+                   class="nav-link @(IsActive("Audit") ? "active" : "")">
+                    <span class="nav-icon nav-blue">≡</span>
+                    <span class="nav-label">Audit Log</span>
+                </a>
+
+                <a asp-controller="Admin"
+                   asp-action="Settings"
+                   class="nav-link @(IsActive("Admin") ? "active" : "")">
+                    <span class="nav-icon nav-violet">⚙</span>
+                    <span class="nav-label">Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-user-avatar">
+                        @userInitial
+                    </div>
+
+                    <div class="sidebar-user-copy">
+                        <strong>@fullName</strong>
+                        <span>@role</span>
+                    </div>
+                </div>
+
+                <a asp-controller="Account"
+                   asp-action="Logout"
+                   class="logout-link"
+                   title="Logout">
+                    <span aria-hidden="true">↪</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-area">
+
+            <header class="topbar">
+
+                <div class="topbar-left">
+                    <button class="menu-btn"
+                            id="sidebarToggle"
+                            type="button"
+                            aria-controls="sidebar"
+                            aria-expanded="false"
+                            aria-label="Open navigation">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+
+                    <div class="page-title-block">
+                        <div class="page-eyebrow">
+                            Production workspace
+                        </div>
+
+                        <h1>@(ViewData["Title"] ?? "PO Tracker")</h1>
+
+                        <p>
+                            PO, invoice, dispatch and material tracking system
+                        </p>
+                    </div>
+                </div>
+
+                <div class="topbar-right">
+
+                    <a asp-controller="POImport"
+                       asp-action="Upload"
+                       class="top-action top-action-po">
+                        <span class="top-action-icon">＋</span>
+                        <span>Import PO</span>
+                    </a>
+
+                    <a asp-controller="VyaparInvoiceImport"
+                       asp-action="Upload"
+                       class="top-action top-action-invoice">
+                        <span class="top-action-icon">₹</span>
+                        <span>Invoice</span>
+                    </a>
+
+                    <div class="user-chip">
+                        <div class="user-avatar">
+                            @userInitial
+                        </div>
+
+                        <div class="user-chip-copy">
+                            <strong>@fullName</strong>
+                            <span>@role</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <section class="content-area">
+                <div class="content-container">
+                    @RenderBody()
+                </div>
+            </section>
+
+            <footer class="app-footer">
+                <span>PO Tracker</span>
+                <span class="footer-divider">•</span>
+                <span>Production Control System</span>
+            </footer>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        (() => {
+        "use strict";
+
+        const body =
+        document.body;
+
+        const sidebar =
+        document.getElementById(
+        "sidebar");
+
+        const sidebarToggle =
+        document.getElementById(
+        "sidebarToggle");
+
+        const sidebarClose =
+        document.getElementById(
+        "sidebarClose");
+
+        const sidebarOverlay =
+        document.getElementById(
+        "sidebarOverlay");
+
+        const navigationLinks =
+        sidebar?.querySelectorAll(
+        "a.nav-link, a.nav-sublink");
+
+        const groupToggles =
+        sidebar?.querySelectorAll(
+        "[data-nav-group-toggle]");
+
+        const openSidebar = () => {
+        body.classList.add(
+        "sidebar-open");
+
+        sidebarToggle?.setAttribute(
+        "aria-expanded",
+        "true");
+        };
+
+        const closeSidebar = () => {
+        body.classList.remove(
+        "sidebar-open");
+
+        sidebarToggle?.setAttribute(
+        "aria-expanded",
+        "false");
+        };
+
+        const setGroupState = (
+        group,
+        toggle,
+        expanded) => {
+
+        group.classList.toggle(
+        "open",
+        expanded);
+
+        toggle.setAttribute(
+        "aria-expanded",
+        expanded
+        ? "true"
+        : "false");
+        };
+
+        sidebarToggle?.addEventListener(
+        "click",
+        () => {
+        if (body.classList.contains(
+        "sidebar-open")) {
+        closeSidebar();
+        } else {
+        openSidebar();
+        }
+        });
+
+        sidebarClose?.addEventListener(
+        "click",
+        closeSidebar);
+
+        sidebarOverlay?.addEventListener(
+        "click",
+        closeSidebar);
+
+        groupToggles?.forEach((toggle) => {
+        toggle.addEventListener(
+        "click",
+        () => {
+        const group =
+        toggle.closest(
+        "[data-nav-group]");
+
+        if (!group) {
+        return;
+        }
+
+        const expanded =
+        toggle.getAttribute(
+        "aria-expanded") === "true";
+
+        setGroupState(
+        group,
+        toggle,
+        !expanded);
+        });
+        });
+
+        navigationLinks?.forEach((link) => {
+        link.addEventListener(
+        "click",
+        () => {
+        if (window.innerWidth <= 1100) {
+        closeSidebar();
+        }
+        });
+        });
+
+        document.addEventListener(
+        "keydown",
+        (event) => {
+        if (event.key === "Escape") {
+        closeSidebar();
+        }
+        });
+
+        window.addEventListener(
+        "resize",
+        () => {
+        if (window.innerWidth > 1100) {
+        closeSidebar();
+        }
+        });
+        })();
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

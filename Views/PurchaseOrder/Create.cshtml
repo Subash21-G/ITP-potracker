@@ -1,0 +1,404 @@
+﻿@model POTracker.Models.PurchaseOrder
+
+@{
+    ViewData["Title"] = "Create Purchase Order";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/purchase-order-form-premium.css"
+          asp-append-version="true" />
+}
+
+<div class="pof-page">
+
+    <section class="pof-header">
+        <div>
+            <span class="pof-kicker">
+                Purchase order management
+            </span>
+
+            <h2>Create Purchase Order</h2>
+
+            <p>
+                Add a new purchase order with the material handler,
+                PO date and PO received date.
+            </p>
+        </div>
+
+        <a asp-controller="PurchaseOrder"
+           asp-action="Index"
+           class="pof-btn pof-btn-light">
+            Back to Purchase Orders
+        </a>
+    </section>
+
+    <form asp-controller="PurchaseOrder"
+          asp-action="Create"
+          method="post"
+          enctype="multipart/form-data"
+          class="pof-form">
+
+        @Html.AntiForgeryToken()
+
+        <section class="pof-card">
+
+            <div class="pof-card-head">
+                <div>
+                    <span class="pof-step">
+                        Step 1
+                    </span>
+
+                    <h3>Purchase Order Information</h3>
+
+                    <p>
+                        Enter the PO number, responsible handler
+                        and both PO dates.
+                    </p>
+                </div>
+
+                <span class="pof-required-note">
+                    * Required fields
+                </span>
+            </div>
+
+            <div asp-validation-summary="ModelOnly"
+                 class="pof-validation-summary">
+            </div>
+
+            <div class="pof-grid">
+
+                <div class="pof-field pof-field-wide">
+                    <label asp-for="PONumber">
+                        PO Number
+                        <span>*</span>
+                    </label>
+
+                    <input asp-for="PONumber"
+                           type="text"
+                           placeholder="Example: 4518506838"
+                           autocomplete="off" />
+
+                    <small>
+                        Enter the purchase order number exactly
+                        as shown in the PO document.
+                    </small>
+
+                    <span asp-validation-for="PONumber"
+                          class="pof-field-error">
+                    </span>
+                </div>
+
+                <div class="pof-field pof-field-wide">
+                    <label asp-for="BuyerContactPerson">
+                        Handler / Person
+                        <span>*</span>
+                    </label>
+
+                    <input asp-for="BuyerContactPerson"
+                           type="text"
+                           placeholder="Example: Manoj S"
+                           autocomplete="off" />
+
+                    <small>
+                        Enter the particular person handling
+                        materials for this purchase order.
+                    </small>
+
+                    <span asp-validation-for="BuyerContactPerson"
+                          class="pof-field-error">
+                    </span>
+                </div>
+
+                <div class="pof-field">
+                    <label asp-for="PODate">
+                        PO Date
+                        <span>*</span>
+                    </label>
+
+                    <input asp-for="PODate"
+                           type="date" />
+
+                    <small>
+                        This is the
+                        <strong>Date of Order</strong>
+                        from the PO PDF.
+                    </small>
+
+                    <span asp-validation-for="PODate"
+                          class="pof-field-error">
+                    </span>
+                </div>
+
+                <div class="pof-field">
+                    <label asp-for="ReceivedDate">
+                        PO Received Date
+                        <span>*</span>
+                    </label>
+
+                    <input asp-for="ReceivedDate"
+                           type="date" />
+
+                    <small>
+                        This is the
+                        <strong>Date of emission</strong>
+                        from the PO PDF.
+                    </small>
+
+                    <span asp-validation-for="ReceivedDate"
+                          class="pof-field-error">
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section class="pof-card">
+
+            <div class="pof-card-head">
+                <div>
+                    <span class="pof-step">
+                        Step 2
+                    </span>
+
+                    <h3>Purchase Order PDF</h3>
+
+                    <p>
+                        Attach the original PO PDF for future reference.
+                    </p>
+                </div>
+
+                <span class="pof-optional-note">
+                    Optional
+                </span>
+            </div>
+
+            <div class="pof-upload-box">
+
+                <input type="file"
+                       id="pdfFile"
+                       name="pdfFile"
+                       accept=".pdf,application/pdf"
+                       class="pof-file-input" />
+
+                <label for="pdfFile"
+                       class="pof-upload-label">
+
+                    <span class="pof-upload-icon">
+                        PDF
+                    </span>
+
+                    <span class="pof-upload-copy">
+                        <strong>
+                            Choose Purchase Order PDF
+                        </strong>
+
+                        <small>
+                            Only PDF files are accepted.
+                        </small>
+                    </span>
+
+                    <span class="pof-upload-button">
+                        Browse File
+                    </span>
+                </label>
+
+                <div id="selectedFile"
+                     class="pof-selected-file">
+                    No file selected
+                </div>
+            </div>
+        </section>
+
+        <section class="pof-preview-card">
+
+            <div class="pof-preview-head">
+                <div>
+                    <span class="pof-kicker">
+                        Record preview
+                    </span>
+
+                    <h3>Purchase Order Summary</h3>
+                </div>
+            </div>
+
+            <div class="pof-preview-grid">
+
+                <article>
+                    <span>PO Number</span>
+
+                    <strong id="previewPONumber">
+                        Not entered
+                    </strong>
+                </article>
+
+                <article>
+                    <span>Handler / Person</span>
+
+                    <strong id="previewHandler">
+                        Not entered
+                    </strong>
+                </article>
+
+                <article>
+                    <span>PO Date</span>
+
+                    <strong id="previewPODate">
+                        Not selected
+                    </strong>
+                </article>
+
+                <article>
+                    <span>PO Received Date</span>
+
+                    <strong id="previewReceivedDate">
+                        Not selected
+                    </strong>
+                </article>
+            </div>
+        </section>
+
+        <div class="pof-submit-bar">
+
+            <div class="pof-submit-note">
+                PO Received Date will also be reflected
+                in all materials linked to this purchase order.
+            </div>
+
+            <div class="pof-submit-actions">
+
+                <a asp-controller="PurchaseOrder"
+                   asp-action="Index"
+                   class="pof-btn pof-btn-light">
+                    Cancel
+                </a>
+
+                <button type="submit"
+                        class="pof-btn pof-btn-primary">
+                    Save Purchase Order
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            const poNumberInput =
+                document.getElementById("PONumber");
+
+            const handlerInput =
+                document.getElementById("BuyerContactPerson");
+
+            const poDateInput =
+                document.getElementById("PODate");
+
+            const receivedDateInput =
+                document.getElementById("ReceivedDate");
+
+            const pdfInput =
+                document.getElementById("pdfFile");
+
+            const selectedFile =
+                document.getElementById("selectedFile");
+
+            const previewPONumber =
+                document.getElementById("previewPONumber");
+
+            const previewHandler =
+                document.getElementById("previewHandler");
+
+            const previewPODate =
+                document.getElementById("previewPODate");
+
+            const previewReceivedDate =
+                document.getElementById("previewReceivedDate");
+
+            function formatDate(value) {
+                if (!value) {
+                    return "Not selected";
+                }
+
+                const parts = value.split("-");
+
+                if (parts.length !== 3) {
+                    return value;
+                }
+
+                const date =
+                    new Date(
+                        Number(parts[0]),
+                        Number(parts[1]) - 1,
+                        Number(parts[2]));
+
+                return date.toLocaleDateString(
+                    "en-GB",
+                    {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric"
+                    });
+            }
+
+            function updatePreview() {
+                previewPONumber.textContent =
+                    poNumberInput.value.trim() ||
+                    "Not entered";
+
+                previewHandler.textContent =
+                    handlerInput.value.trim() ||
+                    "Not entered";
+
+                previewPODate.textContent =
+                    formatDate(poDateInput.value);
+
+                previewReceivedDate.textContent =
+                    formatDate(receivedDateInput.value);
+            }
+
+            poNumberInput.addEventListener(
+                "input",
+                updatePreview);
+
+            handlerInput.addEventListener(
+                "input",
+                updatePreview);
+
+            poDateInput.addEventListener(
+                "change",
+                updatePreview);
+
+            receivedDateInput.addEventListener(
+                "change",
+                updatePreview);
+
+            pdfInput.addEventListener(
+                "change",
+                function () {
+                    if (pdfInput.files.length === 0) {
+                        selectedFile.textContent =
+                            "No file selected";
+
+                        selectedFile.classList.remove(
+                            "has-file");
+
+                        return;
+                    }
+
+                    const file =
+                        pdfInput.files[0];
+
+                    selectedFile.textContent =
+                        file.name;
+
+                    selectedFile.classList.add(
+                        "has-file");
+                });
+
+            updatePreview();
+        })();
+    </script>
+}

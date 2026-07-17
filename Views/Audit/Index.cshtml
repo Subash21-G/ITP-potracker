@@ -1,0 +1,48 @@
+@model List<POTracker.Models.Material>
+
+@{
+    ViewData["Title"] = "Audit Log";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Audit Log</h1>
+        <p>Trace recent production, schedule and dispatch activity</p>
+    </div>
+    <a href="/Report/Index" class="btn-secondary">Reports</a>
+</div>
+
+<div class="premium-note">
+    This starter audit page is generated from recent material records. Add a dedicated AuditLog table later for full change history.
+</div>
+
+<div class="table-section">
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Material</th>
+                <th>PO</th>
+                <th>Action</th>
+                <th>Process</th>
+                <th>Dispatch</th>
+                <th>Owner</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.CreatedDate.ToString("dd-MM-yyyy hh:mm tt")</td>
+                    <td><strong>@item.MaterialNo</strong></td>
+                    <td>@(item.PurchaseOrder?.PONumber ?? "-")</td>
+                    <td>Material schedule updated</td>
+                    <td><span class="status-blue">@item.ProcessStatus</span></td>
+                    <td><span class="status-yellow">@item.DispatchStatus</span></td>
+                    <td>@(item.AssignedDashboard ?? "-")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

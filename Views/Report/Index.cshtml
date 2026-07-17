@@ -1,0 +1,100 @@
+﻿@{
+    ViewData["Title"] = "Reports";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var purchasers = ViewBag.Purchasers as List<POTracker.Models.Purchaser>;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Reports</h1>
+        <p>Filter, preview and export material reports</p>
+    </div>
+</div>
+
+<div class="form-container">
+
+    <form method="get" class="premium-form">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>From Delivery Date</label>
+                <input type="date" name="fromDate" />
+            </div>
+
+            <div class="form-group">
+                <label>To Delivery Date</label>
+                <input type="date" name="toDate" />
+            </div>
+
+            <div class="form-group">
+                <label>Process Status</label>
+                <select name="processStatus">
+                    <option value="">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="In Process">In Process</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Hold">Hold</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Dispatch Status</label>
+                <select name="dispatchStatus">
+                    <option value="">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Partial">Partial</option>
+                    <option value="Dispatched">Dispatched</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Purchaser</label>
+
+                <select name="purchaserId">
+                    <option value="">All Purchasers</option>
+
+                    @if (purchasers != null)
+                    {
+                        foreach (var p in purchasers)
+                        {
+                            <option value="@p.Id">
+                                @p.PurchaserName
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+
+            <button type="submit"
+                    formaction="/Report/Preview"
+                    class="btn-primary">
+                Preview Report
+            </button>
+
+            <button type="submit"
+                    formaction="/Report/MaterialsExcel"
+                    class="btn-secondary">
+                Export Excel
+            </button>
+
+            <button type="submit"
+                    formaction="/Report/MaterialsPdf"
+                    class="btn-secondary">
+                Export PDF
+            </button>
+
+            <a href="/Dashboard/Index" class="btn-secondary">
+                Back
+            </a>
+
+        </div>
+
+    </form>
+
+</div>

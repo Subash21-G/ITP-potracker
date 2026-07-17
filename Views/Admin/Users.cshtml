@@ -1,0 +1,43 @@
+@model List<POTracker.Models.AppUser>
+
+@{
+    ViewData["Title"] = "Users";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <h1>User & Role Management</h1>
+        <p>Admin, production, stores, dispatch and viewer access</p>
+    </div>
+    <a href="/Account/Register" class="btn-primary">+ Add User</a>
+</div>
+
+<div class="premium-grid">
+    <div class="metric-card"><span>Total Users</span><strong>@Model.Count</strong></div>
+    <div class="metric-card"><span>Admins</span><strong>@Model.Count(x => x.Role == "Admin")</strong></div>
+    <div class="metric-card"><span>Production</span><strong>@Model.Count(x => x.Role == "Production")</strong></div>
+    <div class="metric-card"><span>Viewers</span><strong>@Model.Count(x => x.Role == "Viewer")</strong></div>
+</div>
+
+<div class="table-section">
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Full Name</th>
+                <th>Username</th>
+                <th>Role</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model)
+            {
+                <tr>
+                    <td>@user.FullName</td>
+                    <td>@user.UserName</td>
+                    <td><span class="status-dark">@user.Role</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,103 @@
+﻿@model List<POTracker.Models.Material>
+
+@{
+    ViewData["Title"] = "Report Preview";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var fromDate = ViewBag.FromDate as DateTime?;
+    var toDate = ViewBag.ToDate as DateTime?;
+    var processStatus = ViewBag.ProcessStatus as string;
+    var dispatchStatus = ViewBag.DispatchStatus as string;
+    var purchaserId = ViewBag.PurchaserId as int?;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Report Preview</h1>
+        <p>Preview filtered material report before export</p>
+    </div>
+
+    <a href="/Report/Index" class="btn-secondary">
+        Back
+    </a>
+</div>
+
+<div class="form-actions">
+
+    <a class="btn-primary"
+       href="@Url.Action("MaterialsExcel", "Report", new
+       {
+           fromDate = fromDate?.ToString("yyyy-MM-dd"),
+           toDate = toDate?.ToString("yyyy-MM-dd"),
+           processStatus = processStatus,
+           dispatchStatus = dispatchStatus,
+           purchaserId = purchaserId
+       })">
+        Export Excel
+    </a>
+
+    <a class="btn-secondary"
+       href="@Url.Action("MaterialsPdf", "Report", new
+       {
+           fromDate = fromDate?.ToString("yyyy-MM-dd"),
+           toDate = toDate?.ToString("yyyy-MM-dd"),
+           processStatus = processStatus,
+           dispatchStatus = dispatchStatus,
+           purchaserId = purchaserId
+       })">
+        Export PDF
+    </a>
+
+</div>
+
+<div class="table-section">
+
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>PO No</th>
+                <th>Purchaser</th>
+                <th>Material No</th>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Delivery Date</th>
+                <th>Process</th>
+                <th>Dispatch</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                int i = 1;
+
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@i</td>
+                        <td>@(item.PurchaseOrder?.PONumber ?? "-")</td>
+                        <td>@(item.PurchaseOrder?.Purchaser?.PurchaserName ?? "-")</td>
+                        <td>@item.MaterialNo</td>
+                        <td>@(item.ShortDescription ?? "-")</td>
+                        <td>@item.Qty</td>
+                        <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@item.ProcessStatus</td>
+                        <td>@item.DispatchStatus</td>
+                    </tr>
+
+                    i++;
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="9" style="text-align:center; padding:25px;">
+                        No records found for selected filter.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+</div>

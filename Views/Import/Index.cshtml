@@ -1,0 +1,801 @@
+@{
+    ViewData["Title"] = "Material Excel Import";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .mi-page {
+        --mi-primary: #4f6df5;
+        --mi-primary-dark: #3853d8;
+        --mi-text: #172033;
+        --mi-muted: #68738a;
+        --mi-border: #dfe5f0;
+        --mi-surface: #ffffff;
+        --mi-bg: #f5f7fb;
+        --mi-success: #14845f;
+        --mi-danger: #c0392b;
+        --mi-warning: #ad6b00;
+        display: grid;
+        gap: 22px;
+        color: var(--mi-text);
+    }
+
+        .mi-page *,
+        .mi-page *::before,
+        .mi-page *::after {
+            box-sizing: border-box;
+        }
+
+    .mi-hero {
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: flex-start;
+        padding: 26px;
+        border: 1px solid #dce3f3;
+        border-radius: 20px;
+        background: radial-gradient(circle at 90% 15%, rgba(79,109,245,.18), transparent 32%), linear-gradient(135deg, #ffffff, #f5f7ff);
+        box-shadow: 0 12px 30px rgba(24, 39, 75, .07);
+    }
+
+    .mi-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        color: var(--mi-primary-dark);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .mi-hero h2 {
+        margin: 0;
+        font-size: clamp(24px, 3vw, 34px);
+        line-height: 1.15;
+    }
+
+    .mi-hero p {
+        max-width: 720px;
+        margin: 10px 0 0;
+        color: var(--mi-muted);
+        line-height: 1.7;
+    }
+
+    .mi-hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .mi-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 15px;
+        border: 1px solid transparent;
+        border-radius: 11px;
+        font: inherit;
+        font-weight: 750;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+
+        .mi-btn:hover {
+            transform: translateY(-1px);
+        }
+
+    .mi-btn-primary {
+        color: #fff;
+        background: linear-gradient(135deg, var(--mi-primary), var(--mi-primary-dark));
+        box-shadow: 0 8px 18px rgba(79, 109, 245, .22);
+    }
+
+    .mi-btn-secondary {
+        color: #27324a;
+        border-color: #d9e0ed;
+        background: #fff;
+    }
+
+    .mi-alert {
+        padding: 14px 16px;
+        border-radius: 12px;
+        font-weight: 650;
+        line-height: 1.5;
+    }
+
+    .mi-alert-danger {
+        color: #8f241a;
+        border: 1px solid #f0c4bf;
+        background: #fff1ef;
+    }
+
+    .mi-alert-success {
+        color: #0f6a4b;
+        border: 1px solid #b9e3d3;
+        background: #eefbf6;
+    }
+
+    .mi-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(300px, .75fr);
+        gap: 22px;
+    }
+
+    .mi-card {
+        border: 1px solid var(--mi-border);
+        border-radius: 18px;
+        background: var(--mi-surface);
+        box-shadow: 0 10px 28px rgba(24, 39, 75, .055);
+    }
+
+    .mi-card-head {
+        padding: 20px 22px 0;
+    }
+
+        .mi-card-head h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .mi-card-head p {
+            margin: 7px 0 0;
+            color: var(--mi-muted);
+            line-height: 1.6;
+        }
+
+    .mi-card-body {
+        padding: 20px 22px 22px;
+    }
+
+    .mi-drop-zone {
+        position: relative;
+        min-height: 250px;
+        display: grid;
+        place-items: center;
+        padding: 28px;
+        border: 2px dashed #bdc8de;
+        border-radius: 16px;
+        background: #fafbfe;
+        text-align: center;
+        transition: border-color .18s ease, background .18s ease, transform .18s ease;
+    }
+
+        .mi-drop-zone.is-dragging {
+            border-color: var(--mi-primary);
+            background: #f1f4ff;
+            transform: scale(1.005);
+        }
+
+        .mi-drop-zone.has-file {
+            border-style: solid;
+            border-color: #a9b8f7;
+            background: #f5f7ff;
+        }
+
+    .mi-file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .mi-upload-icon {
+        width: 58px;
+        height: 58px;
+        display: grid;
+        place-items: center;
+        margin: 0 auto 13px;
+        border-radius: 17px;
+        color: #fff;
+        background: linear-gradient(135deg, #6580ff, #3c56dc);
+        box-shadow: 0 10px 22px rgba(79,109,245,.25);
+        font-size: 25px;
+    }
+
+    .mi-drop-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    .mi-drop-copy {
+        margin: 7px 0 16px;
+        color: var(--mi-muted);
+        line-height: 1.55;
+    }
+
+    .mi-file-summary {
+        display: none;
+        width: min(100%, 520px);
+        margin-top: 18px;
+        padding: 13px 14px;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid #d6def1;
+        border-radius: 12px;
+        background: #fff;
+        text-align: left;
+    }
+
+        .mi-file-summary.is-visible {
+            display: flex;
+        }
+
+    .mi-file-badge {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        color: #16764f;
+        background: #e9f8f1;
+        font-weight: 900;
+    }
+
+    .mi-file-meta {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .mi-file-name {
+        overflow: hidden;
+        color: #27324a;
+        font-weight: 780;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .mi-file-size {
+        margin-top: 3px;
+        color: var(--mi-muted);
+        font-size: 12px;
+    }
+
+    .mi-remove-file {
+        border: 0;
+        background: transparent;
+        color: var(--mi-danger);
+        font-size: 13px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .mi-submit-row {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+
+        .mi-submit-row .mi-btn {
+            min-width: 150px;
+        }
+
+            .mi-submit-row .mi-btn:disabled {
+                transform: none;
+                opacity: .55;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+
+    .mi-loader {
+        width: 17px;
+        height: 17px;
+        display: none;
+        border: 2px solid rgba(255,255,255,.45);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: miSpin .7s linear infinite;
+    }
+
+    .is-submitting .mi-loader {
+        display: inline-block;
+    }
+
+    @@keyframes miSpin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .mi-rule-list {
+        display: grid;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .mi-rule {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 11px;
+        align-items: flex-start;
+        padding: 12px;
+        border: 1px solid #e5e9f2;
+        border-radius: 12px;
+        background: #fbfcfe;
+    }
+
+    .mi-rule-icon {
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        background: #eef1ff;
+    }
+
+    .mi-rule strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 14px;
+    }
+
+    .mi-rule span {
+        color: var(--mi-muted);
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    .mi-table-card {
+        overflow: hidden;
+    }
+
+    .mi-table-scroll {
+        overflow-x: auto;
+    }
+
+    .mi-table {
+        width: 100%;
+        min-width: 780px;
+        border-collapse: collapse;
+    }
+
+        .mi-table th,
+        .mi-table td {
+            padding: 13px 15px;
+            border-bottom: 1px solid #e7ebf3;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .mi-table th {
+            color: #526079;
+            background: #f7f8fc;
+            font-size: 11px;
+            font-weight: 850;
+            letter-spacing: .045em;
+            text-transform: uppercase;
+        }
+
+        .mi-table td {
+            color: #2b354b;
+            font-size: 13px;
+        }
+
+    .mi-required {
+        display: inline-flex;
+        padding: 4px 8px;
+        border-radius: 999px;
+        color: #8f241a;
+        background: #fff0ee;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .mi-optional {
+        display: inline-flex;
+        padding: 4px 8px;
+        border-radius: 999px;
+        color: #59667f;
+        background: #eef1f6;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .mi-note {
+        padding: 13px 15px;
+        border: 1px solid #f0d8a9;
+        border-radius: 12px;
+        color: #77500c;
+        background: #fff9ec;
+        font-size: 13px;
+        line-height: 1.55;
+    }
+
+    @@media (max-width: 1000px) {
+        .mi-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 720px) {
+        .mi-hero {
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .mi-hero-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+            .mi-hero-actions .mi-btn {
+                flex: 1 1 150px;
+            }
+
+        .mi-card-head,
+        .mi-card-body {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+
+        .mi-drop-zone {
+            min-height: 230px;
+            padding: 20px 14px;
+        }
+
+        .mi-submit-row {
+            flex-direction: column;
+        }
+
+            .mi-submit-row .mi-btn {
+                width: 100%;
+            }
+    }
+</style>
+
+<div class="mi-page">
+
+    <section class="mi-hero">
+        <div>
+            <div class="mi-kicker">⬆ Bulk data workflow</div>
+            <h2>Material Excel Import</h2>
+            <p>
+                Upload purchaser, purchase order, and material records in one Excel file.
+                The system validates every row before anything is saved to the database.
+            </p>
+        </div>
+
+        <div class="mi-hero-actions">
+            <a asp-controller="Import"
+               asp-action="DownloadTemplate"
+               class="mi-btn mi-btn-primary">
+                ⬇ Download Template
+            </a>
+
+            <a asp-controller="Material"
+               asp-action="Create"
+               class="mi-btn mi-btn-secondary">
+                ＋ Manual Entry
+            </a>
+        </div>
+    </section>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="mi-alert mi-alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="mi-alert mi-alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    <section class="mi-grid">
+
+        <article class="mi-card">
+            <div class="mi-card-head">
+                <h3>Upload Excel file</h3>
+                <p>Supported file types: .xlsx and .xlsm. Maximum file size: 20 MB.</p>
+            </div>
+
+            <div class="mi-card-body">
+                <form asp-controller="Import"
+                      asp-action="Upload"
+                      method="post"
+                      enctype="multipart/form-data"
+                      id="materialImportForm">
+
+                    @Html.AntiForgeryToken()
+
+                    <div class="mi-drop-zone" id="dropZone">
+                        <input type="file"
+                               name="excelFile"
+                               id="excelFile"
+                               class="mi-file-input"
+                               accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12" />
+
+                        <div>
+                            <div class="mi-upload-icon">↥</div>
+                            <p class="mi-drop-title">Drop your Excel file here</p>
+                            <p class="mi-drop-copy">
+                                Or browse from your computer. Use the official template to avoid
+                                missing-column and formatting errors.
+                            </p>
+
+                            <button type="button"
+                                    class="mi-btn mi-btn-secondary"
+                                    id="browseButton">
+                                Choose Excel File
+                            </button>
+
+                            <div class="mi-file-summary" id="fileSummary">
+                                <div class="mi-file-badge">XLS</div>
+
+                                <div class="mi-file-meta">
+                                    <div class="mi-file-name" id="fileName"></div>
+                                    <div class="mi-file-size" id="fileSize"></div>
+                                </div>
+
+                                <button type="button"
+                                        class="mi-remove-file"
+                                        id="removeFile">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mi-submit-row">
+                        <button type="submit"
+                                class="mi-btn mi-btn-primary"
+                                id="uploadButton"
+                                disabled>
+                            <span class="mi-loader"></span>
+                            <span id="uploadButtonText">Validate & Preview</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </article>
+
+        <aside class="mi-card">
+            <div class="mi-card-head">
+                <h3>Import validation</h3>
+                <p>Nothing is saved until the preview contains no errors.</p>
+            </div>
+
+            <div class="mi-card-body">
+                <ul class="mi-rule-list">
+                    <li class="mi-rule">
+                        <span class="mi-rule-icon">✓</span>
+                        <div>
+                            <strong>Maximum 2,000 rows</strong>
+                            <span>Blank rows are ignored automatically.</span>
+                        </div>
+                    </li>
+
+                    <li class="mi-rule">
+                        <span class="mi-rule-icon">#</span>
+                        <div>
+                            <strong>Duplicate protection</strong>
+                            <span>Repeated PO and line-item combinations are flagged.</span>
+                        </div>
+                    </li>
+
+                    <li class="mi-rule">
+                        <span class="mi-rule-icon">⚙</span>
+                        <div>
+                            <strong>Safe database transaction</strong>
+                            <span>A failed import does not leave partially saved records.</span>
+                        </div>
+                    </li>
+
+                    <li class="mi-rule">
+                        <span class="mi-rule-icon">↻</span>
+                        <div>
+                            <strong>Create or update</strong>
+                            <span>Existing materials preserve invoice and dispatch quantities.</span>
+                        </div>
+                    </li>
+                </ul>
+
+                <div class="mi-note" style="margin-top:16px;">
+                    Delete the sample row from the downloaded template before uploading your actual data.
+                </div>
+            </div>
+        </aside>
+    </section>
+
+    <section class="mi-card mi-table-card">
+        <div class="mi-card-head">
+            <h3>Excel columns</h3>
+            <p>Header spelling is flexible for spaces and symbols, but these field names are recommended.</p>
+        </div>
+
+        <div class="mi-card-body" style="padding-left:0;padding-right:0;padding-bottom:0;">
+            <div class="mi-table-scroll">
+                <table class="mi-table">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Requirement</th>
+                            <th>Example</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>PurchaserName</strong></td>
+                            <td><span class="mi-required">Required</span></td>
+                            <td>WEG Industries (India) PVT LTD</td>
+                            <td>Creates or selects the purchaser.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PONumber</strong></td>
+                            <td><span class="mi-required">Required</span></td>
+                            <td>4519000001</td>
+                            <td>Creates or updates the purchase order.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MaterialNo</strong></td>
+                            <td><span class="mi-required">Required</span></td>
+                            <td>15464033</td>
+                            <td>Material identification number.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Qty</strong></td>
+                            <td><span class="mi-required">Required</span></td>
+                            <td>2</td>
+                            <td>Must be greater than zero.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>LineItem</strong></td>
+                            <td><span class="mi-optional">Optional</span></td>
+                            <td>N-10</td>
+                            <td>Generated from the Excel row when left blank.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>DeliveryDate</strong></td>
+                            <td><span class="mi-optional">Optional</span></td>
+                            <td>31-07-2026</td>
+                            <td>Used to calculate the process start and alert date.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AssignedDashboard</strong></td>
+                            <td><span class="mi-optional">Optional</span></td>
+                            <td>Gokulnath</td>
+                            <td>Accepts Gokulnath, Paramaguru, Sam, Abdul, or Kalai.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ValueOfGoods / TotalValue</strong></td>
+                            <td><span class="mi-optional">Optional</span></td>
+                            <td>1531 / 3062</td>
+                            <td>Total is calculated from value × quantity when omitted.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const form = document.getElementById("materialImportForm");
+            const input = document.getElementById("excelFile");
+            const dropZone = document.getElementById("dropZone");
+            const browseButton = document.getElementById("browseButton");
+            const removeButton = document.getElementById("removeFile");
+            const summary = document.getElementById("fileSummary");
+            const fileName = document.getElementById("fileName");
+            const fileSize = document.getElementById("fileSize");
+            const uploadButton = document.getElementById("uploadButton");
+            const uploadButtonText = document.getElementById("uploadButtonText");
+
+            const maxSize = 20 * 1024 * 1024;
+            const allowedExtensions = [".xlsx", ".xlsm"];
+
+            function formatSize(bytes) {
+                if (bytes < 1024) return `${bytes} B`;
+                if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+                return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+            }
+
+            function extensionOf(name) {
+                const index = name.lastIndexOf(".");
+                return index >= 0 ? name.substring(index).toLowerCase() : "";
+            }
+
+            function clearFile() {
+                input.value = "";
+                summary.classList.remove("is-visible");
+                dropZone.classList.remove("has-file");
+                fileName.textContent = "";
+                fileSize.textContent = "";
+                uploadButton.disabled = true;
+            }
+
+            function showError(message) {
+                clearFile();
+                window.alert(message);
+            }
+
+            function handleFile(file) {
+                if (!file) {
+                    clearFile();
+                    return;
+                }
+
+                if (!allowedExtensions.includes(extensionOf(file.name))) {
+                    showError("Please select an .xlsx or .xlsm Excel file.");
+                    return;
+                }
+
+                if (file.size > maxSize) {
+                    showError("The selected file is larger than 20 MB.");
+                    return;
+                }
+
+                fileName.textContent = file.name;
+                fileSize.textContent = formatSize(file.size);
+                summary.classList.add("is-visible");
+                dropZone.classList.add("has-file");
+                uploadButton.disabled = false;
+            }
+
+            browseButton.addEventListener("click", () => input.click());
+
+            input.addEventListener("change", () => {
+                handleFile(input.files?.[0]);
+            });
+
+            removeButton.addEventListener("click", clearFile);
+
+            ["dragenter", "dragover"].forEach(eventName => {
+                dropZone.addEventListener(eventName, event => {
+                    event.preventDefault();
+                    dropZone.classList.add("is-dragging");
+                });
+            });
+
+            ["dragleave", "drop"].forEach(eventName => {
+                dropZone.addEventListener(eventName, event => {
+                    event.preventDefault();
+                    dropZone.classList.remove("is-dragging");
+                });
+            });
+
+            dropZone.addEventListener("drop", event => {
+                const file = event.dataTransfer?.files?.[0];
+
+                if (!file) return;
+
+                const transfer = new DataTransfer();
+                transfer.items.add(file);
+                input.files = transfer.files;
+                handleFile(file);
+            });
+
+            form.addEventListener("submit", event => {
+                if (!input.files?.length) {
+                    event.preventDefault();
+                    window.alert("Please choose an Excel file.");
+                    return;
+                }
+
+                uploadButton.disabled = true;
+                uploadButton.classList.add("is-submitting");
+                uploadButtonText.textContent = "Reading Excel...";
+            });
+        })();
+    </script>
+}

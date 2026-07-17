@@ -1,0 +1,70 @@
+@model List<POTracker.Models.Material>
+
+@{
+    ViewData["Title"] = "Drawings";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Drawing Revision Tracker</h1>
+        <p>Track drawing versions, uploads and update dates</p>
+    </div>
+    <a href="/Material/Create" class="btn-primary">+ Add Material</a>
+</div>
+
+<div class="premium-grid">
+    <div class="metric-card"><span>Total Materials</span><strong>@Model.Count</strong></div>
+    <div class="metric-card"><span>Missing Drawings</span><strong>@(ViewBag.MissingDrawings ?? 0)</strong></div>
+    <div class="metric-card"><span>Updated This Week</span><strong>@(ViewBag.UpdatedThisWeek ?? 0)</strong></div>
+    <div class="metric-card"><span>With Version</span><strong>@Model.Count(x => !string.IsNullOrWhiteSpace(x.DrawingVersion))</strong></div>
+</div>
+
+<div class="table-section">
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Material</th>
+                <th>PO</th>
+                <th>Drawing Version</th>
+                <th>Updated Date</th>
+                <th>Drawing File</th>
+                <th>PDF</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                bool hasDrawing = !string.IsNullOrWhiteSpace(item.DrawingFilePath);
+                <tr>
+                    <td><strong>@item.MaterialNo</strong><br />@(item.ShortDescription ?? "-")</td>
+                    <td>@(item.PurchaseOrder?.PONumber ?? "-")</td>
+                    <td>@(item.DrawingVersion ?? "-")</td>
+                    <td>@(item.DrawingUpdatedDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                    <td>
+                        @if (hasDrawing)
+                        {
+                            <a href="@item.DrawingFilePath" target="_blank">Open Drawing</a>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrWhiteSpace(item.PDFFilePath))
+                        {
+                            <a href="@item.PDFFilePath" target="_blank">Open PDF</a>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </td>
+                    <td><span class="@(hasDrawing ? "status-green" : "status-red")">@(hasDrawing ? "Available" : "Missing")</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

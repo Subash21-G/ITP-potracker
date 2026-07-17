@@ -1,0 +1,55 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.csproj.user
+
+# .NET build folders
+bin/
+obj/
+out/
+publish/
+artifacts/
+
+# Databases and backups
+*.db
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+*.bak
+
+# Private configuration
+appsettings.Production.json
+appsettings.Local.json
+secrets.json
+
+# Uploaded business documents
+wwwroot/uploads/
+PrivateUploads/
+uploads/
+
+# Customer documents and drawings
+*.pdf
+*.xls
+*.xlsx
+*.dwg
+*.dxf
+*.step
+*.stp
+
+# Logs and temporary files
+logs/
+*.log
+*.tmp
+*.temp
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+*.DotSettings.user

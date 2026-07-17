@@ -1,0 +1,802 @@
+﻿/* =========================================================
+   INVOICE ERROR REPORT — PREMIUM UI
+   Unique ier-* classes avoid conflicts with global styles.
+========================================================= */
+
+.ier-page {
+    display: grid;
+    gap: 18px;
+    color: var(--rp-text, #1b1b28);
+}
+
+    .ier-page *,
+    .ier-page *::before,
+    .ier-page *::after {
+        box-sizing: border-box;
+    }
+
+/* =========================================================
+   COMMON SURFACES
+========================================================= */
+
+.ier-header,
+.ier-card,
+.ier-summary-card,
+.ier-retry-card,
+.ier-no-results {
+    border: 1px solid var(--rp-border, #e2e3eb);
+    background: #ffffff;
+    box-shadow: var( --rp-shadow-sm, 0 6px 18px rgba(32, 28, 60, .08) );
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.ier-header {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 22px;
+    padding: 23px 24px;
+    border-radius: 20px;
+}
+
+    .ier-header::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 4px;
+        content: "";
+        background: linear-gradient( 90deg, #6d4aff, #d9468f, #0ea5a8 );
+    }
+
+.ier-kicker {
+    display: block;
+    color: #6d4aff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.ier-header h1 {
+    margin: 7px 0 0;
+    color: #1b1b28;
+    font-size: clamp(26px, 3vw, 34px);
+    font-weight: 700;
+    letter-spacing: -.025em;
+}
+
+.ier-header p {
+    max-width: 760px;
+    margin: 8px 0 0;
+    color: #747181;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+.ier-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.ier-btn {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease, filter .18s ease;
+}
+
+    .ier-btn:hover {
+        transform: translateY(-1px);
+    }
+
+.ier-btn-primary {
+    color: #ffffff;
+    background: linear-gradient( 135deg, #6d4aff, #d9468f );
+    box-shadow: 0 6px 16px rgba(109, 74, 255, .18);
+}
+
+    .ier-btn-primary:hover {
+        color: #ffffff;
+        filter: brightness(.98);
+    }
+
+.ier-btn-light {
+    border-color: #e2e3eb;
+    color: #3a3848;
+    background: #ffffff;
+}
+
+    .ier-btn-light:hover {
+        border-color: #6d4aff;
+        color: #4c2fd4;
+    }
+
+/* =========================================================
+   SUMMARY CARDS
+========================================================= */
+
+.ier-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ier-summary-card {
+    position: relative;
+    overflow: hidden;
+    min-height: 112px;
+    padding: 16px;
+    border-top: 3px solid currentColor;
+    border-radius: 15px;
+}
+
+    .ier-summary-card::after {
+        position: absolute;
+        right: -24px;
+        bottom: -34px;
+        width: 92px;
+        height: 92px;
+        content: "";
+        border-radius: 50%;
+        background: currentColor;
+        opacity: .045;
+    }
+
+    .ier-summary-card span,
+    .ier-summary-card strong,
+    .ier-summary-card small {
+        position: relative;
+        z-index: 1;
+        display: block;
+    }
+
+    .ier-summary-card span {
+        color: #6f6b7c;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    .ier-summary-card strong {
+        margin-top: 7px;
+        overflow-wrap: anywhere;
+        color: #1b1b28 !important;
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .ier-summary-card small {
+        margin-top: 6px;
+        color: #93909d;
+        font-size: 9px;
+        line-height: 1.45;
+    }
+
+.ier-summary-violet {
+    color: #6d4aff;
+}
+
+.ier-summary-green {
+    color: #15803d;
+}
+
+.ier-summary-amber {
+    color: #b26a00;
+}
+
+.ier-summary-red {
+    color: #c81e4b;
+}
+
+.ier-summary-neutral {
+    color: #6b7280;
+}
+
+.ier-summary-blue {
+    color: #2563eb;
+}
+
+/* =========================================================
+   TWO COLUMN LAYOUT
+========================================================= */
+
+.ier-two-column {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+}
+
+.ier-card {
+    overflow: hidden;
+    padding: 20px;
+    border-radius: 17px;
+}
+
+.ier-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ececf2;
+}
+
+    .ier-section-head h2 {
+        margin: 5px 0 0;
+        color: #1b1b28;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .ier-section-head p {
+        margin: 6px 0 0;
+        color: #85818e;
+        font-size: 10px;
+        line-height: 1.55;
+    }
+
+.ier-count-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 29px;
+    padding: 5px 9px;
+    border: 1px solid #d9ceff;
+    border-radius: 999px;
+    color: #4c2fd4;
+    background: #f0ecff;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.ier-progress-list {
+    display: grid;
+    gap: 16px;
+    margin-top: 17px;
+}
+
+.ier-progress-row {
+    display: grid;
+    gap: 7px;
+}
+
+.ier-progress-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+    .ier-progress-label span {
+        color: #5e5a68;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    .ier-progress-label strong {
+        color: #1b1b28;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+.ier-progress-track {
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #ececf2;
+}
+
+    .ier-progress-track i {
+        height: 100%;
+        display: block;
+        border-radius: inherit;
+    }
+
+.ier-progress-green {
+    background: linear-gradient( 90deg, #15803d, #22c55e );
+}
+
+.ier-progress-amber {
+    background: linear-gradient( 90deg, #b26a00, #f59e0b );
+}
+
+.ier-progress-red {
+    background: linear-gradient( 90deg, #6d4aff, #d9468f );
+}
+
+/* =========================================================
+   GUIDANCE
+========================================================= */
+
+.ier-guidance-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.ier-guidance {
+    padding: 12px 13px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+}
+
+    .ier-guidance strong {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .ier-guidance p {
+        margin: 5px 0 0;
+        font-size: 9px;
+        line-height: 1.55;
+    }
+
+.ier-guidance-success {
+    border-color: #bfe8cf;
+    color: #166534;
+    background: #f3fff7;
+}
+
+.ier-guidance-warning {
+    border-color: #efd6a3;
+    color: #9a5b00;
+    background: #fff7e6;
+}
+
+.ier-guidance-danger {
+    border-color: #d9ceff;
+    color: #4c2fd4;
+    background: #f5f2ff;
+}
+
+.ier-guidance-neutral {
+    border-color: #dcdde4;
+    color: #5f5b68;
+    background: #f6f6f8;
+}
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+.ier-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 240px) auto;
+    gap: 12px;
+    align-items: end;
+    margin-top: 16px;
+}
+
+.ier-filter-field label {
+    display: block;
+    margin-bottom: 6px;
+    color: #555263;
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.ier-filter-field input,
+.ier-filter-field select {
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 11px;
+    border: 1px solid #e2e3eb;
+    border-radius: 10px;
+    color: #1b1b28;
+    background: #ffffff;
+    outline: none;
+    font-size: 11px;
+}
+
+    .ier-filter-field input::placeholder {
+        color: #aaa6b1;
+    }
+
+    .ier-filter-field input:focus,
+    .ier-filter-field select:focus {
+        border-color: #6d4aff;
+        box-shadow: 0 0 0 3px rgba(109, 74, 255, .10);
+    }
+
+.ier-filter-actions {
+    display: flex;
+    align-items: end;
+}
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.ier-empty-state {
+    padding: 52px 20px;
+    text-align: center;
+}
+
+.ier-empty-icon {
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto;
+    border-radius: 17px;
+    color: #ffffff;
+    background: linear-gradient( 135deg, #6d4aff, #d9468f );
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.ier-empty-state h3 {
+    margin: 14px 0 0;
+    color: #1b1b28;
+    font-size: 17px;
+}
+
+.ier-empty-state p {
+    margin: 6px 0 16px;
+    color: #85818e;
+    font-size: 11px;
+}
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.ier-table-wrap {
+    margin-top: 16px;
+    overflow: auto;
+    border: 1px solid #ececf2;
+    border-radius: 12px;
+}
+
+.ier-table {
+    width: 100%;
+    min-width: 1500px;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+    .ier-table th,
+    .ier-table td {
+        padding: 11px 12px;
+        border-bottom: 1px solid #ececf2;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    .ier-table th {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        color: #555263;
+        background: #f5f4fa;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: .045em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .ier-table td {
+        color: #3a3848;
+        background: #ffffff;
+        font-size: 10px;
+    }
+
+    .ier-table tbody tr:hover td {
+        background: #faf9ff;
+    }
+
+    .ier-table tfoot th {
+        color: #34313f;
+        background: #fbfbfd;
+    }
+
+.ier-text-right {
+    text-align: right !important;
+}
+
+/* =========================================================
+   TABLE CONTENT
+========================================================= */
+
+.ier-po-number,
+.ier-material-number {
+    display: block;
+    color: #4c2fd4;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.ier-line-item {
+    display: inline-flex;
+    padding: 4px 7px;
+    border-radius: 7px;
+    color: #555263;
+    background: #f1f1f5;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.ier-invoice-number {
+    color: #2563eb;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.ier-qty {
+    display: block;
+    color: #15803d;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.ier-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 7px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.ier-status-success {
+    border-color: #bfe8cf;
+    color: #15803d;
+    background: #ecfdf3;
+}
+
+.ier-status-warning {
+    border-color: #efd6a3;
+    color: #9a5b00;
+    background: #fff7e6;
+}
+
+.ier-status-danger {
+    border-color: #d9ceff;
+    color: #4c2fd4;
+    background: #f0ecff;
+}
+
+.ier-status-neutral {
+    border-color: #dcdde4;
+    color: #6b7280;
+    background: #f4f4f7;
+}
+
+.ier-message {
+    display: block;
+    max-width: 360px;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.ier-message-success {
+    color: #15803d;
+}
+
+.ier-message-warning {
+    color: #9a5b00;
+}
+
+.ier-message-danger {
+    color: #4c2fd4;
+}
+
+.ier-message-neutral {
+    color: #6b7280;
+}
+
+.ier-action-link {
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+    border: 1px solid #d9ceff;
+    border-radius: 8px;
+    color: #4c2fd4;
+    background: #f0ecff;
+    font-size: 9px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+    .ier-action-link:hover {
+        color: #ffffff;
+        background: #6d4aff;
+    }
+
+.ier-muted {
+    color: #9995a1;
+    font-size: 9px;
+    font-style: italic;
+    white-space: nowrap;
+}
+
+/* =========================================================
+   NO RESULTS
+========================================================= */
+
+.ier-no-results {
+    margin-top: 14px;
+    padding: 13px 14px;
+    border-color: #efd6a3;
+    border-radius: 10px;
+    color: #9a5b00;
+    background: #fff7e6;
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* =========================================================
+   RETRY CARD
+========================================================= */
+
+.ier-retry-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-color: #d9ceff;
+    border-radius: 15px;
+    background: #faf8ff;
+}
+
+.ier-retry-icon {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    color: #ffffff;
+    background: linear-gradient( 135deg, #6d4aff, #d9468f );
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.ier-retry-card strong {
+    display: block;
+    color: #4c2fd4;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ier-retry-card p {
+    margin: 5px 0 0;
+    color: #6f6b7c;
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+.ier-btn:focus-visible,
+.ier-filter-field input:focus-visible,
+.ier-filter-field select:focus-visible,
+.ier-action-link:focus-visible {
+    outline: 2px solid #6d4aff;
+    outline-offset: 2px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1500px) {
+    .ier-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1100px) {
+    .ier-two-column {
+        grid-template-columns: 1fr;
+    }
+
+    .ier-filter-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+    }
+
+    .ier-filter-actions {
+        grid-column: 1 / -1;
+    }
+
+    .ier-retry-card {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+        .ier-retry-card .ier-btn {
+            grid-column: 1 / -1;
+            justify-self: start;
+        }
+}
+
+@media (max-width: 760px) {
+    .ier-header,
+    .ier-section-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .ier-header-actions {
+        width: 100%;
+    }
+
+        .ier-header-actions .ier-btn {
+            flex: 1 1 150px;
+        }
+
+    .ier-filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ier-filter-actions {
+        grid-column: auto;
+    }
+
+    .ier-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .ier-card {
+        padding: 16px;
+    }
+
+    .ier-header {
+        padding: 20px;
+    }
+
+    .ier-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ier-header-actions {
+        flex-direction: column;
+    }
+
+        .ier-header-actions .ier-btn {
+            width: 100%;
+        }
+
+    .ier-retry-card {
+        grid-template-columns: 1fr;
+    }
+}

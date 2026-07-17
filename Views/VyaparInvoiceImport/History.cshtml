@@ -1,0 +1,582 @@
+﻿@model List<POTracker.Models.VyaparInvoiceImportBatch>
+
+@{
+    ViewData["Title"] = "Invoice Import History";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var batches =
+        Model ??
+        new List<POTracker.Models.VyaparInvoiceImportBatch>();
+
+    bool IsSuccess(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        return string.Equals(
+            row.Status,
+            "Success",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    bool IsDeleted(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        return string.Equals(
+            row.Status,
+            "Deleted",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    bool IsPending(
+        POTracker.Models.VyaparInvoiceImportRow row)
+    {
+        // Old Failed records are also displayed as Pending.
+        return string.Equals(
+                   row.Status,
+                   "Pending",
+                   StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(
+                   row.Status,
+                   "Failed",
+                   StringComparison.OrdinalIgnoreCase);
+    }
+
+    int CountRows(
+        POTracker.Models.VyaparInvoiceImportBatch batch,
+        Func<POTracker.Models.VyaparInvoiceImportRow, bool> predicate)
+    {
+        return (batch.Rows ??
+                new List<POTracker.Models.VyaparInvoiceImportRow>())
+            .Count(predicate);
+    }
+
+    int BatchTotal(
+        POTracker.Models.VyaparInvoiceImportBatch batch)
+    {
+        var count =
+            (batch.Rows ??
+             new List<POTracker.Models.VyaparInvoiceImportRow>())
+            .Count;
+
+        return count > 0
+            ? count
+            : batch.TotalRows;
+    }
+
+    int totalBatches =
+        batches.Count;
+
+    int totalRows =
+        batches.Sum(BatchTotal);
+
+    int successRows =
+        batches.Sum(x =>
+            CountRows(x, IsSuccess));
+
+    int pendingRows =
+        batches.Sum(x =>
+            CountRows(x, IsPending));
+
+    int deletedRows =
+        batches.Sum(x =>
+            CountRows(x, IsDeleted));
+
+    int successPercent =
+        GetPercent(successRows, totalRows);
+
+    int pendingPercent =
+        GetPercent(pendingRows, totalRows);
+}
+
+<div class="page-header">
+    <div>
+        <h1>Invoice Import History</h1>
+
+        <p>
+            Track successful, pending and deleted invoice rows.
+            Failed status is not used.
+        </p>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a asp-action="Upload"
+           asp-controller="VyaparInvoiceImport"
+           class="btn-primary">
+            Upload Invoice
+        </a>
+
+        <a asp-action="InvoiceList"
+           asp-controller="VyaparInvoiceImport"
+           class="btn-secondary">
+            Manage Invoices
+        </a>
+
+        <a asp-action="InvoiceStatus"
+           asp-controller="VyaparInvoiceImport"
+           class="btn-secondary">
+            Invoice Status
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["Success"]
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+<div class="premium-grid">
+    <div class="metric-card">
+        <span>Total Imports</span>
+        <strong>@totalBatches</strong>
+    </div>
+
+    <div class="metric-card">
+        <span>Total Rows</span>
+        <strong>@totalRows</strong>
+    </div>
+
+    <div class="metric-card">
+        <span>Success Rows</span>
+        <strong>@successRows</strong>
+    </div>
+
+    <div class="metric-card">
+        <span>Pending Rows</span>
+        <strong>@pendingRows</strong>
+    </div>
+
+    <div class="metric-card">
+        <span>Deleted Rows</span>
+        <strong>@deletedRows</strong>
+    </div>
+</div>
+
+<div class="premium-split">
+    <div class="premium-panel">
+        <h2>Import Overview</h2>
+
+        <div class="progress-row">
+            <span>Success</span>
+
+            <div class="bar">
+                <i style="width:@successPercent%"></i>
+            </div>
+
+            <strong>@successPercent%</strong>
+        </div>
+
+        <div class="progress-row">
+            <span>Pending</span>
+
+            <div class="bar">
+                <i style="width:@pendingPercent%"></i>
+            </div>
+
+            <strong>@pendingPercent%</strong>
+        </div>
+    </div>
+
+    <div class="premium-panel">
+        <h2>Status Meaning</h2>
+
+        <div class="premium-note"
+             style="border-color:#bbf7d0;background:#f0fdf4;">
+            <strong>Success:</strong>
+            PO, material and line item matched.
+            InvoiceQty and DispatchQty were updated.
+        </div>
+
+        <div class="premium-note"
+             style="margin-top:10px;border-color:#fde68a;background:#fffbeb;">
+            <strong>Pending:</strong>
+            PO missing, material missing, line mismatch, duplicate,
+            invalid quantity or no safe database match. The exact
+            reason is shown in View Report.
+        </div>
+
+        <div class="premium-note"
+             style="margin-top:10px;">
+            <strong>Deleted:</strong>
+            The invoice was deleted later and linked quantities
+            were restored.
+        </div>
+    </div>
+</div>
+
+<div class="table-section">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:16px;flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0;">
+                Import Batch List
+            </h2>
+
+            <p style="margin:6px 0 0;color:#64748b;font-weight:600;">
+                Every unsuccessful invoice row remains Pending.
+            </p>
+        </div>
+
+        <span class="status-badge">
+            @totalBatches Batch(es)
+        </span>
+    </div>
+
+    @if (batches.Count == 0)
+    {
+        <div class="alert alert-info">
+            No invoice import history found.
+        </div>
+    }
+    else
+    {
+        <form asp-action="DeleteSelectedHistory"
+              asp-controller="VyaparInvoiceImport"
+              method="post"
+              id="bulkHistoryDeleteForm"
+              style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;padding:13px 15px;border:1px solid #fecaca;border-radius:12px;background:#fff7f7;flex-wrap:wrap;">
+            @Html.AntiForgeryToken()
+
+            <div>
+                <strong><span id="selectedHistoryCount">0</span> selected</strong>
+                <span style="margin-left:8px;color:#64748b;font-size:13px;">Maximum 200 history records</span>
+            </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="btn-secondary" id="selectAllHistory">Select All</button>
+                <button type="button" class="btn-secondary" id="clearHistorySelection">Clear</button>
+                <button type="submit" class="action-delete" id="deleteSelectedHistory" style="border:0;cursor:pointer;padding:10px 14px;" disabled>
+                    Delete Selected History
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th style="width:48px;">
+                            <input type="checkbox" id="historyHeaderCheckbox" aria-label="Select all history records" />
+                        </th>
+                        <th>#</th>
+                        <th>File Name</th>
+                        <th>Import Date</th>
+                        <th>Total</th>
+                        <th>Success</th>
+                        <th>Pending</th>
+                        <th>Deleted</th>
+                        <th>Success %</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @{
+                        int index = 1;
+                    }
+
+                    @foreach (var batch in batches)
+                    {
+                        int batchTotal =
+                            BatchTotal(batch);
+
+                        int batchSuccess =
+                            CountRows(batch, IsSuccess);
+
+                        int batchPending =
+                            CountRows(batch, IsPending);
+
+                        int batchDeleted =
+                            CountRows(batch, IsDeleted);
+
+                        int batchSuccessPercent =
+                            GetPercent(
+                                batchSuccess,
+                                batchTotal);
+
+                        string batchStatus;
+                        string statusClass;
+
+                        if (batchTotal == 0)
+                        {
+                            batchStatus = "Empty";
+                            statusClass = "status-gray";
+                        }
+                        else if (batchDeleted == batchTotal)
+                        {
+                            batchStatus = "Deleted";
+                            statusClass = "status-gray";
+                        }
+                        else if (batchSuccess == batchTotal)
+                        {
+                            batchStatus = "Completed";
+                            statusClass = "status-green";
+                        }
+                        else if (batchPending == batchTotal)
+                        {
+                            batchStatus = "Pending";
+                            statusClass = "status-blue";
+                        }
+                        else
+                        {
+                            batchStatus = "Partial";
+                            statusClass = "status-blue";
+                        }
+
+                        string deleteConfirmation =
+                            $"Delete history for '{batch.FileName}'? " +
+                            "Only history records will be deleted.";
+
+                        <tr>
+                            <td>
+                                <input type="checkbox"
+                                       class="history-row-checkbox"
+                                       name="selectedIds"
+                                       value="@batch.Id"
+                                       form="bulkHistoryDeleteForm"
+                                       aria-label="Select history @batch.FileName" />
+                            </td>
+                            <td>@index</td>
+
+                            <td class="fw-bold">
+                                @batch.FileName
+                            </td>
+
+                            <td>
+                                @batch.ImportDate.ToString(
+                                    "dd-MM-yyyy hh:mm tt")
+                            </td>
+
+                            <td>
+                                <span class="status-gray">
+                                    @batchTotal
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="status-green">
+                                    @batchSuccess
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="status-blue">
+                                    @batchPending
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="status-gray">
+                                    @batchDeleted
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="progress-row"
+                                     style="grid-template-columns:1fr 45px;padding:0;min-width:150px;">
+                                    <div class="bar">
+                                        <i style="width:@batchSuccessPercent%"></i>
+                                    </div>
+
+                                    <strong>
+                                        @batchSuccessPercent%
+                                    </strong>
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="@statusClass">
+                                    @batchStatus
+                                </span>
+                            </td>
+
+                            <td>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                    <a asp-action="ErrorReport"
+                                       asp-controller="VyaparInvoiceImport"
+                                       asp-route-batchId="@batch.Id"
+                                       class="action-edit">
+                                        View Report
+                                    </a>
+
+                                    <form asp-action="DeleteHistory"
+                                          asp-controller="VyaparInvoiceImport"
+                                          method="post"
+                                          class="invoice-history-delete-form"
+                                          style="display:inline;margin:0;"
+                                          data-confirm-message="@deleteConfirmation">
+
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@batch.Id" />
+
+                                        <button type="submit"
+                                                class="action-delete invoice-history-delete-button"
+                                                style="border:0;cursor:pointer;">
+                                            Delete History
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+
+                        index++;
+                    }
+                </tbody>
+
+                <tfoot>
+                    <tr>
+                        <th colspan="4"
+                            style="text-align:right;">
+                            Total
+                        </th>
+
+                        <th>@totalRows</th>
+                        <th>@successRows</th>
+                        <th>@pendingRows</th>
+                        <th>@deletedRows</th>
+                        <th>@successPercent%</th>
+                        <th colspan="2"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            "use strict";
+
+            const rowCheckboxes = Array.from(
+                document.querySelectorAll(".history-row-checkbox"));
+            const headerCheckbox =
+                document.getElementById("historyHeaderCheckbox");
+            const selectedCount =
+                document.getElementById("selectedHistoryCount");
+            const deleteSelectedButton =
+                document.getElementById("deleteSelectedHistory");
+            const bulkDeleteForm =
+                document.getElementById("bulkHistoryDeleteForm");
+            const maximumSelection = 200;
+
+            const refreshSelection = () => {
+                const count = rowCheckboxes.filter(x => x.checked).length;
+                if (selectedCount) selectedCount.textContent = count;
+                if (deleteSelectedButton) deleteSelectedButton.disabled = count === 0;
+                if (headerCheckbox) {
+                    headerCheckbox.checked = rowCheckboxes.length > 0 && count === rowCheckboxes.length;
+                    headerCheckbox.indeterminate = count > 0 && count < rowCheckboxes.length;
+                }
+            };
+
+            rowCheckboxes.forEach((checkbox) => {
+                checkbox.addEventListener("change", () => {
+                    const count = rowCheckboxes.filter(x => x.checked).length;
+                    if (count > maximumSelection) {
+                        checkbox.checked = false;
+                        window.alert("You can select a maximum of 200 history records.");
+                    }
+                    refreshSelection();
+                });
+            });
+
+            const selectFirstTwoHundred = () => {
+                rowCheckboxes.forEach((checkbox, index) => {
+                    checkbox.checked = index < maximumSelection;
+                });
+                if (rowCheckboxes.length > maximumSelection) {
+                    window.alert("Only the first 200 history records were selected.");
+                }
+                refreshSelection();
+            };
+
+            headerCheckbox?.addEventListener("change", () => {
+                if (headerCheckbox.checked) selectFirstTwoHundred();
+                else {
+                    rowCheckboxes.forEach(x => x.checked = false);
+                    refreshSelection();
+                }
+            });
+
+            document.getElementById("selectAllHistory")
+                ?.addEventListener("click", selectFirstTwoHundred);
+
+            document.getElementById("clearHistorySelection")
+                ?.addEventListener("click", () => {
+                    rowCheckboxes.forEach(x => x.checked = false);
+                    refreshSelection();
+                });
+
+            bulkDeleteForm?.addEventListener("submit", (event) => {
+                const count = rowCheckboxes.filter(x => x.checked).length;
+                if (count === 0 || count > maximumSelection) {
+                    event.preventDefault();
+                    window.alert("Select between 1 and 200 history records.");
+                    return;
+                }
+                if (!window.confirm(`Delete ${count} selected history record(s)? Actual invoices will not be deleted.`)) {
+                    event.preventDefault();
+                    return;
+                }
+                if (deleteSelectedButton) {
+                    deleteSelectedButton.disabled = true;
+                    deleteSelectedButton.textContent = "Deleting...";
+                }
+            });
+
+            refreshSelection();
+
+            document
+                .querySelectorAll(
+                    ".invoice-history-delete-form")
+                .forEach((form) => {
+                    form.addEventListener(
+                        "submit",
+                        (event) => {
+                            const message =
+                                form.dataset.confirmMessage ??
+                                "Delete this history?";
+
+                            if (!window.confirm(message)) {
+                                event.preventDefault();
+                                return;
+                            }
+
+                            const button =
+                                form.querySelector(
+                                    ".invoice-history-delete-button");
+
+                            if (button) {
+                                button.disabled = true;
+                                button.textContent = "Deleting...";
+                            }
+                        });
+                });
+        })();
+    </script>
+}
+
+@functions {
+    int GetPercent(int value, int total)
+    {
+        if (total <= 0)
+        {
+            return 0;
+        }
+
+        return Convert.ToInt32(
+            Math.Round(
+                (decimal)value / total * 100));
+    }
+}

@@ -1,0 +1,91 @@
+﻿@{
+    Layout = null;
+    var enteredUserName = ViewBag.UserName as string ?? string.Empty;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - PO Tracker</title>
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-left">
+            <div class="logo-box">📋</div>
+            <h1>PO Tracker</h1>
+            <p>Purchase Order, Material, Stock, Invoice, Dispatch and Alert Management System</p>
+        </div>
+
+        <div class="auth-right">
+            <div class="auth-card">
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Login to continue</p>
+
+                @if (ViewBag.Error != null)
+                {
+                    <div class="error" role="alert">@ViewBag.Error</div>
+                }
+
+                @if (TempData["Success"] != null)
+                {
+                    <div class="success" role="status">@TempData["Success"]</div>
+                }
+
+                <form asp-action="Login" asp-controller="Account" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <label for="userName">Username</label>
+                    <input type="text"
+                           id="userName"
+                           name="userName"
+                           value="@enteredUserName"
+                           placeholder="Enter username"
+                           autocomplete="username"
+                           maxlength="50"
+                           autofocus
+                           required />
+
+                    <label for="password">Password</label>
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           placeholder="Enter password"
+                           autocomplete="current-password"
+                           required />
+
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+                        <input type="checkbox"
+                               id="showPassword"
+                               style="width:auto;margin:0;" />
+                        <label for="showPassword" style="margin:0;cursor:pointer;">
+                            Show password
+                        </label>
+                    </div>
+
+                    <button type="submit">Login</button>
+                </form>
+
+                <p class="bottom-text">
+                    Don’t have an account?
+                    <a asp-action="Register" asp-controller="Account">Register</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+            (() => {
+                const passwordInput = document.getElementById("password");
+                const showPassword = document.getElementById("showPassword");
+                showPassword?.addEventListener("change", () => {
+                    if (passwordInput) {
+                        passwordInput.type = showPassword.checked ? "text" : "password";
+                    }
+                });
+            })();
+    </script>
+</body>
+</html>

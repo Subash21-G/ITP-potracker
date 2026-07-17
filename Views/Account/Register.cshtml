@@ -1,0 +1,102 @@
+﻿@model POTracker.Models.AppUser
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - PO Tracker</title>
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-left">
+            <div class="logo-box">📋</div>
+            <h1>PO Tracker</h1>
+            <p>Create an account for your production and purchase-order tracking system.</p>
+        </div>
+
+        <div class="auth-right">
+            <div class="auth-card">
+                <h2>Create Account</h2>
+                <p class="subtitle">Register to start using PO Tracker</p>
+
+                @if (ViewBag.Error != null)
+                {
+                    <div class="error" role="alert">@ViewBag.Error</div>
+                }
+
+                <form asp-action="Register" asp-controller="Account" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <label asp-for="FullName">Full Name</label>
+                    <input asp-for="FullName"
+                           placeholder="Enter full name"
+                           autocomplete="name"
+                           maxlength="100"
+                           required />
+                    <span asp-validation-for="FullName" class="error"></span>
+
+                    <label asp-for="UserName">Username</label>
+                    <input asp-for="UserName"
+                           placeholder="Enter username"
+                           autocomplete="username"
+                           minlength="4"
+                           maxlength="50"
+                           pattern="[A-Za-z0-9._-]+"
+                           title="Use only letters, numbers, dot, underscore or hyphen"
+                           required />
+                    <span asp-validation-for="UserName" class="error"></span>
+
+                    <label for="password">Password</label>
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           placeholder="Enter secure password"
+                           autocomplete="new-password"
+                           minlength="8"
+                           required />
+
+                    <small style="display:block;margin-top:6px;color:#64748b;line-height:1.5;">
+                        Minimum 8 characters with uppercase, lowercase and a number.
+                    </small>
+
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+                        <input type="checkbox"
+                               id="showPassword"
+                               style="width:auto;margin:0;" />
+                        <label for="showPassword" style="margin:0;cursor:pointer;">
+                            Show password
+                        </label>
+                    </div>
+
+                    <button type="submit">Register</button>
+                </form>
+
+                <p class="bottom-text">
+                    Already have an account?
+                    <a asp-action="Login" asp-controller="Account">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+            (() => {
+                const passwordInput = document.getElementById("password");
+                const showPassword = document.getElementById("showPassword");
+                showPassword?.addEventListener("change", () => {
+                    if (passwordInput) {
+                        passwordInput.type = showPassword.checked ? "text" : "password";
+                    }
+                });
+            })();
+    </script>
+</body>
+</html>

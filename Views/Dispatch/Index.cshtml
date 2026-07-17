@@ -1,0 +1,931 @@
+@model List<POTracker.Models.Material>
+
+@{
+    ViewData["Title"] = "Dispatch";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var materials =
+        Model ?? new List<POTracker.Models.Material>();
+
+    int totalMaterials =
+        materials.Count;
+
+    int dispatched =
+        materials.Count(x =>
+            string.Equals(
+                x.DispatchStatus,
+                "Dispatched",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                x.DispatchStatus,
+                "Completed",
+                StringComparison.OrdinalIgnoreCase));
+
+    int partial =
+        materials.Count(x =>
+            string.Equals(
+                x.DispatchStatus,
+                "Partial",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                x.DispatchStatus,
+                "Running",
+                StringComparison.OrdinalIgnoreCase));
+
+    int pending =
+        materials.Count(x =>
+            string.IsNullOrWhiteSpace(x.DispatchStatus) ||
+            string.Equals(
+                x.DispatchStatus,
+                "Pending",
+                StringComparison.OrdinalIgnoreCase));
+
+    decimal totalPOQty =
+        materials.Sum(x => x.Qty);
+
+    decimal totalInvoiceQty =
+        materials.Sum(x => x.InvoiceQty);
+
+    decimal totalDispatchQty =
+        materials.Sum(x => x.DispatchQty);
+
+    decimal totalPendingQty =
+        materials.Sum(x => Math.Max(0, x.PendingQty));
+
+    int dispatchedPercent =
+        GetPercent(
+            dispatched,
+            totalMaterials);
+
+    int partialPercent =
+        GetPercent(
+            partial,
+            totalMaterials);
+
+    int pendingPercent =
+        GetPercent(
+            pending,
+            totalMaterials);
+
+    string DispatchStatusText(string? status)
+    {
+        return string.IsNullOrWhiteSpace(status)
+            ? "Pending"
+            : status.Trim();
+    }
+
+    string DispatchStatusClass(string? status)
+    {
+        if (string.Equals(
+                status,
+                "Dispatched",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                status,
+                "Completed",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "dsp-status-success";
+        }
+
+        if (string.Equals(
+                status,
+                "Partial",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                status,
+                "Running",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "dsp-status-info";
+        }
+
+        return "dsp-status-warning";
+    }
+
+    string FilterValue(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? ""
+            : value.Trim().ToLowerInvariant();
+    }
+
+    string SearchValue(POTracker.Models.Material item)
+    {
+        var purchaseOrder =
+            item.PurchaseOrder;
+
+        return string.Join(
+                " ",
+                new[]
+                {
+                    purchaseOrder?.PONumber,
+                    purchaseOrder?.BuyerContactPerson,
+                    item.LineItem,
+                    item.MaterialNo,
+                    item.HsnSacCode,
+                    item.ShortDescription,
+                    item.BriefDescription,
+                    item.DispatchStatus,
+                    item.InvoiceStatus,
+                    item.DrawingNo
+                }
+                .Where(x => !string.IsNullOrWhiteSpace(x)))
+            .ToLowerInvariant();
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/dispatch-index-premium.css"
+          asp-append-version="true" />
+}
+
+<div class="dsp-page">
+
+    <!-- =========================================================
+         PAGE HEADER
+    ========================================================== -->
+
+    <section class="dsp-header">
+
+        <div>
+            <span class="dsp-kicker">
+                Material dispatch tracking
+            </span>
+
+            <h1>Dispatch Management</h1>
+
+            <p>
+                Track invoiced quantity, dispatched quantity,
+                pending quantity and dispatch completion
+                for every PO material.
+            </p>
+        </div>
+
+        <div class="dsp-header-actions">
+
+            <a asp-controller="Material"
+               asp-action="Index"
+               class="dsp-btn dsp-btn-light">
+                Materials
+            </a>
+
+            <a asp-controller="VyaparInvoiceImport"
+               asp-action="Upload"
+               class="dsp-btn dsp-btn-primary">
+                Upload Invoice
+            </a>
+
+            <a asp-controller="VyaparInvoiceImport"
+               asp-action="InvoiceStatus"
+               class="dsp-btn dsp-btn-light">
+                Invoice Status
+            </a>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         MESSAGES
+    ========================================================== -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="dsp-alert dsp-alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="dsp-alert dsp-alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- =========================================================
+         SUMMARY CARDS
+    ========================================================== -->
+
+    <section class="dsp-summary-grid">
+
+        <article class="dsp-summary-card dsp-summary-violet">
+            <span>Total Materials</span>
+            <strong>@totalMaterials</strong>
+            <small>Dispatch-tracked PO materials</small>
+        </article>
+
+        <article class="dsp-summary-card dsp-summary-blue">
+            <span>Total PO Qty</span>
+            <strong>@totalPOQty.ToString("0.##")</strong>
+            <small>Combined ordered quantity</small>
+        </article>
+
+        <article class="dsp-summary-card dsp-summary-teal">
+            <span>Total Invoice Qty</span>
+            <strong>@totalInvoiceQty.ToString("0.##")</strong>
+            <small>Combined invoiced quantity</small>
+        </article>
+
+        <article class="dsp-summary-card dsp-summary-green">
+            <span>Dispatch Qty</span>
+            <strong>@totalDispatchQty.ToString("0.##")</strong>
+            <small>Quantity already dispatched</small>
+        </article>
+
+        <article class="dsp-summary-card dsp-summary-amber">
+            <span>Pending Qty</span>
+            <strong>@totalPendingQty.ToString("0.##")</strong>
+            <small>Quantity waiting for dispatch</small>
+        </article>
+
+        <article class="dsp-summary-card dsp-summary-cyan">
+            <span>Fully Dispatched</span>
+            <strong>@dispatched</strong>
+            <small>Completed material records</small>
+        </article>
+
+        <article class="dsp-summary-card dsp-summary-orange">
+            <span>Partial Dispatch</span>
+            <strong>@partial</strong>
+            <small>Partially completed materials</small>
+        </article>
+
+        <article class="dsp-summary-card dsp-summary-rose">
+            <span>Pending Dispatch</span>
+            <strong>@pending</strong>
+            <small>Materials awaiting dispatch</small>
+        </article>
+    </section>
+
+    <!-- =========================================================
+         OVERVIEW AND RULES
+    ========================================================== -->
+
+    <section class="dsp-two-column">
+
+        <div class="dsp-card">
+
+            <div class="dsp-section-head">
+                <div>
+                    <span class="dsp-kicker">
+                        Dispatch progress
+                    </span>
+
+                    <h2>Completion Overview</h2>
+                </div>
+            </div>
+
+            <div class="dsp-progress-list">
+
+                <div class="dsp-progress-row">
+
+                    <div class="dsp-progress-label">
+                        <span>Dispatched</span>
+                        <strong>@dispatchedPercent%</strong>
+                    </div>
+
+                    <div class="dsp-progress-track">
+                        <i class="dsp-progress-green"
+                           style="width:@dispatchedPercent%">
+                        </i>
+                    </div>
+                </div>
+
+                <div class="dsp-progress-row">
+
+                    <div class="dsp-progress-label">
+                        <span>Partial</span>
+                        <strong>@partialPercent%</strong>
+                    </div>
+
+                    <div class="dsp-progress-track">
+                        <i class="dsp-progress-blue"
+                           style="width:@partialPercent%">
+                        </i>
+                    </div>
+                </div>
+
+                <div class="dsp-progress-row">
+
+                    <div class="dsp-progress-label">
+                        <span>Pending</span>
+                        <strong>@pendingPercent%</strong>
+                    </div>
+
+                    <div class="dsp-progress-track">
+                        <i class="dsp-progress-amber"
+                           style="width:@pendingPercent%">
+                        </i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dsp-card">
+
+            <div class="dsp-section-head">
+                <div>
+                    <span class="dsp-kicker">
+                        Dispatch logic
+                    </span>
+
+                    <h2>Important Rules</h2>
+                </div>
+            </div>
+
+            <div class="dsp-rule-list">
+
+                <article class="dsp-rule dsp-rule-info">
+                    <strong>Invoice-linked dispatch</strong>
+
+                    <p>
+                        In this project, imported InvoiceQty
+                        is also considered as DispatchQty.
+                    </p>
+                </article>
+
+                <article class="dsp-rule dsp-rule-warning">
+                    <strong>Manual dispatch</strong>
+
+                    <p>
+                        Add Dispatch is available only when
+                        PendingQty is greater than zero.
+                    </p>
+                </article>
+
+                <article class="dsp-rule dsp-rule-success">
+                    <strong>Quantity restore</strong>
+
+                    <p>
+                        Deleting a wrong invoice restores
+                        the related dispatch and pending quantities.
+                    </p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         SEARCH AND FILTER
+    ========================================================== -->
+
+    <section class="dsp-card">
+
+        <div class="dsp-section-head">
+
+            <div>
+                <span class="dsp-kicker">
+                    Find material
+                </span>
+
+                <h2>Search and Filter</h2>
+
+                <p>
+                    Search by PO, handler, line item,
+                    material, HSN/SAC or description.
+                </p>
+            </div>
+
+            <span class="dsp-count-badge"
+                  id="visibleDispatchCount">
+                @totalMaterials Material(s)
+            </span>
+        </div>
+
+        <div class="dsp-filter-grid">
+
+            <div class="dsp-filter-field dsp-search-field">
+                <label for="dispatchSearch">
+                    Search
+                </label>
+
+                <input type="search"
+                       id="dispatchSearch"
+                       placeholder="PO, handler, material or description..." />
+            </div>
+
+            <div class="dsp-filter-field">
+                <label for="dispatchStatusFilter">
+                    Dispatch Status
+                </label>
+
+                <select id="dispatchStatusFilter">
+                    <option value="">All Status</option>
+                    <option value="dispatched">Dispatched</option>
+                    <option value="completed">Completed</option>
+                    <option value="partial">Partial</option>
+                    <option value="running">Running</option>
+                    <option value="pending">Pending</option>
+                </select>
+            </div>
+
+            <div class="dsp-filter-field">
+                <label for="quantityFilter">
+                    Quantity Filter
+                </label>
+
+                <select id="quantityFilter">
+                    <option value="">All Quantities</option>
+                    <option value="pending">Pending Qty &gt; 0</option>
+                    <option value="completed">Pending Qty = 0</option>
+                    <option value="invoice">Invoice Qty &gt; 0</option>
+                </select>
+            </div>
+
+            <div class="dsp-filter-actions">
+                <button type="button"
+                        class="dsp-btn dsp-btn-light"
+                        id="clearDispatchFilters">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         DISPATCH TABLE
+    ========================================================== -->
+
+    <section class="dsp-card">
+
+        <div class="dsp-section-head">
+
+            <div>
+                <span class="dsp-kicker">
+                    Material records
+                </span>
+
+                <h2>Dispatch Pending / Partial Materials</h2>
+
+                <p>
+                    Material-wise invoice, dispatch and
+                    pending quantity tracking.
+                </p>
+            </div>
+        </div>
+
+        @if (materials.Count == 0)
+        {
+            <div class="dsp-empty-state">
+
+                <div class="dsp-empty-icon">
+                    D
+                </div>
+
+                <h3>No dispatch materials found</h3>
+
+                <p>
+                    There are currently no materials available
+                    for dispatch tracking.
+                </p>
+
+                <a asp-controller="Material"
+                   asp-action="Index"
+                   class="dsp-btn dsp-btn-primary">
+                    View Materials
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="dsp-table-wrap">
+
+                <table class="dsp-table"
+                       id="dispatchMaterialTable">
+
+                    <thead>
+                        <tr>
+                            <th>PO No</th>
+                            <th>Handler / Person</th>
+                            <th>PO Date</th>
+                            <th>PO Received Date</th>
+                            <th>Line Item</th>
+                            <th>Material No</th>
+                            <th>HSN/SAC</th>
+                            <th>Description</th>
+                            <th>PO Qty</th>
+                            <th>Invoice Qty</th>
+                            <th>Dispatch Qty</th>
+                            <th>Pending Qty</th>
+                            <th>Delivery Date</th>
+                            <th>Dispatch Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var item in materials)
+                        {
+                            var purchaseOrder =
+                                item.PurchaseOrder;
+
+                            var handler =
+                                purchaseOrder?.BuyerContactPerson;
+
+                            var poDate =
+                                purchaseOrder?.PODate
+                                ?? item.PODate;
+
+                            var receivedDate =
+                                purchaseOrder?.ReceivedDate
+                                ?? item.ReceivingDate;
+
+                            var description =
+                                !string.IsNullOrWhiteSpace(item.ShortDescription)
+                                    ? item.ShortDescription
+                                    : item.BriefDescription;
+
+                            var dispatchStatus =
+                                DispatchStatusText(
+                                    item.DispatchStatus);
+
+                            var pendingQty =
+                                Math.Max(
+                                    0,
+                                    item.PendingQty);
+
+                            var searchText =
+                                SearchValue(item);
+
+                            <tr data-search="@searchText"
+                                data-dispatch-status="@FilterValue(dispatchStatus)"
+                                data-pending-qty="@pendingQty.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                data-invoice-qty="@item.InvoiceQty.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+
+                                <td>
+                                    <strong class="dsp-po-number">
+                                        @(purchaseOrder?.PONumber ?? "-")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(handler))
+                                    {
+                                        <span class="dsp-handler"
+                                              title="@handler">
+                                            @handler
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="dsp-muted">
+                                            Not assigned
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (poDate.HasValue)
+                                    {
+                                        <span class="dsp-date">
+                                            @poDate.Value.ToString("dd-MMM-yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="dsp-muted">
+                                            Not set
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (receivedDate.HasValue)
+                                    {
+                                        <span class="dsp-date dsp-date-received">
+                                            @receivedDate.Value.ToString("dd-MMM-yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="dsp-muted">
+                                            Not set
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="dsp-line-item">
+                                        @(string.IsNullOrWhiteSpace(item.LineItem)
+                                            ? "-"
+                                            : item.LineItem)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <a asp-controller="Material"
+                                       asp-action="Details"
+                                       asp-route-id="@item.Id"
+                                       class="dsp-material-number">
+                                        @(item.MaterialNo ?? "-")
+                                    </a>
+                                </td>
+
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(item.HsnSacCode)
+                                        ? "-"
+                                        : item.HsnSacCode)
+                                </td>
+
+                                <td>
+                                    <span class="dsp-description"
+                                          title="@description">
+                                        @(string.IsNullOrWhiteSpace(description)
+                                            ? "-"
+                                            : description)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <strong class="dsp-qty">
+                                        @item.Qty.ToString("0.##")
+                                    </strong>
+
+                                    @if (!string.IsNullOrWhiteSpace(item.Unit))
+                                    {
+                                        <small class="dsp-unit">
+                                            @item.Unit
+                                        </small>
+                                    }
+                                </td>
+
+                                <td>
+                                    <strong class="dsp-qty dsp-qty-info">
+                                        @item.InvoiceQty.ToString("0.##")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <strong class="dsp-qty dsp-qty-success">
+                                        @item.DispatchQty.ToString("0.##")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <strong class="dsp-qty @(pendingQty > 0 ? "dsp-qty-danger" : "dsp-qty-success")">
+                                        @pendingQty.ToString("0.##")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    @if (item.DeliveryDate.HasValue)
+                                    {
+                                        <span class="dsp-date">
+                                            @item.DeliveryDate.Value.ToString("dd-MMM-yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="dsp-muted">
+                                            Not set
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="dsp-status @DispatchStatusClass(item.DispatchStatus)">
+                                        @dispatchStatus
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="dsp-action-group">
+
+                                        <a asp-controller="Material"
+                                           asp-action="Details"
+                                           asp-route-id="@item.Id"
+                                           class="dsp-action-link">
+                                            Details
+                                        </a>
+
+                                        @if (pendingQty > 0)
+                                        {
+                                            <a asp-controller="Dispatch"
+                                               asp-action="Create"
+                                               asp-route-materialId="@item.Id"
+                                               class="dsp-action-link dsp-action-primary">
+                                                Add Dispatch
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+
+                    <tfoot>
+                        <tr>
+                            <th colspan="8"
+                                class="dsp-text-right">
+                                Total
+                            </th>
+
+                            <th>
+                                @totalPOQty.ToString("0.##")
+                            </th>
+
+                            <th>
+                                @totalInvoiceQty.ToString("0.##")
+                            </th>
+
+                            <th>
+                                @totalDispatchQty.ToString("0.##")
+                            </th>
+
+                            <th>
+                                @totalPendingQty.ToString("0.##")
+                            </th>
+
+                            <th colspan="3"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="dsp-no-results"
+                 id="noDispatchResults"
+                 hidden>
+                No materials match the selected search
+                and dispatch filters.
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            "use strict";
+
+            const table =
+                document.getElementById(
+                    "dispatchMaterialTable");
+
+            if (!table) {
+                return;
+            }
+
+            const searchInput =
+                document.getElementById(
+                    "dispatchSearch");
+
+            const statusFilter =
+                document.getElementById(
+                    "dispatchStatusFilter");
+
+            const quantityFilter =
+                document.getElementById(
+                    "quantityFilter");
+
+            const clearButton =
+                document.getElementById(
+                    "clearDispatchFilters");
+
+            const visibleCount =
+                document.getElementById(
+                    "visibleDispatchCount");
+
+            const noResults =
+                document.getElementById(
+                    "noDispatchResults");
+
+            const rows =
+                Array.from(
+                    table.querySelectorAll(
+                        "tbody tr"));
+
+            const parseNumber = (value) => {
+                const parsed =
+                    Number.parseFloat(value);
+
+                return Number.isFinite(parsed)
+                    ? parsed
+                    : 0;
+            };
+
+            const applyFilters = () => {
+                const search =
+                    searchInput?.value
+                        .trim()
+                        .toLowerCase() ?? "";
+
+                const status =
+                    statusFilter?.value
+                        .trim()
+                        .toLowerCase() ?? "";
+
+                const quantity =
+                    quantityFilter?.value
+                        .trim()
+                        .toLowerCase() ?? "";
+
+                let shown = 0;
+
+                rows.forEach((row) => {
+                    const rowSearch =
+                        row.dataset.search ?? "";
+
+                    const rowStatus =
+                        row.dataset.dispatchStatus ?? "";
+
+                    const pendingQty =
+                        parseNumber(
+                            row.dataset.pendingQty);
+
+                    const invoiceQty =
+                        parseNumber(
+                            row.dataset.invoiceQty);
+
+                    const searchMatch =
+                        !search ||
+                        rowSearch.includes(search);
+
+                    const statusMatch =
+                        !status ||
+                        rowStatus === status;
+
+                    let quantityMatch = true;
+
+                    if (quantity === "pending") {
+                        quantityMatch =
+                            pendingQty > 0;
+                    } else if (quantity === "completed") {
+                        quantityMatch =
+                            pendingQty <= 0;
+                    } else if (quantity === "invoice") {
+                        quantityMatch =
+                            invoiceQty > 0;
+                    }
+
+                    const display =
+                        searchMatch &&
+                        statusMatch &&
+                        quantityMatch;
+
+                    row.hidden =
+                        !display;
+
+                    if (display) {
+                        shown++;
+                    }
+                });
+
+                if (visibleCount) {
+                    visibleCount.textContent =
+                        `${shown} Material(s)`;
+                }
+
+                if (noResults) {
+                    noResults.hidden =
+                        shown > 0;
+                }
+            };
+
+            searchInput?.addEventListener(
+                "input",
+                applyFilters);
+
+            statusFilter?.addEventListener(
+                "change",
+                applyFilters);
+
+            quantityFilter?.addEventListener(
+                "change",
+                applyFilters);
+
+            clearButton?.addEventListener(
+                "click",
+                () => {
+                    if (searchInput) {
+                        searchInput.value = "";
+                    }
+
+                    if (statusFilter) {
+                        statusFilter.value = "";
+                    }
+
+                    if (quantityFilter) {
+                        quantityFilter.value = "";
+                    }
+
+                    applyFilters();
+                    searchInput?.focus();
+                });
+        })();
+    </script>
+}
+
+@functions {
+    int GetPercent(int value, int total)
+    {
+        if (total <= 0)
+        {
+            return 0;
+        }
+
+        return Convert.ToInt32(
+            Math.Round(
+                (decimal)value / total * 100));
+    }
+}

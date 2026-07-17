@@ -1,0 +1,605 @@
+﻿@using POTracker.ViewModels
+@model POBatchImportResultViewModel
+
+@{
+    ViewData["Title"] = "Multiple PO Import Result";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var results =
+        Model?.Results ??
+        new List<POBatchImportResultItemViewModel>();
+
+    int totalFiles =
+        results.Count;
+
+    int importedFiles =
+        results.Count(x => x.IsImported);
+
+    int updatedFiles =
+        results.Count(x => x.IsUpdated);
+
+    int notSavedFiles =
+        results.Count(x =>
+            !x.IsImported &&
+            !x.IsUpdated);
+
+    int totalMaterialRows =
+        results.Sum(x =>
+            x.MaterialRowsSaved);
+
+    bool IsSuccessful(
+        POBatchImportResultItemViewModel item)
+    {
+        return item.IsImported ||
+               item.IsUpdated;
+    }
+
+    string GetStatusText(
+        POBatchImportResultItemViewModel item)
+    {
+        if (item.IsImported)
+        {
+            return "Imported";
+        }
+
+        if (item.IsUpdated)
+        {
+            return "Updated";
+        }
+
+        return "Not Saved";
+    }
+
+    string GetStatusClass(
+        POBatchImportResultItemViewModel item)
+    {
+        if (item.IsImported)
+        {
+            return "pbr-status-success";
+        }
+
+        if (item.IsUpdated)
+        {
+            return "pbr-status-info";
+        }
+
+        return "pbr-status-warning";
+    }
+}
+
+<style>
+    .pbr-page {
+        --pbr-primary: #4f46e5;
+        --pbr-primary-dark: #3730a3;
+        --pbr-text: #172033;
+        --pbr-muted: #64748b;
+        --pbr-border: #dfe5ef;
+        --pbr-surface: #ffffff;
+        --pbr-bg: #f5f7fb;
+        --pbr-success: #15803d;
+        --pbr-success-bg: #ecfdf3;
+        --pbr-info: #1d4ed8;
+        --pbr-info-bg: #eff6ff;
+        --pbr-warning: #b45309;
+        --pbr-warning-bg: #fffbeb;
+        --pbr-shadow: 0 18px 45px rgba(31, 45, 79, .08);
+        width: 100%;
+        color: var(--pbr-text);
+    }
+
+        .pbr-page *,
+        .pbr-page *::before,
+        .pbr-page *::after {
+            box-sizing: border-box;
+        }
+
+    .pbr-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 22px;
+    }
+
+    .pbr-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        color: var(--pbr-primary);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+        .pbr-kicker::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--pbr-primary);
+            box-shadow: 0 0 0 5px rgba(79, 70, 229, .12);
+        }
+
+    .pbr-header h1 {
+        margin: 0;
+        font-size: clamp(27px, 3vw, 38px);
+        line-height: 1.12;
+        letter-spacing: -.04em;
+    }
+
+    .pbr-header p {
+        max-width: 760px;
+        margin: 9px 0 0;
+        color: var(--pbr-muted);
+        font-size: 15px;
+        line-height: 1.65;
+    }
+
+    .pbr-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .pbr-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: .18s ease;
+    }
+
+        .pbr-btn:hover {
+            transform: translateY(-1px);
+        }
+
+    .pbr-btn-primary {
+        border: 1px solid var(--pbr-primary);
+        background: linear-gradient( 135deg, #5b5ce2, var(--pbr-primary-dark));
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(79, 70, 229, .22);
+    }
+
+    .pbr-btn-light {
+        border: 1px solid var(--pbr-border);
+        background: #fff;
+        color: #334155;
+    }
+
+    .pbr-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+
+    .pbr-summary-card {
+        min-width: 0;
+        padding: 18px;
+        border: 1px solid var(--pbr-border);
+        border-radius: 16px;
+        background: var(--pbr-surface);
+        box-shadow: var(--pbr-shadow);
+    }
+
+        .pbr-summary-card span {
+            display: block;
+            color: var(--pbr-muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .pbr-summary-card strong {
+            display: block;
+            margin-top: 7px;
+            font-size: 29px;
+            line-height: 1.1;
+        }
+
+        .pbr-summary-card small {
+            display: block;
+            margin-top: 7px;
+            color: var(--pbr-muted);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+    .pbr-card {
+        padding: 20px;
+        border: 1px solid var(--pbr-border);
+        border-radius: 18px;
+        background: var(--pbr-surface);
+        box-shadow: var(--pbr-shadow);
+    }
+
+    .pbr-section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 18px;
+    }
+
+        .pbr-section-head h2 {
+            margin: 0;
+            font-size: 21px;
+        }
+
+        .pbr-section-head p {
+            margin: 7px 0 0;
+            color: var(--pbr-muted);
+            line-height: 1.55;
+        }
+
+    .pbr-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        padding: 6px 12px;
+        border: 1px solid #c7d2fe;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #3730a3;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .pbr-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid var(--pbr-border);
+        border-radius: 14px;
+    }
+
+    .pbr-table {
+        width: 100%;
+        min-width: 980px;
+        border-collapse: collapse;
+        background: #fff;
+    }
+
+        .pbr-table th,
+        .pbr-table td {
+            padding: 14px 13px;
+            border-bottom: 1px solid #e7ebf1;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .pbr-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .pbr-table td {
+            color: #334155;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .pbr-table tbody tr:hover {
+            background: #fafbff;
+        }
+
+    .pbr-file-name,
+    .pbr-po-number {
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .pbr-message {
+        display: block;
+        max-width: 470px;
+        color: #475569;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .pbr-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 30px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .pbr-status-success {
+        border: 1px solid #86efac;
+        background: var(--pbr-success-bg);
+        color: var(--pbr-success);
+    }
+
+    .pbr-status-info {
+        border: 1px solid #bfdbfe;
+        background: var(--pbr-info-bg);
+        color: var(--pbr-info);
+    }
+
+    .pbr-status-warning {
+        border: 1px solid #fde68a;
+        background: var(--pbr-warning-bg);
+        color: var(--pbr-warning);
+    }
+
+    .pbr-empty {
+        padding: 45px 20px;
+        text-align: center;
+        color: var(--pbr-muted);
+    }
+
+        .pbr-empty h3 {
+            margin: 0 0 8px;
+            color: var(--pbr-text);
+        }
+
+    .pbr-footer-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+    }
+
+    @@media (max-width: 1150px) {
+        .pbr-summary-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 760px) {
+        .pbr-header {
+            flex-direction: column;
+        }
+
+        .pbr-header-actions,
+        .pbr-footer-actions {
+            width: 100%;
+        }
+
+        .pbr-btn {
+            flex: 1 1 auto;
+        }
+
+        .pbr-summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .pbr-summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .pbr-header-actions,
+        .pbr-footer-actions {
+            flex-direction: column;
+        }
+
+        .pbr-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="pbr-page">
+
+    <section class="pbr-header">
+        <div>
+            <span class="pbr-kicker">
+                PO batch import
+            </span>
+
+            <h1>Multiple PO Import Result</h1>
+
+            <p>
+                The selected PO files were processed individually.
+                Review which purchase orders were imported, updated
+                or not saved.
+            </p>
+        </div>
+
+        <div class="pbr-header-actions">
+            <a asp-controller="POImport"
+               asp-action="Upload"
+               class="pbr-btn pbr-btn-light">
+                Import More POs
+            </a>
+
+            <a asp-controller="Material"
+               asp-action="Index"
+               class="pbr-btn pbr-btn-primary">
+                View Materials
+            </a>
+        </div>
+    </section>
+
+    <section class="pbr-summary-grid">
+        <article class="pbr-summary-card">
+            <span>Processed Files</span>
+            <strong>@totalFiles</strong>
+            <small>Selected files processed</small>
+        </article>
+
+        <article class="pbr-summary-card">
+            <span>New POs</span>
+            <strong>@importedFiles</strong>
+            <small>New purchase orders created</small>
+        </article>
+
+        <article class="pbr-summary-card">
+            <span>Updated POs</span>
+            <strong>@updatedFiles</strong>
+            <small>Existing purchase orders updated</small>
+        </article>
+
+        <article class="pbr-summary-card">
+            <span>Not Saved</span>
+            <strong>@notSavedFiles</strong>
+            <small>Skipped or processing errors</small>
+        </article>
+
+        <article class="pbr-summary-card">
+            <span>Material Rows</span>
+            <strong>@totalMaterialRows</strong>
+            <small>Total rows saved or updated</small>
+        </article>
+    </section>
+
+    <section class="pbr-card">
+
+        <div class="pbr-section-head">
+            <div>
+                <span class="pbr-kicker">
+                    File-wise result
+                </span>
+
+                <h2>Batch Processing Report</h2>
+
+                <p>
+                    Each row shows the final result returned by
+                    the batch-saving process.
+                </p>
+            </div>
+
+            <span class="pbr-count">
+                @totalFiles File(s)
+            </span>
+        </div>
+
+        @if (results.Count == 0)
+        {
+            <div class="pbr-empty">
+                <h3>No batch results found</h3>
+
+                <p>
+                    No selected PO files were available in the result.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="pbr-table-wrap">
+                <table class="pbr-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>PDF File</th>
+                            <th>PO Number</th>
+                            <th>Material Rows</th>
+                            <th>Status</th>
+                            <th>Result Message</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+
+                        @foreach (var item in results)
+                        {
+                            <tr>
+                                <td>
+                                    @index
+                                </td>
+
+                                <td>
+                                    <span class="pbr-file-name">
+                                        @(string.IsNullOrWhiteSpace(
+                                            item.OriginalFileName)
+                                            ? "Unknown file"
+                                            : item.OriginalFileName)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="pbr-po-number">
+                                        @(string.IsNullOrWhiteSpace(
+                                            item.PurchaseOrderNo)
+                                            ? "-"
+                                            : item.PurchaseOrderNo)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @item.MaterialRowsSaved
+                                </td>
+
+                                <td>
+                                    <span class="pbr-status @GetStatusClass(item)">
+                                        @GetStatusText(item)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="pbr-message"
+                                          title="@item.Message">
+                                        @(string.IsNullOrWhiteSpace(
+                                            item.Message)
+                                            ? (IsSuccessful(item)
+                                                ? "PO processed successfully."
+                                                : "PO was not saved.")
+                                            : item.Message)
+                                    </span>
+                                </td>
+                            </tr>
+
+                            index++;
+                        }
+                    </tbody>
+
+                    <tfoot>
+                        <tr>
+                            <th colspan="3"
+                                style="text-align:right;">
+                                Total Material Rows
+                            </th>
+
+                            <th>
+                                @totalMaterialRows
+                            </th>
+
+                            <th colspan="2"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+
+        <div class="pbr-footer-actions">
+            <a asp-controller="POImport"
+               asp-action="Upload"
+               class="pbr-btn pbr-btn-light">
+                Upload Another Batch
+            </a>
+
+            <a asp-controller="Material"
+               asp-action="Index"
+               class="pbr-btn pbr-btn-primary">
+                Continue to Materials
+            </a>
+        </div>
+    </section>
+</div>

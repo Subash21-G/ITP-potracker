@@ -1,0 +1,97 @@
+@model List<POTracker.Models.Material>
+
+@{
+    ViewData["Title"] = "Process Queue";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var overdue = ViewBag.Overdue as List<POTracker.Models.Material> ?? new List<POTracker.Models.Material>();
+    var startToday = ViewBag.StartToday as List<POTracker.Models.Material> ?? new List<POTracker.Models.Material>();
+    var thisWeek = ViewBag.ThisWeek as List<POTracker.Models.Material> ?? new List<POTracker.Models.Material>();
+    var future = ViewBag.Future as List<POTracker.Models.Material> ?? new List<POTracker.Models.Material>();
+}
+
+<div class="page-header">
+    <div>
+        <h1>Process Start Queue</h1>
+        <p>Materials grouped by calculated process start date</p>
+    </div>
+    <a href="/Calendar/Index" class="btn-secondary">Calendar</a>
+</div>
+
+<div class="premium-note">
+    Auto rule: when delivery date is entered, process start date is fixed as delivery date minus one month.
+</div>
+
+<div class="premium-grid">
+    <div class="metric-card"><span>Overdue</span><strong>@overdue.Count</strong></div>
+    <div class="metric-card"><span>Start Today</span><strong>@startToday.Count</strong></div>
+    <div class="metric-card"><span>This Week</span><strong>@thisWeek.Count</strong></div>
+    <div class="metric-card"><span>Future</span><strong>@future.Count</strong></div>
+</div>
+
+<div class="queue-grid">
+    @foreach (var group in new[] {
+        new { Title = "Overdue", Items = overdue, Css = "status-red" },
+        new { Title = "Start Today", Items = startToday, Css = "status-blue" },
+        new { Title = "This Week", Items = thisWeek, Css = "status-yellow" },
+        new { Title = "Future", Items = future, Css = "status-gray" }
+    })
+    {
+        <div class="queue-column">
+            <h3>@group.Title</h3>
+            @if (group.Items.Any())
+            {
+                foreach (var item in group.Items.Take(6))
+                {
+                    <div class="queue-ticket">
+                        <strong>@item.MaterialNo</strong>
+                        <small>
+                            PO: @(item.PurchaseOrder?.PONumber ?? "-")<br />
+                            Start: @(item.ProcessStartDate?.ToString("dd-MM-yyyy") ?? "-")<br />
+                            Delivery: @(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")
+                        </small>
+                        <br />
+                        <span class="@group.Css">@item.ProcessStatus</span>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted">No items.</p>
+            }
+        </div>
+    }
+</div>
+
+<div class="table-section">
+    <div class="section-header"><h2>Full Queue</h2></div>
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Material</th>
+                <th>PO</th>
+                <th>Purchaser</th>
+                <th>Process Start</th>
+                <th>Delivery</th>
+                <th>Owner</th>
+                <th>Process</th>
+                <th>Dispatch</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td><strong>@item.MaterialNo</strong><br />@(item.ShortDescription ?? "-")</td>
+                    <td>@(item.PurchaseOrder?.PONumber ?? "-")</td>
+                    <td>@(item.PurchaseOrder?.Purchaser?.PurchaserName ?? "-")</td>
+                    <td>@(item.ProcessStartDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                    <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                    <td>@(item.AssignedDashboard ?? "-")</td>
+                    <td><span class="status-blue">@item.ProcessStatus</span></td>
+                    <td><span class="status-yellow">@item.DispatchStatus</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

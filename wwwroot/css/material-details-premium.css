@@ -1,0 +1,630 @@
+﻿/* =========================================================
+   MATERIAL DETAILS — PREMIUM UI
+   Unique md-* classes prevent conflicts with global styles.
+========================================================= */
+
+.md-page {
+    display: grid;
+    gap: 18px;
+    color: var(--rp-text, #1b1b28);
+}
+
+    .md-page *,
+    .md-page *::before,
+    .md-page *::after {
+        box-sizing: border-box;
+    }
+
+/* =========================================================
+   COMMON SURFACES
+========================================================= */
+
+.md-page-header,
+.md-card,
+.md-metric-card {
+    border: 1px solid var(--rp-border, #e2e3eb);
+    background: #ffffff;
+    box-shadow: var( --rp-shadow-sm, 0 6px 18px rgba(32, 28, 60, .08) );
+}
+
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+
+.md-page-header {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 22px;
+    padding: 23px 24px;
+    border-radius: 20px;
+}
+
+    .md-page-header::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 4px;
+        content: "";
+        background: linear-gradient( 90deg, #6d4aff, #d9468f, #0ea5a8 );
+    }
+
+.md-kicker {
+    display: block;
+    color: #6d4aff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.md-page-header h1 {
+    margin: 7px 0 0;
+    color: #1b1b28;
+    font-size: clamp(26px, 3vw, 34px);
+    font-weight: 700;
+    letter-spacing: -.025em;
+}
+
+.md-page-header p {
+    max-width: 760px;
+    margin: 8px 0 0;
+    color: #747181;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+.md-header-actions,
+.md-section-actions,
+.md-file-actions,
+.md-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.md-btn {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.md-btn-primary {
+    color: #ffffff;
+    background: linear-gradient( 135deg, #6d4aff, #d9468f );
+    box-shadow: 0 6px 16px rgba(109, 74, 255, .18);
+}
+
+.md-btn-success {
+    color: #ffffff;
+    background: linear-gradient( 135deg, #15803d, #0e9f6e );
+    box-shadow: 0 6px 16px rgba(21, 128, 61, .16);
+}
+
+.md-btn-light {
+    border-color: #e2e3eb;
+    color: #3a3848;
+    background: #ffffff;
+}
+
+.md-btn-primary:hover,
+.md-btn-success:hover {
+    color: #ffffff;
+    filter: brightness(.98);
+}
+
+.md-btn-light:hover {
+    border-color: #6d4aff;
+    color: #4c2fd4;
+}
+
+/* =========================================================
+   CARDS
+========================================================= */
+
+.md-card {
+    overflow: hidden;
+    padding: 20px;
+    border-radius: 17px;
+}
+
+.md-material-title,
+.md-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ececf2;
+}
+
+    .md-material-title h2 {
+        margin: 6px 0 0;
+        color: #1b1b28;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -.02em;
+    }
+
+    .md-material-title p {
+        margin: 7px 0 0;
+        color: #747181;
+        font-size: 11px;
+        line-height: 1.6;
+    }
+
+    .md-section-head h3 {
+        margin: 5px 0 0;
+        color: #1b1b28;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .md-section-head p {
+        margin: 6px 0 0;
+        color: #85818e;
+        font-size: 10px;
+        line-height: 1.55;
+    }
+
+.md-title-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+/* =========================================================
+   BADGES
+========================================================= */
+
+.md-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 8px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.md-badge-primary {
+    border-color: #d9ceff;
+    color: #4c2fd4;
+    background: #f0ecff;
+}
+
+.md-badge-neutral {
+    border-color: #dedde5;
+    color: #6d6977;
+    background: #f4f4f7;
+}
+
+/* =========================================================
+   DETAIL GRID
+========================================================= */
+
+.md-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 17px;
+}
+
+.md-detail-item {
+    min-height: 86px;
+    padding: 14px;
+    border: 1px solid #ececf2;
+    border-left: 3px solid #6d4aff;
+    border-radius: 11px;
+    background: #fbfbfd;
+}
+
+    .md-detail-item span,
+    .md-detail-item strong {
+        display: block;
+    }
+
+    .md-detail-item span {
+        color: #85818e;
+        font-size: 9px;
+        font-weight: 600;
+    }
+
+    .md-detail-item strong {
+        margin-top: 7px;
+        overflow-wrap: anywhere;
+        color: #1b1b28;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.45;
+    }
+
+.md-detail-received {
+    border-left-color: #0ea5a8;
+    background: #f6fffd;
+}
+
+/* =========================================================
+   METRIC CARDS
+========================================================= */
+
+.md-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.md-metric-card {
+    position: relative;
+    overflow: hidden;
+    min-height: 108px;
+    padding: 16px;
+    border-top: 3px solid currentColor;
+    border-radius: 15px;
+}
+
+    .md-metric-card::after {
+        position: absolute;
+        right: -22px;
+        bottom: -32px;
+        width: 88px;
+        height: 88px;
+        content: "";
+        border-radius: 50%;
+        background: currentColor;
+        opacity: .045;
+    }
+
+    .md-metric-card span,
+    .md-metric-card strong {
+        position: relative;
+        z-index: 1;
+        display: block;
+    }
+
+    .md-metric-card span {
+        color: #6f6b7c;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    .md-metric-card strong {
+        margin-top: 9px;
+        overflow-wrap: anywhere;
+        color: #1b1b28 !important;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+.md-metric-success {
+    color: #15803d;
+}
+
+.md-metric-info {
+    color: #2563eb;
+}
+
+.md-metric-warning {
+    color: #b26a00;
+}
+
+.md-metric-danger {
+    color: #c81e4b;
+}
+
+.md-metric-neutral {
+    color: #6d6977;
+}
+
+/* =========================================================
+   DESCRIPTION
+========================================================= */
+
+.md-description-text {
+    margin: 16px 0 0;
+    padding: 15px;
+    border: 1px solid #ececf2;
+    border-radius: 11px;
+    color: #4b4856;
+    background: #fbfbfd;
+    font-size: 11px;
+    line-height: 1.7;
+}
+
+/* =========================================================
+   TABLES
+========================================================= */
+
+.md-table-wrap {
+    margin-top: 16px;
+    overflow: auto;
+    border: 1px solid #ececf2;
+    border-radius: 12px;
+}
+
+.md-table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+    .md-table th,
+    .md-table td {
+        padding: 11px 12px;
+        border-bottom: 1px solid #ececf2;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    .md-table th {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        color: #555263;
+        background: #f5f4fa;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .md-table td {
+        color: #3a3848;
+        background: #ffffff;
+        font-size: 10px;
+    }
+
+    .md-table tbody tr:hover td {
+        background: #faf9ff;
+    }
+
+    .md-table tfoot th {
+        color: #34313f;
+        background: #fbfbfd;
+    }
+
+.md-table-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 8px;
+    border: 1px solid #d9ceff;
+    border-radius: 8px;
+    color: #4c2fd4;
+    background: #f0ecff;
+    font-size: 9px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.md-table-delete {
+    min-height: 29px;
+    padding: 5px 8px;
+    border: 1px solid #f1c5d3;
+    border-radius: 8px;
+    color: #c81e4b;
+    background: #fff0f4;
+    font-size: 9px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+    .md-table-delete:hover {
+        color: #ffffff;
+        background: #c81e4b;
+    }
+
+.md-text-success {
+    color: #15803d;
+}
+
+.md-text-right {
+    text-align: right !important;
+}
+
+/* =========================================================
+   EMPTY MESSAGES
+========================================================= */
+
+.md-empty-message {
+    margin-top: 16px;
+    padding: 14px 15px;
+    border: 1px solid #efd6a3;
+    border-radius: 10px;
+    color: #9a5b00;
+    background: #fff7e6;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* =========================================================
+   TIMELINE
+========================================================= */
+
+.md-timeline {
+    position: relative;
+    display: grid;
+    gap: 0;
+    margin-top: 17px;
+}
+
+    .md-timeline::before {
+        position: absolute;
+        top: 14px;
+        bottom: 14px;
+        left: 11px;
+        width: 2px;
+        content: "";
+        background: #e2e3eb;
+    }
+
+.md-timeline-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 12px;
+    padding: 0 0 18px;
+}
+
+    .md-timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .md-timeline-item > span {
+        position: relative;
+        z-index: 2;
+        width: 24px;
+        height: 24px;
+        display: block;
+        border: 5px solid #ffffff;
+        border-radius: 50%;
+        background: #c9c7d1;
+        box-shadow: 0 0 0 1px #dedde5;
+    }
+
+    .md-timeline-item.completed > span {
+        background: #15803d;
+        box-shadow: 0 0 0 1px #bfe8cf;
+    }
+
+    .md-timeline-item h4 {
+        margin: 2px 0 0;
+        color: #2a2835;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .md-timeline-item p {
+        margin: 5px 0 0;
+        color: #85818e;
+        font-size: 9px;
+        line-height: 1.5;
+    }
+
+/* =========================================================
+   FILES
+========================================================= */
+
+.md-file-actions {
+    margin-top: 16px;
+}
+
+.md-file-link {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 11px;
+    border: 1px solid #d9ceff;
+    border-radius: 9px;
+    color: #4c2fd4;
+    background: #f0ecff;
+    font-size: 10px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+    .md-file-link:hover {
+        color: #ffffff;
+        background: #6d4aff;
+    }
+
+    /* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+    .md-btn:focus-visible,
+    .md-file-link:focus-visible,
+    .md-table-link:focus-visible,
+    .md-table-delete:focus-visible {
+        outline: 2px solid #6d4aff;
+        outline-offset: 2px;
+    }
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1300px) {
+    .md-detail-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .md-metrics-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 950px) {
+    .md-page-header {
+        flex-direction: column;
+    }
+
+    .md-header-actions {
+        width: 100%;
+    }
+
+        .md-header-actions .md-btn {
+            flex: 1 1 150px;
+        }
+
+    .md-detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .md-metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 650px) {
+    .md-card {
+        padding: 16px;
+    }
+
+    .md-page-header {
+        padding: 20px;
+    }
+
+    .md-material-title,
+    .md-section-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .md-detail-grid,
+    .md-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .md-header-actions,
+    .md-section-actions,
+    .md-file-actions {
+        flex-direction: column;
+    }
+
+        .md-header-actions .md-btn,
+        .md-section-actions .md-btn,
+        .md-file-actions .md-file-link {
+            width: 100%;
+        }
+}
