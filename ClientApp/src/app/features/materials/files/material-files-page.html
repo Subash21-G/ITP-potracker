@@ -1,0 +1,222 @@
+<section class="material-files-page">
+  <header class="page-header">
+    <div>
+      <a
+        class="back-link"
+        [routerLink]="[
+          '/materials',
+          materialId()
+        ]"
+      >
+        ← Back to material details
+      </a>
+
+      <span class="eyebrow">Documents</span>
+      <h1>Upload material files</h1>
+
+      @if (material(); as item) {
+        <p>
+          {{ item.materialNo || 'Material' }}
+          · PO {{ item.poNumber || '—' }}
+          · Line {{ item.lineItem || '—' }}
+        </p>
+      } @else {
+        <p>
+          Upload or replace the material PDF and drawing file.
+        </p>
+      }
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="message message--error" role="alert">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="message message--success" role="status">
+      {{ successMessage() }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-card">
+      Loading material file information…
+    </div>
+  } @else if (material(); as item) {
+    <section class="current-files">
+      <article class="file-card">
+        <div>
+          <span class="file-label">Current material PDF</span>
+
+          @if (item.pdfFilePath) {
+            <strong>{{ fileName(item.pdfFilePath) }}</strong>
+            <small>
+              A new PDF will replace the current file path.
+            </small>
+          } @else {
+            <strong>Not uploaded</strong>
+            <small>No material PDF is currently attached.</small>
+          }
+        </div>
+
+        @if (item.pdfFilePath) {
+          <a
+            [href]="item.pdfFilePath"
+            target="_blank"
+            rel="noopener"
+          >
+            Open PDF
+          </a>
+        }
+      </article>
+
+      <article class="file-card">
+        <div>
+          <span class="file-label">Current drawing file</span>
+
+          @if (item.drawingFilePath) {
+            <strong>{{ fileName(item.drawingFilePath) }}</strong>
+            <small>
+              A new drawing will replace the current file path.
+            </small>
+          } @else {
+            <strong>Not uploaded</strong>
+            <small>No drawing file is currently attached.</small>
+          }
+        </div>
+
+        @if (item.drawingFilePath) {
+          <a
+            [href]="item.drawingFilePath"
+            target="_blank"
+            rel="noopener"
+          >
+            Open drawing
+          </a>
+        }
+      </article>
+    </section>
+
+    <form class="upload-form" (ngSubmit)="upload()">
+      <section class="upload-card">
+        <header>
+          <div>
+            <span class="eyebrow">Material PDF</span>
+            <h2>Select PDF file</h2>
+          </div>
+
+          <span class="limit-badge">Maximum 50 MB</span>
+        </header>
+
+        <label class="file-input">
+          <input
+            #pdfInput
+            type="file"
+            accept=".pdf,application/pdf"
+            (change)="onPdfSelected($event)"
+            [disabled]="isUploading()"
+          />
+
+          <span class="file-input__icon">PDF</span>
+
+          <span class="file-input__content">
+            <strong>
+              {{ selectedPdf()?.name || 'Choose material PDF' }}
+            </strong>
+
+            <small>
+              {{
+                selectedPdf()
+                  ? fileSize(selectedPdf())
+                  : 'Only .pdf files are allowed'
+              }}
+            </small>
+          </span>
+        </label>
+      </section>
+
+      <section class="upload-card">
+        <header>
+          <div>
+            <span class="eyebrow">Drawing</span>
+            <h2>Select drawing file</h2>
+          </div>
+
+          <span class="limit-badge">Maximum 100 MB</span>
+        </header>
+
+        <label class="file-input">
+          <input
+            #drawingInput
+            type="file"
+            accept=".pdf,.dwg,.dxf,.step,.stp,.iges,.igs,.zip"
+            (change)="onDrawingSelected($event)"
+            [disabled]="isUploading()"
+          />
+
+          <span class="file-input__icon">CAD</span>
+
+          <span class="file-input__content">
+            <strong>
+              {{ selectedDrawing()?.name || 'Choose drawing file' }}
+            </strong>
+
+            <small>
+              {{
+                selectedDrawing()
+                  ? fileSize(selectedDrawing())
+                  : 'PDF, DWG, DXF, STEP, STP, IGES, IGS or ZIP'
+              }}
+            </small>
+          </span>
+        </label>
+      </section>
+
+      <div class="selection-summary">
+        <div>
+          <span>Selected PDF</span>
+          <strong>{{ selectedPdf()?.name || 'None' }}</strong>
+        </div>
+
+        <div>
+          <span>Selected drawing</span>
+          <strong>{{ selectedDrawing()?.name || 'None' }}</strong>
+        </div>
+      </div>
+
+      <footer class="form-actions">
+        <a
+          class="button button--quiet"
+          [routerLink]="['/materials', item.id]"
+        >
+          Cancel
+        </a>
+
+        <button
+          class="button button--quiet"
+          type="button"
+          (click)="clearSelection()"
+          [disabled]="
+            isUploading() ||
+            (!selectedPdf() && !selectedDrawing())
+          "
+        >
+          Clear selected
+        </button>
+
+        <button
+          class="button button--primary"
+          type="submit"
+          [disabled]="
+            isUploading() ||
+            (!selectedPdf() && !selectedDrawing())
+          "
+        >
+          {{ isUploading() ? 'Uploading…' : 'Upload files' }}
+        </button>
+      </footer>
+    </form>
+  }
+</section>

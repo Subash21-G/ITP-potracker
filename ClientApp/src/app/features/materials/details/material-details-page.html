@@ -1,0 +1,535 @@
+<section class="material-details-page">
+  <header class="page-header">
+    <div>
+      <a class="back-link" routerLink="/materials">
+        ← Back to materials
+      </a>
+
+      <span class="eyebrow">Material record</span>
+
+      <h1>
+        {{ material()?.materialNo || 'Material details' }}
+      </h1>
+
+      @if (material(); as item) {
+        <p>
+          PO {{ item.poNumber || '—' }}
+          · Line {{ item.lineItem || '—' }}
+          · {{ item.shortDescription || item.briefDescription || 'No description' }}
+        </p>
+      }
+    </div>
+
+    @if (material(); as item) {
+      <div class="header-actions">
+        <button
+          type="button"
+          class="refresh-button"
+          (click)="loadMaterial()"
+          [disabled]="isLoading()"
+        >
+          {{ isLoading() ? 'Refreshing…' : 'Refresh' }}
+        </button>
+
+        <a
+          class="edit-button"
+          [routerLink]="['/materials', item.id, 'edit']"
+        >
+          Edit material
+        </a>
+
+        <button
+          type="button"
+          class="delete-button"
+          (click)="deleteMaterial()"
+          [disabled]="isDeleting() || !item.canDelete"
+          [title]="
+            item.canDelete
+              ? 'Delete material'
+              : 'Invoice or dispatch records are linked'
+          "
+        >
+          {{ isDeleting() ? 'Deleting…' : 'Delete' }}
+        </button>
+      </div>
+    }
+  </header>
+
+  @if (errorMessage()) {
+    <div class="message message--error" role="alert">
+      <div>
+        <strong>Unable to open material</strong>
+        <p>{{ errorMessage() }}</p>
+      </div>
+
+      <a routerLink="/materials">Return to materials</a>
+    </div>
+  }
+
+  @if (actionMessage()) {
+    <div class="message message--warning" role="alert">
+      {{ actionMessage() }}
+    </div>
+  }
+
+  @if (isLoading() && !material()) {
+    <div class="loading-layout">
+      <div class="loading-card loading-card--wide"></div>
+      <div class="loading-card"></div>
+      <div class="loading-card"></div>
+      <div class="loading-card loading-card--wide"></div>
+    </div>
+  }
+
+  @if (material(); as item) {
+    <section class="summary-grid">
+      <article>
+        <span>PO quantity</span>
+        <strong>{{ item.qty | number: '1.0-2' }}</strong>
+        <small>{{ item.unit || 'Unit not set' }}</small>
+      </article>
+
+      <article>
+        <span>Invoice quantity</span>
+        <strong>{{ item.invoiceQty | number: '1.0-2' }}</strong>
+        <small>{{ item.invoiceStatus }}</small>
+      </article>
+
+      <article>
+        <span>Dispatch quantity</span>
+        <strong>{{ item.dispatchQty | number: '1.0-2' }}</strong>
+        <small>{{ item.dispatchStatus }}</small>
+      </article>
+
+      <article class="summary-pending">
+        <span>Pending quantity</span>
+        <strong>{{ item.pendingQty | number: '1.0-2' }}</strong>
+        <small>Balance to dispatch</small>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="details-card details-card--wide">
+        <header>
+          <div>
+            <span class="eyebrow">Purchase order</span>
+            <h2>PO and item details</h2>
+          </div>
+
+          <a
+            [routerLink]="[
+              '/purchase-orders',
+              item.purchaseOrderId
+            ]"
+          >
+            View purchase order
+          </a>
+        </header>
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span>PO number</span>
+            <strong>{{ item.poNumber || '—' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Handler</span>
+            <strong>{{ item.handler || '—' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Purchaser</span>
+            <strong>{{ item.purchaserName || '—' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Line item</span>
+            <strong>{{ item.lineItem || '—' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Item type</span>
+            <strong>{{ item.itemType || '—' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>HSN / SAC</span>
+            <strong>{{ item.hsnSacCode || '—' }}</strong>
+          </div>
+
+          <div class="detail-item detail-item--wide">
+            <span>Short description</span>
+            <strong>{{ item.shortDescription || '—' }}</strong>
+          </div>
+
+          <div class="detail-item detail-item--wide">
+            <span>Brief description</span>
+            <p>{{ item.briefDescription || '—' }}</p>
+          </div>
+
+          <div class="detail-item">
+            <span>Receiver</span>
+            <strong>{{ item.receiver || '—' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Unloading point</span>
+            <strong>{{ item.unloadingPoint || '—' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Department</span>
+            <strong>{{ item.dep || '—' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Recorded stock</span>
+            <strong>{{ item.stockQty | number: '1.0-2' }}</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="details-card">
+        <header>
+          <div>
+            <span class="eyebrow">Status</span>
+            <h2>Current progress</h2>
+          </div>
+        </header>
+
+        <div class="status-list">
+          <div>
+            <span>Process</span>
+            <strong
+              class="status-badge"
+              [class]="
+                'status-badge status-' +
+                statusClass(item.processStatus)
+              "
+            >
+              {{ item.processStatus || 'Pending' }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Invoice</span>
+            <strong
+              class="status-badge"
+              [class]="
+                'status-badge status-' +
+                statusClass(item.invoiceStatus)
+              "
+            >
+              {{ item.invoiceStatus || 'Not Invoiced' }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Dispatch</span>
+            <strong
+              class="status-badge"
+              [class]="
+                'status-badge status-' +
+                statusClass(item.dispatchStatus)
+              "
+            >
+              {{ item.dispatchStatus || 'Pending' }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Assigned dashboard</span>
+            <strong>{{ item.assignedDashboard || '—' }}</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="details-card">
+        <header>
+          <div>
+            <span class="eyebrow">Schedule</span>
+            <h2>Important dates</h2>
+          </div>
+        </header>
+
+        <div class="date-list">
+          <div>
+            <span>PO date</span>
+            <strong>
+              {{
+                item.poDate
+                  ? (item.poDate | date: 'dd MMM yyyy')
+                  : '—'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Received date</span>
+            <strong>
+              {{
+                item.receivingDate
+                  ? (item.receivingDate | date: 'dd MMM yyyy')
+                  : '—'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Process start</span>
+            <strong>
+              {{
+                item.processStartDate
+                  ? (item.processStartDate | date: 'dd MMM yyyy')
+                  : '—'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Delivery date</span>
+            <strong>
+              {{
+                item.deliveryDate
+                  ? (item.deliveryDate | date: 'dd MMM yyyy')
+                  : '—'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Dispatch date</span>
+            <strong>
+              {{
+                item.dispatchDate
+                  ? (item.dispatchDate | date: 'dd MMM yyyy')
+                  : '—'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Drawing updated</span>
+            <strong>
+              {{
+                item.drawingUpdatedDate
+                  ? (item.drawingUpdatedDate | date: 'dd MMM yyyy')
+                  : '—'
+              }}
+            </strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="details-card details-card--wide">
+        <header>
+          <div>
+            <span class="eyebrow">Cost</span>
+            <h2>Value and tax details</h2>
+          </div>
+        </header>
+
+        <div class="detail-grid detail-grid--four">
+          <div class="detail-item">
+            <span>Cost</span>
+            <strong>{{ item.cost | number: '1.2-2' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Value of goods</span>
+            <strong>{{ item.valueOfGoods | number: '1.2-2' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Price unit</span>
+            <strong>{{ item.priceUnit || '—' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Total value</span>
+            <strong>{{ item.totalValue | number: '1.2-2' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>CGST</span>
+            <strong>
+              {{ item.cgstRate | number: '1.0-2' }}%
+              · {{ item.cgstAmount | number: '1.2-2' }}
+            </strong>
+          </div>
+
+          <div class="detail-item">
+            <span>SGST</span>
+            <strong>
+              {{ item.sgstRate | number: '1.0-2' }}%
+              · {{ item.sgstAmount | number: '1.2-2' }}
+            </strong>
+          </div>
+
+          <div class="detail-item">
+            <span>IGST</span>
+            <strong>
+              {{ item.igstRate | number: '1.0-2' }}%
+              · {{ item.igstAmount | number: '1.2-2' }}
+            </strong>
+          </div>
+
+          <div class="detail-item detail-item--highlight">
+            <span>Total with tax</span>
+            <strong>
+              {{ item.totalValueWithTax | number: '1.2-2' }}
+            </strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="details-card">
+        <header>
+          <div>
+            <span class="eyebrow">Production</span>
+            <h2>Material and process</h2>
+          </div>
+        </header>
+
+        <div class="detail-stack">
+          <div>
+            <span>RM grade</span>
+            <strong>{{ item.rmGrade || '—' }}</strong>
+          </div>
+
+          <div>
+            <span>RM source</span>
+            <strong>{{ item.rmSource || '—' }}</strong>
+          </div>
+
+          <div>
+            <span>RM process</span>
+            <strong>{{ item.rmProcess || '—' }}</strong>
+          </div>
+
+          <div>
+            <span>Surface finish</span>
+            <strong>{{ item.surfaceFinish || '—' }}</strong>
+          </div>
+
+          <div>
+            <span>Machining type</span>
+            <strong>{{ item.machiningType || '—' }}</strong>
+          </div>
+
+          <div>
+            <span>Process time</span>
+            <strong>{{ item.processTime || '—' }}</strong>
+          </div>
+
+          <div>
+            <span>Material process time</span>
+            <strong>{{ item.materialProcessTime || '—' }}</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="details-card">
+        <header>
+          <div>
+            <span class="eyebrow">Drawing and files</span>
+            <h2>Documents</h2>
+          </div>
+
+          <a
+            [routerLink]="[
+              '/materials',
+              item.id,
+              'files'
+            ]"
+          >
+            Upload files
+          </a>
+        </header>
+
+        <div class="file-list">
+          <div>
+            <span>Drawing number</span>
+            <strong>{{ item.drawingNo || '—' }}</strong>
+          </div>
+
+          <div>
+            <span>Drawing version</span>
+            <strong>{{ item.drawingVersion || '—' }}</strong>
+          </div>
+
+          @if (item.pdfFilePath) {
+            <a
+              class="file-link"
+              [href]="item.pdfFilePath"
+              target="_blank"
+              rel="noopener"
+            >
+              <span>Material PDF</span>
+              <strong>{{ fileName(item.pdfFilePath) }}</strong>
+            </a>
+          } @else {
+            <div>
+              <span>Material PDF</span>
+              <strong>Not uploaded</strong>
+            </div>
+          }
+
+          @if (item.drawingFilePath) {
+            <a
+              class="file-link"
+              [href]="item.drawingFilePath"
+              target="_blank"
+              rel="noopener"
+            >
+              <span>Drawing file</span>
+              <strong>{{ fileName(item.drawingFilePath) }}</strong>
+            </a>
+          } @else {
+            <div>
+              <span>Drawing file</span>
+              <strong>Not uploaded</strong>
+            </div>
+          }
+        </div>
+      </article>
+
+      <article class="details-card details-card--wide">
+        <header>
+          <div>
+            <span class="eyebrow">Notes</span>
+            <h2>Remark and audit</h2>
+          </div>
+        </header>
+
+        <div class="remark-box">
+          {{ item.remark || 'No remark added.' }}
+        </div>
+
+        <div class="audit-row">
+          <span>
+            Created:
+            {{ item.createdDate | date: 'dd MMM yyyy, hh:mm a' }}
+          </span>
+
+          <span>
+            Updated:
+            {{
+              item.updatedDate
+                ? (item.updatedDate | date: 'dd MMM yyyy, hh:mm a')
+                : '—'
+            }}
+          </span>
+
+          <span>
+            Invoice links: {{ item.invoiceItemCount }}
+          </span>
+
+          <span>
+            Dispatch links: {{ item.dispatchRecordCount }}
+          </span>
+        </div>
+      </article>
+    </section>
+  }
+</section>

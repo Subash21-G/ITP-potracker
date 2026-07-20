@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { MaterialListItem } from '../../core/models/material.model';
@@ -17,7 +18,12 @@ import { MaterialsApiService } from '../../core/services/materials-api.service';
 
 @Component({
   selector: 'app-materials-page',
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule],
+  imports: [
+    DatePipe,
+    DecimalPipe,
+    ReactiveFormsModule,
+    RouterLink,
+  ],
   templateUrl: './materials-page.html',
   styleUrl: './materials-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,7 +56,9 @@ export class MaterialsPage {
   readonly showingFrom = computed(() =>
     this.totalRecords() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
   );
-  readonly showingTo = computed(() => Math.min(this.page() * this.pageSize(), this.totalRecords()));
+  readonly showingTo = computed(() =>
+    Math.min(this.page() * this.pageSize(), this.totalRecords()),
+  );
 
   constructor() {
     this.loadMaterials();
@@ -112,7 +120,10 @@ export class MaterialsPage {
       return 'status status--warning';
     }
 
-    if (normalizedStatus.includes('pending') || normalizedStatus.startsWith('not ')) {
+    if (
+      normalizedStatus.includes('pending') ||
+      normalizedStatus.startsWith('not ')
+    ) {
       return 'status status--neutral';
     }
 
@@ -180,7 +191,7 @@ export class MaterialsPage {
     }
 
     if (error.status === 404) {
-      return 'The materials API was not found. Confirm that Step 11 is installed and app.MapControllers() is enabled.';
+      return 'The materials API was not found. Confirm that app.MapControllers() is enabled.';
     }
 
     const apiMessage = error.error?.error;

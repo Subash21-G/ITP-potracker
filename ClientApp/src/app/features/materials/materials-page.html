@@ -7,9 +7,18 @@
     </p>
   </div>
 
-  <div class="record-summary" aria-live="polite">
-    <strong>{{ totalRecords() | number }}</strong>
-    <span>matching records</span>
+  <div class="heading-actions">
+    <div class="record-summary" aria-live="polite">
+      <strong>{{ totalRecords() | number }}</strong>
+      <span>matching records</span>
+    </div>
+
+    <a
+      class="button button--create"
+      routerLink="/materials/new"
+    >
+      + Create material
+    </a>
   </div>
 </section>
 
@@ -19,6 +28,7 @@
       <h2 id="filter-title">Filters</h2>
       <p>Use one or more fields, then apply the filters.</p>
     </div>
+
     <button
       class="button button--quiet"
       type="button"
@@ -29,7 +39,11 @@
     </button>
   </div>
 
-  <form class="filter-grid" [formGroup]="filters" (ngSubmit)="applyFilters()">
+  <form
+    class="filter-grid"
+    [formGroup]="filters"
+    (ngSubmit)="applyFilters()"
+  >
     <label class="field field--wide">
       <span>Search material</span>
       <input
@@ -41,12 +55,20 @@
 
     <label class="field">
       <span>PO number</span>
-      <input formControlName="poNumber" type="text" placeholder="PO-10025" />
+      <input
+        formControlName="poNumber"
+        type="text"
+        placeholder="PO-10025"
+      />
     </label>
 
     <label class="field">
       <span>Handler</span>
-      <input formControlName="handler" type="text" placeholder="Buyer or contact" />
+      <input
+        formControlName="handler"
+        type="text"
+        placeholder="Buyer or contact"
+      />
     </label>
 
     <label class="field">
@@ -54,7 +76,9 @@
       <select formControlName="invoiceStatus">
         <option value="">All statuses</option>
         <option value="Not Invoiced">Not Invoiced</option>
-        <option value="Partially Invoiced">Partially Invoiced</option>
+        <option value="Partially Invoiced">
+          Partially Invoiced
+        </option>
         <option value="Fully Invoiced">Fully Invoiced</option>
       </select>
     </label>
@@ -64,23 +88,35 @@
       <select formControlName="dispatchStatus">
         <option value="">All statuses</option>
         <option value="Pending">Pending</option>
-        <option value="Partially Dispatched">Partially Dispatched</option>
+        <option value="Partially Dispatched">
+          Partially Dispatched
+        </option>
         <option value="Dispatched">Dispatched</option>
       </select>
     </label>
 
     <label class="field">
       <span>Delivery from</span>
-      <input formControlName="deliveryDateFrom" type="date" />
+      <input
+        formControlName="deliveryDateFrom"
+        type="date"
+      />
     </label>
 
     <label class="field">
       <span>Delivery to</span>
-      <input formControlName="deliveryDateTo" type="date" />
+      <input
+        formControlName="deliveryDateTo"
+        type="date"
+      />
     </label>
 
     <div class="filter-action">
-      <button class="button button--primary" type="submit" [disabled]="loading()">
+      <button
+        class="button button--primary"
+        type="submit"
+        [disabled]="loading()"
+      >
         {{ loading() ? 'Loading…' : 'Apply filters' }}
       </button>
     </div>
@@ -93,11 +129,24 @@
       <strong>Materials unavailable</strong>
       <p>{{ errorMessage() }}</p>
     </div>
+
     <div class="message__actions">
       @if (errorStatus() === 401) {
-        <a class="button button--primary" href="/Account/Login">Sign in</a>
+        <a
+          class="button button--primary"
+          routerLink="/login"
+        >
+          Sign in
+        </a>
       }
-      <button class="button button--quiet" type="button" (click)="retry()">Retry</button>
+
+      <button
+        class="button button--quiet"
+        type="button"
+        (click)="retry()"
+      >
+        Retry
+      </button>
     </div>
   </section>
 }
@@ -107,14 +156,19 @@
     <div>
       <h2 id="results-title">Results</h2>
       <p>
-        Showing {{ showingFrom() | number }}–{{ showingTo() | number }} of
-        {{ totalRecords() | number }}
+        Showing {{ showingFrom() | number }}–{{ showingTo() | number }}
+        of {{ totalRecords() | number }}
       </p>
     </div>
 
     <label class="page-size">
       <span>Rows</span>
-      <select [value]="pageSize()" [disabled]="loading()" (change)="changePageSize($event)">
+
+      <select
+        [value]="pageSize()"
+        [disabled]="loading()"
+        (change)="changePageSize($event)"
+      >
         <option value="10">10</option>
         <option value="25">25</option>
         <option value="50">50</option>
@@ -123,7 +177,10 @@
     </label>
   </div>
 
-  <div class="table-wrap" [class.table-wrap--loading]="loading()">
+  <div
+    class="table-wrap"
+    [class.table-wrap--loading]="loading()"
+  >
     <table>
       <thead>
         <tr>
@@ -138,55 +195,111 @@
           <th>Process</th>
           <th>Dispatch</th>
           <th>Delivery</th>
+          <th class="action-cell">Action</th>
         </tr>
       </thead>
+
       <tbody>
         @for (material of items(); track material.id) {
           <tr>
             <td>
-              <strong class="primary-value">{{ material.poNumber || '—' }}</strong>
-              <span class="secondary-value">{{ material.handler || 'No handler' }}</span>
+              <a
+                class="primary-link"
+                [routerLink]="[
+                  '/purchase-orders',
+                  material.purchaseOrderId
+                ]"
+              >
+                {{ material.poNumber || '—' }}
+              </a>
+
+              <span class="secondary-value">
+                {{ material.handler || 'No handler' }}
+              </span>
             </td>
+
             <td>{{ material.lineItem || '—' }}</td>
+
             <td>
-              <strong class="primary-value">{{ material.materialNo || '—' }}</strong>
+              <a
+                class="primary-link"
+                [routerLink]="[
+                  '/materials',
+                  material.id
+                ]"
+              >
+                {{ material.materialNo || '—' }}
+              </a>
+
               @if (material.hsnSacCode) {
-                <span class="secondary-value">HSN {{ material.hsnSacCode }}</span>
+                <span class="secondary-value">
+                  HSN {{ material.hsnSacCode }}
+                </span>
               }
             </td>
-            <td class="description-cell" [title]="material.description">
+
+            <td
+              class="description-cell"
+              [title]="material.description"
+            >
               {{ material.description || '—' }}
             </td>
+
             <td class="number-cell">
               {{ material.quantity | number: '1.0-2' }}
               <span class="unit">{{ material.unit }}</span>
             </td>
+
             <td class="number-cell">
               {{ material.invoiceQuantity | number: '1.0-2' }}
             </td>
+
             <td class="number-cell">
               {{ material.dispatchQuantity | number: '1.0-2' }}
             </td>
+
             <td class="number-cell number-cell--strong">
               {{ material.pendingQuantity | number: '1.0-2' }}
             </td>
+
             <td>
-              <span [class]="statusClass(material.processStatus)">
+              <span
+                [class]="statusClass(material.processStatus)"
+              >
                 {{ material.processStatus }}
               </span>
             </td>
+
             <td>
-              <span [class]="statusClass(material.dispatchStatus)">
+              <span
+                [class]="statusClass(material.dispatchStatus)"
+              >
                 {{ material.dispatchStatus }}
               </span>
             </td>
+
             <td class="date-cell">
-              {{ (material.deliveryDate | date: 'dd MMM yyyy') || '—' }}
+              {{
+                (material.deliveryDate | date: 'dd MMM yyyy') ||
+                  '—'
+              }}
+            </td>
+
+            <td class="action-cell">
+              <a
+                class="details-button"
+                [routerLink]="[
+                  '/materials',
+                  material.id
+                ]"
+              >
+                View
+              </a>
             </td>
           </tr>
         } @empty {
           <tr>
-            <td class="empty-state" colspan="11">
+            <td class="empty-state" colspan="12">
               @if (loading()) {
                 Loading materials…
               } @else {
@@ -199,8 +312,14 @@
     </table>
   </div>
 
-  <div class="pagination" aria-label="Material result pages">
-    <span>Page {{ page() | number }} of {{ totalPages() | number }}</span>
+  <div
+    class="pagination"
+    aria-label="Material result pages"
+  >
+    <span>
+      Page {{ page() | number }} of {{ totalPages() | number }}
+    </span>
+
     <div>
       <button
         class="button button--quiet"
@@ -210,6 +329,7 @@
       >
         Previous
       </button>
+
       <button
         class="button button--quiet"
         type="button"

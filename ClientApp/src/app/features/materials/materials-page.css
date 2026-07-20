@@ -10,6 +10,12 @@
   margin-bottom: 24px;
 }
 
+.heading-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   color: #0f766e;
@@ -47,14 +53,14 @@ h2 {
 
 .record-summary {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
   min-width: 180px;
   padding: 15px 18px;
+  align-items: baseline;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+  gap: 8px;
 }
 
 .record-summary strong {
@@ -82,18 +88,18 @@ h2 {
 
 .panel__heading {
   display: flex;
+  padding: 18px 20px;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 18px 20px;
   border-bottom: 1px solid #e8edf4;
+  gap: 20px;
 }
 
 .filter-grid {
   display: grid;
+  padding: 20px;
   grid-template-columns: repeat(4, minmax(150px, 1fr));
   gap: 16px;
-  padding: 20px;
 }
 
 .field {
@@ -146,10 +152,10 @@ select:focus {
 
 .button {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
   min-height: 40px;
   padding: 9px 15px;
+  align-items: center;
+  justify-content: center;
   font-size: 0.78rem;
   font-weight: 800;
   line-height: 1;
@@ -164,13 +170,20 @@ select:focus {
   opacity: 0.45;
 }
 
-.button--primary {
+.button--primary,
+.button--create {
   color: #ffffff;
   background: #0f766e;
   border-color: #0f766e;
 }
 
-.button--primary:hover:not(:disabled) {
+.button--create {
+  min-width: 145px;
+  box-shadow: 0 12px 28px rgba(15, 118, 110, 0.18);
+}
+
+.button--primary:hover:not(:disabled),
+.button--create:hover {
   background: #115e59;
 }
 
@@ -186,11 +199,11 @@ select:focus {
 
 .message {
   display: flex;
+  padding: 16px 18px;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 16px 18px;
   border-radius: 13px;
+  gap: 20px;
 }
 
 .message--error {
@@ -241,7 +254,7 @@ select:focus {
 
 table {
   width: 100%;
-  min-width: 1280px;
+  min-width: 1360px;
   border-spacing: 0;
   border-collapse: collapse;
 }
@@ -275,14 +288,21 @@ tbody tr:hover {
   background: #f8fafc;
 }
 
-.primary-value,
+.primary-link,
 .secondary-value {
   display: block;
 }
 
-.primary-value {
+.primary-link {
   color: #172033;
   font-weight: 800;
+  text-decoration: none;
+}
+
+.primary-link:hover {
+  color: #0f766e;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .secondary-value {
@@ -344,6 +364,33 @@ tbody tr:hover {
   background: #e2e8f0;
 }
 
+.action-cell {
+  width: 82px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.details-button {
+  display: inline-flex;
+  min-height: 32px;
+  padding: 7px 11px;
+  align-items: center;
+  justify-content: center;
+  color: #0f766e;
+  font-size: 0.7rem;
+  font-weight: 850;
+  text-decoration: none;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  border-radius: 8px;
+}
+
+.details-button:hover {
+  color: #ffffff;
+  background: #0f766e;
+  border-color: #0f766e;
+}
+
 .empty-state {
   height: 190px;
   color: #64748b;
@@ -352,13 +399,13 @@ tbody tr:hover {
 
 .pagination {
   display: flex;
+  padding: 15px 20px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 15px 20px;
   color: #64748b;
   font-size: 0.75rem;
   background: #fbfcfe;
+  gap: 16px;
 }
 
 .pagination div {
@@ -370,18 +417,28 @@ tbody tr:hover {
   .filter-grid {
     grid-template-columns: repeat(2, minmax(150px, 1fr));
   }
+
+  .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 620px) {
-  .page-heading,
   .message,
   .pagination {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .record-summary {
-    align-self: flex-start;
+  .heading-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .record-summary,
+  .button--create {
+    width: 100%;
   }
 
   .filter-grid {

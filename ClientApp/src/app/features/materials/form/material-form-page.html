@@ -1,0 +1,468 @@
+<section class="material-form-page">
+  <header class="page-header">
+    <div>
+      <a
+        class="back-link"
+        [routerLink]="cancelLink()"
+      >
+        ← Cancel and go back
+      </a>
+
+      <span class="eyebrow">
+        {{ isEditMode() ? 'Update record' : 'New record' }}
+      </span>
+
+      <h1>
+        {{
+          isEditMode()
+            ? 'Edit material'
+            : 'Create material'
+        }}
+      </h1>
+
+      <p>
+        Enter purchase-order, quantity, process, cost and
+        drawing information. Invoice and dispatch quantities
+        are maintained by their own modules.
+      </p>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="message message--error" role="alert">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="message message--success" role="status">
+      {{ successMessage() }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-card">
+      Loading material form…
+    </div>
+  } @else {
+    <form
+      class="material-form"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      novalidate
+    >
+      <section class="form-card">
+        <header>
+          <div>
+            <span class="eyebrow">Purchase order</span>
+            <h2>PO and item details</h2>
+          </div>
+        </header>
+
+        <div class="form-grid">
+          <label class="field field--wide">
+            <span>Purchase order *</span>
+
+            <select formControlName="purchaseOrderId">
+              <option [ngValue]="0">
+                Select purchase order
+              </option>
+
+              @for (
+                option of purchaseOrders();
+                track option.id
+              ) {
+                <option [ngValue]="option.id">
+                  {{ option.poNumber }}
+                  {{
+                    option.handler
+                      ? ' — ' + option.handler
+                      : ''
+                  }}
+                </option>
+              }
+            </select>
+
+            @if (fieldInvalid('purchaseOrderId')) {
+              <small>Please select a purchase order.</small>
+            }
+          </label>
+
+          <label class="field">
+            <span>Line item</span>
+            <input
+              type="text"
+              formControlName="lineItem"
+              placeholder="10"
+            />
+          </label>
+
+          <label class="field">
+            <span>Item type</span>
+            <input
+              type="text"
+              formControlName="itemType"
+              placeholder="Standard"
+            />
+          </label>
+
+          <label class="field">
+            <span>Material number</span>
+            <input
+              type="text"
+              formControlName="materialNo"
+              placeholder="Material number"
+            />
+          </label>
+
+          <label class="field">
+            <span>HSN / SAC code</span>
+            <input
+              type="text"
+              formControlName="hsnSacCode"
+              placeholder="HSN code"
+            />
+          </label>
+
+          <label class="field field--wide">
+            <span>Short description</span>
+            <input
+              type="text"
+              formControlName="shortDescription"
+              placeholder="Short material description"
+            />
+          </label>
+
+          <label class="field field--full">
+            <span>Brief description</span>
+            <textarea
+              rows="4"
+              formControlName="briefDescription"
+              placeholder="Detailed material description"
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span>Receiver</span>
+            <input
+              type="text"
+              formControlName="receiver"
+            />
+          </label>
+
+          <label class="field">
+            <span>Unloading point</span>
+            <input
+              type="text"
+              formControlName="unloadingPoint"
+            />
+          </label>
+
+          <label class="field">
+            <span>Department</span>
+            <input
+              type="text"
+              formControlName="dep"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <header>
+          <div>
+            <span class="eyebrow">Quantity</span>
+            <h2>Ordered and stock quantity</h2>
+          </div>
+        </header>
+
+        <div class="form-grid form-grid--four">
+          <label class="field">
+            <span>PO quantity *</span>
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              formControlName="qty"
+            />
+
+            @if (fieldInvalid('qty')) {
+              <small>
+                Quantity must be greater than zero.
+              </small>
+            }
+          </label>
+
+          <label class="field">
+            <span>Unit</span>
+            <input
+              type="text"
+              formControlName="unit"
+              placeholder="EA / KG / NOS"
+            />
+          </label>
+
+          <label class="field">
+            <span>Recorded stock quantity</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="stockQty"
+            />
+          </label>
+
+          <label class="field">
+            <span>Process status</span>
+            <select formControlName="processStatus">
+              <option value="Pending">Pending</option>
+              <option value="In Process">In Process</option>
+              <option value="Completed">Completed</option>
+              <option value="On Hold">On Hold</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <header>
+          <div>
+            <span class="eyebrow">Schedule</span>
+            <h2>Important dates</h2>
+          </div>
+        </header>
+
+        <div class="form-grid form-grid--four">
+          <label class="field">
+            <span>PO date</span>
+            <input
+              type="date"
+              formControlName="poDate"
+            />
+          </label>
+
+          <label class="field">
+            <span>Received date</span>
+            <input
+              type="date"
+              formControlName="receivingDate"
+            />
+          </label>
+
+          <label class="field">
+            <span>Delivery date</span>
+            <input
+              type="date"
+              formControlName="deliveryDate"
+            />
+          </label>
+
+          <label class="field">
+            <span>Dispatch date</span>
+            <input
+              type="date"
+              formControlName="dispatchDate"
+            />
+          </label>
+        </div>
+
+        <p class="form-note">
+          Process start date and alert date are automatically
+          calculated as one month before the delivery date.
+        </p>
+      </section>
+
+      <section class="form-card">
+        <header>
+          <div>
+            <span class="eyebrow">Cost</span>
+            <h2>Value details</h2>
+          </div>
+        </header>
+
+        <div class="form-grid form-grid--four">
+          <label class="field">
+            <span>Cost</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="cost"
+            />
+          </label>
+
+          <label class="field">
+            <span>Value of goods</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="valueOfGoods"
+            />
+          </label>
+
+          <label class="field">
+            <span>Price unit</span>
+            <input
+              type="text"
+              formControlName="priceUnit"
+              placeholder="Per 1 EA"
+            />
+          </label>
+
+          <label class="field">
+            <span>Total value</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="totalValue"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <header>
+          <div>
+            <span class="eyebrow">Production</span>
+            <h2>Raw material and machining</h2>
+          </div>
+        </header>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>RM grade</span>
+            <input
+              type="text"
+              formControlName="rmGrade"
+            />
+          </label>
+
+          <label class="field">
+            <span>RM source</span>
+            <input
+              type="text"
+              formControlName="rmSource"
+            />
+          </label>
+
+          <label class="field">
+            <span>RM process</span>
+            <input
+              type="text"
+              formControlName="rmProcess"
+            />
+          </label>
+
+          <label class="field">
+            <span>Surface finish</span>
+            <input
+              type="text"
+              formControlName="surfaceFinish"
+            />
+          </label>
+
+          <label class="field">
+            <span>Machining type</span>
+            <input
+              type="text"
+              formControlName="machiningType"
+            />
+          </label>
+
+          <label class="field">
+            <span>Process time</span>
+            <input
+              type="text"
+              formControlName="processTime"
+            />
+          </label>
+
+          <label class="field">
+            <span>Material process time</span>
+            <input
+              type="text"
+              formControlName="materialProcessTime"
+            />
+          </label>
+
+          <label class="field">
+            <span>Assigned dashboard</span>
+            <input
+              type="text"
+              formControlName="assignedDashboard"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <header>
+          <div>
+            <span class="eyebrow">Drawing</span>
+            <h2>Drawing information</h2>
+          </div>
+        </header>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>Drawing number</span>
+            <input
+              type="text"
+              formControlName="drawingNo"
+            />
+          </label>
+
+          <label class="field">
+            <span>Drawing version</span>
+            <input
+              type="text"
+              formControlName="drawingVersion"
+            />
+          </label>
+
+          <label class="field">
+            <span>Drawing updated date</span>
+            <input
+              type="date"
+              formControlName="drawingUpdatedDate"
+            />
+          </label>
+
+          <label class="field field--full">
+            <span>Remark</span>
+            <textarea
+              rows="5"
+              formControlName="remark"
+              placeholder="Notes, deviations or follow-up information"
+            ></textarea>
+          </label>
+        </div>
+      </section>
+
+      <footer class="form-actions">
+        <a
+          class="button button--quiet"
+          [routerLink]="cancelLink()"
+        >
+          Cancel
+        </a>
+
+        <button
+          class="button button--primary"
+          type="submit"
+          [disabled]="isSaving()"
+        >
+          {{
+            isSaving()
+              ? 'Saving…'
+              : isEditMode()
+                ? 'Save changes'
+                : 'Create material'
+          }}
+        </button>
+      </footer>
+    </form>
+  }
+</section>

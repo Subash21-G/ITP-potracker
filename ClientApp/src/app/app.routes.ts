@@ -17,6 +17,52 @@ export const routes: Routes = [
         (component) => component.DashboardPage,
       ),
   },
+
+  // ============================================================
+  // MATERIALS
+  // Specific routes must stay before materials/:id.
+  // ============================================================
+
+  {
+    path: 'materials/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/materials/form/material-form-page'
+      ).then(
+        (component) => component.MaterialFormPage,
+      ),
+  },
+  {
+    path: 'materials/:id/edit',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/materials/form/material-form-page'
+      ).then(
+        (component) => component.MaterialFormPage,
+      ),
+  },
+  {
+    path: 'materials/:id/files',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/materials/files/material-files-page'
+      ).then(
+        (component) => component.MaterialFilesPage,
+      ),
+  },
+  {
+    path: 'materials/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/materials/details/material-details-page'
+      ).then(
+        (component) => component.MaterialDetailsPage,
+      ),
+  },
   {
     path: 'materials',
     canActivate: [authGuard],
@@ -25,6 +71,11 @@ export const routes: Routes = [
         (component) => component.MaterialsPage,
       ),
   },
+
+  // ============================================================
+  // PURCHASE ORDERS
+  // ============================================================
+
   {
     path: 'purchase-orders/:id',
     canActivate: [authGuard],
@@ -32,8 +83,7 @@ export const routes: Routes = [
       import(
         './features/purchase-orders/purchase-order-details-page'
       ).then(
-        (component) =>
-          component.PurchaseOrderDetailsPage,
+        (component) => component.PurchaseOrderDetailsPage,
       ),
   },
   {
@@ -46,6 +96,7 @@ export const routes: Routes = [
         (component) => component.PurchaseOrdersPage,
       ),
   },
+
   {
     path: '',
     pathMatch: 'full',
