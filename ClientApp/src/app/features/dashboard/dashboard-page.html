@@ -1,0 +1,448 @@
+<section class="dashboard-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Operations overview</span>
+      <h1>Dashboard</h1>
+      <p>
+        Purchase orders, materials, invoices and dispatch progress
+        in one place.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      @if (dashboard()?.generatedAt) {
+        <span class="updated-time">
+          Updated
+          {{ dashboard()?.generatedAt | date: 'dd MMM yyyy, hh:mm a' }}
+        </span>
+      }
+
+      <button
+        type="button"
+        class="refresh-button"
+        (click)="loadDashboard()"
+        [disabled]="isLoading()"
+      >
+        {{ isLoading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="error-panel" role="alert">
+      <div>
+        <strong>Unable to load dashboard</strong>
+        <p>{{ errorMessage() }}</p>
+      </div>
+
+      <button type="button" (click)="loadDashboard()">
+        Try again
+      </button>
+    </div>
+  }
+
+  @if (isLoading() && !dashboard()) {
+    <div class="loading-grid" aria-label="Loading dashboard">
+      @for (item of [1, 2, 3, 4, 5, 6, 7, 8]; track item) {
+        <div class="loading-card"></div>
+      }
+    </div>
+  }
+
+  @if (dashboard(); as data) {
+    <section
+      class="overview-grid"
+      aria-label="Dashboard totals"
+    >
+      <a class="overview-card" routerLink="/purchase-orders">
+        <span class="card-label">Purchase orders</span>
+        <strong>{{ data.overview.totalPurchaseOrders }}</strong>
+        <small>Total orders received</small>
+      </a>
+
+      <a class="overview-card" routerLink="/materials">
+        <span class="card-label">Materials</span>
+        <strong>{{ data.overview.totalMaterials }}</strong>
+        <small>All PO line materials</small>
+      </a>
+
+      <article class="overview-card overview-card--warning">
+        <span class="card-label">Pending process</span>
+        <strong>{{ data.overview.pendingMaterials }}</strong>
+        <small>Materials not completed</small>
+      </article>
+
+      <article class="overview-card overview-card--danger">
+        <span class="card-label">Overdue</span>
+        <strong>{{ data.overview.overdueMaterials }}</strong>
+        <small>Past delivery date</small>
+      </article>
+
+      <article class="overview-card">
+        <span class="card-label">Delivery in 7 days</span>
+        <strong>{{ data.overview.deliveryWithin7Days }}</strong>
+        <small>Upcoming deliveries</small>
+      </article>
+
+      <article class="overview-card">
+        <span class="card-label">Dispatch pending</span>
+        <strong>{{ data.overview.dispatchPending }}</strong>
+        <small>Pending or partial dispatch</small>
+      </article>
+
+      <article class="overview-card">
+        <span class="card-label">Low stock</span>
+        <strong>{{ data.overview.lowStock }}</strong>
+        <small>Below minimum quantity</small>
+      </article>
+
+      <article class="overview-card">
+        <span class="card-label">Purchasers</span>
+        <strong>{{ data.overview.totalPurchasers }}</strong>
+        <small>Active purchaser records</small>
+      </article>
+    </section>
+
+    <section class="quantity-section">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Quantity movement</span>
+          <h2>PO to dispatch summary</h2>
+        </div>
+      </div>
+
+      <div class="quantity-grid">
+        <article>
+          <span>PO quantity</span>
+          <strong>
+            {{ data.quantities.totalPoQty | number: '1.0-2' }}
+          </strong>
+        </article>
+
+        <article>
+          <span>Invoice quantity</span>
+          <strong>
+            {{ data.quantities.totalInvoiceQty | number: '1.0-2' }}
+          </strong>
+        </article>
+
+        <article>
+          <span>Dispatch quantity</span>
+          <strong>
+            {{ data.quantities.totalDispatchQty | number: '1.0-2' }}
+          </strong>
+        </article>
+
+        <article class="quantity-pending">
+          <span>Pending quantity</span>
+          <strong>
+            {{ data.quantities.totalPendingQty | number: '1.0-2' }}
+          </strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="status-grid">
+      <article class="status-panel">
+        <header>
+          <div>
+            <span class="eyebrow">Production</span>
+            <h2>Process status</h2>
+          </div>
+          <strong>{{ processTotal(data) }}</strong>
+        </header>
+
+        <div class="status-row">
+          <div>
+            <span>Pending</span>
+            <strong>{{ data.process.pending }}</strong>
+          </div>
+          <div class="progress">
+            <span
+              class="progress--pending"
+              [style.width.%]="
+                percentage(
+                  data.process.pending,
+                  processTotal(data)
+                )
+              "
+            ></span>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <div>
+            <span>In progress</span>
+            <strong>{{ data.process.inProgress }}</strong>
+          </div>
+          <div class="progress">
+            <span
+              class="progress--running"
+              [style.width.%]="
+                percentage(
+                  data.process.inProgress,
+                  processTotal(data)
+                )
+              "
+            ></span>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <div>
+            <span>Completed</span>
+            <strong>{{ data.process.completed }}</strong>
+          </div>
+          <div class="progress">
+            <span
+              class="progress--completed"
+              [style.width.%]="
+                percentage(
+                  data.process.completed,
+                  processTotal(data)
+                )
+              "
+            ></span>
+          </div>
+        </div>
+      </article>
+
+      <article class="status-panel">
+        <header>
+          <div>
+            <span class="eyebrow">Logistics</span>
+            <h2>Dispatch status</h2>
+          </div>
+          <strong>{{ dispatchTotal(data) }}</strong>
+        </header>
+
+        <div class="status-row">
+          <div>
+            <span>Pending</span>
+            <strong>{{ data.dispatch.pending }}</strong>
+          </div>
+          <div class="progress">
+            <span
+              class="progress--pending"
+              [style.width.%]="
+                percentage(
+                  data.dispatch.pending,
+                  dispatchTotal(data)
+                )
+              "
+            ></span>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <div>
+            <span>Partial</span>
+            <strong>{{ data.dispatch.partial }}</strong>
+          </div>
+          <div class="progress">
+            <span
+              class="progress--running"
+              [style.width.%]="
+                percentage(
+                  data.dispatch.partial,
+                  dispatchTotal(data)
+                )
+              "
+            ></span>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <div>
+            <span>Completed</span>
+            <strong>{{ data.dispatch.completed }}</strong>
+          </div>
+          <div class="progress">
+            <span
+              class="progress--completed"
+              [style.width.%]="
+                percentage(
+                  data.dispatch.completed,
+                  dispatchTotal(data)
+                )
+              "
+            ></span>
+          </div>
+        </div>
+      </article>
+
+      <article class="status-panel">
+        <header>
+          <div>
+            <span class="eyebrow">Billing</span>
+            <h2>Invoice status</h2>
+          </div>
+          <strong>{{ invoiceTotal(data) }}</strong>
+        </header>
+
+        <div class="status-row">
+          <div>
+            <span>Not invoiced</span>
+            <strong>{{ data.invoice.notInvoiced }}</strong>
+          </div>
+          <div class="progress">
+            <span
+              class="progress--pending"
+              [style.width.%]="
+                percentage(
+                  data.invoice.notInvoiced,
+                  invoiceTotal(data)
+                )
+              "
+            ></span>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <div>
+            <span>Partially invoiced</span>
+            <strong>{{ data.invoice.partiallyInvoiced }}</strong>
+          </div>
+          <div class="progress">
+            <span
+              class="progress--running"
+              [style.width.%]="
+                percentage(
+                  data.invoice.partiallyInvoiced,
+                  invoiceTotal(data)
+                )
+              "
+            ></span>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <div>
+            <span>Fully invoiced</span>
+            <strong>{{ data.invoice.fullyInvoiced }}</strong>
+          </div>
+          <div class="progress">
+            <span
+              class="progress--completed"
+              [style.width.%]="
+                percentage(
+                  data.invoice.fullyInvoiced,
+                  invoiceTotal(data)
+                )
+              "
+            ></span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="recent-section">
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">Latest activity</span>
+          <h2>Recent materials</h2>
+        </div>
+
+        <a routerLink="/materials">View all materials</a>
+      </header>
+
+      @if (data.recentMaterials.length > 0) {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>PO number</th>
+                <th>Material</th>
+                <th>Description</th>
+                <th>PO qty</th>
+                <th>Pending</th>
+                <th>Delivery</th>
+                <th>Process</th>
+                <th>Dispatch</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (
+                material of data.recentMaterials;
+                track material.id
+              ) {
+                <tr>
+                  <td>
+                    <a
+                      [routerLink]="[
+                        '/purchase-orders',
+                        material.purchaseOrderId
+                      ]"
+                    >
+                      {{ material.poNumber || '—' }}
+                    </a>
+                    <small>{{ material.purchaserName }}</small>
+                  </td>
+
+                  <td>
+                    <strong>
+                      {{ material.materialNo || '—' }}
+                    </strong>
+                    <small>Line {{ material.lineItem || '—' }}</small>
+                  </td>
+
+                  <td class="description-cell">
+                    {{ material.description || '—' }}
+                  </td>
+
+                  <td>
+                    {{ material.poQty | number: '1.0-2' }}
+                  </td>
+
+                  <td>
+                    <strong>
+                      {{ material.pendingQty | number: '1.0-2' }}
+                    </strong>
+                  </td>
+
+                  <td>
+                    {{
+                      material.deliveryDate
+                        ? (material.deliveryDate | date: 'dd MMM yyyy')
+                        : '—'
+                    }}
+                  </td>
+
+                  <td>
+                    <span
+                      class="status-badge"
+                      [class]="
+                        'status-badge status-' +
+                        statusClass(material.processStatus)
+                      "
+                    >
+                      {{ material.processStatus || 'Pending' }}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span
+                      class="status-badge"
+                      [class]="
+                        'status-badge status-' +
+                        statusClass(material.dispatchStatus)
+                      "
+                    >
+                      {{ material.dispatchStatus || 'Pending' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <strong>No materials found</strong>
+          <p>Imported materials will appear here.</p>
+        </div>
+      }
+    </section>
+  }
+</section>

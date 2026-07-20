@@ -132,7 +132,7 @@ export class LoginPage implements OnInit {
     const returnUrl =
       this.route.snapshot.queryParamMap.get(
         'returnUrl',
-      ) ?? '/materials';
+      ) ?? '/dashboard';
 
     const isSafeLocalUrl =
       returnUrl.startsWith('/') &&
@@ -141,6 +141,6 @@ export class LoginPage implements OnInit {
 
     return isSafeLocalUrl
       ? returnUrl
-      : '/materials';
+      : '/dashboard';
   }
 }

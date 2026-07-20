@@ -2,8 +2,8 @@
   <header class="app-header">
     <a
       class="brand"
-      routerLink="/materials"
-      aria-label="PO Tracker home"
+      routerLink="/dashboard"
+      aria-label="PO Tracker dashboard"
     >
       <span class="brand__mark" aria-hidden="true">PO</span>
 
@@ -15,6 +15,14 @@
 
     <div class="header-actions">
       <nav aria-label="Primary navigation">
+        <a
+          routerLink="/dashboard"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          Dashboard
+        </a>
+
         <a
           routerLink="/materials"
           routerLinkActive="active"

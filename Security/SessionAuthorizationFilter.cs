@@ -65,14 +65,22 @@ namespace POTracker.Security
             ViewerApiActions =
                 new(StringComparer.OrdinalIgnoreCase)
                 {
+                    // Angular dashboard read access.
+                    ["DashboardApi"] = Actions(
+                        "GetDashboard"),
+
+                    // Existing Angular material read access.
                     ["MaterialsApi"] = Actions(
                         "Index",
                         "Details"),
+
+                    // Existing Angular purchase-order read access.
                     ["PurchaseOrdersApi"] = Actions(
                         "Index",
                         "Details"),
 
-                    // A signed-in Viewer can read the current session.
+                    // Signed-in users may read the current session
+                    // and log out.
                     ["AuthApi"] = Actions(
                         "GetCurrentUser",
                         "Logout")

@@ -10,6 +10,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'dashboard',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/dashboard-page').then(
+        (component) => component.DashboardPage,
+      ),
+  },
+  {
     path: 'materials',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -41,10 +49,10 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'materials',
+    redirectTo: 'dashboard',
   },
   {
     path: '**',
-    redirectTo: 'materials',
+    redirectTo: 'dashboard',
   },
 ];
