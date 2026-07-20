@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace POTracker.Security
 {
     /// <summary>
-    /// Applies the application's existing session login and role rules from one
-    /// central place. This prevents a hidden menu item from being opened by
-    /// typing its URL directly.
+    /// Applies the application's session login and role rules from one
+    /// central place. This prevents a hidden menu item or API endpoint
+    /// from being opened by typing its URL directly.
     /// </summary>
     public sealed class SessionAuthorizationFilter : IAuthorizationFilter
     {
@@ -45,62 +45,99 @@ namespace POTracker.Security
                     ["PendingMaterial"] = Actions(
                         "Index",
                         "ExportExcel"),
-                    ["Dispatch"] = Actions("Index", "Details"),
+                    ["Dispatch"] = Actions(
+                        "Index",
+                        "Details"),
                     ["ProcessQueue"] = Actions("Index"),
                     ["Stock"] = Actions("Index"),
                     ["Drawing"] = Actions("Index"),
-                    ["Calendar"] = Actions("Index", "GetEvents"),
+                    ["Calendar"] = Actions(
+                        "Index",
+                        "GetEvents"),
                     ["Alert"] = Actions("Index"),
                     ["Notification"] = Actions("Index"),
-                    ["Home"] = Actions("Index", "Privacy")
+                    ["Home"] = Actions(
+                        "Index",
+                        "Privacy")
                 };
 
         private static readonly Dictionary<string, HashSet<string>>
             ViewerApiActions =
-            new(StringComparer.OrdinalIgnoreCase)
+                new(StringComparer.OrdinalIgnoreCase)
                 {
-                    ["MaterialsApi"] = Actions("Index", "Details"),
-                    ["PurchaseOrdersApi"] = Actions("Index", "Details")
+                    ["MaterialsApi"] = Actions(
+                        "Index",
+                        "Details"),
+                    ["PurchaseOrdersApi"] = Actions(
+                        "Index",
+                        "Details"),
+
+                    // A signed-in Viewer can read the current session.
+                    ["AuthApi"] = Actions(
+                        "GetCurrentUser",
+                        "Logout")
                 };
 
-        public void OnAuthorization(AuthorizationFilterContext context)
+        public void OnAuthorization(
+            AuthorizationFilterContext context)
         {
-            var controller = GetRouteValue(context, "controller");
-            var action = GetRouteValue(context, "action");
-            var isApiRequest = IsApiRequest(context);
+            var controller =
+                GetRouteValue(context, "controller");
+
+            var action =
+                GetRouteValue(context, "action");
+
+            var isApiRequest =
+                IsApiRequest(context);
 
             if (IsPublicEndpoint(controller, action))
             {
                 return;
             }
 
-            var session = context.HttpContext.Session;
-            var userName = session.GetString("UserName");
+            var session =
+                context.HttpContext.Session;
+
+            var userName =
+                session.GetString("UserName");
 
             if (string.IsNullOrWhiteSpace(userName))
             {
-                RejectUnauthenticated(context, isApiRequest);
+                RejectUnauthenticated(
+                    context,
+                    isApiRequest);
+
                 return;
             }
 
-            var role = session.GetString("Role")?.Trim();
+            var role =
+                session.GetString("Role")?.Trim();
 
             if (string.IsNullOrWhiteSpace(role) ||
                 !SupportedRoles.Contains(role))
             {
                 session.Clear();
-                RejectUnauthenticated(context, isApiRequest);
+
+                RejectUnauthenticated(
+                    context,
+                    isApiRequest);
+
                 return;
             }
 
-            if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            if (role.Equals(
+                    "Admin",
+                    StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
             if (AdminOnlyControllers.Contains(controller))
             {
-                RejectForbidden(context, isApiRequest);
+                RejectForbidden(
+                    context,
+                    isApiRequest);
+
                 return;
             }
 
@@ -120,7 +157,9 @@ namespace POTracker.Security
                 return;
             }
 
-            RejectForbidden(context, isApiRequest);
+            RejectForbidden(
+                context,
+                isApiRequest);
         }
 
         private static bool IsViewerRequestAllowed(
@@ -129,7 +168,23 @@ namespace POTracker.Security
             string action,
             bool isApiRequest)
         {
-            var method = context.HttpContext.Request.Method;
+            var method =
+                context.HttpContext.Request.Method;
+
+            // Viewer accounts are read-only, except logout.
+            var isViewerLogout =
+                controller.Equals(
+                    "AuthApi",
+                    StringComparison.OrdinalIgnoreCase) &&
+                action.Equals(
+                    "Logout",
+                    StringComparison.OrdinalIgnoreCase) &&
+                HttpMethods.IsPost(method);
+
+            if (isViewerLogout)
+            {
+                return true;
+            }
 
             if (!HttpMethods.IsGet(method) &&
                 !HttpMethods.IsHead(method))
@@ -137,9 +192,10 @@ namespace POTracker.Security
                 return false;
             }
 
-            var allowedActionsByController = isApiRequest
-                ? ViewerApiActions
-                : ViewerActions;
+            var allowedActionsByController =
+                isApiRequest
+                    ? ViewerApiActions
+                    : ViewerActions;
 
             return allowedActionsByController.TryGetValue(
                        controller,
@@ -158,11 +214,29 @@ namespace POTracker.Security
             string controller,
             string action)
         {
+            // Existing MVC login and registration pages remain public.
             if (controller.Equals(
                     "Account",
                     StringComparison.OrdinalIgnoreCase))
             {
                 return true;
+            }
+
+            // Angular needs these endpoints before a session exists.
+            // Logout is deliberately not public.
+            if (controller.Equals(
+                    "AuthApi",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return action.Equals(
+                           "GetXsrfToken",
+                           StringComparison.OrdinalIgnoreCase) ||
+                       action.Equals(
+                           "GetCurrentUser",
+                           StringComparison.OrdinalIgnoreCase) ||
+                       action.Equals(
+                           "Login",
+                           StringComparison.OrdinalIgnoreCase);
             }
 
             return controller.Equals(
@@ -186,7 +260,8 @@ namespace POTracker.Security
                 : string.Empty;
         }
 
-        private static HashSet<string> Actions(params string[] actions)
+        private static HashSet<string> Actions(
+            params string[] actions)
         {
             return new HashSet<string>(
                 actions,
@@ -199,18 +274,22 @@ namespace POTracker.Security
         {
             if (isApiRequest)
             {
-                context.Result = new UnauthorizedObjectResult(new
-                {
-                    error = "Authentication is required."
-                });
+                context.Result =
+                    new UnauthorizedObjectResult(
+                        new
+                        {
+                            error =
+                                "Authentication is required."
+                        });
 
                 return;
             }
 
-            context.Result = new RedirectToActionResult(
-                "Login",
-                "Account",
-                null);
+            context.Result =
+                new RedirectToActionResult(
+                    "Login",
+                    "Account",
+                    null);
         }
 
         private static void RejectForbidden(
@@ -219,21 +298,26 @@ namespace POTracker.Security
         {
             if (isApiRequest)
             {
-                context.Result = new ObjectResult(new
-                {
-                    error = "You do not have permission for this operation."
-                })
-                {
-                    StatusCode = StatusCodes.Status403Forbidden
-                };
+                context.Result =
+                    new ObjectResult(
+                        new
+                        {
+                            error =
+                                "You do not have permission for this operation."
+                        })
+                    {
+                        StatusCode =
+                            StatusCodes.Status403Forbidden
+                    };
 
                 return;
             }
 
-            context.Result = new RedirectToActionResult(
-                "AccessDenied",
-                "Home",
-                null);
+            context.Result =
+                new RedirectToActionResult(
+                    "AccessDenied",
+                    "Home",
+                    null);
         }
     }
 }

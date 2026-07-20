@@ -1,0 +1,154 @@
+<div class="login-page">
+  <section class="login-showcase" aria-label="PO Tracker introduction">
+    <a class="brand" routerLink="/login" aria-label="PO Tracker login">
+      <span class="brand__mark" aria-hidden="true">PO</span>
+      <span>
+        <strong>PO Tracker</strong>
+        <small>Operations workspace</small>
+      </span>
+    </a>
+
+    <div class="showcase-copy">
+      <span class="eyebrow">Purchase order operations</span>
+      <h1>Track every order, material and dispatch in one place.</h1>
+      <p>
+        A secure workspace for purchase orders, production progress,
+        invoice matching, stock and dispatch control.
+      </p>
+
+      <div class="feature-list">
+        <article>
+          <span aria-hidden="true">01</span>
+          <div>
+            <strong>Live material status</strong>
+            <p>Find pending, invoiced and dispatched quantities quickly.</p>
+          </div>
+        </article>
+
+        <article>
+          <span aria-hidden="true">02</span>
+          <div>
+            <strong>Role-based access</strong>
+            <p>Admin, Production and Viewer accounts use the same secure system.</p>
+          </div>
+        </article>
+
+        <article>
+          <span aria-hidden="true">03</span>
+          <div>
+            <strong>Faster daily work</strong>
+            <p>Search, filter and review purchase-order information without delays.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <p class="showcase-footer">PO Tracker · Production operations platform</p>
+  </section>
+
+  <main class="login-content">
+    <section class="login-card" aria-labelledby="login-title">
+      <div class="mobile-brand">
+        <span class="brand__mark" aria-hidden="true">PO</span>
+        <div>
+          <strong>PO Tracker</strong>
+          <small>Operations workspace</small>
+        </div>
+      </div>
+
+      <header>
+        <span class="eyebrow">Secure access</span>
+        <h2 id="login-title">Welcome back</h2>
+        <p>Enter your PO Tracker username and password.</p>
+      </header>
+
+      @if (errorMessage()) {
+        <div class="alert alert--error" role="alert">
+          <span aria-hidden="true">!</span>
+          <p>{{ errorMessage() }}</p>
+        </div>
+      }
+
+      <form [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
+        <div class="field">
+          <label for="login-user-name">Username</label>
+          <input
+            id="login-user-name"
+            name="userName"
+            type="text"
+            formControlName="userName"
+            autocomplete="username"
+            inputmode="text"
+            placeholder="Enter your username"
+            [attr.aria-invalid]="
+              loginForm.controls.userName.invalid &&
+              loginForm.controls.userName.touched
+            "
+          />
+
+          @if (
+            loginForm.controls.userName.invalid &&
+            loginForm.controls.userName.touched
+          ) {
+            <small class="field-error">Username is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="login-password">Password</label>
+
+          <div class="password-control">
+            <input
+              id="login-password"
+              name="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="current-password"
+              placeholder="Enter your password"
+              [attr.aria-invalid]="
+                loginForm.controls.password.invalid &&
+                loginForm.controls.password.touched
+              "
+            />
+
+            <button
+              class="password-toggle"
+              type="button"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="
+                showPassword() ? 'Hide password' : 'Show password'
+              "
+              [attr.aria-pressed]="showPassword()"
+            >
+              {{ showPassword() ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+
+          @if (
+            loginForm.controls.password.invalid &&
+            loginForm.controls.password.touched
+          ) {
+            <small class="field-error">Password is required.</small>
+          }
+        </div>
+
+        <button
+          class="submit-button"
+          type="submit"
+          [disabled]="isSubmitting()"
+        >
+          @if (isSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Signing in…
+          } @else {
+            Sign in
+          }
+        </button>
+      </form>
+
+      <p class="login-help">
+        Use the same account that you currently use on the MVC login page.
+      </p>
+    </section>
+  </main>
+</div>

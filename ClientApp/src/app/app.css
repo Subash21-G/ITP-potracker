@@ -24,13 +24,13 @@
   gap: 12px;
   color: inherit;
   text-decoration: none;
+  flex: 0 0 auto;
 }
 
 .brand__mark {
   display: grid;
   width: 42px;
   height: 42px;
-  place-items: center;
   color: #0f172a;
   font-size: 0.78rem;
   font-weight: 900;
@@ -38,6 +38,7 @@
   background: #5eead4;
   border-radius: 13px;
   box-shadow: 0 8px 24px rgba(45, 212, 191, 0.24);
+  place-items: center;
 }
 
 .brand strong,
@@ -54,6 +55,13 @@
   margin-top: 2px;
   color: #94a3b8;
   font-size: 0.72rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 18px;
 }
 
 nav {
@@ -78,11 +86,87 @@ nav a.active {
   background: rgba(94, 234, 212, 0.12);
 }
 
+.user-area {
+  display: flex;
+  align-items: center;
+  padding-left: 18px;
+  gap: 10px;
+  border-left: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.user-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  color: #ccfbf1;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  background: rgba(13, 148, 136, 0.22);
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  border-radius: 11px;
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.user-details {
+  min-width: 0;
+}
+
+.user-details strong,
+.user-details small {
+  display: block;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-details strong {
+  color: #f8fafc;
+  font-size: 0.77rem;
+}
+
+.user-details small {
+  margin-top: 2px;
+  color: #94a3b8;
+  font-size: 0.66rem;
+}
+
+.logout-button {
+  min-height: 34px;
+  padding: 0 11px;
+  color: #fecaca;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(127, 29, 29, 0.24);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.logout-button:hover:not(:disabled) {
+  color: #ffffff;
+  background: rgba(185, 28, 28, 0.6);
+}
+
+.logout-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .app-main {
   width: min(1500px, calc(100% - 40px));
   min-height: calc(100vh - 126px);
   margin: 0 auto;
   padding: 34px 0 44px;
+}
+
+.app-main--login {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 .app-footer {
@@ -92,23 +176,85 @@ nav a.active {
   text-align: center;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1080px) {
+  .user-details {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 10px;
+  }
+
+  .user-area {
+    padding-left: 10px;
+  }
+}
+
+@media (max-width: 760px) {
   .app-header {
-    padding: 0 16px;
+    min-height: auto;
+    padding: 12px 16px;
+    gap: 12px;
   }
 
   .brand small {
     display: none;
   }
 
+  .header-actions {
+    gap: 6px;
+  }
+
+  nav {
+    gap: 2px;
+  }
+
+  nav a {
+    padding: 8px 9px;
+    font-size: 0.76rem;
+  }
+
+  .nav-mvc,
+  .user-avatar {
+    display: none;
+  }
+
+  .user-area {
+    padding-left: 6px;
+  }
+
+  .logout-button {
+    padding: 0 9px;
+  }
+
   .app-main {
     width: min(100% - 24px, 1500px);
     padding-top: 22px;
   }
+
+  .app-main--login {
+    width: 100%;
+    padding: 0;
+  }
 }
 
 @media (max-width: 520px) {
-  .nav-mvc {
+  .brand > span:last-child {
     display: none;
+  }
+
+  .brand__mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  nav a {
+    padding-inline: 7px;
+    font-size: 0.7rem;
+  }
+
+  .logout-button {
+    min-height: 32px;
+    font-size: 0.68rem;
   }
 }

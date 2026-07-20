@@ -9,12 +9,31 @@ using System.IO.Compression;
 var builder = WebApplication.CreateBuilder(args);
 
 // ============================================================
-// MVC
+// MVC AND GLOBAL SESSION AUTHORIZATION
 // ============================================================
 
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<SessionAuthorizationFilter>();
+});
+
+// ============================================================
+// ANGULAR XSRF / CSRF PROTECTION
+// Angular sends the request token through the X-XSRF-TOKEN header.
+// The readable XSRF-TOKEN cookie will be issued by the authentication API.
+// ============================================================
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+
+    // ASP.NET Core's protected antiforgery cookie.
+    // This remains HttpOnly. Angular does not read this cookie directly.
+    options.Cookie.Name = ".POTracker.Antiforgery";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
 // ============================================================
@@ -31,7 +50,11 @@ builder.Services.Configure<FormOptions>(options =>
 {
     options.ValueCountLimit = 10000;
     options.ValueLengthLimit = int.MaxValue;
-    options.MultipartBodyLengthLimit = 1024L * 1024L * 200L; // 200 MB
+
+    // Maximum uploaded request size: 200 MB.
+    options.MultipartBodyLengthLimit =
+        1024L * 1024L * 200L;
+
     options.MultipartHeadersLengthLimit = int.MaxValue;
 });
 
@@ -43,6 +66,7 @@ builder.Services.Configure<FormOptions>(options =>
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
+
     options.Providers.Add<BrotliCompressionProvider>();
     options.Providers.Add<GzipCompressionProvider>();
 
@@ -57,28 +81,32 @@ builder.Services.AddResponseCompression(options =>
             });
 });
 
-builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
-{
-    options.Level = CompressionLevel.Fastest;
-});
+builder.Services.Configure<BrotliCompressionProviderOptions>(
+    options =>
+    {
+        options.Level = CompressionLevel.Fastest;
+    });
 
-builder.Services.Configure<GzipCompressionProviderOptions>(options =>
-{
-    options.Level = CompressionLevel.Fastest;
-});
+builder.Services.Configure<GzipCompressionProviderOptions>(
+    options =>
+    {
+        options.Level = CompressionLevel.Fastest;
+    });
 
 // ============================================================
 // DATABASE
 // DbContext pooling reduces repeated DbContext creation cost.
-// Retry execution strategy is intentionally not enabled because invoice
-// imports use explicit database transactions.
+//
+// Retry execution strategy is intentionally not enabled because
+// invoice imports use explicit database transactions.
 // ============================================================
 
 builder.Services.AddDbContextPool<ApplicationDbContext>(
     options =>
     {
         options.UseSqlServer(
-            builder.Configuration.GetConnectionString("DefaultConnection"),
+            builder.Configuration.GetConnectionString(
+                "DefaultConnection"),
             sqlOptions =>
             {
                 sqlOptions.CommandTimeout(60);
@@ -95,10 +123,13 @@ builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(60);
+
+    options.Cookie.Name = ".POTracker.Session";
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy =
+        CookieSecurePolicy.SameAsRequest;
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -109,7 +140,8 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddHttpClient("StockApi", client =>
 {
-    var stockApiBaseUrl = builder.Configuration["StockApi:BaseUrl"];
+    var stockApiBaseUrl =
+        builder.Configuration["StockApi:BaseUrl"];
 
     if (!string.IsNullOrWhiteSpace(stockApiBaseUrl))
     {
@@ -118,6 +150,10 @@ builder.Services.AddHttpClient("StockApi", client =>
 
     client.Timeout = TimeSpan.FromSeconds(30);
 });
+
+// ============================================================
+// BUILD APPLICATION
+// ============================================================
 
 var app = builder.Build();
 
@@ -133,43 +169,56 @@ if (!app.Environment.IsDevelopment())
 
 // ============================================================
 // RESPONSE COMPRESSION
-// Must be before static files and endpoints.
+// Must be before static files and endpoint execution.
 // ============================================================
 
 app.UseResponseCompression();
+
 app.UseHttpsRedirection();
 
 // ============================================================
 // STATIC FILE CACHING
-// CSS, JS and libraries are cached.
+//
+// CSS, JavaScript and libraries are cached.
 // Uploaded business documents are never browser-cached.
+// Angular index.html is not cached.
+// Hashed Angular assets are cached for one year.
 // ============================================================
 
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = context =>
     {
-        var requestPath = context.Context.Request.Path;
+        var requestPath =
+            context.Context.Request.Path;
 
+        // Never cache uploaded PO, invoice, drawing or document files.
         if (requestPath.StartsWithSegments("/uploads"))
         {
             context.Context.Response.Headers.CacheControl =
                 "no-store, no-cache, must-revalidate";
-            context.Context.Response.Headers.Pragma = "no-cache";
-            context.Context.Response.Headers.Expires = "0";
+
+            context.Context.Response.Headers.Pragma =
+                "no-cache";
+
+            context.Context.Response.Headers.Expires =
+                "0";
+
             return;
         }
 
+        // Angular production application files.
         if (requestPath.StartsWithSegments("/app"))
         {
             var isAngularDocument =
                 requestPath.Value?.EndsWith(
                     ".html",
-                    StringComparison.OrdinalIgnoreCase) == true;
+                    StringComparison.OrdinalIgnoreCase)
+                == true;
 
             context.Context.Response.Headers.CacheControl =
                 isAngularDocument
-                    ? "no-cache"
+                    ? "no-cache, no-store, must-revalidate"
                     : "public,max-age=31536000,immutable";
 
             return;
@@ -182,17 +231,21 @@ app.UseStaticFiles(new StaticFileOptions
             requestPath.StartsWithSegments("/images") ||
             requestPath.Value?.EndsWith(
                 "favicon.ico",
-                StringComparison.OrdinalIgnoreCase) == true;
+                StringComparison.OrdinalIgnoreCase)
+            == true;
 
         if (isCacheableAsset)
         {
-            const int cacheDurationSeconds = 60 * 60 * 24 * 7; // 7 days
+            const int cacheDurationSeconds =
+                60 * 60 * 24 * 7;
+
             context.Context.Response.Headers.CacheControl =
                 $"public,max-age={cacheDurationSeconds}";
         }
         else
         {
-            context.Context.Response.Headers.CacheControl = "no-cache";
+            context.Context.Response.Headers.CacheControl =
+                "no-cache";
         }
     }
 });
@@ -202,29 +255,46 @@ app.UseStaticFiles(new StaticFileOptions
 // ============================================================
 
 app.UseRouting();
+
+// Session must execute before authorization and controllers.
 app.UseSession();
+
 app.UseAuthorization();
 
 // ============================================================
 // ROUTES
 // ============================================================
 
-// Attribute-routed JSON APIs used by the Angular application.
+// Attribute-routed JSON APIs used by Angular.
 app.MapControllers();
 
-// Existing MVC pages remain available during the gradual migration.
+// Existing MVC/Razor pages remain available during migration.
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Account}/{action=Login}/{id?}");
+    pattern:
+        "{controller=Account}/{action=Login}/{id?}");
 
-// The production Angular build is served by ASP.NET from wwwroot/app.
-// Only /app routes use the SPA fallback, so MVC and API 404s stay intact.
+// ============================================================
+// ANGULAR SPA ROUTING
+// ============================================================
+
+// Redirect the Angular application root to the first completed
+// Angular module during the gradual migration.
 app.MapGet(
     "/app",
     () => Results.Redirect("/app/materials"));
 
+// Return Angular index.html when the browser directly opens or
+// refreshes an Angular client-side route.
+//
+// Only routes under /app use this fallback, so MVC and API 404
+// responses remain unaffected.
 app.MapFallbackToFile(
     "app/{*path:nonfile}",
     "app/index.html");
+
+// ============================================================
+// START APPLICATION
+// ============================================================
 
 app.Run();

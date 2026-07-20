@@ -1,35 +1,78 @@
-<header class="app-header">
-  <a class="brand" routerLink="/materials" aria-label="PO Tracker home">
-    <span class="brand__mark" aria-hidden="true">PO</span>
-    <span>
-      <strong>PO Tracker</strong>
-      <small>Operations workspace</small>
-    </span>
-  </a>
-
-  <nav aria-label="Primary navigation">
+@if (!isLoginPage()) {
+  <header class="app-header">
     <a
+      class="brand"
       routerLink="/materials"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
+      aria-label="PO Tracker home"
     >
-      Materials
-    </a>
-    <a
-      routerLink="/purchase-orders"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: false }"
-    >
-      Purchase Orders
-    </a>
-    <a class="nav-mvc" href="/Dashboard/Index">MVC dashboard</a>
-  </nav>
-</header>
+      <span class="brand__mark" aria-hidden="true">PO</span>
 
-<main class="app-main">
+      <span>
+        <strong>PO Tracker</strong>
+        <small>Operations workspace</small>
+      </span>
+    </a>
+
+    <div class="header-actions">
+      <nav aria-label="Primary navigation">
+        <a
+          routerLink="/materials"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          Materials
+        </a>
+
+        <a
+          routerLink="/purchase-orders"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: false }"
+        >
+          Purchase Orders
+        </a>
+
+        <a class="nav-mvc" href="/Dashboard/Index">
+          MVC dashboard
+        </a>
+      </nav>
+
+      @if (currentUser()?.isAuthenticated) {
+        <div class="user-area">
+          <div class="user-avatar" aria-hidden="true">
+            {{ userInitials() }}
+          </div>
+
+          <div class="user-details">
+            <strong>
+              {{ currentUser()?.fullName || currentUser()?.userName }}
+            </strong>
+            <small>{{ currentUser()?.role }}</small>
+          </div>
+
+          <button
+            class="logout-button"
+            type="button"
+            (click)="logout()"
+            [disabled]="isLoggingOut()"
+          >
+            {{ isLoggingOut() ? 'Signing out…' : 'Logout' }}
+          </button>
+        </div>
+      }
+    </div>
+  </header>
+}
+
+<main
+  class="app-main"
+  [class.app-main--login]="isLoginPage()"
+>
   <router-outlet />
 </main>
 
-<footer class="app-footer">
-  Angular client · Existing ASP.NET MVC screens remain available during migration
-</footer>
+@if (!isLoginPage()) {
+  <footer class="app-footer">
+    Angular client · Existing ASP.NET MVC screens remain available
+    during migration
+  </footer>
+}
