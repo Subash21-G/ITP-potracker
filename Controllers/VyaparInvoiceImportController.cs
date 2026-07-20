@@ -744,17 +744,9 @@ namespace POTracker.Controllers
                         continue;
                     }
 
-                    var normalizedInvoiceNumber =
-                        invoiceModel.InvoiceNumber.Trim();
-
-                    fileResult.ExistsInDatabase =
-                        await _context.Invoices.AnyAsync(x =>
-                            x.InvoiceNumber == normalizedInvoiceNumber);
-
                     fileResult.Invoice = invoiceModel;
                     fileResult.IsSuccessful = true;
-                    fileResult.IsSelected =
-                        !fileResult.ExistsInDatabase;
+                    fileResult.IsSelected = true;
                 }
                 catch (Exception ex)
                 {
@@ -767,6 +759,48 @@ namespace POTracker.Controllers
                         "Unable to read this invoice file. " +
                         ex.Message;
                 }
+            }
+
+            // Check every extracted invoice number with one database query.
+            // This avoids one AnyAsync query per uploaded file.
+            var extractedInvoiceNumbers = batchModel.Files
+                .Where(x =>
+                    x.IsSuccessful &&
+                    x.Invoice != null &&
+                    !string.IsNullOrWhiteSpace(
+                        x.Invoice.InvoiceNumber))
+                .Select(x =>
+                    x.Invoice!.InvoiceNumber.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var existingInvoiceNumbers =
+                extractedInvoiceNumbers.Count == 0
+                    ? new List<string>()
+                    : await _context.Invoices
+                        .AsNoTracking()
+                        .Where(x =>
+                            extractedInvoiceNumbers.Contains(
+                                x.InvoiceNumber))
+                        .Select(x => x.InvoiceNumber)
+                        .ToListAsync();
+
+            var existingInvoiceNumberSet =
+                existingInvoiceNumbers.ToHashSet(
+                    StringComparer.OrdinalIgnoreCase);
+
+            foreach (var fileResult in batchModel.Files.Where(x =>
+                         x.IsSuccessful &&
+                         x.Invoice != null))
+            {
+                var invoiceNumber =
+                    fileResult.Invoice!.InvoiceNumber.Trim();
+
+                fileResult.ExistsInDatabase =
+                    existingInvoiceNumberSet.Contains(invoiceNumber);
+
+                fileResult.IsSelected =
+                    !fileResult.ExistsInDatabase;
             }
 
             var duplicateGroups = batchModel.Files
@@ -844,6 +878,32 @@ namespace POTracker.Controllers
                 return RedirectToAction(nameof(Upload));
             }
 
+            var selectedInvoiceNumbers = selectedFiles
+                .Select(x =>
+                    x.Invoice!.InvoiceNumber?.Trim() ?? string.Empty)
+                .Where(x =>
+                    !IsInvalidInvoiceNumber(x) &&
+                    !x.StartsWith(
+                        "REVIEW-",
+                        StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var existingInvoiceNumbers =
+                selectedInvoiceNumbers.Count == 0
+                    ? new List<string>()
+                    : await _context.Invoices
+                        .AsNoTracking()
+                        .Where(x =>
+                            selectedInvoiceNumbers.Contains(
+                                x.InvoiceNumber))
+                        .Select(x => x.InvoiceNumber)
+                        .ToListAsync();
+
+            var existingInvoiceNumberSet =
+                existingInvoiceNumbers.ToHashSet(
+                    StringComparer.OrdinalIgnoreCase);
+
             var resultModel =
                 new InvoiceBatchImportResultViewModel
                 {
@@ -900,11 +960,8 @@ namespace POTracker.Controllers
 
                 try
                 {
-                    var invoiceAlreadyExists =
-                        await _context.Invoices.AnyAsync(x =>
-                            x.InvoiceNumber == invoiceNumber);
-
-                    if (invoiceAlreadyExists)
+                    if (existingInvoiceNumberSet.Contains(
+                            invoiceNumber))
                     {
                         itemResult.Message =
                             "This invoice number already exists in the database.";
@@ -1699,12 +1756,66 @@ namespace POTracker.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> InvoiceList()
+        public async Task<IActionResult> InvoiceList(
+            int page = 1,
+            int pageSize = 50)
         {
+            page = Math.Max(page, 1);
+
+            var allowedPageSizes =
+                new[] { 10, 25, 50, 100, 200 };
+
+            if (!allowedPageSizes.Contains(pageSize))
+            {
+                pageSize = 50;
+            }
+
+            var totalInvoices =
+                await _context.Invoices
+                    .AsNoTracking()
+                    .CountAsync();
+
+            var itemSummary =
+                await _context.InvoiceItems
+                    .AsNoTracking()
+                    .GroupBy(x => 1)
+                    .Select(group => new
+                    {
+                        TotalItems = group.Count(),
+                        TotalInvoiceQty = group.Sum(x => x.InvoiceQty),
+                        TotalGst = group.Sum(x => x.GstAmount),
+                        TotalAmount = group.Sum(x => x.Amount)
+                    })
+                    .FirstOrDefaultAsync();
+
+            var totalPages = Math.Max(
+                1,
+                (int)Math.Ceiling(
+                    totalInvoices / (double)pageSize));
+
+            if (page > totalPages)
+            {
+                page = totalPages;
+            }
+
             var invoices = await _context.Invoices
+                .AsNoTracking()
                 .Include(x => x.Items)
+                .AsSplitQuery()
                 .OrderByDescending(x => x.CreatedDate)
+                .ThenByDescending(x => x.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            ViewBag.TotalInvoices = totalInvoices;
+            ViewBag.TotalItems = itemSummary?.TotalItems ?? 0;
+            ViewBag.TotalInvoiceQty = itemSummary?.TotalInvoiceQty ?? 0m;
+            ViewBag.TotalGst = itemSummary?.TotalGst ?? 0m;
+            ViewBag.TotalAmount = itemSummary?.TotalAmount ?? 0m;
+            ViewBag.CurrentPage = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalPages = totalPages;
 
             return View(invoices);
         }
@@ -2778,16 +2889,82 @@ namespace POTracker.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> History()
+        public async Task<IActionResult> History(
+            int page = 1,
+            int pageSize = 25)
         {
+            page = Math.Max(page, 1);
+
+            var allowedPageSizes =
+                new[] { 10, 25, 50, 100, 200 };
+
+            if (!allowedPageSizes.Contains(pageSize))
+            {
+                pageSize = 25;
+            }
+
+            var totalBatches =
+                await _context.VyaparInvoiceImportBatches
+                    .AsNoTracking()
+                    .CountAsync();
+
+            var historySummary =
+                await _context.VyaparInvoiceImportBatches
+                    .AsNoTracking()
+                    .Select(batch => new
+                    {
+                        TotalRows = batch.Rows.Count > 0
+                            ? batch.Rows.Count
+                            : batch.TotalRows,
+                        SuccessRows = batch.Rows.Count(row =>
+                            row.Status == "Success"),
+                        PendingRows = batch.Rows.Count(row =>
+                            row.Status == "Pending" ||
+                            row.Status == "Failed"),
+                        DeletedRows = batch.Rows.Count(row =>
+                            row.Status == "Deleted")
+                    })
+                    .GroupBy(x => 1)
+                    .Select(group => new
+                    {
+                        TotalRows = group.Sum(x => x.TotalRows),
+                        SuccessRows = group.Sum(x => x.SuccessRows),
+                        PendingRows = group.Sum(x => x.PendingRows),
+                        DeletedRows = group.Sum(x => x.DeletedRows)
+                    })
+                    .FirstOrDefaultAsync();
+
+            var totalPages = Math.Max(
+                1,
+                (int)Math.Ceiling(
+                    totalBatches / (double)pageSize));
+
+            if (page > totalPages)
+            {
+                page = totalPages;
+            }
+
             var batches =
                 await _context
                     .VyaparInvoiceImportBatches
                     .AsNoTracking()
                     .Include(x => x.Rows)
+                    .AsSplitQuery()
                     .OrderByDescending(x =>
                         x.ImportDate)
+                    .ThenByDescending(x => x.Id)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .ToListAsync();
+
+            ViewBag.TotalBatches = totalBatches;
+            ViewBag.TotalRows = historySummary?.TotalRows ?? 0;
+            ViewBag.SuccessRows = historySummary?.SuccessRows ?? 0;
+            ViewBag.PendingRows = historySummary?.PendingRows ?? 0;
+            ViewBag.DeletedRows = historySummary?.DeletedRows ?? 0;
+            ViewBag.CurrentPage = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalPages = totalPages;
 
             return View(batches);
         }
@@ -2941,22 +3118,93 @@ namespace POTracker.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ErrorReport(int batchId)
+        public async Task<IActionResult> ErrorReport(
+            int batchId,
+            int page = 1,
+            int pageSize = 50)
         {
-            var rows = await _context.VyaparInvoiceImportRows
-                .Where(x => x.BatchId == batchId)
+            page = Math.Max(page, 1);
+
+            var allowedPageSizes =
+                new[] { 25, 50, 100, 200 };
+
+            if (!allowedPageSizes.Contains(pageSize))
+            {
+                pageSize = 50;
+            }
+
+            var query = _context.VyaparInvoiceImportRows
+                .AsNoTracking()
+                .Where(x => x.BatchId == batchId);
+
+            var summary = await query
+                .GroupBy(x => 1)
+                .Select(group => new
+                {
+                    TotalRows = group.Count(),
+                    SuccessRows = group.Count(x =>
+                        x.Status == "Success"),
+                    DeletedRows = group.Count(x =>
+                        x.Status == "Deleted"),
+                    PendingRows = group.Count(x =>
+                        x.Status == null ||
+                        (x.Status != "Success" &&
+                         x.Status != "Deleted")),
+                    TotalQty = group.Sum(x => x.InvoiceQty)
+                })
+                .FirstOrDefaultAsync();
+
+            var totalRows = summary?.TotalRows ?? 0;
+
+            var totalPages = Math.Max(
+                1,
+                (int)Math.Ceiling(
+                    totalRows / (double)pageSize));
+
+            if (page > totalPages)
+            {
+                page = totalPages;
+            }
+
+            var rows = await query
                 .OrderBy(x => x.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            ViewBag.BatchId = batchId;
+            ViewBag.TotalRows = totalRows;
+            ViewBag.SuccessRows = summary?.SuccessRows ?? 0;
+            ViewBag.PendingRows = summary?.PendingRows ?? 0;
+            ViewBag.DeletedRows = summary?.DeletedRows ?? 0;
+            ViewBag.TotalQty = summary?.TotalQty ?? 0m;
+            ViewBag.CurrentPage = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalPages = totalPages;
 
             return View(rows);
         }
 
         [HttpGet]
-        public async Task<IActionResult> InvoiceStatus(string? search)
+        public async Task<IActionResult> InvoiceStatus(
+            string? search,
+            int page = 1,
+            int pageSize = 50)
         {
+            page = Math.Max(page, 1);
+
+            var allowedPageSizes =
+                new[] { 10, 25, 50, 100, 200 };
+
+            if (!allowedPageSizes.Contains(pageSize))
+            {
+                pageSize = 50;
+            }
+
+            search = search?.Trim();
+
             var query = _context.Materials
-                .Include(x => x.PurchaseOrder)
-                .ThenInclude(x => x!.Purchaser)
+                .AsNoTracking()
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -2971,11 +3219,92 @@ namespace POTracker.Controllers
                      x.ShortDescription.Contains(search)));
             }
 
+            var summary = await query
+                .Select(x => new
+                {
+                    FullyInvoiced =
+                        x.InvoiceStatus == "Fully Invoiced" ? 1 : 0,
+                    PartialInvoiced =
+                        x.InvoiceStatus == "Partially Invoiced" ? 1 : 0,
+                    NotInvoiced =
+                        x.InvoiceStatus == null ||
+                        x.InvoiceStatus == "" ||
+                        x.InvoiceStatus == "Not Invoiced" ? 1 : 0,
+                    FullyDispatched =
+                        x.DispatchStatus == "Dispatched" ||
+                        x.DispatchStatus == "Completed" ? 1 : 0,
+                    PartialDispatched =
+                        x.DispatchStatus == "Partial" ||
+                        x.DispatchStatus == "Running" ? 1 : 0,
+                    PendingDispatch =
+                        x.DispatchStatus == null ||
+                        x.DispatchStatus == "" ||
+                        x.DispatchStatus == "Pending" ? 1 : 0,
+                    x.Qty,
+                    x.InvoiceQty,
+                    BalanceQty = x.BalanceQty > 0
+                        ? x.BalanceQty
+                        : 0,
+                    x.DispatchQty,
+                    PendingQty = x.PendingQty > 0
+                        ? x.PendingQty
+                        : 0
+                })
+                .GroupBy(x => 1)
+                .Select(group => new
+                {
+                    TotalMaterials = group.Count(),
+                    FullyInvoiced = group.Sum(x => x.FullyInvoiced),
+                    PartialInvoiced = group.Sum(x => x.PartialInvoiced),
+                    NotInvoiced = group.Sum(x => x.NotInvoiced),
+                    FullyDispatched = group.Sum(x => x.FullyDispatched),
+                    PartialDispatched = group.Sum(x => x.PartialDispatched),
+                    PendingDispatch = group.Sum(x => x.PendingDispatch),
+                    TotalPOQty = group.Sum(x => x.Qty),
+                    TotalInvoiceQty = group.Sum(x => x.InvoiceQty),
+                    TotalBalanceQty = group.Sum(x => x.BalanceQty),
+                    TotalDispatchQty = group.Sum(x => x.DispatchQty),
+                    TotalPendingDispatchQty = group.Sum(x => x.PendingQty)
+                })
+                .FirstOrDefaultAsync();
+
+            var totalMaterials =
+                summary?.TotalMaterials ?? 0;
+
+            var totalPages = Math.Max(
+                1,
+                (int)Math.Ceiling(
+                    totalMaterials / (double)pageSize));
+
+            if (page > totalPages)
+            {
+                page = totalPages;
+            }
+
             var materials = await query
+                .Include(x => x.PurchaseOrder)
                 .OrderByDescending(x => x.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             ViewBag.Search = search;
+            ViewBag.TotalMaterials = totalMaterials;
+            ViewBag.FullyInvoiced = summary?.FullyInvoiced ?? 0;
+            ViewBag.PartialInvoiced = summary?.PartialInvoiced ?? 0;
+            ViewBag.NotInvoiced = summary?.NotInvoiced ?? 0;
+            ViewBag.FullyDispatched = summary?.FullyDispatched ?? 0;
+            ViewBag.PartialDispatched = summary?.PartialDispatched ?? 0;
+            ViewBag.PendingDispatch = summary?.PendingDispatch ?? 0;
+            ViewBag.TotalPOQty = summary?.TotalPOQty ?? 0m;
+            ViewBag.TotalInvoiceQty = summary?.TotalInvoiceQty ?? 0m;
+            ViewBag.TotalBalanceQty = summary?.TotalBalanceQty ?? 0m;
+            ViewBag.TotalDispatchQty = summary?.TotalDispatchQty ?? 0m;
+            ViewBag.TotalPendingDispatchQty =
+                summary?.TotalPendingDispatchQty ?? 0m;
+            ViewBag.CurrentPage = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalPages = totalPages;
 
             return View(materials);
         }

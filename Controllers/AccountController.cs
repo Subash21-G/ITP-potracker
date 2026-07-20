@@ -167,7 +167,8 @@ namespace POTracker.Controllers
             return RedirectToAction("Index", "Dashboard");
         }
 
-        [HttpGet]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();

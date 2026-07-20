@@ -8,88 +8,267 @@ namespace POTracker.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        public DashboardController(ApplicationDbContext context)
+        public DashboardController(
+            ApplicationDbContext context)
         {
             _context = context;
         }
 
         private bool IsLoggedIn()
         {
-            return HttpContext.Session.GetString("UserName") != null;
+            return HttpContext.Session
+                .GetString("UserName") != null;
         }
 
         public async Task<IActionResult> Index()
         {
             if (!IsLoggedIn())
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction(
+                    "Login",
+                    "Account");
             }
 
-            DateTime today = DateTime.Today;
-            DateTime nextWeek = today.AddDays(7);
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+            var nextWeek = today.AddDays(7);
 
-            ViewBag.TotalPurchasers = await _context.Purchasers.CountAsync();
+            // =====================================================
+            // BASIC TOTALS
+            // =====================================================
 
-            ViewBag.TotalPOs = await _context.PurchaseOrders.CountAsync();
+            ViewBag.TotalPurchasers =
+                await _context.Purchasers
+                    .CountAsync();
 
-            ViewBag.TotalMaterials = await _context.Materials.CountAsync();
+            ViewBag.TotalPOs =
+                await _context.PurchaseOrders
+                    .CountAsync();
 
-            ViewBag.PendingMaterials = await _context.Materials
-                .CountAsync(x => x.ProcessStatus == "Pending");
+            ViewBag.LowStock =
+                await _context.Stocks
+                    .CountAsync(x =>
+                        x.AvailableQty <=
+                        x.MinimumQty);
 
-            ViewBag.LowStock = await _context.Stocks
-                .CountAsync(x => x.AvailableQty <= x.MinimumQty);
+            ViewBag.TodayAlerts =
+                await _context.Alerts
+                    .CountAsync(x =>
+                        !x.IsRead &&
+                        x.AlertDate < tomorrow);
 
-            ViewBag.TodayAlerts = await _context.Alerts
-                .CountAsync(x => x.AlertDate.Date <= today && !x.IsRead);
+            // =====================================================
+            // MATERIAL SUMMARY
+            // All material totals are calculated in one SQL query.
+            // =====================================================
 
-            ViewBag.ProcessStartAlertCount = await _context.Materials
-                .CountAsync(x => x.AlertDate != null
-                    && x.AlertDate <= today
-                    && x.ProcessStatus != "Completed");
+            var materialStats =
+                await _context.Materials
+                    .AsNoTracking()
+                    .GroupBy(x => 1)
+                    .Select(group => new
+                    {
+                        TotalMaterials =
+                            group.Count(),
 
-            ViewBag.OverdueCount = await _context.Materials
-                .CountAsync(x => x.DeliveryDate != null
-                    && x.DeliveryDate < today
-                    && x.ProcessStatus != "Completed");
+                        PendingProcess =
+                            group.Count(x =>
+                                x.ProcessStatus ==
+                                "Pending"),
 
-            ViewBag.DeliveryWithin7DaysCount = await _context.Materials
-                .CountAsync(x => x.DeliveryDate != null
-                    && x.DeliveryDate >= today
-                    && x.DeliveryDate <= nextWeek
-                    && x.ProcessStatus != "Completed");
+                        RunningProcess =
+                            group.Count(x =>
+                                x.ProcessStatus ==
+                                    "In Process" ||
+                                x.ProcessStatus ==
+                                    "In Progress"),
 
-            ViewBag.DispatchPendingCount = await _context.Materials
-                .CountAsync(x => x.DispatchStatus == "Pending"
-                    || x.DispatchStatus == "Partial");
+                        CompletedProcess =
+                            group.Count(x =>
+                                x.ProcessStatus ==
+                                "Completed"),
 
-            ViewBag.LowStockMaterialCount = await _context.Materials
-                .CountAsync(x => x.StockQty <= 5);
+                        ProcessStartAlerts =
+                            group.Count(x =>
+                                x.AlertDate != null &&
+                                x.AlertDate <= today &&
+                                x.ProcessStatus !=
+                                    "Completed"),
 
-            var recentMaterials = await _context.Materials
-                .Include(x => x.PurchaseOrder)
-                .ThenInclude(x => x!.Purchaser)
-                .OrderByDescending(x => x.Id)
-                .Take(8)
-                .ToListAsync();
+                        Overdue =
+                            group.Count(x =>
+                                x.DeliveryDate != null &&
+                                x.DeliveryDate < today &&
+                                x.ProcessStatus !=
+                                    "Completed"),
 
-            ViewBag.CompletedCount = await _context.Materials
-    .CountAsync(x => x.ProcessStatus == "Completed");
+                        DeliveryWithin7Days =
+                            group.Count(x =>
+                                x.DeliveryDate != null &&
+                                x.DeliveryDate >= today &&
+                                x.DeliveryDate <= nextWeek &&
+                                x.ProcessStatus !=
+                                    "Completed"),
 
-            ViewBag.RunningCount = await _context.Materials
-                .CountAsync(x => x.ProcessStatus == "In Process");
+                        DispatchCompleted =
+                            group.Count(x =>
+                                x.DispatchStatus ==
+                                "Dispatched"),
 
-            ViewBag.PendingCount = await _context.Materials
-                .CountAsync(x => x.ProcessStatus == "Pending");
+                        DispatchPending =
+                            group.Count(x =>
+                                x.DispatchStatus ==
+                                "Pending"),
 
-            ViewBag.DispatchCompleted = await _context.Materials
-                .CountAsync(x => x.DispatchStatus == "Dispatched");
+                        DispatchPartial =
+                            group.Count(x =>
+                                x.DispatchStatus ==
+                                "Partial"),
 
-            ViewBag.DispatchPending = await _context.Materials
-                .CountAsync(x => x.DispatchStatus == "Pending");
+                        DispatchPendingOrPartial =
+                            group.Count(x =>
+                                x.DispatchStatus ==
+                                    "Pending" ||
+                                x.DispatchStatus ==
+                                    "Partial"),
 
-            ViewBag.DispatchPartial = await _context.Materials
-                .CountAsync(x => x.DispatchStatus == "Partial");
+                        LowStockMaterials =
+                            group.Count(x =>
+                                x.StockQty <= 5),
+
+                        FullyInvoiced =
+                            group.Count(x =>
+                                x.InvoiceStatus ==
+                                "Fully Invoiced"),
+
+                        PartiallyInvoiced =
+                            group.Count(x =>
+                                x.InvoiceStatus ==
+                                "Partially Invoiced"),
+
+                        NotInvoiced =
+                            group.Count(x =>
+                                x.InvoiceQty <= 0 ||
+                                x.InvoiceStatus == "" ||
+                                x.InvoiceStatus ==
+                                    "Not Invoiced"),
+
+                        TotalPOQty =
+                            group.Sum(x =>
+                                x.Qty),
+
+                        TotalInvoiceQty =
+                            group.Sum(x =>
+                                x.InvoiceQty),
+
+                        TotalDispatchQty =
+                            group.Sum(x =>
+                                x.DispatchQty),
+
+                        TotalPendingQty =
+                            group.Sum(x =>
+                                x.PendingQty > 0
+                                    ? x.PendingQty
+                                    : 0m)
+                    })
+                    .FirstOrDefaultAsync();
+
+            // =====================================================
+            // PROCESS SUMMARY
+            // =====================================================
+
+            ViewBag.TotalMaterials =
+                materialStats?.TotalMaterials ?? 0;
+
+            ViewBag.PendingMaterials =
+                materialStats?.PendingProcess ?? 0;
+
+            ViewBag.PendingCount =
+                materialStats?.PendingProcess ?? 0;
+
+            ViewBag.RunningCount =
+                materialStats?.RunningProcess ?? 0;
+
+            ViewBag.CompletedCount =
+                materialStats?.CompletedProcess ?? 0;
+
+            // =====================================================
+            // ALERT SUMMARY
+            // =====================================================
+
+            ViewBag.ProcessStartAlertCount =
+                materialStats?.ProcessStartAlerts ?? 0;
+
+            ViewBag.OverdueCount =
+                materialStats?.Overdue ?? 0;
+
+            ViewBag.DeliveryWithin7DaysCount =
+                materialStats?.DeliveryWithin7Days ?? 0;
+
+            ViewBag.LowStockMaterialCount =
+                materialStats?.LowStockMaterials ?? 0;
+
+            // =====================================================
+            // DISPATCH SUMMARY
+            // =====================================================
+
+            ViewBag.DispatchPendingCount =
+                materialStats?
+                    .DispatchPendingOrPartial ?? 0;
+
+            ViewBag.DispatchCompleted =
+                materialStats?.DispatchCompleted ?? 0;
+
+            ViewBag.DispatchPending =
+                materialStats?.DispatchPending ?? 0;
+
+            ViewBag.DispatchPartial =
+                materialStats?.DispatchPartial ?? 0;
+
+            // =====================================================
+            // INVOICE SUMMARY
+            // =====================================================
+
+            ViewBag.FullyInvoiced =
+                materialStats?.FullyInvoiced ?? 0;
+
+            ViewBag.PartiallyInvoiced =
+                materialStats?.PartiallyInvoiced ?? 0;
+
+            ViewBag.NotInvoiced =
+                materialStats?.NotInvoiced ?? 0;
+
+            // =====================================================
+            // QUANTITY SUMMARY
+            // =====================================================
+
+            ViewBag.TotalPOQty =
+                materialStats?.TotalPOQty ?? 0m;
+
+            ViewBag.TotalInvoiceQty =
+                materialStats?.TotalInvoiceQty ?? 0m;
+
+            ViewBag.TotalDispatchQty =
+                materialStats?.TotalDispatchQty ?? 0m;
+
+            ViewBag.TotalPendingQty =
+                materialStats?.TotalPendingQty ?? 0m;
+
+            // =====================================================
+            // RECENT MATERIALS
+            // =====================================================
+
+            var recentMaterials =
+                await _context.Materials
+                    .AsNoTracking()
+                    .Include(x =>
+                        x.PurchaseOrder)
+                    .ThenInclude(x =>
+                        x!.Purchaser)
+                    .OrderByDescending(x =>
+                        x.Id)
+                    .Take(8)
+                    .ToListAsync();
 
             return View(recentMaterials);
         }

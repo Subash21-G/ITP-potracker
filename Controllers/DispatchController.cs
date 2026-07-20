@@ -34,6 +34,7 @@ namespace POTracker.Controllers
             }
 
             var materials = await _context.Materials
+                .AsNoTracking()
                 .Include(x => x.PurchaseOrder)
                 .ThenInclude(x => x!.Purchaser)
                 .Where(x =>
@@ -194,6 +195,7 @@ namespace POTracker.Controllers
                 .Include(x => x.PurchaseOrder)
                 .ThenInclude(x => x!.Purchaser)
                 .Include(x => x.Dispatches)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(x => x.Id == materialId);
 
             if (material == null)
@@ -202,10 +204,21 @@ namespace POTracker.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var originalPendingQty = material.PendingQty;
+            var originalDispatchStatus = material.DispatchStatus;
+
             NormalizeDispatchBalance(material);
 
-            _context.Materials.Update(material);
-            await _context.SaveChangesAsync();
+            // Details is primarily read-only. Persist only when old data
+            // genuinely required balance/status normalization.
+            if (originalPendingQty != material.PendingQty ||
+                !string.Equals(
+                    originalDispatchStatus,
+                    material.DispatchStatus,
+                    StringComparison.Ordinal))
+            {
+                await _context.SaveChangesAsync();
+            }
 
             return View(material);
         }

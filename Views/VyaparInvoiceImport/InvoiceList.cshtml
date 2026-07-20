@@ -488,8 +488,7 @@
                                     @if (invoice.InvoiceDate.HasValue)
                                     {
                                         <span class="vil-date">
-                                            @invoice.InvoiceDate.Value
-                                            .ToString("dd-MMM-yyyy")
+                                            @(invoice.InvoiceDate.Value.ToString("dd-MMM-yyyy"))
                                         </span>
                                     }
                                     else

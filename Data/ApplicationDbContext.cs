@@ -49,6 +49,14 @@ namespace POTracker.Data
             base.OnModelCreating(modelBuilder);
 
             // =====================================================
+            // USER LOOKUP
+            // =====================================================
+
+            modelBuilder.Entity<AppUser>()
+                .HasIndex(x => x.UserName)
+                .IsUnique();
+
+            // =====================================================
             // PURCHASE ORDER
             // =====================================================
 
@@ -63,6 +71,23 @@ namespace POTracker.Data
             modelBuilder.Entity<PurchaseOrder>()
                 .HasIndex(x => x.PONumber)
                 .IsUnique();
+
+            modelBuilder.Entity<PurchaseOrder>()
+                .HasIndex(x => new
+                {
+                    x.Status,
+                    x.CreatedDate
+                });
+
+            modelBuilder.Entity<PurchaseOrder>()
+                .HasIndex(x => new
+                {
+                    x.PurchaserId,
+                    x.PODate
+                });
+
+            modelBuilder.Entity<PurchaseOrder>()
+                .HasIndex(x => x.ReceivedDate);
 
             modelBuilder.Entity<PurchaseOrder>()
                 .Property(x => x.BuyerContactPerson)
@@ -140,6 +165,38 @@ namespace POTracker.Data
                 {
                     x.PurchaseOrderId,
                     x.LineItem
+                });
+
+            modelBuilder.Entity<Material>()
+                .HasIndex(x => x.MaterialNo);
+
+            modelBuilder.Entity<Material>()
+                .HasIndex(x => new
+                {
+                    x.PurchaseOrderId,
+                    x.MaterialNo,
+                    x.LineItem
+                });
+
+            modelBuilder.Entity<Material>()
+                .HasIndex(x => new
+                {
+                    x.DispatchStatus,
+                    x.DeliveryDate
+                });
+
+            modelBuilder.Entity<Material>()
+                .HasIndex(x => new
+                {
+                    x.InvoiceStatus,
+                    x.CreatedDate
+                });
+
+            modelBuilder.Entity<Material>()
+                .HasIndex(x => new
+                {
+                    x.ProcessStatus,
+                    x.ProcessStartDate
                 });
 
             modelBuilder.Entity<Material>()
@@ -304,6 +361,9 @@ namespace POTracker.Data
                 .HasKey(x => x.Id);
 
             modelBuilder.Entity<VyaparInvoiceImportBatch>()
+                .HasIndex(x => x.ImportDate);
+
+            modelBuilder.Entity<VyaparInvoiceImportBatch>()
                 .Property(x => x.FileName)
                 .HasMaxLength(250);
 
@@ -344,6 +404,21 @@ namespace POTracker.Data
                 .Property(x => x.InvoiceQty)
                 .HasColumnType("decimal(18,2)");
 
+            modelBuilder.Entity<VyaparInvoiceImportRow>()
+                .HasIndex(x => new
+                {
+                    x.InvoiceNumber,
+                    x.Status
+                });
+
+            modelBuilder.Entity<VyaparInvoiceImportRow>()
+                .HasIndex(x => new
+                {
+                    x.PONumber,
+                    x.MaterialNumber,
+                    x.LineItem
+                });
+
             // =====================================================
             // INVOICE MASTER
             // =====================================================
@@ -360,12 +435,30 @@ namespace POTracker.Data
                 .HasIndex(x => x.InvoiceNumber)
                 .IsUnique(false);
 
+            modelBuilder.Entity<Invoice>()
+                .HasIndex(x => x.CreatedDate);
+
+            modelBuilder.Entity<Invoice>()
+                .HasIndex(x => x.InvoiceDate);
+
             // =====================================================
             // INVOICE ITEMS
             // =====================================================
 
             modelBuilder.Entity<InvoiceItem>()
                 .HasKey(x => x.Id);
+
+            modelBuilder.Entity<InvoiceItem>()
+                .Property(x => x.PONumber)
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<InvoiceItem>()
+                .Property(x => x.LineItem)
+                .HasMaxLength(50);
+
+            modelBuilder.Entity<InvoiceItem>()
+                .Property(x => x.MaterialNo)
+                .HasMaxLength(150);
 
             modelBuilder.Entity<InvoiceItem>()
                 .HasOne(x => x.Invoice)
@@ -395,12 +488,33 @@ namespace POTracker.Data
                 .Property(x => x.Amount)
                 .HasColumnType("decimal(18,2)");
 
+            modelBuilder.Entity<InvoiceItem>()
+                .HasIndex(x => new
+                {
+                    x.InvoiceId,
+                    x.MaterialId,
+                    x.LineItem
+                });
+
+            modelBuilder.Entity<InvoiceItem>()
+                .HasIndex(x => new
+                {
+                    x.PONumber,
+                    x.MaterialNo,
+                    x.LineItem
+                });
+
             // =====================================================
             // DISPATCH
             // =====================================================
 
             modelBuilder.Entity<Dispatch>()
                 .HasKey(x => x.Id);
+
+            modelBuilder.Entity<Dispatch>()
+                .Property(x => x.DispatchNo)
+                .HasMaxLength(100)
+                .IsRequired();
 
             modelBuilder.Entity<Dispatch>()
                 .HasOne(x => x.Material)
@@ -411,6 +525,16 @@ namespace POTracker.Data
             modelBuilder.Entity<Dispatch>()
                 .Property(x => x.DispatchQty)
                 .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Dispatch>()
+                .HasIndex(x => new
+                {
+                    x.MaterialId,
+                    x.DispatchDate
+                });
+
+            modelBuilder.Entity<Dispatch>()
+                .HasIndex(x => x.DispatchNo);
 
             // =====================================================
             // PENDING INVOICE ITEMS
@@ -461,6 +585,28 @@ namespace POTracker.Data
             modelBuilder.Entity<PendingInvoiceItem>()
                 .Property(x => x.Amount)
                 .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<PendingInvoiceItem>()
+                .HasIndex(x => new
+                {
+                    x.Status,
+                    x.CreatedDate
+                });
+
+            modelBuilder.Entity<PendingInvoiceItem>()
+                .HasIndex(x => new
+                {
+                    x.PONumber,
+                    x.MaterialNo,
+                    x.LineItem
+                });
+
+            modelBuilder.Entity<PendingInvoiceItem>()
+                .HasIndex(x => new
+                {
+                    x.InvoiceId,
+                    x.Status
+                });
         }
     }
 }

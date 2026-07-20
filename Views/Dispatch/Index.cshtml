@@ -8,10 +8,10 @@
         Model ?? new List<POTracker.Models.Material>();
 
     int totalMaterials =
-        materials.Count;
+        ViewBag.TotalMaterials ?? materials.Count;
 
     int dispatched =
-        materials.Count(x =>
+        ViewBag.Dispatched ?? materials.Count(x =>
             string.Equals(
                 x.DispatchStatus,
                 "Dispatched",
@@ -22,7 +22,7 @@
                 StringComparison.OrdinalIgnoreCase));
 
     int partial =
-        materials.Count(x =>
+        ViewBag.Partial ?? materials.Count(x =>
             string.Equals(
                 x.DispatchStatus,
                 "Partial",
@@ -33,7 +33,7 @@
                 StringComparison.OrdinalIgnoreCase));
 
     int pending =
-        materials.Count(x =>
+        ViewBag.Pending ?? materials.Count(x =>
             string.IsNullOrWhiteSpace(x.DispatchStatus) ||
             string.Equals(
                 x.DispatchStatus,
@@ -41,16 +41,35 @@
                 StringComparison.OrdinalIgnoreCase));
 
     decimal totalPOQty =
-        materials.Sum(x => x.Qty);
+        ViewBag.TotalPOQty ?? materials.Sum(x => x.Qty);
 
     decimal totalInvoiceQty =
-        materials.Sum(x => x.InvoiceQty);
+        ViewBag.TotalInvoiceQty ?? materials.Sum(x => x.InvoiceQty);
 
     decimal totalDispatchQty =
-        materials.Sum(x => x.DispatchQty);
+        ViewBag.TotalDispatchQty ?? materials.Sum(x => x.DispatchQty);
 
     decimal totalPendingQty =
+        ViewBag.TotalPendingQty ??
         materials.Sum(x => Math.Max(0, x.PendingQty));
+
+    string search =
+        ViewBag.Search as string ?? "";
+
+    string status =
+        ViewBag.Status as string ?? "";
+
+    string quantity =
+        ViewBag.Quantity as string ?? "";
+
+    int currentPage =
+        ViewBag.CurrentPage ?? 1;
+
+    int pageSize =
+        ViewBag.PageSize ?? 50;
+
+    int totalPages =
+        ViewBag.TotalPages ?? 1;
 
     int dispatchedPercent =
         GetPercent(
@@ -171,17 +190,19 @@
                 Materials
             </a>
 
-            <a asp-controller="VyaparInvoiceImport"
-               asp-action="Upload"
-               class="dsp-btn dsp-btn-primary">
-                Upload Invoice
-            </a>
+            <role-access roles="Admin,Production">
+                <a asp-controller="VyaparInvoiceImport"
+                   asp-action="Upload"
+                   class="dsp-btn dsp-btn-primary">
+                    Upload Invoice
+                </a>
 
-            <a asp-controller="VyaparInvoiceImport"
-               asp-action="InvoiceStatus"
-               class="dsp-btn dsp-btn-light">
-                Invoice Status
-            </a>
+                <a asp-controller="VyaparInvoiceImport"
+                   asp-action="InvoiceStatus"
+                   class="dsp-btn dsp-btn-light">
+                    Invoice Status
+                </a>
+            </role-access>
         </div>
     </section>
 
@@ -392,54 +413,100 @@
             </span>
         </div>
 
-        <div class="dsp-filter-grid">
+        <form asp-action="Index"
+              asp-controller="Dispatch"
+              method="get"
+              class="dsp-filter-grid">
+
+            <input type="hidden"
+                   name="page"
+                   value="1" />
+
+            <input type="hidden"
+                   name="pageSize"
+                   value="@pageSize" />
 
             <div class="dsp-filter-field dsp-search-field">
-                <label for="dispatchSearch">
+                <label for="dispatchSearchServer">
                     Search
                 </label>
 
                 <input type="search"
-                       id="dispatchSearch"
+                       id="dispatchSearchServer"
+                       name="search"
+                       value="@search"
                        placeholder="PO, handler, material or description..." />
             </div>
 
             <div class="dsp-filter-field">
-                <label for="dispatchStatusFilter">
+                <label for="dispatchStatusServer">
                     Dispatch Status
                 </label>
 
-                <select id="dispatchStatusFilter">
-                    <option value="">All Status</option>
-                    <option value="dispatched">Dispatched</option>
-                    <option value="completed">Completed</option>
-                    <option value="partial">Partial</option>
-                    <option value="running">Running</option>
-                    <option value="pending">Pending</option>
+                <select id="dispatchStatusServer"
+                        name="status">
+                    @foreach (var option in new[]
+                    {
+                        (Value: "", Text: "All Status"),
+                        (Value: "dispatched", Text: "Dispatched"),
+                        (Value: "completed", Text: "Completed"),
+                        (Value: "partial", Text: "Partial"),
+                        (Value: "running", Text: "Running"),
+                        (Value: "pending", Text: "Pending")
+                    })
+                    {
+                        if (string.Equals(status, option.Value, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@option.Value" selected>@option.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@option.Value">@option.Text</option>
+                        }
+                    }
                 </select>
             </div>
 
             <div class="dsp-filter-field">
-                <label for="quantityFilter">
+                <label for="quantityFilterServer">
                     Quantity Filter
                 </label>
 
-                <select id="quantityFilter">
-                    <option value="">All Quantities</option>
-                    <option value="pending">Pending Qty &gt; 0</option>
-                    <option value="completed">Pending Qty = 0</option>
-                    <option value="invoice">Invoice Qty &gt; 0</option>
+                <select id="quantityFilterServer"
+                        name="quantity">
+                    @foreach (var option in new[]
+                    {
+                        (Value: "", Text: "All Quantities"),
+                        (Value: "pending", Text: "Pending Qty > 0"),
+                        (Value: "completed", Text: "Pending Qty = 0"),
+                        (Value: "invoice", Text: "Invoice Qty > 0")
+                    })
+                    {
+                        if (string.Equals(quantity, option.Value, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@option.Value" selected>@option.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@option.Value">@option.Text</option>
+                        }
+                    }
                 </select>
             </div>
 
             <div class="dsp-filter-actions">
-                <button type="button"
-                        class="dsp-btn dsp-btn-light"
-                        id="clearDispatchFilters">
-                    Clear Filters
+                <button type="submit"
+                        class="dsp-btn dsp-btn-primary">
+                    Search
                 </button>
+
+                <a asp-action="Index"
+                   asp-controller="Dispatch"
+                   class="dsp-btn dsp-btn-light">
+                    Clear Filters
+                </a>
             </div>
-        </div>
+        </form>
     </section>
 
     <!-- =========================================================
@@ -699,15 +766,17 @@
                                             Details
                                         </a>
 
-                                        @if (pendingQty > 0)
-                                        {
-                                            <a asp-controller="Dispatch"
-                                               asp-action="Create"
-                                               asp-route-materialId="@item.Id"
-                                               class="dsp-action-link dsp-action-primary">
-                                                Add Dispatch
-                                            </a>
-                                        }
+                                        <role-access roles="Admin,Production">
+                                            @if (pendingQty > 0)
+                                            {
+                                                <a asp-controller="Dispatch"
+                                                   asp-action="Create"
+                                                   asp-route-materialId="@item.Id"
+                                                   class="dsp-action-link dsp-action-primary">
+                                                    Add Dispatch
+                                                </a>
+                                            }
+                                        </role-access>
                                     </div>
                                 </td>
                             </tr>
@@ -742,6 +811,78 @@
                     </tfoot>
                 </table>
             </div>
+
+            <nav aria-label="Dispatch material pages"
+                 style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:16px;">
+
+                <strong style="color:#64748b;font-size:13px;">
+                    Page @currentPage of @totalPages
+                    · @totalMaterials total material(s)
+                </strong>
+
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <form asp-action="Index"
+                          asp-controller="Dispatch"
+                          method="get"
+                          style="display:flex;align-items:center;gap:8px;margin:0;">
+
+                        <input type="hidden" name="page" value="1" />
+                        <input type="hidden" name="search" value="@search" />
+                        <input type="hidden" name="status" value="@status" />
+                        <input type="hidden" name="quantity" value="@quantity" />
+
+                        <label for="dispatchPageSize"
+                               style="color:#64748b;font-size:13px;font-weight:800;">
+                            Rows
+                        </label>
+
+                        <select id="dispatchPageSize"
+                                name="pageSize"
+                                onchange="this.form.submit()"
+                                style="min-height:38px;padding:7px 30px 7px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;font-weight:800;">
+                            @foreach (var size in new[] { 10, 25, 50, 100, 200 })
+                            {
+                                if (size == pageSize)
+                                {
+                                    <option value="@size" selected>@size</option>
+                                }
+                                else
+                                {
+                                    <option value="@size">@size</option>
+                                }
+                            }
+                        </select>
+                    </form>
+
+                    @if (currentPage > 1)
+                    {
+                        <a asp-action="Index"
+                           asp-controller="Dispatch"
+                           asp-route-search="@search"
+                           asp-route-status="@status"
+                           asp-route-quantity="@quantity"
+                           asp-route-page="@(currentPage - 1)"
+                           asp-route-pageSize="@pageSize"
+                           class="dsp-btn dsp-btn-light">
+                            Previous
+                        </a>
+                    }
+
+                    @if (currentPage < totalPages)
+                    {
+                        <a asp-action="Index"
+                           asp-controller="Dispatch"
+                           asp-route-search="@search"
+                           asp-route-status="@status"
+                           asp-route-quantity="@quantity"
+                           asp-route-page="@(currentPage + 1)"
+                           asp-route-pageSize="@pageSize"
+                           class="dsp-btn dsp-btn-light">
+                            Next
+                        </a>
+                    }
+                </div>
+            </nav>
 
             <div class="dsp-no-results"
                  id="noDispatchResults"

@@ -186,11 +186,13 @@
                 Export Filtered Excel
             </a>
 
-            <a asp-controller="Material"
-               asp-action="Create"
-               class="mi-btn mi-btn-primary">
-                + Add Material
-            </a>
+            <role-access roles="Admin,Production">
+                <a asp-controller="Material"
+                   asp-action="Create"
+                   class="mi-btn mi-btn-primary">
+                    + Add Material
+                </a>
+            </role-access>
         </div>
     </section>
 
@@ -229,13 +231,21 @@
         </article>
 
         <article class="mi-summary-card mi-summary-green">
-            <span>In Stock</span>
+            <span>
+                @(Model.Summary.StockSummaryIsCurrentPage
+                    ? "In Stock (Current Page)"
+                    : "In Stock")
+            </span>
             <strong>@Model.Summary.InStockMaterials</strong>
             <small>@Model.Summary.TotalLiveStockQuantity.ToString("N2") available stock</small>
         </article>
 
         <article class="mi-summary-card mi-summary-red">
-            <span>Shortage</span>
+            <span>
+                @(Model.Summary.StockSummaryIsCurrentPage
+                    ? "Shortage (Current Page)"
+                    : "Shortage")
+            </span>
             <strong>@Model.Summary.ShortageMaterials</strong>
             <small>Materials requiring stock</small>
         </article>
@@ -510,39 +520,41 @@
                        name="returnUrl"
                        value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
 
-                <div class="mi-bulk-bar">
-                    <div class="mi-bulk-left">
-                        <label class="mi-select-all-label"
-                               for="selectAllMaterials">
-                            <input type="checkbox"
-                                   id="selectAllMaterials"
-                                   class="mi-select-checkbox"
-                                   aria-label="Select all materials on this page" />
-                        </label>
+                <role-access roles="Admin,Production">
+                    <div class="mi-bulk-bar">
+                        <div class="mi-bulk-left">
+                            <label class="mi-select-all-label"
+                                   for="selectAllMaterials">
+                                <input type="checkbox"
+                                       id="selectAllMaterials"
+                                       class="mi-select-checkbox"
+                                       aria-label="Select all materials on this page" />
+                            </label>
 
-                        <strong>
-                            Select all on this page
-                        </strong>
+                            <strong>
+                                Select all on this page
+                            </strong>
 
-                        <span class="mi-selected-count"
-                              id="selectedMaterialCount">
-                            0 selected
-                        </span>
+                            <span class="mi-selected-count"
+                                  id="selectedMaterialCount">
+                                0 selected
+                            </span>
 
-                        <span class="mi-bulk-help">
-                            Invoice or dispatch-linked materials will be skipped safely.
-                        </span>
+                            <span class="mi-bulk-help">
+                                Invoice or dispatch-linked materials will be skipped safely.
+                            </span>
+                        </div>
+
+                        <div class="mi-bulk-actions">
+                            <button type="submit"
+                                    class="mi-btn-bulk-delete"
+                                    id="deleteSelectedMaterialsButton"
+                                    disabled>
+                                Delete Selected
+                            </button>
+                        </div>
                     </div>
-
-                    <div class="mi-bulk-actions">
-                        <button type="submit"
-                                class="mi-btn-bulk-delete"
-                                id="deleteSelectedMaterialsButton"
-                                disabled>
-                            Delete Selected
-                        </button>
-                    </div>
-                </div>
+                </role-access>
 
                 <div class="mi-table-scroll">
                     <table class="mi-table">
@@ -574,13 +586,15 @@
                             {
                                 <tr data-material-row="@item.MaterialId">
                                     <td class="mi-checkbox-column">
-                                        <label class="mi-material-check-label">
-                                            <input type="checkbox"
-                                                   name="selectedIds"
-                                                   value="@item.MaterialId"
-                                                   class="mi-select-checkbox material-select-checkbox"
-                                                   aria-label="Select material @item.MaterialNo" />
-                                        </label>
+                                        <role-access roles="Admin,Production">
+                                            <label class="mi-material-check-label">
+                                                <input type="checkbox"
+                                                       name="selectedIds"
+                                                       value="@item.MaterialId"
+                                                       class="mi-select-checkbox material-select-checkbox"
+                                                       aria-label="Select material @item.MaterialNo" />
+                                            </label>
+                                        </role-access>
                                     </td>
 
                                     <td>
@@ -719,20 +733,23 @@
                                                 View
                                             </a>
 
-                                            <a asp-controller="Material"
-                                               asp-action="Edit"
-                                               asp-route-id="@item.MaterialId"
-                                               class="mi-row-btn mi-row-edit">
-                                                Edit
-                                            </a>
+                                            <role-access roles="Admin,Production">
+                                                <a asp-controller="Material"
+                                                   asp-action="Edit"
+                                                   asp-route-id="@item.MaterialId"
+                                                   class="mi-row-btn mi-row-edit">
+                                                    Edit
+                                                </a>
 
-                                            <a asp-controller="Material"
-                                               asp-action="Delete"
-                                               asp-route-id="@item.MaterialId"
-                                               class="mi-row-btn mi-row-delete"
-                                               onclick="return confirm('Delete this material?');">
-                                                Delete
-                                            </a>
+                                                <button type="submit"
+                                                        form="materialSingleDeleteForm"
+                                                        name="id"
+                                                        value="@item.MaterialId"
+                                                        class="mi-row-btn mi-row-delete"
+                                                        onclick="return confirm('Delete this material?');">
+                                                    Delete
+                                                </button>
+                                            </role-access>
                                         </div>
                                     </td>
                                 </tr>
@@ -833,6 +850,16 @@
                     </div>
                 </div>
             </form>
+
+            <role-access roles="Admin,Production">
+                <form asp-controller="Material"
+                      asp-action="Delete"
+                      asp-antiforgery="true"
+                      method="post"
+                      id="materialSingleDeleteForm"
+                      style="display:none;">
+                </form>
+            </role-access>
         }
     </section>
 </div>
@@ -968,4 +995,3 @@
         })();
     </script>
 }
-

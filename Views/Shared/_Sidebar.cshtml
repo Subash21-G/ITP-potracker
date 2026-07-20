@@ -1,118 +1,91 @@
 ﻿@using Microsoft.AspNetCore.Http
 
 @{
-    var role = Context.Session.GetString("Role");
+    var role = Context.Session.GetString("Role") ?? string.Empty;
+
+    bool isAdmin = role.Equals(
+        "Admin",
+        StringComparison.OrdinalIgnoreCase);
+
+    bool isProduction = role.Equals(
+        "Production",
+        StringComparison.OrdinalIgnoreCase);
+
+    bool isViewer = role.Equals(
+        "Viewer",
+        StringComparison.OrdinalIgnoreCase);
 }
 
-@if (role == "Admin")
+@if (isAdmin || isProduction)
 {
     <li class="nav-item">
-
         <a class="nav-link"
-           href="/Calendar/Index">
+           asp-controller="Calendar"
+           asp-action="Index">
 
             <i class="bi bi-calendar-event"></i>
-
             Production Calendar
-
         </a>
-
     </li>
+}
 
+@if (isAdmin)
+{
     <li class="nav-item">
-
         <a class="nav-link"
-           href="/Report/MaterialsExcel">
+           asp-controller="Report"
+           asp-action="MaterialsExcel"
+           data-no-prefetch>
 
             <i class="bi bi-file-earmark-excel"></i>
-
             Export Excel
-
         </a>
-
     </li>
 
     <li class="nav-item">
-
         <a class="nav-link"
-           href="/Report/MaterialsPdf">
+           asp-controller="Report"
+           asp-action="MaterialsPdf"
+           data-no-prefetch>
 
             <i class="bi bi-file-earmark-pdf"></i>
-
             Export PDF
-
         </a>
-
     </li>
 
     <li class="nav-item">
-
         <a class="nav-link"
-           href="/Report/Index">
+           asp-controller="Report"
+           asp-action="Index">
 
             <i class="bi bi-file-earmark-bar-graph"></i>
-
             Reports
-
         </a>
-
-    </li>
-
-    <li class="nav-item">
-
-        <a class="nav-link"
-           href="/Alert/Index">
-
-            <i class="bi bi-bell-fill"></i>
-
-            Smart Alerts
-
-        </a>
-
     </li>
 }
 
-@if (role == "Production")
+@if (isAdmin || isProduction)
 {
     <li class="nav-item">
-
         <a class="nav-link"
-           href="/Calendar/Index">
-
-            <i class="bi bi-calendar-event"></i>
-
-            Production Calendar
-
-        </a>
-
-    </li>
-
-    <li class="nav-item">
-
-        <a class="nav-link"
-           href="/Alert/Index">
+           asp-controller="Alert"
+           asp-action="Index">
 
             <i class="bi bi-bell-fill"></i>
-
             Smart Alerts
-
         </a>
-
     </li>
 }
 
-@if (role == "Viewer")
+@if (isViewer)
 {
     <li class="nav-item">
-
         <a class="nav-link"
-           href="/Dashboard/Index">
+           asp-controller="Dashboard"
+           asp-action="Index">
 
             <i class="bi bi-speedometer2"></i>
-
             Dashboard
-
         </a>
-
     </li>
 }

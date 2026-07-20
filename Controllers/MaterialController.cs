@@ -19,6 +19,12 @@ namespace POTracker.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly PendingInvoiceMatcher _pendingInvoiceMatcher;
 
+        private static readonly JsonSerializerOptions
+            StockJsonOptions = new()
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
         public MaterialController(
             ApplicationDbContext context,
             IWebHostEnvironment environment,
@@ -82,53 +88,113 @@ namespace POTracker.Controllers
                 invoiceStatus,
                 dispatchStatus);
 
-            var materials = await filteredQuery
-                .OrderByDescending(x => x.Id)
-                .ToListAsync();
+            List<MaterialIndexRowViewModel> pagedRows;
+            MaterialIndexSummaryViewModel summary;
+            int totalRecords;
 
-            var stockMap = await GetStockMapAsync(materials);
-
-            var allRows = materials
-                .Select(material =>
-                    MapMaterialRow(
-                        material,
-                        GetStockForMaterial(
-                            stockMap,
-                            material.MaterialNo)))
-                .ToList();
-
-            if (!string.IsNullOrWhiteSpace(stockStatus))
+            if (string.IsNullOrWhiteSpace(stockStatus))
             {
-                allRows = allRows
+                // Normal fast path: calculate database totals first,
+                // paginate in SQL, and request live stock only for the
+                // rows that will actually be displayed.
+                summary = await BuildMaterialDatabaseSummaryAsync(
+                    filteredQuery);
+
+                totalRecords = summary.TotalMaterials;
+
+                var totalPages = Math.Max(
+                    1,
+                    (int)Math.Ceiling(
+                        totalRecords / (double)pageSize));
+
+                if (page > totalPages)
+                {
+                    page = totalPages;
+                }
+
+                var pageMaterials = await filteredQuery
+                    .OrderByDescending(x => x.Id)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var pageStockMap =
+                    await GetStockMapAsync(pageMaterials);
+
+                pagedRows = pageMaterials
+                    .Select(material =>
+                        MapMaterialRow(
+                            material,
+                            GetStockForMaterial(
+                                pageStockMap,
+                                material.MaterialNo)))
+                    .ToList();
+
+                var pageStockSummary =
+                    BuildMaterialSummary(pagedRows);
+
+                summary.InStockMaterials =
+                    pageStockSummary.InStockMaterials;
+
+                summary.ShortageMaterials =
+                    pageStockSummary.ShortageMaterials;
+
+                summary.TotalLiveStockQuantity =
+                    pageStockSummary.TotalLiveStockQuantity;
+
+                summary.StockSummaryIsCurrentPage = true;
+            }
+            else
+            {
+                // Stock status belongs to the external Stock API and
+                // cannot be filtered by SQL. Preserve correct filter
+                // results by loading stock before applying this filter.
+                var materials = await filteredQuery
+                    .OrderByDescending(x => x.Id)
+                    .ToListAsync();
+
+                var stockMap =
+                    await GetStockMapAsync(materials);
+
+                var allRows = materials
+                    .Select(material =>
+                        MapMaterialRow(
+                            material,
+                            GetStockForMaterial(
+                                stockMap,
+                                material.MaterialNo)))
                     .Where(x =>
                         string.Equals(
                             x.StockStatus,
                             stockStatus,
                             StringComparison.OrdinalIgnoreCase))
                     .ToList();
+
+                totalRecords = allRows.Count;
+
+                var totalPages = Math.Max(
+                    1,
+                    (int)Math.Ceiling(
+                        totalRecords / (double)pageSize));
+
+                if (page > totalPages)
+                {
+                    page = totalPages;
+                }
+
+                pagedRows = allRows
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                summary = BuildMaterialSummary(allRows);
+                summary.StockSummaryIsCurrentPage = false;
             }
-
-            var totalRecords = allRows.Count;
-
-            var totalPages = Math.Max(
-                1,
-                (int)Math.Ceiling(
-                    totalRecords / (double)pageSize));
-
-            if (page > totalPages)
-            {
-                page = totalPages;
-            }
-
-            var pagedRows = allRows
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
 
             var model = new MaterialIndexViewModel
             {
                 Items = pagedRows,
-                Summary = BuildMaterialSummary(allRows),
+                Summary = summary,
 
                 Search = search,
                 PONumber = poNumber,
@@ -685,6 +751,8 @@ namespace POTracker.Controllers
         // DELETE
         // ============================================================
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             if (!IsLoggedIn())
@@ -753,10 +821,12 @@ namespace POTracker.Controllers
 
             var material =
                 await _context.Materials
+                    .AsNoTracking()
                     .Include(x => x.PurchaseOrder)
                     .ThenInclude(x => x!.Purchaser)
                     .Include(x => x.InvoiceItems)
                     .Include(x => x.Dispatches)
+                    .AsSplitQuery()
                     .FirstOrDefaultAsync(x =>
                         x.Id == id);
 
@@ -817,7 +887,8 @@ namespace POTracker.Controllers
                 search = search.Trim();
 
                 query = query.Where(x =>
-                    x.MaterialNo.Contains(search) ||
+                    (x.MaterialNo != null &&
+                     x.MaterialNo.Contains(search)) ||
                     (x.LineItem != null &&
                      x.LineItem.Contains(search)) ||
                     (x.HsnSacCode != null &&
@@ -858,25 +929,26 @@ namespace POTracker.Controllers
                 query = query.Where(x =>
                     (x.PurchaseOrder != null &&
                      x.PurchaseOrder.PODate.HasValue &&
-                     x.PurchaseOrder.PODate.Value.Date >= date) ||
+                     x.PurchaseOrder.PODate.Value >= date) ||
                     ((x.PurchaseOrder == null ||
                       !x.PurchaseOrder.PODate.HasValue) &&
                      x.PODate.HasValue &&
-                     x.PODate.Value.Date >= date));
+                     x.PODate.Value >= date));
             }
 
             if (poDateTo.HasValue)
             {
-                var date = poDateTo.Value.Date;
+                var endExclusive =
+                    poDateTo.Value.Date.AddDays(1);
 
                 query = query.Where(x =>
                     (x.PurchaseOrder != null &&
                      x.PurchaseOrder.PODate.HasValue &&
-                     x.PurchaseOrder.PODate.Value.Date <= date) ||
+                     x.PurchaseOrder.PODate.Value < endExclusive) ||
                     ((x.PurchaseOrder == null ||
                       !x.PurchaseOrder.PODate.HasValue) &&
                      x.PODate.HasValue &&
-                     x.PODate.Value.Date <= date));
+                     x.PODate.Value < endExclusive));
             }
 
             if (poReceivedDateFrom.HasValue)
@@ -887,26 +959,27 @@ namespace POTracker.Controllers
                 query = query.Where(x =>
                     (x.PurchaseOrder != null &&
                      x.PurchaseOrder.ReceivedDate.HasValue &&
-                     x.PurchaseOrder.ReceivedDate.Value.Date >= date) ||
+                     x.PurchaseOrder.ReceivedDate.Value >= date) ||
                     ((x.PurchaseOrder == null ||
                       !x.PurchaseOrder.ReceivedDate.HasValue) &&
                      x.ReceivingDate.HasValue &&
-                     x.ReceivingDate.Value.Date >= date));
+                     x.ReceivingDate.Value >= date));
             }
 
             if (poReceivedDateTo.HasValue)
             {
-                var date =
-                    poReceivedDateTo.Value.Date;
+                var endExclusive =
+                    poReceivedDateTo.Value.Date
+                        .AddDays(1);
 
                 query = query.Where(x =>
                     (x.PurchaseOrder != null &&
                      x.PurchaseOrder.ReceivedDate.HasValue &&
-                     x.PurchaseOrder.ReceivedDate.Value.Date <= date) ||
+                     x.PurchaseOrder.ReceivedDate.Value < endExclusive) ||
                     ((x.PurchaseOrder == null ||
                       !x.PurchaseOrder.ReceivedDate.HasValue) &&
                      x.ReceivingDate.HasValue &&
-                     x.ReceivingDate.Value.Date <= date));
+                     x.ReceivingDate.Value < endExclusive));
             }
 
             if (!string.IsNullOrWhiteSpace(
@@ -972,7 +1045,7 @@ namespace POTracker.Controllers
                     material.LineItem ?? "",
 
                 MaterialNo =
-                    material.MaterialNo,
+                    material.MaterialNo ?? "",
 
                 HsnSacCode =
                     material.HsnSacCode,
@@ -1043,6 +1116,65 @@ namespace POTracker.Controllers
 
                 PdfFilePath =
                     material.PDFFilePath
+            };
+        }
+
+        private static async Task<MaterialIndexSummaryViewModel>
+            BuildMaterialDatabaseSummaryAsync(
+                IQueryable<Material> query)
+        {
+            var totals = await query
+                .GroupBy(x => 1)
+                .Select(group => new
+                {
+                    TotalMaterials = group.Count(),
+
+                    PendingDispatchMaterials =
+                        group.Count(x =>
+                            x.PendingQty > 0),
+
+                    NotInvoicedMaterials =
+                        group.Count(x =>
+                            x.InvoiceQty <= 0 ||
+                            x.InvoiceStatus ==
+                                "Not Invoiced"),
+
+                    TotalPOQuantity =
+                        group.Sum(x => x.Qty),
+
+                    TotalBalanceQuantity =
+                        group.Sum(x =>
+                            x.BalanceQty > 0
+                                ? x.BalanceQty
+                                : 0m),
+
+                    TotalPendingDispatchQuantity =
+                        group.Sum(x =>
+                            x.PendingQty > 0
+                                ? x.PendingQty
+                                : 0m)
+                })
+                .FirstOrDefaultAsync();
+
+            return new MaterialIndexSummaryViewModel
+            {
+                TotalMaterials =
+                    totals?.TotalMaterials ?? 0,
+
+                PendingDispatchMaterials =
+                    totals?.PendingDispatchMaterials ?? 0,
+
+                NotInvoicedMaterials =
+                    totals?.NotInvoicedMaterials ?? 0,
+
+                TotalPOQuantity =
+                    totals?.TotalPOQuantity ?? 0m,
+
+                TotalBalanceQuantity =
+                    totals?.TotalBalanceQuantity ?? 0m,
+
+                TotalPendingDispatchQuantity =
+                    totals?.TotalPendingDispatchQuantity ?? 0m
             };
         }
 
@@ -1281,19 +1413,51 @@ namespace POTracker.Controllers
                 .Select(x => x.MaterialNo)
                 .Where(x =>
                     !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!.Trim())
                 .Distinct(
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            foreach (var materialNo in materialNumbers)
-            {
-                var stockInfo =
-                    await GetStockInfoAsync(materialNo);
+            // Stock API calls are independent. Run a small controlled
+            // number in parallel so large material pages do not wait
+            // for every network request one-by-one.
+            using var concurrencyGate =
+                new SemaphoreSlim(
+                    initialCount: 8,
+                    maxCount: 8);
 
-                if (stockInfo != null)
+            var stockTasks = materialNumbers
+                .Select(async materialNo =>
                 {
-                    stockMap[materialNo] =
-                        stockInfo;
+                    await concurrencyGate.WaitAsync();
+
+                    try
+                    {
+                        var stockInfo =
+                            await GetStockInfoAsync(materialNo);
+
+                        return new
+                        {
+                            MaterialNo = materialNo,
+                            StockInfo = stockInfo
+                        };
+                    }
+                    finally
+                    {
+                        concurrencyGate.Release();
+                    }
+                })
+                .ToList();
+
+            var stockResults =
+                await Task.WhenAll(stockTasks);
+
+            foreach (var result in stockResults)
+            {
+                if (result.StockInfo != null)
+                {
+                    stockMap[result.MaterialNo] =
+                        result.StockInfo;
                 }
             }
 
@@ -1352,11 +1516,7 @@ namespace POTracker.Controllers
                 return JsonSerializer
                     .Deserialize<StockInfoDto>(
                         json,
-                        new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive =
-                                true
-                        });
+                        StockJsonOptions);
             }
             catch
             {

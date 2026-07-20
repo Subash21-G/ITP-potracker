@@ -184,11 +184,13 @@
                 Export Filtered Excel
             </a>
 
-            <a asp-controller="PurchaseOrder"
-               asp-action="Create"
-               class="poi-btn poi-btn-primary">
-                + Add Purchase Order
-            </a>
+            <role-access roles="Admin,Production">
+                <a asp-controller="PurchaseOrder"
+                   asp-action="Create"
+                   class="poi-btn poi-btn-primary">
+                    + Add Purchase Order
+                </a>
+            </role-access>
         </div>
     </section>
 
@@ -541,11 +543,13 @@
                 </p>
             </div>
 
-            <a asp-controller="POImport"
-               asp-action="Upload"
-               class="poi-import-link">
-                Import PO PDF
-            </a>
+            <role-access roles="Admin,Production">
+                <a asp-controller="POImport"
+                   asp-action="Upload"
+                   class="poi-import-link">
+                    Import PO PDF
+                </a>
+            </role-access>
         </div>
 
         @if (Model.Items.Count == 0)
@@ -583,39 +587,41 @@
                        name="returnUrl"
                        value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
 
-                <div class="poi-bulk-bar">
-                    <div class="poi-bulk-left">
-                        <label class="poi-select-all-label"
-                               for="selectAllPurchaseOrders">
-                            <input type="checkbox"
-                                   id="selectAllPurchaseOrders"
-                                   class="poi-select-checkbox"
-                                   aria-label="Select all purchase orders on this page" />
-                        </label>
+                <role-access roles="Admin,Production">
+                    <div class="poi-bulk-bar">
+                        <div class="poi-bulk-left">
+                            <label class="poi-select-all-label"
+                                   for="selectAllPurchaseOrders">
+                                <input type="checkbox"
+                                       id="selectAllPurchaseOrders"
+                                       class="poi-select-checkbox"
+                                       aria-label="Select all purchase orders on this page" />
+                            </label>
 
-                        <strong>
-                            Select all on this page
-                        </strong>
+                            <strong>
+                                Select all on this page
+                            </strong>
 
-                        <span class="poi-selected-count"
-                              id="selectedPurchaseOrderCount">
-                            0 selected
-                        </span>
+                            <span class="poi-selected-count"
+                                  id="selectedPurchaseOrderCount">
+                                0 selected
+                            </span>
 
-                        <span class="poi-bulk-help">
-                            Purchase orders with linked materials will be skipped safely.
-                        </span>
+                            <span class="poi-bulk-help">
+                                Purchase orders with linked materials will be skipped safely.
+                            </span>
+                        </div>
+
+                        <div class="poi-bulk-actions">
+                            <button type="submit"
+                                    class="poi-btn-bulk-delete"
+                                    id="deleteSelectedPurchaseOrdersButton"
+                                    disabled>
+                                Delete Selected
+                            </button>
+                        </div>
                     </div>
-
-                    <div class="poi-bulk-actions">
-                        <button type="submit"
-                                class="poi-btn-bulk-delete"
-                                id="deleteSelectedPurchaseOrdersButton"
-                                disabled>
-                            Delete Selected
-                        </button>
-                    </div>
-                </div>
+                </role-access>
 
                 <div class="poi-table-scroll">
 
@@ -652,13 +658,15 @@
                                     data-purchase-order-row="@item.PurchaseOrderId">
 
                                     <td class="poi-checkbox-column">
-                                        <label class="poi-row-check-label">
-                                            <input type="checkbox"
-                                                   name="selectedIds"
-                                                   value="@item.PurchaseOrderId"
-                                                   class="poi-select-checkbox purchase-order-select-checkbox"
-                                                   aria-label="Select purchase order @item.PONumber" />
-                                        </label>
+                                        <role-access roles="Admin,Production">
+                                            <label class="poi-row-check-label">
+                                                <input type="checkbox"
+                                                       name="selectedIds"
+                                                       value="@item.PurchaseOrderId"
+                                                       class="poi-select-checkbox purchase-order-select-checkbox"
+                                                       aria-label="Select purchase order @item.PONumber" />
+                                            </label>
+                                        </role-access>
                                     </td>
 
                                     <td>
@@ -844,19 +852,21 @@
                                                 View
                                             </a>
 
-                                            <a asp-controller="PurchaseOrder"
-                                               asp-action="Edit"
-                                               asp-route-id="@item.PurchaseOrderId"
-                                               class="poi-row-btn poi-row-edit">
-                                                Edit
-                                            </a>
+                                            <role-access roles="Admin,Production">
+                                                <a asp-controller="PurchaseOrder"
+                                                   asp-action="Edit"
+                                                   asp-route-id="@item.PurchaseOrderId"
+                                                   class="poi-row-btn poi-row-edit">
+                                                    Edit
+                                                </a>
 
-                                            <a asp-controller="PurchaseOrder"
-                                               asp-action="Delete"
-                                               asp-route-id="@item.PurchaseOrderId"
-                                               class="poi-row-btn poi-row-delete">
-                                                Delete
-                                            </a>
+                                                <a asp-controller="PurchaseOrder"
+                                                   asp-action="Delete"
+                                                   asp-route-id="@item.PurchaseOrderId"
+                                                   class="poi-row-btn poi-row-delete">
+                                                    Delete
+                                                </a>
+                                            </role-access>
                                         </div>
                                     </td>
                                 </tr>

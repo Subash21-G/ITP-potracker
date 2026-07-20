@@ -67,7 +67,8 @@ namespace POTracker.Migrations
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -75,13 +76,18 @@ namespace POTracker.Migrations
 
                     b.Property<string>("Role")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("UserName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserName")
+                        .IsUnique();
 
                     b.ToTable("AppUsers");
                 });
@@ -102,7 +108,8 @@ namespace POTracker.Migrations
 
                     b.Property<string>("DispatchNo")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal>("DispatchQty")
                         .HasColumnType("decimal(18,2)");
@@ -121,7 +128,9 @@ namespace POTracker.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MaterialId");
+                    b.HasIndex("DispatchNo");
+
+                    b.HasIndex("MaterialId", "DispatchDate");
 
                     b.ToTable("Dispatches");
                 });
@@ -155,6 +164,10 @@ namespace POTracker.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedDate");
+
+                    b.HasIndex("InvoiceDate");
 
                     b.HasIndex("InvoiceNumber");
 
@@ -192,27 +205,32 @@ namespace POTracker.Migrations
 
                     b.Property<string>("LineItem")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("MaterialId")
                         .HasColumnType("int");
 
                     b.Property<string>("MaterialNo")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("PONumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal>("PriceUnit")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InvoiceId");
-
                     b.HasIndex("MaterialId");
+
+                    b.HasIndex("InvoiceId", "MaterialId", "LineItem");
+
+                    b.HasIndex("PONumber", "MaterialNo", "LineItem");
 
                     b.ToTable("InvoiceItems");
                 });
@@ -414,7 +432,17 @@ namespace POTracker.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("MaterialNo");
+
+                    b.HasIndex("DispatchStatus", "DeliveryDate");
+
+                    b.HasIndex("InvoiceStatus", "CreatedDate");
+
+                    b.HasIndex("ProcessStatus", "ProcessStartDate");
+
                     b.HasIndex("PurchaseOrderId", "LineItem");
+
+                    b.HasIndex("PurchaseOrderId", "MaterialNo", "LineItem");
 
                     b.ToTable("Materials");
                 });
@@ -493,7 +521,11 @@ namespace POTracker.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InvoiceId");
+                    b.HasIndex("InvoiceId", "Status");
+
+                    b.HasIndex("Status", "CreatedDate");
+
+                    b.HasIndex("PONumber", "MaterialNo", "LineItem");
 
                     b.ToTable("PendingInvoiceItems");
                 });
@@ -584,9 +616,13 @@ namespace POTracker.Migrations
                     b.HasIndex("PONumber")
                         .IsUnique();
 
-                    b.HasIndex("PurchaserId");
-
                     b.HasIndex("PurchaserId1");
+
+                    b.HasIndex("ReceivedDate");
+
+                    b.HasIndex("PurchaserId", "PODate");
+
+                    b.HasIndex("Status", "CreatedDate");
 
                     b.ToTable("PurchaseOrders");
                 });
@@ -682,6 +718,8 @@ namespace POTracker.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ImportDate");
+
                     b.ToTable("VyaparInvoiceImportBatches");
                 });
 
@@ -730,6 +768,10 @@ namespace POTracker.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BatchId");
+
+                    b.HasIndex("InvoiceNumber", "Status");
+
+                    b.HasIndex("PONumber", "MaterialNumber", "LineItem");
 
                     b.ToTable("VyaparInvoiceImportRows");
                 });

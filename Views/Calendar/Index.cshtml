@@ -5,58 +5,62 @@
 <div class="container-fluid mt-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-
         <h2 class="fw-bold text-primary">
             Production Calendar
         </h2>
 
-        <a href="/Dashboard/Index"
+        <a asp-controller="Dashboard"
+           asp-action="Index"
            class="btn btn-dark">
             Back Dashboard
         </a>
-
     </div>
 
     <div class="premium-note">
-        Calendar colors: blue = process start, green = delivery date, orange = dispatch, red = overdue.
+        Calendar colors: blue = process start, green = delivery date,
+        orange = dispatch, red = overdue.
     </div>
 
     <div class="card shadow border-0">
-
         <div class="card-body">
-
             <div id="calendar"></div>
-
         </div>
-
     </div>
-
 </div>
 
-<script>
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            "use strict";
 
-    document.addEventListener('DOMContentLoaded', function () {
+            const calendarElement =
+                document.getElementById("calendar");
 
-        var calendarEl = document.getElementById('calendar');
-
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-
-            initialView: 'dayGridMonth',
-
-            height: 750,
-
-            events: '/Calendar/GetEvents',
-
-            eventClick: function(info) {
-
-                window.location.href =
-                    '/Material/Details/' + info.event.id;
+            if (!calendarElement ||
+                typeof FullCalendar === "undefined") {
+                return;
             }
 
+            const calendar = new FullCalendar.Calendar(
+                calendarElement,
+                {
+                    initialView: "dayGridMonth",
+                    height: 750,
+                    lazyFetching: true,
+                    events: {
+                        url: "@Url.Action("GetEvents", "Calendar")",
+                        method: "GET"
+                    },
+                    eventClick: (info) => {
+                        const materialId =
+                            encodeURIComponent(info.event.id);
+
+                        window.location.href =
+                            `/Material/Details/${materialId}`;
+                    }
+                });
+
+            calendar.render();
         });
-
-        calendar.render();
-
-    });
-
-</script>
+    </script>
+}

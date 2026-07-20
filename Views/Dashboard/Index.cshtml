@@ -33,14 +33,14 @@
     int dispatchPartial = ViewBag.DispatchPartial ?? materials.Count(x => x.DispatchStatus == "Partial");
     int dispatchPending = ViewBag.DispatchPending ?? materials.Count(x => x.DispatchStatus == "Pending");
 
-    int fullyInvoiced = materials.Count(x => x.InvoiceStatus == "Fully Invoiced");
-    int partiallyInvoiced = materials.Count(x => x.InvoiceStatus == "Partially Invoiced");
-    int notInvoiced = materials.Count(x => string.IsNullOrWhiteSpace(x.InvoiceStatus) || x.InvoiceStatus == "Not Invoiced");
+    int fullyInvoiced = ViewBag.FullyInvoiced ?? 0;
+    int partiallyInvoiced = ViewBag.PartiallyInvoiced ?? 0;
+    int notInvoiced = ViewBag.NotInvoiced ?? 0;
 
-    decimal totalPOQty = materials.Sum(x => x.Qty);
-    decimal totalInvoiceQty = materials.Sum(x => x.InvoiceQty);
-    decimal totalDispatchQty = materials.Sum(x => x.DispatchQty);
-    decimal totalPendingQty = materials.Sum(x => x.PendingQty);
+    decimal totalPOQty = ViewBag.TotalPOQty ?? 0m;
+    decimal totalInvoiceQty = ViewBag.TotalInvoiceQty ?? 0m;
+    decimal totalDispatchQty = ViewBag.TotalDispatchQty ?? 0m;
+    decimal totalPendingQty = ViewBag.TotalPendingQty ?? 0m;
 
     var recentMaterials = materials
         .OrderByDescending(x => x.Id)
@@ -57,13 +57,15 @@
         </div>
 
         <div class="dashboard-actions">
-            <a href="/Report/MaterialsExcel" class="btn-primary">
-                Export Excel
-            </a>
+            <role-access roles="Admin">
+                <a href="/Report/MaterialsExcel" class="btn-primary">
+                    Export Excel
+                </a>
 
-            <a href="/Report/MaterialsPdf" class="btn-secondary">
-                Export PDF
-            </a>
+                <a href="/Report/MaterialsPdf" class="btn-secondary">
+                    Export PDF
+                </a>
+            </role-access>
 
             <span class="status-badge">
                 Welcome, @fullName
@@ -443,8 +445,8 @@
                     labels: ['Completed', 'In Process', 'Pending'],
                     datasets: [{
                         data: [
-                            @completedCount,
-                            @runningCount,
+                                            @completedCount,
+                                            @runningCount,
                             @pendingCount
                         ],
                         backgroundColor: [
@@ -474,8 +476,8 @@
                     datasets: [{
                         label: 'Dispatch Status',
                         data: [
-                            @dispatchCompleted,
-                            @dispatchPartial,
+                                            @dispatchCompleted,
+                                            @dispatchPartial,
                             @dispatchPending
                         ],
                         backgroundColor: [

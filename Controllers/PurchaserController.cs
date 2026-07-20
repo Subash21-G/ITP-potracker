@@ -19,6 +19,7 @@ namespace POTracker.Controllers
             return HttpContext.Session.GetString("UserName") != null;
         }
 
+        [HttpGet]
         public async Task<IActionResult> Index(string search)
         {
             if (!IsLoggedIn())
@@ -39,6 +40,7 @@ namespace POTracker.Controllers
                 .ToListAsync());
         }
 
+        [HttpGet]
         public IActionResult Create()
         {
             if (!IsLoggedIn())
@@ -48,6 +50,7 @@ namespace POTracker.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Purchaser purchaser)
         {
             if (ModelState.IsValid)
@@ -62,6 +65,7 @@ namespace POTracker.Controllers
             return View(purchaser);
         }
 
+        [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
             var purchaser = await _context.Purchasers.FindAsync(id);
@@ -73,6 +77,7 @@ namespace POTracker.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Purchaser purchaser)
         {
             if (ModelState.IsValid)
@@ -87,6 +92,8 @@ namespace POTracker.Controllers
             return View(purchaser);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             var purchaser = await _context.Purchasers.FindAsync(id);

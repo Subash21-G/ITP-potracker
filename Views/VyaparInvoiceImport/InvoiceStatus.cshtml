@@ -11,24 +11,24 @@
         ViewBag.Search as string ?? "";
 
     int totalMaterials =
-        materials.Count;
+        ViewBag.TotalMaterials ?? materials.Count;
 
     int fullyInvoiced =
-        materials.Count(x =>
+        ViewBag.FullyInvoiced ?? materials.Count(x =>
             string.Equals(
                 x.InvoiceStatus,
                 "Fully Invoiced",
                 StringComparison.OrdinalIgnoreCase));
 
     int partialInvoiced =
-        materials.Count(x =>
+        ViewBag.PartialInvoiced ?? materials.Count(x =>
             string.Equals(
                 x.InvoiceStatus,
                 "Partially Invoiced",
                 StringComparison.OrdinalIgnoreCase));
 
     int notInvoiced =
-        materials.Count(x =>
+        ViewBag.NotInvoiced ?? materials.Count(x =>
             string.IsNullOrWhiteSpace(x.InvoiceStatus) ||
             string.Equals(
                 x.InvoiceStatus,
@@ -36,7 +36,7 @@
                 StringComparison.OrdinalIgnoreCase));
 
     int fullyDispatched =
-        materials.Count(x =>
+        ViewBag.FullyDispatched ?? materials.Count(x =>
             string.Equals(
                 x.DispatchStatus,
                 "Dispatched",
@@ -47,7 +47,7 @@
                 StringComparison.OrdinalIgnoreCase));
 
     int partialDispatched =
-        materials.Count(x =>
+        ViewBag.PartialDispatched ?? materials.Count(x =>
             string.Equals(
                 x.DispatchStatus,
                 "Partial",
@@ -58,7 +58,7 @@
                 StringComparison.OrdinalIgnoreCase));
 
     int pendingDispatch =
-        materials.Count(x =>
+        ViewBag.PendingDispatch ?? materials.Count(x =>
             string.IsNullOrWhiteSpace(x.DispatchStatus) ||
             string.Equals(
                 x.DispatchStatus,
@@ -66,19 +66,30 @@
                 StringComparison.OrdinalIgnoreCase));
 
     decimal totalPOQty =
-        materials.Sum(x => x.Qty);
+        ViewBag.TotalPOQty ?? materials.Sum(x => x.Qty);
 
     decimal totalInvoiceQty =
-        materials.Sum(x => x.InvoiceQty);
+        ViewBag.TotalInvoiceQty ?? materials.Sum(x => x.InvoiceQty);
 
     decimal totalBalanceQty =
+        ViewBag.TotalBalanceQty ??
         materials.Sum(x => Math.Max(0, x.BalanceQty));
 
     decimal totalDispatchQty =
-        materials.Sum(x => x.DispatchQty);
+        ViewBag.TotalDispatchQty ?? materials.Sum(x => x.DispatchQty);
 
     decimal totalPendingDispatchQty =
+        ViewBag.TotalPendingDispatchQty ??
         materials.Sum(x => Math.Max(0, x.PendingQty));
+
+    int currentPage =
+        ViewBag.CurrentPage ?? 1;
+
+    int pageSize =
+        ViewBag.PageSize ?? 50;
+
+    int totalPages =
+        ViewBag.TotalPages ?? 1;
 
     int fullyPercent =
         GetPercent(
@@ -370,6 +381,10 @@
                   asp-controller="VyaparInvoiceImport"
                   method="get"
                   class="ivs-search-form">
+
+                <input type="hidden"
+                       name="pageSize"
+                       value="@pageSize" />
 
                 <input type="text"
                        name="search"
@@ -742,6 +757,77 @@
                     </tfoot>
                 </table>
             </div>
+
+            <nav aria-label="Invoice status pages"
+                 style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:16px;">
+
+                <strong style="color:#64748b;font-size:13px;">
+                    Page @currentPage of @totalPages
+                    · @totalMaterials total material(s)
+                </strong>
+
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <form asp-action="InvoiceStatus"
+                          asp-controller="VyaparInvoiceImport"
+                          method="get"
+                          style="display:flex;align-items:center;gap:8px;margin:0;">
+
+                        <input type="hidden"
+                               name="page"
+                               value="1" />
+
+                        <input type="hidden"
+                               name="search"
+                               value="@search" />
+
+                        <label for="invoiceStatusPageSize"
+                               style="color:#64748b;font-size:13px;font-weight:800;">
+                            Rows
+                        </label>
+
+                        <select id="invoiceStatusPageSize"
+                                name="pageSize"
+                                onchange="this.form.submit()"
+                                style="min-height:38px;padding:7px 30px 7px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;font-weight:800;">
+                            @foreach (var size in new[] { 10, 25, 50, 100, 200 })
+                            {
+                                if (size == pageSize)
+                                {
+                                    <option value="@size" selected>@size</option>
+                                }
+                                else
+                                {
+                                    <option value="@size">@size</option>
+                                }
+                            }
+                        </select>
+                    </form>
+
+                    @if (currentPage > 1)
+                    {
+                        <a asp-action="InvoiceStatus"
+                           asp-controller="VyaparInvoiceImport"
+                           asp-route-search="@search"
+                           asp-route-page="@(currentPage - 1)"
+                           asp-route-pageSize="@pageSize"
+                           class="ivs-btn ivs-btn-light">
+                            Previous
+                        </a>
+                    }
+
+                    @if (currentPage < totalPages)
+                    {
+                        <a asp-action="InvoiceStatus"
+                           asp-controller="VyaparInvoiceImport"
+                           asp-route-search="@search"
+                           asp-route-page="@(currentPage + 1)"
+                           asp-route-pageSize="@pageSize"
+                           class="ivs-btn ivs-btn-light">
+                            Next
+                        </a>
+                    }
+                </div>
+            </nav>
 
             <div class="ivs-no-filter-results"
                  id="noFilterResults"

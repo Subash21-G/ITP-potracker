@@ -4,8 +4,30 @@
     string? currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     string? currentAction = ViewContext.RouteData.Values["action"]?.ToString();
 
-    string fullName = Context.Session.GetString("FullName") ?? "Subash";
-    string role = Context.Session.GetString("Role") ?? "Admin";
+    string fullName =
+        Context.Session.GetString("FullName") ??
+        Context.Session.GetString("UserName") ??
+        "User";
+
+    string role =
+        Context.Session.GetString("Role") ??
+        "Unknown";
+
+    bool isAdmin = role.Equals(
+        "Admin",
+        StringComparison.OrdinalIgnoreCase);
+
+    bool isProduction = role.Equals(
+        "Production",
+        StringComparison.OrdinalIgnoreCase);
+
+    bool canOperate = isAdmin || isProduction;
+
+    string accessDescription = isAdmin
+        ? "Administrator access"
+        : isProduction
+            ? "Production access"
+            : "Read-only access";
 
     string userInitial = string.IsNullOrWhiteSpace(fullName)
         ? "U"
@@ -32,7 +54,7 @@
     }
 
     bool invoiceMenuActive =
-        IsActive("VyaparInvoiceImport");
+        canOperate && IsActive("VyaparInvoiceImport");
 
     string invoiceMenuExpanded =
         invoiceMenuActive
@@ -66,8 +88,11 @@
           href="~/css/vibrant-premium.css"
           asp-append-version="true" />
 
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css"
-          rel="stylesheet" />
+    @if (IsActive("Calendar"))
+    {
+        <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css"
+              rel="stylesheet" />
+    }
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -119,7 +144,7 @@
 
                 <div>
                     <strong>System online</strong>
-                    <span>All modules available</span>
+                    <span>@accessDescription</span>
                 </div>
             </div>
 
@@ -164,93 +189,100 @@
                     <span class="nav-label">Pending Materials</span>
                 </a>
 
-                <div class="nav-section-title">
-                    <span>Import & Tracking</span>
-                </div>
-
-                <a asp-controller="POImport"
-                   asp-action="Upload"
-                   class="nav-link @(IsActive("POImport") ? "active" : "")">
-                    <span class="nav-icon nav-orange">⇩</span>
-                    <span class="nav-label">PO PDF Import</span>
-                </a>
-
-                <a asp-controller="Import"
-                   asp-action="Index"
-                   class="nav-link @(IsActive("Import") ? "active" : "")">
-                    <span class="nav-icon nav-green">⇧</span>
-                    <span class="nav-label">Material Excel Import</span>
-                </a>
-
-                <div class="nav-group @(invoiceMenuActive ? "active open" : "")"
-                     data-nav-group>
-
-                    <button type="button"
-                            class="nav-link nav-group-toggle @(invoiceMenuActive ? "active" : "")"
-                            data-nav-group-toggle
-                            aria-expanded="@invoiceMenuExpanded"
-                            aria-controls="invoiceManagementMenu">
-
-                        <span class="nav-icon nav-pink">₹</span>
-
-                        <span class="nav-label">
-                            Invoice Management
-                        </span>
-
-                        <span class="nav-chevron"
-                              aria-hidden="true">
-                            ›
-                        </span>
-                    </button>
-
-                    <div class="nav-submenu"
-                         id="invoiceManagementMenu"
-                         data-nav-submenu>
-
-                        <a asp-controller="VyaparInvoiceImport"
-                           asp-action="Upload"
-                           class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "Upload") ? "active" : "")">
-
-                            <span class="nav-subdot"
-                                  aria-hidden="true">
-                            </span>
-
-                            <span>Upload Invoice</span>
-                        </a>
-
-                        <a asp-controller="VyaparInvoiceImport"
-                           asp-action="InvoiceList"
-                           class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "InvoiceList") ? "active" : "")">
-
-                            <span class="nav-subdot"
-                                  aria-hidden="true">
-                            </span>
-
-                            <span>Imported Invoices</span>
-                        </a>
-
-                        <a asp-controller="VyaparInvoiceImport"
-                           asp-action="InvoiceStatus"
-                           class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "InvoiceStatus") ? "active" : "")">
-
-                            <span class="nav-subdot"
-                                  aria-hidden="true">
-                            </span>
-
-                            <span>Invoice Status</span>
-                        </a>
-
-                        <a asp-controller="VyaparInvoiceImport"
-                           asp-action="History"
-                           class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "History") || IsActiveAction("VyaparInvoiceImport", "ErrorReport") ? "active" : "")">
-
-                            <span class="nav-subdot"
-                                  aria-hidden="true">
-                            </span>
-
-                            <span>Import History</span>
-                        </a>
+                @if (canOperate)
+                {
+                    <div class="nav-section-title">
+                        <span>Import & Tracking</span>
                     </div>
+
+                    <a asp-controller="POImport"
+                       asp-action="Upload"
+                       class="nav-link @(IsActive("POImport") ? "active" : "")">
+                        <span class="nav-icon nav-orange">⇩</span>
+                        <span class="nav-label">PO PDF Import</span>
+                    </a>
+
+                    <a asp-controller="Import"
+                       asp-action="Index"
+                       class="nav-link @(IsActive("Import") ? "active" : "")">
+                        <span class="nav-icon nav-green">⇧</span>
+                        <span class="nav-label">Material Excel Import</span>
+                    </a>
+
+                    <div class="nav-group @(invoiceMenuActive ? "active open" : "")"
+                         data-nav-group>
+
+                        <button type="button"
+                                class="nav-link nav-group-toggle @(invoiceMenuActive ? "active" : "")"
+                                data-nav-group-toggle
+                                aria-expanded="@invoiceMenuExpanded"
+                                aria-controls="invoiceManagementMenu">
+
+                            <span class="nav-icon nav-pink">₹</span>
+
+                            <span class="nav-label">
+                                Invoice Management
+                            </span>
+
+                            <span class="nav-chevron"
+                                  aria-hidden="true">
+                                ›
+                            </span>
+                        </button>
+
+                        <div class="nav-submenu"
+                             id="invoiceManagementMenu"
+                             data-nav-submenu>
+
+                            <a asp-controller="VyaparInvoiceImport"
+                               asp-action="Upload"
+                               class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "Upload") ? "active" : "")">
+
+                                <span class="nav-subdot"
+                                      aria-hidden="true">
+                                </span>
+
+                                <span>Upload Invoice</span>
+                            </a>
+
+                            <a asp-controller="VyaparInvoiceImport"
+                               asp-action="InvoiceList"
+                               class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "InvoiceList") ? "active" : "")">
+
+                                <span class="nav-subdot"
+                                      aria-hidden="true">
+                                </span>
+
+                                <span>Imported Invoices</span>
+                            </a>
+
+                            <a asp-controller="VyaparInvoiceImport"
+                               asp-action="InvoiceStatus"
+                               class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "InvoiceStatus") ? "active" : "")">
+
+                                <span class="nav-subdot"
+                                      aria-hidden="true">
+                                </span>
+
+                                <span>Invoice Status</span>
+                            </a>
+
+                            <a asp-controller="VyaparInvoiceImport"
+                               asp-action="History"
+                               class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "History") || IsActiveAction("VyaparInvoiceImport", "ErrorReport") ? "active" : "")">
+
+                                <span class="nav-subdot"
+                                      aria-hidden="true">
+                                </span>
+
+                                <span>Import History</span>
+                            </a>
+                        </div>
+                    </div>
+                }
+
+                <div class="nav-section-title">
+                    <span>Operations</span>
                 </div>
 
                 <a asp-controller="Dispatch"
@@ -306,30 +338,47 @@
                     <span class="nav-label">Notifications</span>
                 </a>
 
-                <div class="nav-section-title">
-                    <span>Administration</span>
-                </div>
+                @if (isAdmin)
+                {
+                    <div class="nav-section-title">
+                        <span>Administration</span>
+                    </div>
 
-                <a asp-controller="Analytics"
-                   asp-action="Index"
-                   class="nav-link @(IsActive("Analytics") ? "active" : "")">
-                    <span class="nav-icon nav-cyan">↗</span>
-                    <span class="nav-label">Analytics</span>
-                </a>
+                    <a asp-controller="Report"
+                       asp-action="Index"
+                       class="nav-link @(IsActive("Report") ? "active" : "")">
+                        <span class="nav-icon nav-green">▥</span>
+                        <span class="nav-label">Reports</span>
+                    </a>
 
-                <a asp-controller="Audit"
-                   asp-action="Index"
-                   class="nav-link @(IsActive("Audit") ? "active" : "")">
-                    <span class="nav-icon nav-blue">≡</span>
-                    <span class="nav-label">Audit Log</span>
-                </a>
+                    <a asp-controller="Analytics"
+                       asp-action="Index"
+                       class="nav-link @(IsActive("Analytics") ? "active" : "")">
+                        <span class="nav-icon nav-cyan">↗</span>
+                        <span class="nav-label">Analytics</span>
+                    </a>
 
-                <a asp-controller="Admin"
-                   asp-action="Settings"
-                   class="nav-link @(IsActive("Admin") ? "active" : "")">
-                    <span class="nav-icon nav-violet">⚙</span>
-                    <span class="nav-label">Settings</span>
-                </a>
+                    <a asp-controller="Audit"
+                       asp-action="Index"
+                       class="nav-link @(IsActive("Audit") ? "active" : "")">
+                        <span class="nav-icon nav-blue">≡</span>
+                        <span class="nav-label">Audit Log</span>
+                    </a>
+
+                    <a asp-controller="Admin"
+                       asp-action="Users"
+                       class="nav-link @(IsActiveAction("Admin", "Users") ? "active" : "")">
+                        <span class="nav-icon nav-pink">👤</span>
+                        <span class="nav-label">User Management</span>
+                    </a>
+
+                    <a asp-controller="Admin"
+                       asp-action="Settings"
+                       class="nav-link @(IsActiveAction("Admin", "Settings") ? "active" : "")">
+                        <span class="nav-icon nav-violet">⚙</span>
+                        <span class="nav-label">Settings</span>
+                    </a>
+                }
             </nav>
 
             <div class="sidebar-footer">
@@ -344,13 +393,19 @@
                     </div>
                 </div>
 
-                <a asp-controller="Account"
-                   asp-action="Logout"
-                   class="logout-link"
-                   title="Logout">
-                    <span aria-hidden="true">↪</span>
-                    <span>Logout</span>
-                </a>
+                <form asp-controller="Account"
+                      asp-action="Logout"
+                      asp-antiforgery="true"
+                      method="post"
+                      style="margin:0;">
+                    <button type="submit"
+                            class="logout-link"
+                            title="Logout"
+                            aria-label="Logout">
+                        <span aria-hidden="true">↪</span>
+                        <span>Logout</span>
+                    </button>
+                </form>
             </div>
         </aside>
 
@@ -385,19 +440,22 @@
 
                 <div class="topbar-right">
 
-                    <a asp-controller="POImport"
-                       asp-action="Upload"
-                       class="top-action top-action-po">
-                        <span class="top-action-icon">＋</span>
-                        <span>Import PO</span>
-                    </a>
+                    @if (canOperate)
+                    {
+                        <a asp-controller="POImport"
+                           asp-action="Upload"
+                           class="top-action top-action-po">
+                            <span class="top-action-icon">＋</span>
+                            <span>Import PO</span>
+                        </a>
 
-                    <a asp-controller="VyaparInvoiceImport"
-                       asp-action="Upload"
-                       class="top-action top-action-invoice">
-                        <span class="top-action-icon">₹</span>
-                        <span>Invoice</span>
-                    </a>
+                        <a asp-controller="VyaparInvoiceImport"
+                           asp-action="Upload"
+                           class="top-action top-action-invoice">
+                            <span class="top-action-icon">₹</span>
+                            <span>Invoice</span>
+                        </a>
+                    }
 
                     <div class="user-chip">
                         <div class="user-avatar">
@@ -426,142 +484,149 @@
         </main>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    @if (IsActive("Calendar"))
+    {
+        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    }
+
+    @if (IsActive("Dashboard"))
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    }
 
     <script>
-        (() => {
-        "use strict";
+            (() => {
+                "use strict";
 
-        const body =
-        document.body;
+                const body =
+                    document.body;
 
-        const sidebar =
-        document.getElementById(
-        "sidebar");
+                const sidebar =
+                    document.getElementById(
+                        "sidebar");
 
-        const sidebarToggle =
-        document.getElementById(
-        "sidebarToggle");
+                const sidebarToggle =
+                    document.getElementById(
+                        "sidebarToggle");
 
-        const sidebarClose =
-        document.getElementById(
-        "sidebarClose");
+                const sidebarClose =
+                    document.getElementById(
+                        "sidebarClose");
 
-        const sidebarOverlay =
-        document.getElementById(
-        "sidebarOverlay");
+                const sidebarOverlay =
+                    document.getElementById(
+                        "sidebarOverlay");
 
-        const navigationLinks =
-        sidebar?.querySelectorAll(
-        "a.nav-link, a.nav-sublink");
+                const navigationLinks =
+                    sidebar?.querySelectorAll(
+                        "a.nav-link, a.nav-sublink");
 
-        const groupToggles =
-        sidebar?.querySelectorAll(
-        "[data-nav-group-toggle]");
+                const groupToggles =
+                    sidebar?.querySelectorAll(
+                        "[data-nav-group-toggle]");
 
-        const openSidebar = () => {
-        body.classList.add(
-        "sidebar-open");
+                const openSidebar = () => {
+                    body.classList.add(
+                        "sidebar-open");
 
-        sidebarToggle?.setAttribute(
-        "aria-expanded",
-        "true");
-        };
+                    sidebarToggle?.setAttribute(
+                        "aria-expanded",
+                        "true");
+                };
 
-        const closeSidebar = () => {
-        body.classList.remove(
-        "sidebar-open");
+                const closeSidebar = () => {
+                    body.classList.remove(
+                        "sidebar-open");
 
-        sidebarToggle?.setAttribute(
-        "aria-expanded",
-        "false");
-        };
+                    sidebarToggle?.setAttribute(
+                        "aria-expanded",
+                        "false");
+                };
 
-        const setGroupState = (
-        group,
-        toggle,
-        expanded) => {
+                const setGroupState = (
+                    group,
+                    toggle,
+                    expanded) => {
 
-        group.classList.toggle(
-        "open",
-        expanded);
+                    group.classList.toggle(
+                        "open",
+                        expanded);
 
-        toggle.setAttribute(
-        "aria-expanded",
-        expanded
-        ? "true"
-        : "false");
-        };
+                    toggle.setAttribute(
+                        "aria-expanded",
+                        expanded
+                            ? "true"
+                            : "false");
+                };
 
-        sidebarToggle?.addEventListener(
-        "click",
-        () => {
-        if (body.classList.contains(
-        "sidebar-open")) {
-        closeSidebar();
-        } else {
-        openSidebar();
-        }
-        });
+                sidebarToggle?.addEventListener(
+                    "click",
+                    () => {
+                        if (body.classList.contains(
+                            "sidebar-open")) {
+                            closeSidebar();
+                        } else {
+                            openSidebar();
+                        }
+                    });
 
-        sidebarClose?.addEventListener(
-        "click",
-        closeSidebar);
+                sidebarClose?.addEventListener(
+                    "click",
+                    closeSidebar);
 
-        sidebarOverlay?.addEventListener(
-        "click",
-        closeSidebar);
+                sidebarOverlay?.addEventListener(
+                    "click",
+                    closeSidebar);
 
-        groupToggles?.forEach((toggle) => {
-        toggle.addEventListener(
-        "click",
-        () => {
-        const group =
-        toggle.closest(
-        "[data-nav-group]");
+                groupToggles?.forEach((toggle) => {
+                    toggle.addEventListener(
+                        "click",
+                        () => {
+                            const group =
+                                toggle.closest(
+                                    "[data-nav-group]");
 
-        if (!group) {
-        return;
-        }
+                            if (!group) {
+                                return;
+                            }
 
-        const expanded =
-        toggle.getAttribute(
-        "aria-expanded") === "true";
+                            const expanded =
+                                toggle.getAttribute(
+                                    "aria-expanded") === "true";
 
-        setGroupState(
-        group,
-        toggle,
-        !expanded);
-        });
-        });
+                            setGroupState(
+                                group,
+                                toggle,
+                                !expanded);
+                        });
+                });
 
-        navigationLinks?.forEach((link) => {
-        link.addEventListener(
-        "click",
-        () => {
-        if (window.innerWidth <= 1100) {
-        closeSidebar();
-        }
-        });
-        });
+                navigationLinks?.forEach((link) => {
+                    link.addEventListener(
+                        "click",
+                        () => {
+                            if (window.innerWidth <= 1100) {
+                                closeSidebar();
+                            }
+                        });
+                });
 
-        document.addEventListener(
-        "keydown",
-        (event) => {
-        if (event.key === "Escape") {
-        closeSidebar();
-        }
-        });
+                document.addEventListener(
+                    "keydown",
+                    (event) => {
+                        if (event.key === "Escape") {
+                            closeSidebar();
+                        }
+                    });
 
-        window.addEventListener(
-        "resize",
-        () => {
-        if (window.innerWidth > 1100) {
-        closeSidebar();
-        }
-        });
-        })();
+                window.addEventListener(
+                    "resize",
+                    () => {
+                        if (window.innerWidth > 1100) {
+                            closeSidebar();
+                        }
+                    });
+            })();
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)

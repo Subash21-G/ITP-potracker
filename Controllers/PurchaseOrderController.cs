@@ -80,51 +80,27 @@ namespace POTracker.Controllers
                     poReceivedDateFrom,
                     poReceivedDateTo);
 
-            var purchaseOrders =
-                await filteredPurchaseOrderQuery
-                    .OrderByDescending(x =>
-                        x.ReceivedDate ??
-                        x.PODate ??
-                        x.CreatedDate)
-                    .ThenByDescending(x => x.Id)
-                    .ToListAsync();
+            var aggregateQuery =
+                CreatePurchaseOrderAggregateQuery(
+                    filteredPurchaseOrderQuery);
 
-            var allRows =
-                await BuildPurchaseOrderRowsAsync(
-                    purchaseOrders);
+            aggregateQuery =
+                ApplyPurchaseOrderAggregateFilters(
+                    aggregateQuery,
+                    status,
+                    materialStatus);
 
-            // PO status and material status are calculated
-            // from the linked material records.
-            if (!string.IsNullOrWhiteSpace(status))
-            {
-                allRows = allRows
-                    .Where(x =>
-                        string.Equals(
-                            x.Status,
-                            status,
-                            StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-            }
+            // Load one compact aggregate row per filtered PO for the
+            // summary cards and status-option counts. Material entity
+            // rows themselves are not loaded into application memory.
+            var summaryAggregateRows = await aggregateQuery
+                .ToListAsync();
 
-            if (!string.IsNullOrWhiteSpace(
-                    materialStatus))
-            {
-                allRows = allRows
-                    .Where(x =>
-                        string.Equals(
-                            x.MaterialStatus,
-                            materialStatus,
-                            StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-            }
+            var allSummaryRows = summaryAggregateRows
+                .Select(MapPurchaseOrderAggregateRow)
+                .ToList();
 
-            var statusOptions =
-                BuildStatusOptions(allRows);
-
-            var materialStatusOptions =
-                BuildMaterialStatusOptions(allRows);
-
-            var totalRecords = allRows.Count;
+            var totalRecords = allSummaryRows.Count;
 
             var totalPages = Math.Max(
                 1,
@@ -137,10 +113,27 @@ namespace POTracker.Controllers
                 page = totalPages;
             }
 
-            var pagedRows = allRows
+            var aggregateRows = await aggregateQuery
+                .OrderByDescending(x =>
+                    x.POReceivedDate ??
+                    x.PODate ??
+                    x.CreatedDate)
+                .ThenByDescending(x =>
+                    x.PurchaseOrderId)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .ToListAsync();
+
+            var pagedRows = aggregateRows
+                .Select(MapPurchaseOrderAggregateRow)
                 .ToList();
+
+            var statusOptions =
+                BuildStatusOptions(allSummaryRows);
+
+            var materialStatusOptions =
+                BuildMaterialStatusOptions(
+                    allSummaryRows);
 
             var model =
                 new PurchaseOrderIndexViewModel
@@ -149,7 +142,7 @@ namespace POTracker.Controllers
 
                     Summary =
                         BuildPurchaseOrderSummary(
-                            allRows),
+                            allSummaryRows),
 
                     Search = search,
                     Handler = handler,
@@ -914,17 +907,17 @@ namespace POTracker.Controllers
 
                 query = query.Where(x =>
                     x.PODate.HasValue &&
-                    x.PODate.Value.Date >= date);
+                    x.PODate.Value >= date);
             }
 
             if (poDateTo.HasValue)
             {
-                var date =
-                    poDateTo.Value.Date;
+                var endExclusive =
+                    poDateTo.Value.Date.AddDays(1);
 
                 query = query.Where(x =>
                     x.PODate.HasValue &&
-                    x.PODate.Value.Date <= date);
+                    x.PODate.Value < endExclusive);
             }
 
             if (poReceivedDateFrom.HasValue)
@@ -935,23 +928,265 @@ namespace POTracker.Controllers
 
                 query = query.Where(x =>
                     x.ReceivedDate.HasValue &&
-                    x.ReceivedDate.Value.Date >=
-                    date);
+                    x.ReceivedDate.Value >= date);
             }
 
             if (poReceivedDateTo.HasValue)
             {
-                var date =
+                var endExclusive =
                     poReceivedDateTo
-                        .Value.Date;
+                        .Value.Date
+                        .AddDays(1);
 
                 query = query.Where(x =>
                     x.ReceivedDate.HasValue &&
-                    x.ReceivedDate.Value.Date <=
-                    date);
+                    x.ReceivedDate.Value <
+                    endExclusive);
             }
 
             return query;
+        }
+
+        // ============================================================
+        // SQL PURCHASE ORDER AGGREGATION
+        // ============================================================
+
+        private static IQueryable<PurchaseOrderAggregateRow>
+            CreatePurchaseOrderAggregateQuery(
+                IQueryable<PurchaseOrder> query)
+        {
+            var today = DateTime.Today;
+
+            return query.Select(purchaseOrder =>
+                new PurchaseOrderAggregateRow
+                {
+                    PurchaseOrderId =
+                        purchaseOrder.Id,
+
+                    PONumber =
+                        purchaseOrder.PONumber,
+
+                    Handler =
+                        purchaseOrder.BuyerContactPerson ?? "",
+
+                    PODate =
+                        purchaseOrder.PODate,
+
+                    POReceivedDate =
+                        purchaseOrder.ReceivedDate,
+
+                    PdfFilePath =
+                        purchaseOrder.PdfFilePath,
+
+                    CreatedDate =
+                        purchaseOrder.CreatedDate,
+
+                    TotalMaterials =
+                        purchaseOrder.Materials.Count(),
+
+                    CompletedMaterials =
+                        purchaseOrder.Materials.Count(material =>
+                            (material.BalanceQty <= 0 ||
+                             material.InvoiceStatus ==
+                                "Fully Invoiced") &&
+                            (material.PendingQty <= 0 ||
+                             material.DispatchStatus ==
+                                "Dispatched")),
+
+                    NotInvoicedMaterials =
+                        purchaseOrder.Materials.Count(material =>
+                            material.InvoiceQty <= 0 ||
+                            material.InvoiceStatus ==
+                                "Not Invoiced"),
+
+                    PendingDispatchMaterials =
+                        purchaseOrder.Materials.Count(material =>
+                            material.PendingQty > 0 ||
+                            material.DispatchStatus !=
+                                "Dispatched"),
+
+                    OverdueMaterials =
+                        purchaseOrder.Materials.Count(material =>
+                            material.DeliveryDate.HasValue &&
+                            material.DeliveryDate < today &&
+                            material.PendingQty > 0),
+
+                    TotalPOQuantity =
+                        purchaseOrder.Materials
+                            .Sum(material =>
+                                (decimal?)material.Qty) ?? 0m,
+
+                    TotalInvoiceQuantity =
+                        purchaseOrder.Materials
+                            .Sum(material =>
+                                (decimal?)material.InvoiceQty) ?? 0m,
+
+                    TotalInvoiceBalanceQuantity =
+                        purchaseOrder.Materials
+                            .Sum(material =>
+                                (decimal?)(
+                                    material.BalanceQty > 0
+                                        ? material.BalanceQty
+                                        : 0m)) ?? 0m,
+
+                    TotalDispatchQuantity =
+                        purchaseOrder.Materials
+                            .Sum(material =>
+                                (decimal?)material.DispatchQty) ?? 0m,
+
+                    TotalPendingDispatchQuantity =
+                        purchaseOrder.Materials
+                            .Sum(material =>
+                                (decimal?)(
+                                    material.PendingQty > 0
+                                        ? material.PendingQty
+                                        : 0m)) ?? 0m,
+
+                    EarliestDeliveryDate =
+                        purchaseOrder.Materials
+                            .Min(material =>
+                                material.DeliveryDate),
+
+                    LatestDeliveryDate =
+                        purchaseOrder.Materials
+                            .Max(material =>
+                                material.DeliveryDate)
+                });
+        }
+
+        private static IQueryable<PurchaseOrderAggregateRow>
+            ApplyPurchaseOrderAggregateFilters(
+                IQueryable<PurchaseOrderAggregateRow> query,
+                string? status,
+                string? materialStatus)
+        {
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = status.Trim().ToLowerInvariant() switch
+                {
+                    "open" => query.Where(x =>
+                        x.TotalMaterials <= 0 ||
+                        x.CompletedMaterials <= 0),
+
+                    "in progress" => query.Where(x =>
+                        x.TotalMaterials > 0 &&
+                        x.CompletedMaterials > 0 &&
+                        x.CompletedMaterials <
+                            x.TotalMaterials),
+
+                    "completed" => query.Where(x =>
+                        x.TotalMaterials > 0 &&
+                        x.CompletedMaterials >=
+                            x.TotalMaterials),
+
+                    _ => query.Where(x => false)
+                };
+            }
+
+            if (!string.IsNullOrWhiteSpace(materialStatus))
+            {
+                query = materialStatus.Trim().ToLowerInvariant() switch
+                {
+                    "no materials" => query.Where(x =>
+                        x.TotalMaterials <= 0),
+
+                    "pending" => query.Where(x =>
+                        x.TotalMaterials > 0 &&
+                        x.CompletedMaterials <= 0),
+
+                    "partially completed" => query.Where(x =>
+                        x.TotalMaterials > 0 &&
+                        x.CompletedMaterials > 0 &&
+                        x.CompletedMaterials <
+                            x.TotalMaterials),
+
+                    "completed" => query.Where(x =>
+                        x.TotalMaterials > 0 &&
+                        x.CompletedMaterials >=
+                            x.TotalMaterials),
+
+                    _ => query.Where(x => false)
+                };
+            }
+
+            return query;
+        }
+
+        private static PurchaseOrderIndexRowViewModel
+            MapPurchaseOrderAggregateRow(
+                PurchaseOrderAggregateRow source)
+        {
+            var pendingMaterials = Math.Max(
+                0,
+                source.TotalMaterials -
+                source.CompletedMaterials);
+
+            var row = new PurchaseOrderIndexRowViewModel
+            {
+                PurchaseOrderId =
+                    source.PurchaseOrderId,
+
+                PONumber =
+                    source.PONumber,
+
+                Handler =
+                    source.Handler,
+
+                PODate =
+                    source.PODate,
+
+                POReceivedDate =
+                    source.POReceivedDate,
+
+                PdfFilePath =
+                    source.PdfFilePath,
+
+                CreatedDate =
+                    source.CreatedDate,
+
+                TotalMaterials =
+                    source.TotalMaterials,
+
+                CompletedMaterials =
+                    source.CompletedMaterials,
+
+                PendingMaterials =
+                    pendingMaterials,
+
+                NotInvoicedMaterials =
+                    source.NotInvoicedMaterials,
+
+                PendingDispatchMaterials =
+                    source.PendingDispatchMaterials,
+
+                OverdueMaterials =
+                    source.OverdueMaterials,
+
+                TotalPOQuantity =
+                    source.TotalPOQuantity,
+
+                TotalInvoiceQuantity =
+                    source.TotalInvoiceQuantity,
+
+                TotalInvoiceBalanceQuantity =
+                    source.TotalInvoiceBalanceQuantity,
+
+                TotalDispatchQuantity =
+                    source.TotalDispatchQuantity,
+
+                TotalPendingDispatchQuantity =
+                    source.TotalPendingDispatchQuantity,
+
+                EarliestDeliveryDate =
+                    source.EarliestDeliveryDate,
+
+                LatestDeliveryDate =
+                    source.LatestDeliveryDate
+            };
+
+            row.Status = GetPurchaseOrderStatus(row);
+
+            return row;
         }
 
         // ============================================================
@@ -1696,6 +1931,49 @@ namespace POTracker.Controllers
             worksheet.Column(3).Width = 22;
             worksheet.Column(6).Width = 16;
             worksheet.Column(7).Width = 20;
+        }
+
+        private sealed class PurchaseOrderAggregateRow
+        {
+            public int PurchaseOrderId { get; set; }
+
+            public string PONumber { get; set; } =
+                string.Empty;
+
+            public string Handler { get; set; } =
+                string.Empty;
+
+            public DateTime? PODate { get; set; }
+
+            public DateTime? POReceivedDate { get; set; }
+
+            public string? PdfFilePath { get; set; }
+
+            public DateTime CreatedDate { get; set; }
+
+            public int TotalMaterials { get; set; }
+
+            public int CompletedMaterials { get; set; }
+
+            public int NotInvoicedMaterials { get; set; }
+
+            public int PendingDispatchMaterials { get; set; }
+
+            public int OverdueMaterials { get; set; }
+
+            public decimal TotalPOQuantity { get; set; }
+
+            public decimal TotalInvoiceQuantity { get; set; }
+
+            public decimal TotalInvoiceBalanceQuantity { get; set; }
+
+            public decimal TotalDispatchQuantity { get; set; }
+
+            public decimal TotalPendingDispatchQuantity { get; set; }
+
+            public DateTime? EarliestDeliveryDate { get; set; }
+
+            public DateTime? LatestDeliveryDate { get; set; }
         }
 
         private static void StyleExcelStatus(

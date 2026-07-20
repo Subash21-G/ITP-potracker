@@ -44,7 +44,19 @@
                     <td>
                         @if (!item.IsRead)
                         {
-                            <a href="/Notification/MarkRead/@item.Id" class="action-edit">Mark Read</a>
+                            <role-access roles="Admin,Production">
+                                <form asp-controller="Notification"
+                                      asp-action="MarkRead"
+                                      asp-route-id="@item.Id"
+                                      asp-antiforgery="true"
+                                      method="post"
+                                      style="display:inline;margin:0;">
+                                    <button type="submit"
+                                            class="action-edit">
+                                        Mark Read
+                                    </button>
+                                </form>
+                            </role-access>
                         }
                         else
                         {

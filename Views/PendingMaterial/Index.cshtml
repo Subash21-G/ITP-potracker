@@ -621,11 +621,13 @@
                                             View
                                         </a>
 
-                                        <a asp-controller="Material"
-                                           asp-action="Edit"
-                                           asp-route-id="@item.MaterialId">
-                                            Edit
-                                        </a>
+                                        <role-access roles="Admin,Production">
+                                            <a asp-controller="Material"
+                                               asp-action="Edit"
+                                               asp-route-id="@item.MaterialId">
+                                                Edit
+                                            </a>
+                                        </role-access>
 
                                         <a asp-controller="PurchaseOrder"
                                            asp-action="Details"

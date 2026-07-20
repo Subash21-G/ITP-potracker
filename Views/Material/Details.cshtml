@@ -129,22 +129,24 @@
                 Back
             </a>
 
-            <a asp-controller="Material"
-               asp-action="Edit"
-               asp-route-id="@Model.Id"
-               class="md-btn md-btn-primary">
-                Edit Material
-            </a>
-
-            @if (Model.PendingQty > 0)
-            {
-                <a asp-controller="Dispatch"
-                   asp-action="Create"
-                   asp-route-materialId="@Model.Id"
-                   class="md-btn md-btn-success">
-                    Add Dispatch
+            <role-access roles="Admin,Production">
+                <a asp-controller="Material"
+                   asp-action="Edit"
+                   asp-route-id="@Model.Id"
+                   class="md-btn md-btn-primary">
+                    Edit Material
                 </a>
-            }
+
+                @if (Model.PendingQty > 0)
+                {
+                    <a asp-controller="Dispatch"
+                       asp-action="Create"
+                       asp-route-materialId="@Model.Id"
+                       class="md-btn md-btn-success">
+                        Add Dispatch
+                    </a>
+                }
+            </role-access>
         </div>
     </section>
 
@@ -755,15 +757,17 @@
                     @dispatches.Count Dispatch Record(s)
                 </span>
 
-                @if (Model.PendingQty > 0)
-                {
-                    <a asp-controller="Dispatch"
-                       asp-action="Create"
-                       asp-route-materialId="@Model.Id"
-                       class="md-btn md-btn-success">
-                        Add Dispatch
-                    </a>
-                }
+                <role-access roles="Admin,Production">
+                    @if (Model.PendingQty > 0)
+                    {
+                        <a asp-controller="Dispatch"
+                           asp-action="Create"
+                           asp-route-materialId="@Model.Id"
+                           class="md-btn md-btn-success">
+                            Add Dispatch
+                        </a>
+                    }
+                </role-access>
             </div>
         </div>
 
@@ -833,19 +837,21 @@
                                 </td>
 
                                 <td>
-                                    <form asp-controller="Dispatch"
-                                          asp-action="Delete"
-                                          asp-route-id="@dispatch.Id"
-                                          method="post"
-                                          onsubmit="return confirm('Delete this dispatch record? Pending quantity will be restored.');">
+                                    <role-access roles="Admin,Production">
+                                        <form asp-controller="Dispatch"
+                                              asp-action="Delete"
+                                              asp-route-id="@dispatch.Id"
+                                              method="post"
+                                              onsubmit="return confirm('Delete this dispatch record? Pending quantity will be restored.');">
 
-                                        @Html.AntiForgeryToken()
+                                            @Html.AntiForgeryToken()
 
-                                        <button type="submit"
-                                                class="md-table-delete">
-                                            Delete
-                                        </button>
-                                    </form>
+                                            <button type="submit"
+                                                    class="md-table-delete">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </role-access>
                                 </td>
                             </tr>
                         }
@@ -926,10 +932,10 @@
             </article>
 
             <article class="md-timeline-item @(Model.ProcessStatus == "In Process" ||
-                                                                    Model.ProcessStatus == "In Progress" ||
-                                                                    Model.ProcessStatus == "Completed"
-                                                                        ? "completed"
-                                                                        : "")">
+                                                                                    Model.ProcessStatus == "In Progress" ||
+                                                                                    Model.ProcessStatus == "Completed"
+                                                                                        ? "completed"
+                                                                                        : "")">
                 <span></span>
 
                 <div>
@@ -945,8 +951,8 @@
             </article>
 
             <article class="md-timeline-item @(Model.ProcessStatus == "Completed"
-                                                                        ? "completed"
-                                                                        : "")">
+                                                                                        ? "completed"
+                                                                                        : "")">
                 <span></span>
 
                 <div>
@@ -956,8 +962,8 @@
             </article>
 
             <article class="md-timeline-item @(Model.DispatchStatus == "Dispatched"
-                                                                        ? "completed"
-                                                                        : "")">
+                                                                                        ? "completed"
+                                                                                        : "")">
                 <span></span>
 
                 <div>

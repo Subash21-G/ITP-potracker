@@ -21,15 +21,17 @@
                 Back
             </a>
 
-            @if (Model.PendingQty > 0)
-            {
-                <a asp-action="Create"
-                   asp-controller="Dispatch"
-                   asp-route-materialId="@Model.Id"
-                   class="btn btn-primary">
-                    Add Dispatch
-                </a>
-            }
+            <role-access roles="Admin,Production">
+                @if (Model.PendingQty > 0)
+                {
+                    <a asp-action="Create"
+                       asp-controller="Dispatch"
+                       asp-route-materialId="@Model.Id"
+                       class="btn btn-primary">
+                        Add Dispatch
+                    </a>
+                }
+            </role-access>
         </div>
     </div>
 
@@ -162,32 +164,36 @@
             }
             else
             {
-                <form asp-action="BulkDelete"
-                      asp-controller="Dispatch"
-                      method="post"
-                      id="dispatchBulkDeleteForm"
-                      class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3 p-3 border rounded bg-light">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="materialId" value="@Model.Id" />
+                <role-access roles="Admin,Production">
+                    <form asp-action="BulkDelete"
+                          asp-controller="Dispatch"
+                          method="post"
+                          id="dispatchBulkDeleteForm"
+                          class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3 p-3 border rounded bg-light">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="materialId" value="@Model.Id" />
 
-                    <div>
-                        <strong><span id="selectedDispatchCount">0</span> selected</strong>
-                        <span class="text-muted ms-2">Maximum 200 dispatch records</span>
-                    </div>
+                        <div>
+                            <strong><span id="selectedDispatchCount">0</span> selected</strong>
+                            <span class="text-muted ms-2">Maximum 200 dispatch records</span>
+                        </div>
 
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllDispatches">Select All</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="clearDispatchSelection">Clear</button>
-                        <button type="submit" class="btn btn-danger btn-sm" id="deleteSelectedDispatches" disabled>Delete Selected</button>
-                    </div>
-                </form>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllDispatches">Select All</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="clearDispatchSelection">Clear</button>
+                            <button type="submit" class="btn btn-danger btn-sm" id="deleteSelectedDispatches" disabled>Delete Selected</button>
+                        </div>
+                    </form>
+                </role-access>
 
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover align-middle">
                         <thead class="table-light">
                             <tr>
                                 <th style="width:50px;">
-                                    <input type="checkbox" id="dispatchHeaderCheckbox" aria-label="Select all dispatch records" />
+                                    <role-access roles="Admin,Production">
+                                        <input type="checkbox" id="dispatchHeaderCheckbox" aria-label="Select all dispatch records" />
+                                    </role-access>
                                 </th>
                                 <th style="width:70px;">#</th>
                                 <th>Dispatch No</th>
@@ -208,12 +214,14 @@
                             {
                                 <tr>
                                     <td>
-                                        <input type="checkbox"
-                                               class="dispatch-row-checkbox"
-                                               name="selectedIds"
-                                               value="@dispatch.Id"
-                                               form="dispatchBulkDeleteForm"
-                                               aria-label="Select dispatch @dispatch.DispatchNo" />
+                                        <role-access roles="Admin,Production">
+                                            <input type="checkbox"
+                                                   class="dispatch-row-checkbox"
+                                                   name="selectedIds"
+                                                   value="@dispatch.Id"
+                                                   form="dispatchBulkDeleteForm"
+                                                   aria-label="Select dispatch @dispatch.DispatchNo" />
+                                        </role-access>
                                     </td>
                                     <td>@index</td>
 
@@ -249,18 +257,20 @@
                                     </td>
 
                                     <td>
-                                        <form asp-action="Delete"
-                                              asp-controller="Dispatch"
-                                              asp-route-id="@dispatch.Id"
-                                              method="post"
-                                              style="display:inline;"
-                                              onsubmit="return confirm('Are you sure you want to delete this dispatch record? This will restore pending quantity.');">
-                                            @Html.AntiForgeryToken()
+                                        <role-access roles="Admin,Production">
+                                            <form asp-action="Delete"
+                                                  asp-controller="Dispatch"
+                                                  asp-route-id="@dispatch.Id"
+                                                  method="post"
+                                                  style="display:inline;"
+                                                  onsubmit="return confirm('Are you sure you want to delete this dispatch record? This will restore pending quantity.');">
+                                                @Html.AntiForgeryToken()
 
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                Delete
-                                            </button>
-                                        </form>
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </role-access>
                                     </td>
                                 </tr>
 

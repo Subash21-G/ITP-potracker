@@ -1,0 +1,45 @@
+{
+  "/api": {
+    "target": "https://localhost:7271",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "info"
+  },
+  "/Account": {
+    "target": "https://localhost:7271",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "info"
+  },
+  "/Dashboard": {
+    "target": "https://localhost:7271",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "info"
+  },
+  "/css": {
+    "target": "https://localhost:7271",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "silent"
+  },
+  "/js": {
+    "target": "https://localhost:7271",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "silent"
+  },
+  "/lib": {
+    "target": "https://localhost:7271",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "silent"
+  },
+  "/images": {
+    "target": "https://localhost:7271",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "silent"
+  }
+}
+

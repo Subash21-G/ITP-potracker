@@ -10,7 +10,9 @@
         <h1>Drawing Revision Tracker</h1>
         <p>Track drawing versions, uploads and update dates</p>
     </div>
-    <a href="/Material/Create" class="btn-primary">+ Add Material</a>
+    <role-access roles="Admin,Production">
+        <a href="/Material/Create" class="btn-primary">+ Add Material</a>
+    </role-access>
 </div>
 
 <div class="premium-grid">

@@ -1,0 +1,320 @@
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">PURCHASE ORDER MANAGEMENT</p>
+    <h1>Purchase Order Details</h1>
+    <p class="page-heading__description">
+      Purchase Order, material, invoice and dispatch information.
+    </p>
+  </div>
+
+  <a class="button button--quiet" routerLink="/purchase-orders">Back to Purchase Orders</a>
+</section>
+
+@if (errorMessage()) {
+  <section class="message message--error" role="alert">
+    <div>
+      <strong>Purchase Order unavailable</strong>
+      <p>{{ errorMessage() }}</p>
+    </div>
+    <div class="message__actions">
+      @if (errorStatus() === 401) {
+        <a class="button button--primary" href="/Account/Login">Sign in</a>
+      }
+      @if (errorStatus() !== 400 && errorStatus() !== 404) {
+        <button class="button button--quiet" type="button" (click)="retry()">Retry</button>
+      }
+    </div>
+  </section>
+}
+
+@if (details(); as purchaseOrder) {
+  <section class="panel information-panel">
+    <div class="panel__heading information-heading">
+      <div>
+        <span class="section-kicker">PO information</span>
+        <h2>{{ purchaseOrder.poNumber }}</h2>
+      </div>
+      <div class="heading-actions">
+        <a
+          class="button button--quiet"
+          [href]="'/PurchaseOrder/Details/' + purchaseOrder.purchaseOrderId"
+        >
+          MVC details
+        </a>
+        @if (purchaseOrder.pdfFilePath) {
+          <a
+            class="button button--primary"
+            [href]="purchaseOrder.pdfFilePath"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View PO PDF
+          </a>
+        }
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <article>
+        <span>PO number</span>
+        <strong>{{ purchaseOrder.poNumber }}</strong>
+      </article>
+      <article>
+        <span>Handler / Person</span>
+        <strong>{{ purchaseOrder.handler || 'Unassigned' }}</strong>
+      </article>
+      <article>
+        <span>PO date</span>
+        <strong>{{ (purchaseOrder.poDate | date: 'dd MMM yyyy') || 'Not set' }}</strong>
+      </article>
+      <article>
+        <span>PO received date</span>
+        <strong>
+          {{ (purchaseOrder.poReceivedDate | date: 'dd MMM yyyy') || 'Not set' }}
+        </strong>
+      </article>
+      <article>
+        <span>Status</span>
+        <strong>
+          <span [class]="statusClass(purchaseOrder.status)">{{ purchaseOrder.status }}</span>
+        </strong>
+      </article>
+      <article>
+        <span>Created</span>
+        <strong>{{ purchaseOrder.createdDate | date: 'dd MMM yyyy' }}</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="summary-grid" aria-label="Material and quantity summary">
+    <article class="summary-card summary-card--violet">
+      <span>Total Materials</span>
+      <strong>{{ purchaseOrder.summary.totalMaterials | number }}</strong>
+      <small>Linked material lines</small>
+    </article>
+    <article class="summary-card summary-card--green">
+      <span>Completed Materials</span>
+      <strong>{{ purchaseOrder.summary.completedMaterials | number }}</strong>
+      <small>Invoice and dispatch completed</small>
+    </article>
+    <article class="summary-card summary-card--amber">
+      <span>Pending Materials</span>
+      <strong>{{ purchaseOrder.summary.pendingMaterials | number }}</strong>
+      <small>Materials requiring action</small>
+    </article>
+    <article class="summary-card summary-card--red">
+      <span>Overdue Materials</span>
+      <strong>{{ purchaseOrder.summary.overdueMaterials | number }}</strong>
+      <small>Delivery date already passed</small>
+    </article>
+    <article class="summary-card summary-card--blue">
+      <span>Total PO Quantity</span>
+      <strong>{{ purchaseOrder.summary.totalPOQuantity | number: '1.0-2' }}</strong>
+      <small>Total ordered quantity</small>
+    </article>
+    <article class="summary-card summary-card--rose">
+      <span>Invoice Balance</span>
+      <strong>{{ purchaseOrder.summary.totalInvoiceBalance | number: '1.0-2' }}</strong>
+      <small>Quantity pending invoice</small>
+    </article>
+    <article class="summary-card summary-card--teal">
+      <span>Dispatch Balance</span>
+      <strong>{{ purchaseOrder.summary.totalDispatchBalance | number: '1.0-2' }}</strong>
+      <small>Quantity pending dispatch</small>
+    </article>
+  </section>
+
+  <section class="panel commercial-panel">
+    <div class="panel__heading">
+      <div>
+        <span class="section-kicker">Commercial information</span>
+        <h2>Vendor and order values</h2>
+      </div>
+    </div>
+
+    <div class="detail-grid commercial-grid">
+      <article>
+        <span>Vendor</span>
+        <strong>{{ purchaseOrder.vendorName || 'Not set' }}</strong>
+        @if (purchaseOrder.vendorCode) {
+          <small>Code {{ purchaseOrder.vendorCode }}</small>
+        }
+      </article>
+      <article>
+        <span>Buyer email</span>
+        <strong>{{ purchaseOrder.buyerEmail || 'Not set' }}</strong>
+      </article>
+      <article>
+        <span>Payment terms</span>
+        <strong>{{ purchaseOrder.paymentTerms || 'Not set' }}</strong>
+      </article>
+      <article>
+        <span>Delivery condition</span>
+        <strong>{{ purchaseOrder.deliveryCondition || 'Not set' }}</strong>
+      </article>
+      <article>
+        <span>Basic value</span>
+        <strong>
+          {{ purchaseOrder.currency || '' }}
+          {{ purchaseOrder.basicValue | number: '1.2-2' }}
+        </strong>
+      </article>
+      <article>
+        <span>Tax value</span>
+        <strong>
+          {{ purchaseOrder.currency || '' }}
+          {{ purchaseOrder.taxValue | number: '1.2-2' }}
+        </strong>
+      </article>
+      <article class="grand-total">
+        <span>Grand total</span>
+        <strong>
+          {{ purchaseOrder.currency || '' }}
+          {{ purchaseOrder.grandTotal | number: '1.2-2' }}
+        </strong>
+      </article>
+      <article>
+        <span>Import format</span>
+        <strong>{{ purchaseOrder.importFormat || 'Not set' }}</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="panel table-panel" aria-labelledby="linked-materials-title">
+    <div class="panel__heading results-heading">
+      <div>
+        <span class="section-kicker">Linked materials</span>
+        <h2 id="linked-materials-title">Material list</h2>
+        <p>
+          Showing {{ showingFrom() | number }}–{{ showingTo() | number }} of
+          {{ materialTotalRecords() | number }}
+        </p>
+      </div>
+
+      <label class="page-size">
+        <span>Rows</span>
+        <select
+          [value]="materialPageSize()"
+          [disabled]="loading()"
+          (change)="changePageSize($event)"
+        >
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="table-wrap" [class.table-wrap--loading]="loading()">
+      <table>
+        <thead>
+          <tr>
+            <th>Line</th>
+            <th>Material</th>
+            <th>Description</th>
+            <th class="number-cell">PO qty</th>
+            <th class="number-cell">Invoice balance</th>
+            <th class="number-cell">Dispatch balance</th>
+            <th>Delivery</th>
+            <th>Process</th>
+            <th>Invoice</th>
+            <th>Dispatch</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (material of materials(); track material.id) {
+            <tr [class.overdue-row]="material.isOverdue">
+              <td>{{ material.lineItem || '—' }}</td>
+              <td>
+                <a class="material-number" [href]="'/Material/Details/' + material.id">
+                  {{ material.materialNo || '—' }}
+                </a>
+                @if (material.drawingNo) {
+                  <span class="secondary-value">Drg: {{ material.drawingNo }}</span>
+                }
+                @if (material.hsnSacCode) {
+                  <span class="secondary-value">HSN: {{ material.hsnSacCode }}</span>
+                }
+              </td>
+              <td class="description-cell" [title]="material.description">
+                {{ material.description || '—' }}
+              </td>
+              <td class="number-cell number-cell--strong">
+                {{ material.quantity | number: '1.0-2' }}
+                <span class="unit">{{ material.unit }}</span>
+              </td>
+              <td class="number-cell quantity--warning">
+                {{ material.invoiceBalanceQuantity | number: '1.0-2' }}
+              </td>
+              <td class="number-cell quantity--danger">
+                {{ material.dispatchBalanceQuantity | number: '1.0-2' }}
+              </td>
+              <td class="date-cell">
+                {{ (material.deliveryDate | date: 'dd MMM yyyy') || 'Not set' }}
+                @if (material.isOverdue) {
+                  <span class="overdue-label">Overdue</span>
+                }
+              </td>
+              <td>
+                <span [class]="statusClass(material.processStatus)">
+                  {{ material.processStatus || 'Pending' }}
+                </span>
+              </td>
+              <td>
+                <span [class]="statusClass(material.invoiceStatus)">
+                  {{ material.invoiceStatus || 'Not Invoiced' }}
+                </span>
+              </td>
+              <td>
+                <span [class]="statusClass(material.dispatchStatus)">
+                  {{ material.dispatchStatus || 'Pending' }}
+                </span>
+              </td>
+              <td>
+                <a class="button button--table" [href]="'/Material/Details/' + material.id">
+                  View
+                </a>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="empty-state" colspan="11">
+                @if (loading()) {
+                  Loading materials…
+                } @else {
+                  No materials are linked to this Purchase Order.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination" aria-label="Linked material pages">
+      <span>Page {{ materialPage() | number }} of {{ materialTotalPages() | number }}</span>
+      <div>
+        <button
+          class="button button--quiet"
+          type="button"
+          [disabled]="!hasPreviousPage() || loading()"
+          (click)="previousPage()"
+        >
+          Previous
+        </button>
+        <button
+          class="button button--quiet"
+          type="button"
+          [disabled]="!hasNextPage() || loading()"
+          (click)="nextPage()"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  </section>
+} @else if (loading()) {
+  <section class="panel loading-panel" aria-live="polite">Loading Purchase Order details…</section>
+}

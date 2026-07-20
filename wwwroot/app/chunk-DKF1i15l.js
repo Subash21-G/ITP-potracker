@@ -1,0 +1,1 @@
+import {g,U as Ue,al as Wh,am as S}from'./main-T4LJXPH5.js';function w(t){t||(t=g(Ue));let i=new S(e=>{if(t.destroyed){e.next();return}return t.onDestroy(e.next.bind(e))});return e=>e.pipe(Wh(i))}export{w};

@@ -11,7 +11,9 @@
         <h1>Stock Control Center</h1>
         <p>RM stock, shortage alerts and minimum quantity control</p>
     </div>
-    <a href="/Stock/Create" class="btn-primary">+ Add Stock</a>
+    <role-access roles="Admin,Production">
+        <a href="/Stock/Create" class="btn-primary">+ Add Stock</a>
+    </role-access>
 </div>
 
 <div class="premium-grid">
@@ -60,8 +62,22 @@
                     </td>
                     <td>@item.UpdatedDate.ToString("dd-MM-yyyy")</td>
                     <td>
-                        <a href="/Stock/Edit/@item.Id" class="action-edit">Edit</a>
-                        <a href="/Stock/Delete/@item.Id" class="action-delete" onclick="return confirm('Delete stock item?')">Delete</a>
+                        <role-access roles="Admin,Production">
+                            <a href="/Stock/Edit/@item.Id" class="action-edit">Edit</a>
+
+                            <form asp-controller="Stock"
+                                  asp-action="Delete"
+                                  asp-route-id="@item.Id"
+                                  asp-antiforgery="true"
+                                  method="post"
+                                  style="display:inline;margin:0;"
+                                  onsubmit="return confirm('Delete stock item?');">
+                                <button type="submit"
+                                        class="action-delete">
+                                    Delete
+                                </button>
+                            </form>
+                        </role-access>
                     </td>
                 </tr>
             }

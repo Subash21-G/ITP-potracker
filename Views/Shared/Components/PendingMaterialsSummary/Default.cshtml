@@ -311,12 +311,14 @@
                                         View
                                     </a>
 
-                                    <a asp-controller="Material"
-                                       asp-action="Edit"
-                                       asp-route-id="@item.MaterialId"
-                                       class="dpw-action dpw-action-edit">
-                                        Edit
-                                    </a>
+                                    <role-access roles="Admin,Production">
+                                        <a asp-controller="Material"
+                                           asp-action="Edit"
+                                           asp-route-id="@item.MaterialId"
+                                           class="dpw-action dpw-action-edit">
+                                            Edit
+                                        </a>
+                                    </role-access>
                                 </div>
                             </td>
                         </tr>

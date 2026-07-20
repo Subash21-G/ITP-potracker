@@ -13,6 +13,7 @@ namespace POTracker.Controllers
             _context = context;
         }
 
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
             var alerts = await _context.Alerts
@@ -26,6 +27,8 @@ namespace POTracker.Controllers
             return View(alerts);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarkRead(int id)
         {
             var alert = await _context.Alerts.FindAsync(id);

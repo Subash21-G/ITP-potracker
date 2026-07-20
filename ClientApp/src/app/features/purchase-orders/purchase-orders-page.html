@@ -1,0 +1,358 @@
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">PURCHASE ORDER MANAGEMENT</p>
+    <h1>Purchase Orders</h1>
+    <p class="page-heading__description">
+      Review order progress, material completion, invoice balance and dispatch balance.
+    </p>
+  </div>
+
+  <div class="heading-actions">
+    <a class="button button--quiet" href="/PurchaseOrder/Index">MVC Purchase Orders</a>
+    <a class="button button--primary" [href]="exportUrl()">Export filtered Excel</a>
+  </div>
+</section>
+
+<section class="summary-grid" aria-label="Purchase Order summary">
+  <article class="summary-card summary-card--violet">
+    <span>Total Purchase Orders</span>
+    <strong>{{ summary().totalPurchaseOrders | number }}</strong>
+    <small>Orders in the current result</small>
+  </article>
+
+  <article class="summary-card summary-card--amber">
+    <span>Open Orders</span>
+    <strong>{{ summary().openPurchaseOrders | number }}</strong>
+    <small>Open and in-progress orders</small>
+  </article>
+
+  <article class="summary-card summary-card--green">
+    <span>Completed Orders</span>
+    <strong>{{ summary().completedPurchaseOrders | number }}</strong>
+    <small>All linked materials completed</small>
+  </article>
+
+  <article class="summary-card summary-card--blue">
+    <span>Pending Materials</span>
+    <strong>{{ summary().purchaseOrdersWithPendingMaterials | number }}</strong>
+    <small>Orders with pending materials</small>
+  </article>
+
+  <article class="summary-card summary-card--red">
+    <span>Overdue Materials</span>
+    <strong>{{ summary().purchaseOrdersWithOverdueMaterials | number }}</strong>
+    <small>Orders requiring attention</small>
+  </article>
+
+  <article class="summary-card summary-card--slate">
+    <span>Without Handler</span>
+    <strong>{{ summary().purchaseOrdersWithoutHandler | number }}</strong>
+    <small>Orders not assigned to a handler</small>
+  </article>
+</section>
+
+<section class="quantity-grid" aria-label="Quantity summary">
+  <article>
+    <span>Total PO quantity</span>
+    <strong>{{ summary().totalPOQuantity | number: '1.0-2' }}</strong>
+  </article>
+  <article>
+    <span>Invoice balance</span>
+    <strong>{{ summary().totalInvoiceBalanceQuantity | number: '1.0-2' }}</strong>
+  </article>
+  <article>
+    <span>Dispatch balance</span>
+    <strong>{{ summary().totalPendingDispatchQuantity | number: '1.0-2' }}</strong>
+  </article>
+</section>
+
+<section class="panel filter-panel" aria-labelledby="po-filter-title">
+  <div class="panel__heading">
+    <div>
+      <h2 id="po-filter-title">Filters</h2>
+      <p>Use one or more fields, then apply the filters.</p>
+    </div>
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="loading()"
+      (click)="clearFilters()"
+    >
+      Clear all
+    </button>
+  </div>
+
+  <form class="filter-grid" [formGroup]="filters" (ngSubmit)="applyFilters()">
+    <label class="field field--wide">
+      <span>PO number / Handler</span>
+      <input formControlName="search" type="search" placeholder="Search PO or handler" />
+    </label>
+
+    <label class="field">
+      <span>Handler</span>
+      <select formControlName="handler">
+        <option value="">All handlers</option>
+        @for (handler of handlers(); track handler) {
+          <option [value]="handler">{{ handler }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="field">
+      <span>PO status</span>
+      <select formControlName="status">
+        <option value="">All PO statuses</option>
+        <option value="Open">Open</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Material status</span>
+      <select formControlName="materialStatus">
+        <option value="">All material statuses</option>
+        <option value="No Materials">No Materials</option>
+        <option value="Pending">Pending</option>
+        <option value="Partially Completed">Partially Completed</option>
+        <option value="Completed">Completed</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span>PO date from</span>
+      <input formControlName="poDateFrom" type="date" />
+    </label>
+
+    <label class="field">
+      <span>PO date to</span>
+      <input formControlName="poDateTo" type="date" />
+    </label>
+
+    <label class="field">
+      <span>PO received from</span>
+      <input formControlName="poReceivedDateFrom" type="date" />
+    </label>
+
+    <label class="field">
+      <span>PO received to</span>
+      <input formControlName="poReceivedDateTo" type="date" />
+    </label>
+
+    <div class="filter-action">
+      <button class="button button--primary" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Loading…' : 'Apply filters' }}
+      </button>
+    </div>
+  </form>
+</section>
+
+@if (errorMessage()) {
+  <section class="message message--error" role="alert">
+    <div>
+      <strong>Purchase Orders unavailable</strong>
+      <p>{{ errorMessage() }}</p>
+    </div>
+    <div class="message__actions">
+      @if (errorStatus() === 401) {
+        <a class="button button--primary" href="/Account/Login">Sign in</a>
+      }
+      <button class="button button--quiet" type="button" (click)="retry()">Retry</button>
+    </div>
+  </section>
+}
+
+<section class="panel table-panel" aria-labelledby="po-results-title">
+  <div class="panel__heading results-heading">
+    <div>
+      <h2 id="po-results-title">Purchase Order list</h2>
+      <p>
+        Showing {{ showingFrom() | number }}–{{ showingTo() | number }} of
+        {{ totalRecords() | number }}
+      </p>
+    </div>
+
+    <label class="page-size">
+      <span>Rows</span>
+      <select [value]="pageSize()" [disabled]="loading()" (change)="changePageSize($event)">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="table-wrap" [class.table-wrap--loading]="loading()">
+    <table>
+      <thead>
+        <tr>
+          <th>PO / Handler</th>
+          <th>PO date</th>
+          <th>Received</th>
+          <th>PO status</th>
+          <th>Material progress</th>
+          <th>Materials</th>
+          <th class="number-cell">PO quantity</th>
+          <th class="number-cell">Invoice balance</th>
+          <th class="number-cell">Dispatch balance</th>
+          <th>Delivery range</th>
+          <th>PDF</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (purchaseOrder of items(); track purchaseOrder.purchaseOrderId) {
+          <tr [class.overdue-row]="purchaseOrder.overdueMaterials > 0">
+            <td>
+              <a
+                class="po-number"
+                [routerLink]="['/purchase-orders', purchaseOrder.purchaseOrderId]"
+              >
+                {{ purchaseOrder.poNumber }}
+              </a>
+              <span class="secondary-value">
+                {{ purchaseOrder.handler || 'Unassigned' }}
+              </span>
+            </td>
+            <td class="date-cell">
+              {{ (purchaseOrder.poDate | date: 'dd MMM yyyy') || '—' }}
+            </td>
+            <td class="date-cell">
+              {{ (purchaseOrder.poReceivedDate | date: 'dd MMM yyyy') || '—' }}
+            </td>
+            <td>
+              <span [class]="statusClass(purchaseOrder.status)">
+                {{ purchaseOrder.status }}
+              </span>
+            </td>
+            <td>
+              <span [class]="statusClass(purchaseOrder.materialStatus)">
+                {{ purchaseOrder.materialStatus }}
+              </span>
+              <div class="progress" aria-hidden="true">
+                <span [style.width.%]="purchaseOrder.completionPercentage"></span>
+              </div>
+              <small class="progress-copy">
+                {{ purchaseOrder.completionPercentage | number: '1.0-0' }}% complete
+              </small>
+            </td>
+            <td>
+              <div class="material-counts">
+                <span>
+                  Total <strong>{{ purchaseOrder.totalMaterials | number }}</strong>
+                </span>
+                <span>
+                  Pending
+                  <strong class="count--warning">{{
+                    purchaseOrder.pendingMaterials | number
+                  }}</strong>
+                </span>
+                <span>
+                  Done
+                  <strong class="count--success">{{
+                    purchaseOrder.completedMaterials | number
+                  }}</strong>
+                </span>
+                @if (purchaseOrder.overdueMaterials > 0) {
+                  <span>
+                    Overdue
+                    <strong class="count--danger">{{
+                      purchaseOrder.overdueMaterials | number
+                    }}</strong>
+                  </span>
+                }
+              </div>
+            </td>
+            <td class="number-cell number-cell--strong">
+              {{ purchaseOrder.totalPOQuantity | number: '1.0-2' }}
+            </td>
+            <td class="number-cell">
+              <strong class="quantity--warning">
+                {{ purchaseOrder.totalInvoiceBalanceQuantity | number: '1.0-2' }}
+              </strong>
+              <span class="secondary-value">
+                {{ purchaseOrder.notInvoicedMaterials | number }} not invoiced
+              </span>
+            </td>
+            <td class="number-cell">
+              <strong class="quantity--danger">
+                {{ purchaseOrder.totalPendingDispatchQuantity | number: '1.0-2' }}
+              </strong>
+              <span class="secondary-value">
+                {{ purchaseOrder.pendingDispatchMaterials | number }} pending
+              </span>
+            </td>
+            <td class="date-cell">
+              @if (purchaseOrder.earliestDeliveryDate || purchaseOrder.latestDeliveryDate) {
+                <span class="delivery-date">
+                  {{ (purchaseOrder.earliestDeliveryDate | date: 'dd MMM yyyy') || '—' }}
+                </span>
+                <span class="secondary-value">to</span>
+                <span class="delivery-date">
+                  {{ (purchaseOrder.latestDeliveryDate | date: 'dd MMM yyyy') || '—' }}
+                </span>
+              } @else {
+                <span class="secondary-value">No delivery dates</span>
+              }
+            </td>
+            <td>
+              @if (purchaseOrder.pdfFilePath) {
+                <a
+                  class="table-link"
+                  [href]="purchaseOrder.pdfFilePath"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open PDF
+                </a>
+              } @else {
+                <span class="secondary-value">No PDF</span>
+              }
+            </td>
+            <td>
+              <a
+                class="button button--table"
+                [routerLink]="['/purchase-orders', purchaseOrder.purchaseOrderId]"
+              >
+                View
+              </a>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td class="empty-state" colspan="12">
+              @if (loading()) {
+                Loading Purchase Orders…
+              } @else {
+                No Purchase Orders match the selected filters.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination" aria-label="Purchase Order result pages">
+    <span>Page {{ page() | number }} of {{ totalPages() | number }}</span>
+    <div>
+      <button
+        class="button button--quiet"
+        type="button"
+        [disabled]="!hasPreviousPage() || loading()"
+        (click)="previousPage()"
+      >
+        Previous
+      </button>
+      <button
+        class="button button--quiet"
+        type="button"
+        [disabled]="!hasNextPage() || loading()"
+        (click)="nextPage()"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+</section>

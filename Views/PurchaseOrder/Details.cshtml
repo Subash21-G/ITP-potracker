@@ -139,12 +139,14 @@
                 Back
             </a>
 
-            <a asp-controller="PurchaseOrder"
-               asp-action="Edit"
-               asp-route-id="@Model.Id"
-               class="pod-btn pod-btn-primary">
-                Edit Purchase Order
-            </a>
+            <role-access roles="Admin,Production">
+                <a asp-controller="PurchaseOrder"
+                   asp-action="Edit"
+                   asp-route-id="@Model.Id"
+                   class="pod-btn pod-btn-primary">
+                    Edit Purchase Order
+                </a>
+            </role-access>
         </div>
     </section>
 
@@ -341,12 +343,14 @@
                 </p>
             </div>
 
-            <a asp-controller="Material"
-               asp-action="Create"
-               asp-route-purchaseOrderId="@Model.Id"
-               class="pod-btn pod-btn-primary">
-                + Add Material
-            </a>
+            <role-access roles="Admin,Production">
+                <a asp-controller="Material"
+                   asp-action="Create"
+                   asp-route-purchaseOrderId="@Model.Id"
+                   class="pod-btn pod-btn-primary">
+                    + Add Material
+                </a>
+            </role-access>
         </div>
 
         @if (materials.Count == 0)
@@ -364,12 +368,14 @@
                     to this purchase order.
                 </p>
 
-                <a asp-controller="Material"
-                   asp-action="Create"
-                   asp-route-purchaseOrderId="@Model.Id"
-                   class="pod-btn pod-btn-primary">
-                    Add First Material
-                </a>
+                <role-access roles="Admin,Production">
+                    <a asp-controller="Material"
+                       asp-action="Create"
+                       asp-route-purchaseOrderId="@Model.Id"
+                       class="pod-btn pod-btn-primary">
+                        Add First Material
+                    </a>
+                </role-access>
             </div>
         }
         else
@@ -535,22 +541,24 @@
                                             View
                                         </a>
 
-                                        <a asp-controller="Material"
-                                           asp-action="Edit"
-                                           asp-route-id="@item.Id"
-                                           class="pod-row-btn pod-row-edit">
-                                            Edit
-                                        </a>
-
-                                        @if (item.PendingQty > 0)
-                                        {
-                                            <a asp-controller="Dispatch"
-                                               asp-action="Create"
-                                               asp-route-materialId="@item.Id"
-                                               class="pod-row-btn pod-row-dispatch">
-                                                Dispatch
+                                        <role-access roles="Admin,Production">
+                                            <a asp-controller="Material"
+                                               asp-action="Edit"
+                                               asp-route-id="@item.Id"
+                                               class="pod-row-btn pod-row-edit">
+                                                Edit
                                             </a>
-                                        }
+
+                                            @if (item.PendingQty > 0)
+                                            {
+                                                <a asp-controller="Dispatch"
+                                                   asp-action="Create"
+                                                   asp-route-materialId="@item.Id"
+                                                   class="pod-row-btn pod-row-dispatch">
+                                                    Dispatch
+                                                </a>
+                                            }
+                                        </role-access>
                                     </div>
                                 </td>
                             </tr>

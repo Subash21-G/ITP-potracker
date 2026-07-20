@@ -344,6 +344,13 @@ namespace POTracker.ViewModels
         public decimal TotalPendingDispatchQuantity { get; set; }
 
         public decimal TotalLiveStockQuantity { get; set; }
+
+        /// <summary>
+        /// True when live-stock totals represent only the currently
+        /// displayed page. Database-based totals always represent the
+        /// complete filtered result set.
+        /// </summary>
+        public bool StockSummaryIsCurrentPage { get; set; }
     }
 
     /// <summary>

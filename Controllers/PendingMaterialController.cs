@@ -73,22 +73,11 @@ namespace POTracker.Controllers
                 overdueOnly,
                 dueThisWeekOnly);
 
-            var materials = await filteredQuery
-                .OrderBy(x =>
-                    !x.DeliveryDate.HasValue
-                        ? 2
-                        : x.DeliveryDate.Value.Date < DateTime.Today
-                            ? 0
-                            : 1)
-                .ThenBy(x => x.DeliveryDate)
-                .ThenByDescending(x => x.Id)
-                .ToListAsync();
+            var summary =
+                await BuildSummaryAsync(filteredQuery);
 
-            var allRows = materials
-                .Select(MapRow)
-                .ToList();
-
-            var totalRecords = allRows.Count;
+            var totalRecords =
+                summary.TotalPendingMaterials;
 
             var totalPages = Math.Max(
                 1,
@@ -100,14 +89,30 @@ namespace POTracker.Controllers
                 page = totalPages;
             }
 
+            var today = DateTime.Today;
+
+            var materials = await filteredQuery
+                .OrderBy(x =>
+                    !x.DeliveryDate.HasValue
+                        ? 2
+                        : x.DeliveryDate < today
+                            ? 0
+                            : 1)
+                .ThenBy(x => x.DeliveryDate)
+                .ThenByDescending(x => x.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var pageRows = materials
+                .Select(MapRow)
+                .ToList();
+
             var model = new PendingMaterialIndexViewModel
             {
-                Items = allRows
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList(),
+                Items = pageRows,
 
-                Summary = BuildSummary(allRows),
+                Summary = summary,
 
                 Search = search,
                 PONumber = poNumber,
@@ -139,6 +144,92 @@ namespace POTracker.Controllers
             MarkSelectedOptions(model);
 
             return View(model);
+        }
+
+        private static async Task<PendingMaterialSummaryViewModel>
+            BuildSummaryAsync(
+                IQueryable<Material> query)
+        {
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+            var weekEndExclusive = today.AddDays(8);
+
+            var totals = await query
+                .GroupBy(x => 1)
+                .Select(group => new
+                {
+                    Total = group.Count(),
+
+                    Overdue = group.Count(x =>
+                        x.DeliveryDate.HasValue &&
+                        x.DeliveryDate < today &&
+                        x.PendingQty > 0),
+
+                    DueToday = group.Count(x =>
+                        x.DeliveryDate.HasValue &&
+                        x.DeliveryDate >= today &&
+                        x.DeliveryDate < tomorrow &&
+                        x.PendingQty > 0),
+
+                    DueThisWeek = group.Count(x =>
+                        x.DeliveryDate.HasValue &&
+                        x.DeliveryDate >= today &&
+                        x.DeliveryDate < weekEndExclusive &&
+                        x.PendingQty > 0),
+
+                    WithoutDeliveryDate = group.Count(x =>
+                        !x.DeliveryDate.HasValue),
+
+                    TotalPOQuantity = group.Sum(x => x.Qty),
+                    TotalInvoiceQuantity = group.Sum(x => x.InvoiceQty),
+                    TotalInvoiceBalanceQuantity = group.Sum(x =>
+                        x.BalanceQty < 0 ? 0 : x.BalanceQty),
+                    TotalDispatchQuantity = group.Sum(x => x.DispatchQty),
+                    TotalPendingDispatchQuantity = group.Sum(x =>
+                        x.PendingQty < 0 ? 0 : x.PendingQty),
+                    TotalPendingValue = group.Sum(x =>
+                        (x.PendingQty < 0 ? 0 : x.PendingQty) * x.Cost)
+                })
+                .FirstOrDefaultAsync();
+
+            var assignmentSummary = await query
+                .GroupBy(x =>
+                    string.IsNullOrWhiteSpace(x.AssignedDashboard)
+                        ? "Unassigned"
+                        : x.AssignedDashboard!.Trim())
+                .Select(group =>
+                    new PendingMaterialAssignmentSummaryViewModel
+                    {
+                        AssignedDashboard = group.Key,
+                        MaterialCount = group.Count(),
+                        PendingQuantity = group.Sum(x =>
+                            x.PendingQty < 0 ? 0 : x.PendingQty),
+                        OverdueCount = group.Count(x =>
+                            x.DeliveryDate.HasValue &&
+                            x.DeliveryDate < today &&
+                            x.PendingQty > 0)
+                    })
+                .OrderByDescending(x => x.MaterialCount)
+                .ThenBy(x => x.AssignedDashboard)
+                .ToListAsync();
+
+            return new PendingMaterialSummaryViewModel
+            {
+                TotalPendingMaterials = totals?.Total ?? 0,
+                OverdueMaterials = totals?.Overdue ?? 0,
+                DueTodayMaterials = totals?.DueToday ?? 0,
+                DueThisWeekMaterials = totals?.DueThisWeek ?? 0,
+                WithoutDeliveryDate = totals?.WithoutDeliveryDate ?? 0,
+                TotalPOQuantity = totals?.TotalPOQuantity ?? 0,
+                TotalInvoiceQuantity = totals?.TotalInvoiceQuantity ?? 0,
+                TotalInvoiceBalanceQuantity =
+                    totals?.TotalInvoiceBalanceQuantity ?? 0,
+                TotalDispatchQuantity = totals?.TotalDispatchQuantity ?? 0,
+                TotalPendingDispatchQuantity =
+                    totals?.TotalPendingDispatchQuantity ?? 0,
+                TotalPendingValue = totals?.TotalPendingValue ?? 0,
+                AssignmentSummary = assignmentSummary
+            };
         }
 
         [HttpGet]

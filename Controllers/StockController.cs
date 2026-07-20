@@ -14,6 +14,7 @@ namespace POTracker.Controllers
             _context = context;
         }
 
+        [HttpGet]
         public async Task<IActionResult> Index(string? search)
         {
             var stocks = _context.Stocks.AsQueryable();
@@ -36,12 +37,14 @@ namespace POTracker.Controllers
                 .ToListAsync());
         }
 
+        [HttpGet]
         public IActionResult Create()
         {
             return View();
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Stock stock)
         {
             if (ModelState.IsValid)
@@ -56,6 +59,7 @@ namespace POTracker.Controllers
             return View(stock);
         }
 
+        [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
             var stock = await _context.Stocks.FindAsync(id);
@@ -69,6 +73,7 @@ namespace POTracker.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Stock stock)
         {
             if (ModelState.IsValid)
@@ -83,6 +88,8 @@ namespace POTracker.Controllers
             return View(stock);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             var stock = await _context.Stocks.FindAsync(id);

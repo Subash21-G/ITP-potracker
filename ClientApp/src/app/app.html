@@ -1,0 +1,35 @@
+<header class="app-header">
+  <a class="brand" routerLink="/materials" aria-label="PO Tracker home">
+    <span class="brand__mark" aria-hidden="true">PO</span>
+    <span>
+      <strong>PO Tracker</strong>
+      <small>Operations workspace</small>
+    </span>
+  </a>
+
+  <nav aria-label="Primary navigation">
+    <a
+      routerLink="/materials"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      Materials
+    </a>
+    <a
+      routerLink="/purchase-orders"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: false }"
+    >
+      Purchase Orders
+    </a>
+    <a class="nav-mvc" href="/Dashboard/Index">MVC dashboard</a>
+  </nav>
+</header>
+
+<main class="app-main">
+  <router-outlet />
+</main>
+
+<footer class="app-footer">
+  Angular client · Existing ASP.NET MVC screens remain available during migration
+</footer>

@@ -4,10 +4,30 @@
     ViewData["Title"] = "Process Queue";
     Layout = "~/Views/Shared/_Layout.cshtml";
 
-    var overdue = ViewBag.Overdue as List<POTracker.Models.Material> ?? new List<POTracker.Models.Material>();
-    var startToday = ViewBag.StartToday as List<POTracker.Models.Material> ?? new List<POTracker.Models.Material>();
-    var thisWeek = ViewBag.ThisWeek as List<POTracker.Models.Material> ?? new List<POTracker.Models.Material>();
-    var future = ViewBag.Future as List<POTracker.Models.Material> ?? new List<POTracker.Models.Material>();
+    var overdue =
+        ViewBag.Overdue as List<POTracker.Models.Material>
+        ?? new List<POTracker.Models.Material>();
+
+    var startToday =
+        ViewBag.StartToday as List<POTracker.Models.Material>
+        ?? new List<POTracker.Models.Material>();
+
+    var thisWeek =
+        ViewBag.ThisWeek as List<POTracker.Models.Material>
+        ?? new List<POTracker.Models.Material>();
+
+    var future =
+        ViewBag.Future as List<POTracker.Models.Material>
+        ?? new List<POTracker.Models.Material>();
+
+    int overdueCount = ViewBag.OverdueCount ?? overdue.Count;
+    int startTodayCount = ViewBag.StartTodayCount ?? startToday.Count;
+    int thisWeekCount = ViewBag.ThisWeekCount ?? thisWeek.Count;
+    int futureCount = ViewBag.FutureCount ?? future.Count;
+    int totalMaterials = ViewBag.TotalMaterials ?? Model.Count;
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int pageSize = ViewBag.PageSize ?? 50;
+    int totalPages = ViewBag.TotalPages ?? 1;
 }
 
 <div class="page-header">
@@ -15,7 +35,12 @@
         <h1>Process Start Queue</h1>
         <p>Materials grouped by calculated process start date</p>
     </div>
-    <a href="/Calendar/Index" class="btn-secondary">Calendar</a>
+
+    <a asp-controller="Calendar"
+       asp-action="Index"
+       class="btn-secondary">
+        Calendar
+    </a>
 </div>
 
 <div class="premium-note">
@@ -23,14 +48,30 @@
 </div>
 
 <div class="premium-grid">
-    <div class="metric-card"><span>Overdue</span><strong>@overdue.Count</strong></div>
-    <div class="metric-card"><span>Start Today</span><strong>@startToday.Count</strong></div>
-    <div class="metric-card"><span>This Week</span><strong>@thisWeek.Count</strong></div>
-    <div class="metric-card"><span>Future</span><strong>@future.Count</strong></div>
+    <div class="metric-card">
+        <span>Overdue</span>
+        <strong>@overdueCount</strong>
+    </div>
+
+    <div class="metric-card">
+        <span>Start Today</span>
+        <strong>@startTodayCount</strong>
+    </div>
+
+    <div class="metric-card">
+        <span>This Week</span>
+        <strong>@thisWeekCount</strong>
+    </div>
+
+    <div class="metric-card">
+        <span>Future</span>
+        <strong>@futureCount</strong>
+    </div>
 </div>
 
 <div class="queue-grid">
-    @foreach (var group in new[] {
+    @foreach (var group in new[]
+    {
         new { Title = "Overdue", Items = overdue, Css = "status-red" },
         new { Title = "Start Today", Items = startToday, Css = "status-blue" },
         new { Title = "This Week", Items = thisWeek, Css = "status-yellow" },
@@ -39,17 +80,20 @@
     {
         <div class="queue-column">
             <h3>@group.Title</h3>
+
             @if (group.Items.Any())
             {
-                foreach (var item in group.Items.Take(6))
+                foreach (var item in group.Items)
                 {
                     <div class="queue-ticket">
                         <strong>@item.MaterialNo</strong>
+
                         <small>
                             PO: @(item.PurchaseOrder?.PONumber ?? "-")<br />
                             Start: @(item.ProcessStartDate?.ToString("dd-MM-yyyy") ?? "-")<br />
                             Delivery: @(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")
                         </small>
+
                         <br />
                         <span class="@group.Css">@item.ProcessStatus</span>
                     </div>
@@ -64,34 +108,106 @@
 </div>
 
 <div class="table-section">
-    <div class="section-header"><h2>Full Queue</h2></div>
-    <table class="custom-table">
-        <thead>
-            <tr>
-                <th>Material</th>
-                <th>PO</th>
-                <th>Purchaser</th>
-                <th>Process Start</th>
-                <th>Delivery</th>
-                <th>Owner</th>
-                <th>Process</th>
-                <th>Dispatch</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
+    <div class="section-header">
+        <h2>Full Queue</h2>
+    </div>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
                 <tr>
-                    <td><strong>@item.MaterialNo</strong><br />@(item.ShortDescription ?? "-")</td>
-                    <td>@(item.PurchaseOrder?.PONumber ?? "-")</td>
-                    <td>@(item.PurchaseOrder?.Purchaser?.PurchaserName ?? "-")</td>
-                    <td>@(item.ProcessStartDate?.ToString("dd-MM-yyyy") ?? "-")</td>
-                    <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
-                    <td>@(item.AssignedDashboard ?? "-")</td>
-                    <td><span class="status-blue">@item.ProcessStatus</span></td>
-                    <td><span class="status-yellow">@item.DispatchStatus</span></td>
+                    <th>Material</th>
+                    <th>PO</th>
+                    <th>Purchaser</th>
+                    <th>Process Start</th>
+                    <th>Delivery</th>
+                    <th>Owner</th>
+                    <th>Process</th>
+                    <th>Dispatch</th>
                 </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@item.MaterialNo</strong><br />
+                            @(item.ShortDescription ?? "-")
+                        </td>
+                        <td>@(item.PurchaseOrder?.PONumber ?? "-")</td>
+                        <td>@(item.PurchaseOrder?.Purchaser?.PurchaserName ?? "-")</td>
+                        <td>@(item.ProcessStartDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@(item.DeliveryDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                        <td>@(item.AssignedDashboard ?? "-")</td>
+                        <td><span class="status-blue">@item.ProcessStatus</span></td>
+                        <td><span class="status-yellow">@item.DispatchStatus</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <nav aria-label="Process queue pages"
+         style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:16px;">
+
+        <strong style="color:#64748b;font-size:13px;">
+            Page @currentPage of @totalPages
+            · @totalMaterials total material(s)
+        </strong>
+
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <form asp-action="Index"
+                  asp-controller="ProcessQueue"
+                  method="get"
+                  style="display:flex;align-items:center;gap:8px;margin:0;">
+
+                <input type="hidden" name="page" value="1" />
+
+                <label for="processQueuePageSize"
+                       style="color:#64748b;font-size:13px;font-weight:800;">
+                    Rows
+                </label>
+
+                <select id="processQueuePageSize"
+                        name="pageSize"
+                        onchange="this.form.submit()"
+                        style="min-height:38px;padding:7px 30px 7px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;font-weight:800;">
+                    @foreach (var size in new[] { 10, 25, 50, 100, 200 })
+                    {
+                        if (size == pageSize)
+                        {
+                            <option value="@size" selected>@size</option>
+                        }
+                        else
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    }
+                </select>
+            </form>
+
+            @if (currentPage > 1)
+            {
+                <a asp-action="Index"
+                   asp-controller="ProcessQueue"
+                   asp-route-page="@(currentPage - 1)"
+                   asp-route-pageSize="@pageSize"
+                   class="btn-secondary">
+                    Previous
+                </a>
             }
-        </tbody>
-    </table>
+
+            @if (currentPage < totalPages)
+            {
+                <a asp-action="Index"
+                   asp-controller="ProcessQueue"
+                   asp-route-page="@(currentPage + 1)"
+                   asp-route-pageSize="@pageSize"
+                   class="btn-secondary">
+                    Next
+                </a>
+            }
+        </div>
+    </nav>
 </div>
