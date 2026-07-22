@@ -154,6 +154,12 @@ namespace POTracker.Contracts.Api
 
         public string MaterialNo { get; init; } = string.Empty;
 
+        public string CustomerName { get; init; } = string.Empty;
+
+        public string Description { get; init; } = string.Empty;
+
+        public string HsnSacCode { get; init; } = string.Empty;
+
         public decimal Qty { get; init; }
 
         public decimal PriceUnit { get; init; }

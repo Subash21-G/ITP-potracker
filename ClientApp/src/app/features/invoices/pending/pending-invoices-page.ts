@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { ManageOnlyDirective } from '../../../core/directives/manage-only.directive';
@@ -36,6 +36,8 @@ import { InvoiceApiService } from '../../../core/services/invoice-api.service';
 export class PendingInvoicesPage {
   private readonly invoiceApi = inject(InvoiceApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly filters = new FormGroup({
     search: new FormControl('', { nonNullable: true }),
@@ -86,6 +88,7 @@ export class PendingInvoicesPage {
   );
 
   constructor() {
+    this.readMaterialCreateResult();
     this.loadPendingItems();
   }
 
@@ -130,41 +133,28 @@ export class PendingInvoicesPage {
   manualMatch(candidate: PendingInvoiceMatchCandidate): void {
     const pending = this.selectedPendingItem();
 
+    const isExactMatch =
+      candidate.isExactPO &&
+      candidate.isExactMaterial &&
+      candidate.isExactLineItem;
+
     if (
       !pending ||
       this.matchingMaterialId() !== null ||
-      !candidate.hasEnoughBalance
+      !candidate.hasEnoughBalance ||
+      !isExactMatch
     ) {
       return;
     }
 
-    const mismatchParts: string[] = [];
-
-    if (!candidate.isExactPO) {
-      mismatchParts.push('PO number');
-    }
-
-    if (!candidate.isExactMaterial) {
-      mismatchParts.push('material number');
-    }
-
-    if (!candidate.isExactLineItem) {
-      mismatchParts.push('line item');
-    }
-
-    const mismatchWarning = mismatchParts.length > 0
-      ? `\n\nMismatch: ${mismatchParts.join(', ')}.`
-      : '';
-
     const confirmed = window.confirm(
       `Match invoice ${pending.invoiceNumber} row to:\n` +
-      `PO: ${candidate.poNumber}\n` +
-      `Line: ${candidate.lineItem || '—'}\n` +
-      `Material: ${candidate.materialNo}\n` +
-      `Invoice Qty: ${pending.qty}\n` +
-      `Available Balance: ${candidate.balanceQty}` +
-      mismatchWarning +
-      '\n\nThis will update InvoiceQty and DispatchQty.',
+        `PO: ${candidate.poNumber}\n` +
+        `Line: ${candidate.lineItem || '—'}\n` +
+        `Material: ${candidate.materialNo}\n` +
+        `Invoice Qty: ${pending.qty}\n` +
+        `Available Balance: ${candidate.balanceQty}` +
+        '\n\nPO, material and line item are exact. This will update InvoiceQty and DispatchQty.',
     );
 
     if (!confirmed) {
@@ -180,7 +170,7 @@ export class PendingInvoicesPage {
         pending.id,
         {
           materialId: candidate.materialId,
-          confirmMismatch: mismatchParts.length > 0,
+          confirmMismatch: false,
         },
       )
       .pipe(
@@ -199,6 +189,33 @@ export class PendingInvoicesPage {
       });
   }
 
+
+  createMissingMaterial(item: PendingInvoiceItem): void {
+    if (!item || item.id <= 0) {
+      return;
+    }
+
+    void this.router.navigate(
+      ['/materials/new'],
+      {
+        queryParams: {
+          source: 'pending-invoice',
+          pendingInvoiceId: item.id,
+          invoiceNumber: item.invoiceNumber,
+          invoiceDate: item.invoiceDate?.substring(0, 10) ?? '',
+          customerName: item.customerName,
+          poNumber: item.poNumber,
+          lineItem: item.lineItem,
+          materialNo: item.materialNo,
+          description: item.description,
+          hsnSacCode: item.hsnSacCode,
+          qty: item.qty,
+          returnUrl: '/invoices/pending',
+        },
+      },
+    );
+  }
+
   retryMatching(): void {
     if (this.retrying() || this.loading() || this.rowCount() === 0) {
       return;
@@ -206,8 +223,8 @@ export class PendingInvoicesPage {
 
     const confirmed = window.confirm(
       `Retry matching for ${this.rowCount()} pending invoice row(s)?\n\n` +
-      'Rows will be matched only when PO number, material number, ' +
-      'line item and balance quantity are safe.',
+        'Rows will be matched only when PO number, material number, ' +
+        'line item and balance quantity are safe.',
     );
 
     if (!confirmed) {
@@ -239,6 +256,50 @@ export class PendingInvoicesPage {
     this.loadPendingItems();
   }
 
+
+
+  private readMaterialCreateResult(): void {
+    const params = this.route.snapshot.queryParamMap;
+
+    if (params.get('materialCreated') !== 'true') {
+      return;
+    }
+
+    const matchedRows = Number(
+      params.get('matchedPendingInvoiceRows') ?? '0',
+    );
+
+    const invoiceNumber =
+      params.get('invoiceNumber')?.trim() ?? '';
+
+    if (Number.isFinite(matchedRows) && matchedRows > 0) {
+      this.successMessage.set(
+        `Material created successfully. ${matchedRows} pending invoice row(s)` +
+          `${invoiceNumber ? ` from ${invoiceNumber}` : ''} were automatically matched.`,
+      );
+    } else {
+      this.successMessage.set(
+        `Material created successfully, but no pending invoice row was automatically matched.` +
+          ` Verify the PO number, material number, line item and ordered quantity.`,
+      );
+    }
+
+    void this.router.navigate(
+      [],
+      {
+        relativeTo: this.route,
+        replaceUrl: true,
+        queryParamsHandling: 'merge',
+        queryParams: {
+          materialCreated: null,
+          materialId: null,
+          matchedPendingInvoiceRows: null,
+          invoiceNumber: null,
+          pendingInvoiceId: null,
+        },
+      },
+    );
+  }
 
   private loadCandidates(): void {
     const pending = this.selectedPendingItem();

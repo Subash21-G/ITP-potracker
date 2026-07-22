@@ -9,21 +9,33 @@
       </a>
 
       <span class="eyebrow">
-        {{ isEditMode() ? 'Update record' : 'New record' }}
+        {{
+          isEditMode()
+            ? 'Update record'
+            : pendingInvoicePrefill()
+              ? 'Pending invoice recovery'
+              : 'New record'
+        }}
       </span>
 
       <h1>
         {{
           isEditMode()
             ? 'Edit material'
-            : 'Create material'
+            : pendingInvoicePrefill()
+              ? 'Create missing material'
+              : 'Create material'
         }}
       </h1>
 
       <p>
-        Enter purchase-order, quantity, process, cost and
-        drawing information. Invoice and dispatch quantities
-        are maintained by their own modules.
+        @if (pendingInvoicePrefill()) {
+          Review the imported invoice details, complete the actual PO material
+          information and save. A safe automatic match is attempted after creation.
+        } @else {
+          Enter purchase-order, quantity, process, cost and drawing information.
+          Invoice and dispatch quantities are maintained by their own modules.
+        }
       </p>
     </div>
   </header>
@@ -38,6 +50,63 @@
     <div class="message message--success" role="status">
       {{ successMessage() }}
     </div>
+  }
+
+
+  @if (pendingInvoicePrefill(); as source) {
+    <section
+      class="invoice-source"
+      [class.invoice-source--warning]="missingPurchaseOrderNumber()"
+    >
+      <div>
+        <span class="eyebrow">Imported invoice source</span>
+        <h2>
+          {{ source.invoiceNumber || 'Pending invoice row' }}
+        </h2>
+
+        <p>
+          PO {{ source.poNumber }} ·
+          Line {{ source.lineItem || '—' }} ·
+          Material {{ source.materialNo }} ·
+          Invoice Qty {{ source.qty }}
+        </p>
+
+        @if (source.description) {
+          <p>{{ source.description }}</p>
+        }
+      </div>
+
+      @if (missingPurchaseOrderNumber()) {
+        <div class="invoice-source__warning">
+          <strong>
+            PO {{ missingPurchaseOrderNumber() }} is not available
+          </strong>
+          <span>
+            Create or import this exact purchase order first. The material
+            cannot be safely saved under a different PO.
+          </span>
+
+          <a
+            class="button button--warning"
+            routerLink="/purchase-orders/new"
+            [queryParams]="{
+              poNumber: missingPurchaseOrderNumber()
+            }"
+          >
+            Create Purchase Order
+          </a>
+        </div>
+      } @else {
+        <div class="invoice-source__check">
+          <strong>Exact purchase order locked</strong>
+          <span>
+            The invoice quantity is used only as an initial PO quantity.
+            Verify the actual ordered quantity, unit, value and delivery date
+            before saving.
+          </span>
+        </div>
+      }
+    </section>
   }
 
   @if (isLoading()) {
@@ -83,7 +152,11 @@
               }
             </select>
 
-            @if (fieldInvalid('purchaseOrderId')) {
+            @if (pendingInvoicePrefill()) {
+              <small class="field-help">
+                Imported PO is locked to prevent an incorrect invoice match.
+              </small>
+            } @else if (fieldInvalid('purchaseOrderId')) {
               <small>Please select a purchase order.</small>
             }
           </label>
@@ -452,14 +525,16 @@
         <button
           class="button button--primary"
           type="submit"
-          [disabled]="isSaving()"
+          [disabled]="isSaving() || !!missingPurchaseOrderNumber()"
         >
           {{
             isSaving()
               ? 'Saving…'
               : isEditMode()
                 ? 'Save changes'
-                : 'Create material'
+                : pendingInvoicePrefill()
+                  ? 'Create and match invoice'
+                  : 'Create material'
           }}
         </button>
       </footer>

@@ -80,6 +80,9 @@ export interface PendingInvoiceItem {
   poNumber: string;
   lineItem: string;
   materialNo: string;
+  customerName: string;
+  description: string;
+  hsnSacCode: string;
   qty: number;
   priceUnit: number;
   gstAmount: number;

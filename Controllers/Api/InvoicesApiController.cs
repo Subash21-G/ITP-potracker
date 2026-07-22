@@ -296,7 +296,9 @@ namespace POTracker.Controllers.Api
                     (item.MaterialNo != null &&
                      item.MaterialNo.Contains(searchValue)) ||
                     (item.LineItem != null &&
-                     item.LineItem.Contains(searchValue)));
+                     item.LineItem.Contains(searchValue)) ||
+                    (item.Description != null &&
+                     item.Description.Contains(searchValue)));
             }
 
             var items = await query
@@ -310,6 +312,9 @@ namespace POTracker.Controllers.Api
                     PONumber = item.PONumber ?? string.Empty,
                     LineItem = item.LineItem ?? string.Empty,
                     MaterialNo = item.MaterialNo ?? string.Empty,
+                    CustomerName = item.CustomerName ?? string.Empty,
+                    Description = item.Description ?? string.Empty,
+                    HsnSacCode = item.HsnSacCode ?? string.Empty,
                     Qty = item.InvoiceQty,
                     PriceUnit = item.PriceUnit,
                     GstAmount = item.GstAmount,
@@ -688,10 +693,9 @@ namespace POTracker.Controllers.Api
                     string.IsNullOrWhiteSpace(materialLineKey) ||
                     pendingLineKey == materialLineKey;
 
-                if ((!exactPo ||
-                     !exactMaterial ||
-                     !exactLine) &&
-                    !request.ConfirmMismatch)
+                if (!exactPo ||
+                    !exactMaterial ||
+                    !exactLine)
                 {
                     await transaction.RollbackAsync();
 
@@ -700,7 +704,7 @@ namespace POTracker.Controllers.Api
                         {
                             Success = false,
                             Message =
-                                "The selected material does not exactly match the imported PO/material/line item. Confirm the mismatch before saving.",
+                                "Direct matching is allowed only when PO number, material number and line item are exact. Create the missing material instead.",
                             PendingItemId = pending.Id,
                             MaterialId = material.Id,
                             InvoiceId = pending.InvoiceId
@@ -1203,6 +1207,12 @@ namespace POTracker.Controllers.Api
                     item.LineItem ?? string.Empty,
                 MaterialNo =
                     item.MaterialNo ?? string.Empty,
+                CustomerName =
+                    item.CustomerName ?? string.Empty,
+                Description =
+                    item.Description ?? string.Empty,
+                HsnSacCode =
+                    item.HsnSacCode ?? string.Empty,
                 Qty = item.InvoiceQty,
                 PriceUnit = item.PriceUnit,
                 GstAmount = item.GstAmount,

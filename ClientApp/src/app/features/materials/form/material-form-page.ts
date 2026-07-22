@@ -27,6 +27,20 @@ import {
   MaterialCrudApiService,
 } from '../../../core/services/material-crud-api.service';
 
+
+interface PendingInvoiceMaterialPrefill {
+  pendingInvoiceId: number;
+  invoiceNumber: string;
+  invoiceDate: string;
+  customerName: string;
+  poNumber: string;
+  lineItem: string;
+  materialNo: string;
+  description: string;
+  hsnSacCode: string;
+  qty: number;
+}
+
 @Component({
   selector: 'app-material-form-page',
   imports: [
@@ -55,6 +69,9 @@ export class MaterialFormPage implements OnInit {
   readonly successMessage = signal('');
 
   readonly isEditMode = signal(false);
+  readonly pendingInvoicePrefill =
+    signal<PendingInvoiceMaterialPrefill | null>(null);
+  readonly missingPurchaseOrderNumber = signal('');
 
   readonly form = this.formBuilder.nonNullable.group({
     purchaseOrderId: [
@@ -137,6 +154,10 @@ export class MaterialFormPage implements OnInit {
     this.isEditMode.set(parsedId !== null);
 
     if (parsedId === null) {
+      this.pendingInvoicePrefill.set(
+        this.readPendingInvoicePrefill(),
+      );
+
       this.loadCreateForm();
       return;
     }
@@ -147,6 +168,36 @@ export class MaterialFormPage implements OnInit {
   submit(): void {
     this.errorMessage.set('');
     this.successMessage.set('');
+
+    const prefill = this.pendingInvoicePrefill();
+
+    if (prefill && this.missingPurchaseOrderNumber()) {
+      this.errorMessage.set(
+        `Purchase order ${this.missingPurchaseOrderNumber()} does not exist. ` +
+          'Create or import that exact PO before creating its missing material.',
+      );
+      return;
+    }
+
+    if (prefill) {
+      const selectedPurchaseOrder =
+        this.purchaseOrders().find(
+          (option) =>
+            option.id ===
+            this.form.controls.purchaseOrderId.getRawValue(),
+        );
+
+      if (
+        !selectedPurchaseOrder ||
+        this.normalizeKey(selectedPurchaseOrder.poNumber) !==
+          this.normalizeKey(prefill.poNumber)
+      ) {
+        this.errorMessage.set(
+          `The material must be created under imported PO ${prefill.poNumber}.`,
+        );
+        return;
+      }
+    }
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -178,6 +229,24 @@ export class MaterialFormPage implements OnInit {
             response.message,
           );
 
+          if (id === null && prefill) {
+            void this.router.navigate(
+              ['/invoices/pending'],
+              {
+                queryParams: {
+                  materialCreated: 'true',
+                  materialId: response.materialId,
+                  matchedPendingInvoiceRows:
+                    response.matchedPendingInvoiceRows,
+                  invoiceNumber: prefill.invoiceNumber,
+                  pendingInvoiceId:
+                    prefill.pendingInvoiceId,
+                },
+              },
+            );
+            return;
+          }
+
           void this.router.navigate(
             ['/materials', response.materialId],
             {
@@ -197,6 +266,10 @@ export class MaterialFormPage implements OnInit {
 
   cancelLink(): readonly (string | number)[] {
     const id = this.materialId();
+
+    if (id === null && this.pendingInvoicePrefill()) {
+      return ['/invoices/pending'];
+    }
 
     return id === null
       ? ['/materials']
@@ -227,6 +300,17 @@ export class MaterialFormPage implements OnInit {
       .subscribe({
         next: (options) => {
           this.purchaseOrders.set(options);
+
+          const prefill =
+            this.pendingInvoicePrefill();
+
+          if (prefill) {
+            this.applyPendingInvoicePrefill(
+              prefill,
+              options,
+            );
+            return;
+          }
 
           if (options.length === 1) {
             this.form.controls.purchaseOrderId.setValue(
@@ -353,6 +437,114 @@ export class MaterialFormPage implements OnInit {
       remark:
         material.remark ?? '',
     });
+  }
+
+
+  private readPendingInvoicePrefill():
+    PendingInvoiceMaterialPrefill | null {
+    const params =
+      this.route.snapshot.queryParamMap;
+
+    if (params.get('source') !== 'pending-invoice') {
+      return null;
+    }
+
+    const pendingInvoiceId = Number(
+      params.get('pendingInvoiceId') ?? '0',
+    );
+
+    const qty = Number(
+      params.get('qty') ?? '0',
+    );
+
+    const poNumber =
+      params.get('poNumber')?.trim() ?? '';
+
+    const materialNo =
+      params.get('materialNo')?.trim() ?? '';
+
+    if (
+      !Number.isInteger(pendingInvoiceId) ||
+      pendingInvoiceId <= 0 ||
+      !poNumber ||
+      !materialNo
+    ) {
+      this.errorMessage.set(
+        'The pending invoice material link is incomplete. Return to Pending Invoice Rows and try again.',
+      );
+      return null;
+    }
+
+    return {
+      pendingInvoiceId,
+      invoiceNumber:
+        params.get('invoiceNumber')?.trim() ?? '',
+      invoiceDate:
+        params.get('invoiceDate')?.trim() ?? '',
+      customerName:
+        params.get('customerName')?.trim() ?? '',
+      poNumber,
+      lineItem:
+        params.get('lineItem')?.trim() ?? '',
+      materialNo,
+      description:
+        params.get('description')?.trim() ?? '',
+      hsnSacCode:
+        params.get('hsnSacCode')?.trim() ?? '',
+      qty:
+        Number.isFinite(qty) && qty > 0
+          ? qty
+          : 0,
+    };
+  }
+
+  private applyPendingInvoicePrefill(
+    prefill: PendingInvoiceMaterialPrefill,
+    options: MaterialPurchaseOrderOption[],
+  ): void {
+    const matchingPurchaseOrder =
+      options.find(
+        (option) =>
+          this.normalizeKey(option.poNumber) ===
+          this.normalizeKey(prefill.poNumber),
+      );
+
+    if (matchingPurchaseOrder) {
+      this.form.controls.purchaseOrderId.setValue(
+        matchingPurchaseOrder.id,
+      );
+      this.missingPurchaseOrderNumber.set('');
+    } else {
+      this.form.controls.purchaseOrderId.setValue(0);
+      this.missingPurchaseOrderNumber.set(
+        prefill.poNumber,
+      );
+    }
+
+    this.form.controls.purchaseOrderId.disable({
+      emitEvent: false,
+    });
+
+    this.form.patchValue({
+      lineItem: prefill.lineItem,
+      materialNo: prefill.materialNo,
+      hsnSacCode: prefill.hsnSacCode,
+      shortDescription: prefill.description,
+      briefDescription: prefill.description,
+      qty: prefill.qty,
+      processStatus: 'Pending',
+      remark:
+        `Created from pending invoice ${prefill.invoiceNumber || 'row'} ` +
+        `(pending row ${prefill.pendingInvoiceId}). ` +
+        'Verify PO ordered quantity, unit, delivery date and value before saving.',
+    });
+  }
+
+  private normalizeKey(value: string): string {
+    return value
+      .trim()
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .toUpperCase();
   }
 
   private buildRequest():

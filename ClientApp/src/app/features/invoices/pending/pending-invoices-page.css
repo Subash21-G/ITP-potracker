@@ -646,3 +646,62 @@ tbody tr:last-child td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+.candidate-note--action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.candidate-note--action strong,
+.candidate-note--action span {
+  display: block;
+}
+
+.candidate-note--action strong {
+  margin-bottom: 4px;
+  color: #312e81;
+  font-size: 0.78rem;
+}
+
+.candidate-note--action span {
+  line-height: 1.5;
+}
+
+.button--create {
+  flex: 0 0 auto;
+  color: #ffffff;
+  background: #7c3aed;
+  border-color: #7c3aed;
+  white-space: nowrap;
+}
+
+.button--create:hover:not(:disabled) {
+  background: #6d28d9;
+  border-color: #6d28d9;
+}
+
+@media (max-width: 760px) {
+  .candidate-note--action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .button--create {
+    width: 100%;
+  }
+}
+
+
+.candidate-card:has(.candidate-match-button:disabled) .candidate-match-button {
+  cursor: not-allowed;
+}
+
+.candidate-match-button:disabled {
+  color: #7f1d1d;
+  background: #fee2e2;
+  border-color: #fecaca;
+  opacity: 1;
+}

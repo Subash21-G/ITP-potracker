@@ -118,7 +118,7 @@
 @if (successMessage()) {
   <section class="message message--success" role="status">
     <div>
-      <strong>Retry matching complete</strong>
+      <strong>Invoice matching update</strong>
       <p>{{ successMessage() }}</p>
     </div>
   </section>
@@ -282,6 +282,9 @@
             line {{ selectedPending.lineItem || '—' }},
             material {{ selectedPending.materialNo || '—' }},
             qty {{ selectedPending.qty | number: '1.0-2' }}.
+            @if (selectedPending.description) {
+              Description: {{ selectedPending.description }}.
+            }
           </p>
         </div>
 
@@ -318,9 +321,25 @@
         </button>
       </form>
 
-      <div class="candidate-note">
-        Best candidates are ranked using PO number, material number and
-        line item. A manual confirmation is required for mismatches.
+      <div class="candidate-note candidate-note--action">
+        <div>
+          <strong>Match an existing material or create the missing one</strong>
+          <span>
+            Best candidates are ranked using PO number, material number and
+            line item. Create a new material only after confirming that the
+            imported PO item is genuinely missing.
+          </span>
+        </div>
+
+        <button
+          appManageOnly
+          class="button button--create"
+          type="button"
+          [disabled]="matchingMaterialId() !== null"
+          (click)="createMissingMaterial(selectedPending)"
+        >
+          + Create Missing Material
+        </button>
       </div>
 
       <div class="candidate-list">
@@ -393,16 +412,25 @@
               type="button"
               [disabled]="
                 !candidate.hasEnoughBalance ||
+                !candidate.isExactPO ||
+                !candidate.isExactMaterial ||
+                !candidate.isExactLineItem ||
                 matchingMaterialId() !== null
               "
               (click)="manualMatch(candidate)"
             >
               @if (!candidate.hasEnoughBalance) {
                 Insufficient Balance
+              } @else if (
+                !candidate.isExactPO ||
+                !candidate.isExactMaterial ||
+                !candidate.isExactLineItem
+              ) {
+                Use Create Missing Material
               } @else if (matchingMaterialId() === candidate.materialId) {
                 Matching…
               } @else {
-                Match This Material
+                Match Exact Material
               }
             </button>
           </article>
