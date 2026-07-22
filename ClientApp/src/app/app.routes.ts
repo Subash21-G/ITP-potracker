@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+﻿import { Routes } from '@angular/router';
 
 import { authGuard } from './core/guards/auth.guard';
 import { manageAccessGuard } from './core/guards/manage-access.guard';
@@ -164,6 +164,21 @@ export const routes: Routes = [
   },
 
   // ============================================================
+  // ACCESS CONTROL
+  // ============================================================
+
+  {
+    path: 'access-denied',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/shared/access-denied/access-denied-page'
+      ).then(
+        (component) => component.AccessDeniedPage,
+      ),
+  },
+
+  // ============================================================
   // DEFAULT ROUTES
   // ============================================================
 
@@ -177,3 +192,4 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
 ];
+

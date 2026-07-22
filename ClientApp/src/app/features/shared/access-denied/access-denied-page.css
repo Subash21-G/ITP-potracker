@@ -1,0 +1,158 @@
+﻿:host {
+  display: block;
+}
+
+.access-page {
+  display: grid;
+  min-height: calc(100vh - 160px);
+  padding: 40px 20px;
+  place-items: center;
+}
+
+.access-card {
+  width: min(100%, 560px);
+  padding: 44px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+
+.access-icon {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 22px;
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: 900;
+  background: linear-gradient(
+    135deg,
+    #ef4444,
+    #b91c1c
+  );
+  border-radius: 22px;
+  box-shadow: 0 16px 32px rgba(220, 38, 38, 0.24);
+  place-items: center;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #dc2626;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(2rem, 5vw, 3rem);
+  letter-spacing: -0.04em;
+}
+
+.description {
+  max-width: 440px;
+  margin: 16px auto 0;
+  color: #475569;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.role-information {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 24px;
+  padding: 10px 14px;
+  gap: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+}
+
+.role-information span {
+  color: #9a3412;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.role-information strong {
+  color: #7c2d12;
+  font-size: 0.82rem;
+}
+
+.help-text {
+  margin: 22px auto 0;
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-decoration: none;
+  border-radius: 12px;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.actions a:hover {
+  transform: translateY(-1px);
+}
+
+.primary-button {
+  color: #ffffff;
+  background: #0f766e;
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.2);
+}
+
+.primary-button:hover {
+  background: #115e59;
+}
+
+.secondary-button {
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+
+.secondary-button:hover {
+  background: #f8fafc;
+}
+
+@media (max-width: 560px) {
+  .access-page {
+    padding: 24px 0;
+  }
+
+  .access-card {
+    padding: 34px 22px;
+    border-radius: 22px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions a {
+    width: 100%;
+  }
+}
