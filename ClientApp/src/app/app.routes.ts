@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { manageAccessGuard } from './core/guards/manage-access.guard';
 
 export const routes: Routes = [
   {
@@ -24,7 +25,7 @@ export const routes: Routes = [
 
   {
     path: 'materials/new',
-    canActivate: [authGuard],
+    canActivate: [authGuard, manageAccessGuard],
     loadComponent: () =>
       import('./features/materials/form/material-form-page').then(
         (component) => component.MaterialFormPage,
@@ -32,7 +33,7 @@ export const routes: Routes = [
   },
   {
     path: 'materials/:id/edit',
-    canActivate: [authGuard],
+    canActivate: [authGuard, manageAccessGuard],
     loadComponent: () =>
       import('./features/materials/form/material-form-page').then(
         (component) => component.MaterialFormPage,
@@ -40,7 +41,7 @@ export const routes: Routes = [
   },
   {
     path: 'materials/:id/files',
-    canActivate: [authGuard],
+    canActivate: [authGuard, manageAccessGuard],
     loadComponent: () =>
       import('./features/materials/files/material-files-page').then(
         (component) => component.MaterialFilesPage,
@@ -70,7 +71,7 @@ export const routes: Routes = [
 
   {
     path: 'purchase-orders/new',
-    canActivate: [authGuard],
+    canActivate: [authGuard, manageAccessGuard],
     loadComponent: () =>
       import('./features/purchase-orders/form/purchase-order-form-page').then(
         (component) => component.PurchaseOrderFormPage,
@@ -78,7 +79,7 @@ export const routes: Routes = [
   },
   {
     path: 'purchase-orders/:id/edit',
-    canActivate: [authGuard],
+    canActivate: [authGuard, manageAccessGuard],
     loadComponent: () =>
       import('./features/purchase-orders/form/purchase-order-form-page').then(
         (component) => component.PurchaseOrderFormPage,
@@ -86,7 +87,7 @@ export const routes: Routes = [
   },
   {
     path: 'purchase-orders/:id/manage',
-    canActivate: [authGuard],
+    canActivate: [authGuard, manageAccessGuard],
     loadComponent: () =>
       import(
         './features/purchase-orders/manage/purchase-order-manage-page'
@@ -123,3 +124,5 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
 ];
+
+

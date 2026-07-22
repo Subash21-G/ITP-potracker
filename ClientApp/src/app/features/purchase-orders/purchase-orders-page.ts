@@ -1,3 +1,4 @@
+﻿import { ManageOnlyDirective } from '../../core/directives/manage-only.directive';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -33,7 +34,7 @@ const EMPTY_SUMMARY: PurchaseOrderListSummary = {
 
 @Component({
   selector: 'app-purchase-orders-page',
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink],
+  imports: [ManageOnlyDirective, DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink],
   templateUrl: './purchase-orders-page.html',
   styleUrl: './purchase-orders-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -230,3 +231,4 @@ export class PurchaseOrdersPage {
     }
   }
 }
+

@@ -1,8 +1,8 @@
-<section class="material-details-page">
+﻿<section class="material-details-page">
   <header class="page-header">
     <div>
       <a class="back-link" routerLink="/materials">
-        ← Back to materials
+        â† Back to materials
       </a>
 
       <span class="eyebrow">Material record</span>
@@ -13,9 +13,9 @@
 
       @if (material(); as item) {
         <p>
-          PO {{ item.poNumber || '—' }}
-          · Line {{ item.lineItem || '—' }}
-          · {{ item.shortDescription || item.briefDescription || 'No description' }}
+          PO {{ item.poNumber || 'â€”' }}
+          Â· Line {{ item.lineItem || 'â€”' }}
+          Â· {{ item.shortDescription || item.briefDescription || 'No description' }}
         </p>
       }
     </div>
@@ -28,17 +28,17 @@
           (click)="loadMaterial()"
           [disabled]="isLoading()"
         >
-          {{ isLoading() ? 'Refreshing…' : 'Refresh' }}
+          {{ isLoading() ? 'Refreshingâ€¦' : 'Refresh' }}
         </button>
 
-        <a
+        <a appManageOnly
           class="edit-button"
           [routerLink]="['/materials', item.id, 'edit']"
         >
           Edit material
         </a>
 
-        <button
+        <button appManageOnly
           type="button"
           class="delete-button"
           (click)="deleteMaterial()"
@@ -49,7 +49,7 @@
               : 'Invoice or dispatch records are linked'
           "
         >
-          {{ isDeleting() ? 'Deleting…' : 'Delete' }}
+          {{ isDeleting() ? 'Deletingâ€¦' : 'Delete' }}
         </button>
       </div>
     }
@@ -129,57 +129,57 @@
         <div class="detail-grid">
           <div class="detail-item">
             <span>PO number</span>
-            <strong>{{ item.poNumber || '—' }}</strong>
+            <strong>{{ item.poNumber || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Handler</span>
-            <strong>{{ item.handler || '—' }}</strong>
+            <strong>{{ item.handler || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Purchaser</span>
-            <strong>{{ item.purchaserName || '—' }}</strong>
+            <strong>{{ item.purchaserName || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Line item</span>
-            <strong>{{ item.lineItem || '—' }}</strong>
+            <strong>{{ item.lineItem || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Item type</span>
-            <strong>{{ item.itemType || '—' }}</strong>
+            <strong>{{ item.itemType || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>HSN / SAC</span>
-            <strong>{{ item.hsnSacCode || '—' }}</strong>
+            <strong>{{ item.hsnSacCode || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item detail-item--wide">
             <span>Short description</span>
-            <strong>{{ item.shortDescription || '—' }}</strong>
+            <strong>{{ item.shortDescription || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item detail-item--wide">
             <span>Brief description</span>
-            <p>{{ item.briefDescription || '—' }}</p>
+            <p>{{ item.briefDescription || 'â€”' }}</p>
           </div>
 
           <div class="detail-item">
             <span>Receiver</span>
-            <strong>{{ item.receiver || '—' }}</strong>
+            <strong>{{ item.receiver || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Unloading point</span>
-            <strong>{{ item.unloadingPoint || '—' }}</strong>
+            <strong>{{ item.unloadingPoint || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Department</span>
-            <strong>{{ item.dep || '—' }}</strong>
+            <strong>{{ item.dep || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item">
@@ -239,7 +239,7 @@
 
           <div>
             <span>Assigned dashboard</span>
-            <strong>{{ item.assignedDashboard || '—' }}</strong>
+            <strong>{{ item.assignedDashboard || 'â€”' }}</strong>
           </div>
         </div>
       </article>
@@ -259,7 +259,7 @@
               {{
                 item.poDate
                   ? (item.poDate | date: 'dd MMM yyyy')
-                  : '—'
+                  : 'â€”'
               }}
             </strong>
           </div>
@@ -270,7 +270,7 @@
               {{
                 item.receivingDate
                   ? (item.receivingDate | date: 'dd MMM yyyy')
-                  : '—'
+                  : 'â€”'
               }}
             </strong>
           </div>
@@ -281,7 +281,7 @@
               {{
                 item.processStartDate
                   ? (item.processStartDate | date: 'dd MMM yyyy')
-                  : '—'
+                  : 'â€”'
               }}
             </strong>
           </div>
@@ -292,7 +292,7 @@
               {{
                 item.deliveryDate
                   ? (item.deliveryDate | date: 'dd MMM yyyy')
-                  : '—'
+                  : 'â€”'
               }}
             </strong>
           </div>
@@ -303,7 +303,7 @@
               {{
                 item.dispatchDate
                   ? (item.dispatchDate | date: 'dd MMM yyyy')
-                  : '—'
+                  : 'â€”'
               }}
             </strong>
           </div>
@@ -314,7 +314,7 @@
               {{
                 item.drawingUpdatedDate
                   ? (item.drawingUpdatedDate | date: 'dd MMM yyyy')
-                  : '—'
+                  : 'â€”'
               }}
             </strong>
           </div>
@@ -342,7 +342,7 @@
 
           <div class="detail-item">
             <span>Price unit</span>
-            <strong>{{ item.priceUnit || '—' }}</strong>
+            <strong>{{ item.priceUnit || 'â€”' }}</strong>
           </div>
 
           <div class="detail-item">
@@ -354,7 +354,7 @@
             <span>CGST</span>
             <strong>
               {{ item.cgstRate | number: '1.0-2' }}%
-              · {{ item.cgstAmount | number: '1.2-2' }}
+              Â· {{ item.cgstAmount | number: '1.2-2' }}
             </strong>
           </div>
 
@@ -362,7 +362,7 @@
             <span>SGST</span>
             <strong>
               {{ item.sgstRate | number: '1.0-2' }}%
-              · {{ item.sgstAmount | number: '1.2-2' }}
+              Â· {{ item.sgstAmount | number: '1.2-2' }}
             </strong>
           </div>
 
@@ -370,7 +370,7 @@
             <span>IGST</span>
             <strong>
               {{ item.igstRate | number: '1.0-2' }}%
-              · {{ item.igstAmount | number: '1.2-2' }}
+              Â· {{ item.igstAmount | number: '1.2-2' }}
             </strong>
           </div>
 
@@ -394,37 +394,37 @@
         <div class="detail-stack">
           <div>
             <span>RM grade</span>
-            <strong>{{ item.rmGrade || '—' }}</strong>
+            <strong>{{ item.rmGrade || 'â€”' }}</strong>
           </div>
 
           <div>
             <span>RM source</span>
-            <strong>{{ item.rmSource || '—' }}</strong>
+            <strong>{{ item.rmSource || 'â€”' }}</strong>
           </div>
 
           <div>
             <span>RM process</span>
-            <strong>{{ item.rmProcess || '—' }}</strong>
+            <strong>{{ item.rmProcess || 'â€”' }}</strong>
           </div>
 
           <div>
             <span>Surface finish</span>
-            <strong>{{ item.surfaceFinish || '—' }}</strong>
+            <strong>{{ item.surfaceFinish || 'â€”' }}</strong>
           </div>
 
           <div>
             <span>Machining type</span>
-            <strong>{{ item.machiningType || '—' }}</strong>
+            <strong>{{ item.machiningType || 'â€”' }}</strong>
           </div>
 
           <div>
             <span>Process time</span>
-            <strong>{{ item.processTime || '—' }}</strong>
+            <strong>{{ item.processTime || 'â€”' }}</strong>
           </div>
 
           <div>
             <span>Material process time</span>
-            <strong>{{ item.materialProcessTime || '—' }}</strong>
+            <strong>{{ item.materialProcessTime || 'â€”' }}</strong>
           </div>
         </div>
       </article>
@@ -436,7 +436,7 @@
             <h2>Documents</h2>
           </div>
 
-          <a
+          <a appManageOnly
             [routerLink]="[
               '/materials',
               item.id,
@@ -450,12 +450,12 @@
         <div class="file-list">
           <div>
             <span>Drawing number</span>
-            <strong>{{ item.drawingNo || '—' }}</strong>
+            <strong>{{ item.drawingNo || 'â€”' }}</strong>
           </div>
 
           <div>
             <span>Drawing version</span>
-            <strong>{{ item.drawingVersion || '—' }}</strong>
+            <strong>{{ item.drawingVersion || 'â€”' }}</strong>
           </div>
 
           @if (item.pdfFilePath) {
@@ -517,7 +517,7 @@
             {{
               item.updatedDate
                 ? (item.updatedDate | date: 'dd MMM yyyy, hh:mm a')
-                : '—'
+                : 'â€”'
             }}
           </span>
 
@@ -533,3 +533,5 @@
     </section>
   }
 </section>
+
+

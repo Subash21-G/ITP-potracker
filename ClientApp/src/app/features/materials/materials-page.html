@@ -1,4 +1,4 @@
-<section class="page-heading">
+﻿<section class="page-heading">
   <div>
     <p class="eyebrow">PURCHASE ORDER OPERATIONS</p>
     <h1>Materials</h1>
@@ -13,7 +13,7 @@
       <span>matching records</span>
     </div>
 
-    <a
+    <a appManageOnly
       class="button button--create"
       routerLink="/materials/new"
     >
@@ -117,7 +117,7 @@
         type="submit"
         [disabled]="loading()"
       >
-        {{ loading() ? 'Loading…' : 'Apply filters' }}
+        {{ loading() ? 'Loadingâ€¦' : 'Apply filters' }}
       </button>
     </div>
   </form>
@@ -156,7 +156,7 @@
     <div>
       <h2 id="results-title">Results</h2>
       <p>
-        Showing {{ showingFrom() | number }}–{{ showingTo() | number }}
+        Showing {{ showingFrom() | number }}â€“{{ showingTo() | number }}
         of {{ totalRecords() | number }}
       </p>
     </div>
@@ -210,7 +210,7 @@
                   material.purchaseOrderId
                 ]"
               >
-                {{ material.poNumber || '—' }}
+                {{ material.poNumber || 'â€”' }}
               </a>
 
               <span class="secondary-value">
@@ -218,7 +218,7 @@
               </span>
             </td>
 
-            <td>{{ material.lineItem || '—' }}</td>
+            <td>{{ material.lineItem || 'â€”' }}</td>
 
             <td>
               <a
@@ -228,7 +228,7 @@
                   material.id
                 ]"
               >
-                {{ material.materialNo || '—' }}
+                {{ material.materialNo || 'â€”' }}
               </a>
 
               @if (material.hsnSacCode) {
@@ -242,7 +242,7 @@
               class="description-cell"
               [title]="material.description"
             >
-              {{ material.description || '—' }}
+              {{ material.description || 'â€”' }}
             </td>
 
             <td class="number-cell">
@@ -281,7 +281,7 @@
             <td class="date-cell">
               {{
                 (material.deliveryDate | date: 'dd MMM yyyy') ||
-                  '—'
+                  'â€”'
               }}
             </td>
 
@@ -301,7 +301,7 @@
           <tr>
             <td class="empty-state" colspan="12">
               @if (loading()) {
-                Loading materials…
+                Loading materialsâ€¦
               } @else {
                 No materials match the selected filters.
               }
@@ -341,3 +341,4 @@
     </div>
   </div>
 </section>
+

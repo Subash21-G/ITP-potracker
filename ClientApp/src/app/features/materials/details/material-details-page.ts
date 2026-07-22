@@ -1,3 +1,4 @@
+﻿import { ManageOnlyDirective } from '../../../core/directives/manage-only.directive';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -22,7 +23,7 @@ import {
 
 @Component({
   selector: 'app-material-details-page',
-  imports: [
+  imports: [ManageOnlyDirective, 
     CommonModule,
     RouterLink,
   ],
@@ -197,3 +198,4 @@ export class MaterialDetailsPage implements OnInit {
     return parts[parts.length - 1] || path;
   }
 }
+

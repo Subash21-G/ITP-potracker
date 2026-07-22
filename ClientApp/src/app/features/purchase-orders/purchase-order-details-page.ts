@@ -1,3 +1,4 @@
+﻿import { ManageOnlyDirective } from '../../core/directives/manage-only.directive';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -17,7 +18,7 @@ import { PurchaseOrdersApiService } from '../../core/services/purchase-orders-ap
 
 @Component({
   selector: 'app-purchase-order-details-page',
-  imports: [DatePipe, DecimalPipe, RouterLink],
+  imports: [ManageOnlyDirective, DatePipe, DecimalPipe, RouterLink],
   templateUrl: './purchase-order-details-page.html',
   styleUrl: './purchase-order-details-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -170,3 +171,4 @@ export class PurchaseOrderDetailsPage {
       : 'Purchase Order details could not be loaded. Please try again.';
   }
 }
+

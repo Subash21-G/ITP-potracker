@@ -1,3 +1,4 @@
+﻿import { ManageOnlyDirective } from '../../core/directives/manage-only.directive';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -18,7 +19,7 @@ import { MaterialsApiService } from '../../core/services/materials-api.service';
 
 @Component({
   selector: 'app-materials-page',
-  imports: [
+  imports: [ManageOnlyDirective, 
     DatePipe,
     DecimalPipe,
     ReactiveFormsModule,
@@ -201,3 +202,4 @@ export class MaterialsPage {
       : 'Materials could not be loaded. Please try again.';
   }
 }
+

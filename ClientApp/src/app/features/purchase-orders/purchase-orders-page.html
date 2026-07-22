@@ -1,4 +1,4 @@
-<section class="page-heading">
+﻿<section class="page-heading">
   <div>
     <p class="eyebrow">PURCHASE ORDER MANAGEMENT</p>
     <h1>Purchase Orders</h1>
@@ -8,7 +8,7 @@
   </div>
 
   <div class="heading-actions">
-    <a
+    <a appManageOnly
       class="button button--create"
       [routerLink]="['/purchase-orders/new']"
     >
@@ -147,7 +147,7 @@
 
     <div class="filter-action">
       <button class="button button--primary" type="submit" [disabled]="loading()">
-        {{ loading() ? 'Loading…' : 'Apply filters' }}
+        {{ loading() ? 'Loadingâ€¦' : 'Apply filters' }}
       </button>
     </div>
   </form>
@@ -173,7 +173,7 @@
     <div>
       <h2 id="po-results-title">Purchase Order list</h2>
       <p>
-        Showing {{ showingFrom() | number }}–{{ showingTo() | number }} of
+        Showing {{ showingFrom() | number }}â€“{{ showingTo() | number }} of
         {{ totalRecords() | number }}
       </p>
     </div>
@@ -222,10 +222,10 @@
               </span>
             </td>
             <td class="date-cell">
-              {{ (purchaseOrder.poDate | date: 'dd MMM yyyy') || '—' }}
+              {{ (purchaseOrder.poDate | date: 'dd MMM yyyy') || 'â€”' }}
             </td>
             <td class="date-cell">
-              {{ (purchaseOrder.poReceivedDate | date: 'dd MMM yyyy') || '—' }}
+              {{ (purchaseOrder.poReceivedDate | date: 'dd MMM yyyy') || 'â€”' }}
             </td>
             <td>
               <span [class]="statusClass(purchaseOrder.status)">
@@ -292,11 +292,11 @@
             <td class="date-cell">
               @if (purchaseOrder.earliestDeliveryDate || purchaseOrder.latestDeliveryDate) {
                 <span class="delivery-date">
-                  {{ (purchaseOrder.earliestDeliveryDate | date: 'dd MMM yyyy') || '—' }}
+                  {{ (purchaseOrder.earliestDeliveryDate | date: 'dd MMM yyyy') || 'â€”' }}
                 </span>
                 <span class="secondary-value">to</span>
                 <span class="delivery-date">
-                  {{ (purchaseOrder.latestDeliveryDate | date: 'dd MMM yyyy') || '—' }}
+                  {{ (purchaseOrder.latestDeliveryDate | date: 'dd MMM yyyy') || 'â€”' }}
                 </span>
               } @else {
                 <span class="secondary-value">No delivery dates</span>
@@ -324,7 +324,7 @@
                 >
                   View
                 </a>
-                <a
+                <a appManageOnly
                   class="button button--table button--manage"
                   [routerLink]="[
                     '/purchase-orders',
@@ -334,7 +334,7 @@
                 >
                   Manage
                 </a>
-                <a
+                <a appManageOnly
                   class="button button--table button--edit"
                   [routerLink]="[
                     '/purchase-orders',
@@ -351,7 +351,7 @@
           <tr>
             <td class="empty-state" colspan="12">
               @if (loading()) {
-                Loading Purchase Orders…
+                Loading Purchase Ordersâ€¦
               } @else {
                 No Purchase Orders match the selected filters.
               }
@@ -384,3 +384,4 @@
     </div>
   </div>
 </section>
+
