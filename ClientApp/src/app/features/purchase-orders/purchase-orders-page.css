@@ -592,3 +592,60 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Purchase Order CRUD actions */
+.button--create {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0f766e, #0d9488);
+  border-color: #0f766e;
+  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.22);
+}
+
+.button--create:hover {
+  background: linear-gradient(135deg, #115e59, #0f766e);
+  transform: translateY(-1px);
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 210px;
+  white-space: nowrap;
+}
+
+.button--view {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.button--view:hover {
+  background: #dbeafe;
+}
+
+.button--manage {
+  color: #5b21b6;
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.button--manage:hover {
+  background: #ede9fe;
+}
+
+.button--edit {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.button--edit:hover {
+  background: #fef3c7;
+}
+
+@media (max-width: 680px) {
+  .row-actions {
+    min-width: 0;
+  }
+}

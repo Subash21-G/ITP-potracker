@@ -8,6 +8,12 @@
   </div>
 
   <div class="heading-actions">
+    <a
+      class="button button--create"
+      [routerLink]="['/purchase-orders/new']"
+    >
+      + Create Purchase Order
+    </a>
     <a class="button button--quiet" href="/PurchaseOrder/Index">MVC Purchase Orders</a>
     <a class="button button--primary" [href]="exportUrl()">Export filtered Excel</a>
   </div>
@@ -311,12 +317,34 @@
               }
             </td>
             <td>
-              <a
-                class="button button--table"
-                [routerLink]="['/purchase-orders', purchaseOrder.purchaseOrderId]"
-              >
-                View
-              </a>
+              <div class="row-actions">
+                <a
+                  class="button button--table button--view"
+                  [routerLink]="['/purchase-orders', purchaseOrder.purchaseOrderId]"
+                >
+                  View
+                </a>
+                <a
+                  class="button button--table button--manage"
+                  [routerLink]="[
+                    '/purchase-orders',
+                    purchaseOrder.purchaseOrderId,
+                    'manage'
+                  ]"
+                >
+                  Manage
+                </a>
+                <a
+                  class="button button--table button--edit"
+                  [routerLink]="[
+                    '/purchase-orders',
+                    purchaseOrder.purchaseOrderId,
+                    'edit'
+                  ]"
+                >
+                  Edit
+                </a>
+              </div>
             </td>
           </tr>
         } @empty {

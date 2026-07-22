@@ -1,0 +1,147 @@
+<section class="pom-page">
+  @if (loading()) {
+    <div class="pom-state-card">
+      <div class="pom-spinner" aria-hidden="true"></div>
+      <h2>Loading Purchase Order</h2>
+      <p>Please wait while the record is prepared.</p>
+    </div>
+  } @else if (purchaseOrder(); as po) {
+    <header class="pom-hero">
+      <div>
+        <span class="pom-kicker">Purchase order management</span>
+        <h1>Manage {{ po.poNumber }}</h1>
+        <p>Edit the PO header, view or replace its PDF, and safely delete empty Purchase Orders.</p>
+      </div>
+
+      <div class="pom-hero-actions">
+        <a class="pom-btn pom-btn-light" [routerLink]="['/purchase-orders', po.id]">
+          View Details
+        </a>
+        <a class="pom-btn pom-btn-primary" [routerLink]="['/purchase-orders', po.id, 'edit']">
+          Edit Purchase Order
+        </a>
+      </div>
+    </header>
+
+    @if (successMessage()) {
+      <div class="pom-alert pom-alert-success">{{ successMessage() }}</div>
+    }
+
+    @if (errorMessage()) {
+      <div class="pom-alert pom-alert-danger">{{ errorMessage() }}</div>
+    }
+
+    <section class="pom-summary-grid">
+      <article class="pom-summary-card">
+        <span>PO ID</span>
+        <strong>{{ po.id }}</strong>
+      </article>
+      <article class="pom-summary-card">
+        <span>Handler</span>
+        <strong>{{ po.buyerContactPerson || 'Unassigned' }}</strong>
+      </article>
+      <article class="pom-summary-card">
+        <span>Materials</span>
+        <strong>{{ po.materialCount }}</strong>
+      </article>
+      <article class="pom-summary-card">
+        <span>Total PO Value</span>
+        <strong>{{ po.totalValue | number: '1.2-2' }}</strong>
+      </article>
+    </section>
+
+    <section class="pom-grid">
+      <article class="pom-card">
+        <div class="pom-card-head">
+          <div>
+            <span class="pom-kicker">PO document</span>
+            <h2>View or Replace PDF</h2>
+            <p>Only PDF files up to 50 MB are accepted.</p>
+          </div>
+          <span class="pom-status" [class.pom-status-ready]="po.pdfFilePath">
+            {{ po.pdfFilePath ? 'PDF available' : 'No PDF' }}
+          </span>
+        </div>
+
+        <div class="pom-current-file">
+          <div class="pom-file-icon">PDF</div>
+          <div>
+            <span>Current document</span>
+            <strong>{{ fileName(po.pdfFilePath) }}</strong>
+          </div>
+          @if (po.pdfFilePath) {
+            <a class="pom-inline-link" [href]="po.pdfFilePath" target="_blank" rel="noopener">
+              Open PDF
+            </a>
+          }
+        </div>
+
+        <label class="pom-upload-box" for="poPdfInput">
+          <input
+            #pdfInput
+            id="poPdfInput"
+            type="file"
+            accept=".pdf,application/pdf"
+            (change)="onPdfSelected($event)"
+          />
+          <span class="pom-upload-title">Choose replacement PDF</span>
+          <small>{{ selectedPdf()?.name || 'No replacement file selected' }}</small>
+        </label>
+
+        <button
+          type="button"
+          class="pom-btn pom-btn-primary pom-full-button"
+          [disabled]="!selectedPdf() || uploading()"
+          (click)="uploadPdf(pdfInput)"
+        >
+          {{ uploading() ? 'Uploading PDF...' : po.pdfFilePath ? 'Replace PO PDF' : 'Upload PO PDF' }}
+        </button>
+      </article>
+
+      <article class="pom-card pom-danger-card">
+        <div class="pom-card-head">
+          <div>
+            <span class="pom-kicker pom-danger-kicker">Delete protection</span>
+            <h2>Delete Purchase Order</h2>
+            <p>A Purchase Order can be deleted only when it has no linked materials.</p>
+          </div>
+        </div>
+
+        @if (po.canDelete) {
+          <div class="pom-delete-status pom-delete-ready">
+            <strong>Ready to delete</strong>
+            <span>No materials are linked to this Purchase Order.</span>
+          </div>
+        } @else {
+          <div class="pom-delete-status pom-delete-blocked">
+            <strong>Deletion blocked</strong>
+            <span>{{ po.materialCount }} material(s) are linked. Remove or move them before deleting this PO.</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="pom-btn pom-btn-danger pom-full-button"
+          [disabled]="!po.canDelete || deleting()"
+          (click)="deletePurchaseOrder()"
+        >
+          {{ deleting() ? 'Deleting...' : 'Delete Purchase Order' }}
+        </button>
+      </article>
+    </section>
+
+    <footer class="pom-footer-actions">
+      <a class="pom-btn pom-btn-light" routerLink="/purchase-orders">Back to Purchase Orders</a>
+      <a class="pom-btn pom-btn-primary" [routerLink]="['/purchase-orders', po.id, 'edit']">
+        Edit Purchase Order
+      </a>
+    </footer>
+  } @else {
+    <div class="pom-state-card pom-error-state">
+      <div class="pom-error-icon">!</div>
+      <h2>Purchase Order unavailable</h2>
+      <p>{{ errorMessage() || 'The Purchase Order could not be loaded.' }}</p>
+      <a class="pom-btn pom-btn-primary" routerLink="/purchase-orders">Back to Purchase Orders</a>
+    </div>
+  }
+</section>

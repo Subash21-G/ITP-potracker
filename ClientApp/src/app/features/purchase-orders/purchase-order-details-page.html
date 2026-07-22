@@ -1,4 +1,4 @@
-<section class="page-heading">
+﻿<section class="page-heading">
   <div>
     <p class="eyebrow">PURCHASE ORDER MANAGEMENT</p>
     <h1>Purchase Order Details</h1>
@@ -7,7 +7,19 @@
     </p>
   </div>
 
-  <a class="button button--quiet" routerLink="/purchase-orders">Back to Purchase Orders</a>
+  <a
+  class="manage-po-button"
+  data-manage-po-button="true"
+  [routerLink]="[
+    '/purchase-orders',
+    purchaseOrderId,
+    'manage'
+  ]"
+>
+  Manage PO
+</a>
+
+<a class="button button--quiet" routerLink="/purchase-orders">Back to Purchase Orders</a>
 </section>
 
 @if (errorMessage()) {
@@ -186,7 +198,7 @@
         <span class="section-kicker">Linked materials</span>
         <h2 id="linked-materials-title">Material list</h2>
         <p>
-          Showing {{ showingFrom() | number }}–{{ showingTo() | number }} of
+          Showing {{ showingFrom() | number }}â€“{{ showingTo() | number }} of
           {{ materialTotalRecords() | number }}
         </p>
       </div>
@@ -226,10 +238,10 @@
         <tbody>
           @for (material of materials(); track material.id) {
             <tr [class.overdue-row]="material.isOverdue">
-              <td>{{ material.lineItem || '—' }}</td>
+              <td>{{ material.lineItem || 'â€”' }}</td>
               <td>
                 <a class="material-number" [href]="'/Material/Details/' + material.id">
-                  {{ material.materialNo || '—' }}
+                  {{ material.materialNo || 'â€”' }}
                 </a>
                 @if (material.drawingNo) {
                   <span class="secondary-value">Drg: {{ material.drawingNo }}</span>
@@ -239,7 +251,7 @@
                 }
               </td>
               <td class="description-cell" [title]="material.description">
-                {{ material.description || '—' }}
+                {{ material.description || 'â€”' }}
               </td>
               <td class="number-cell number-cell--strong">
                 {{ material.quantity | number: '1.0-2' }}
@@ -282,7 +294,7 @@
             <tr>
               <td class="empty-state" colspan="11">
                 @if (loading()) {
-                  Loading materials…
+                  Loading materialsâ€¦
                 } @else {
                   No materials are linked to this Purchase Order.
                 }
@@ -316,5 +328,6 @@
     </div>
   </section>
 } @else if (loading()) {
-  <section class="panel loading-panel" aria-live="polite">Loading Purchase Order details…</section>
+  <section class="panel loading-panel" aria-live="polite">Loading Purchase Order detailsâ€¦</section>
 }
+

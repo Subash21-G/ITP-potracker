@@ -1,0 +1,167 @@
+<section class="purchase-order-form-page">
+  <header class="page-header">
+    <div>
+      <a
+        class="back-link"
+        [routerLink]="cancelLink()"
+      >
+        ← Cancel and go back
+      </a>
+
+      <span class="eyebrow">
+        {{ isEditMode() ? 'Update PO' : 'New PO' }}
+      </span>
+
+      <h1>
+        {{
+          isEditMode()
+            ? 'Edit purchase order'
+            : 'Create purchase order'
+        }}
+      </h1>
+
+      <p>
+        Enter the purchaser, PO number, PO date,
+        received date and buyer contact person.
+      </p>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div
+      class="message message--error"
+      role="alert"
+    >
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-card">
+      Loading purchase order form…
+    </div>
+  } @else {
+    <form
+      class="purchase-order-form"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      novalidate
+    >
+      <section class="form-card">
+        <header>
+          <div>
+            <span class="eyebrow">Purchase order</span>
+            <h2>PO header details</h2>
+          </div>
+        </header>
+
+        <div class="form-grid">
+          <label class="field field--wide">
+            <span>Purchaser *</span>
+
+            <select formControlName="purchaserId">
+              <option [ngValue]="0">
+                Select purchaser
+              </option>
+
+              @for (
+                purchaser of purchasers();
+                track purchaser.id
+              ) {
+                <option [ngValue]="purchaser.id">
+                  {{ purchaser.purchaserName }}
+                </option>
+              }
+            </select>
+
+            @if (fieldInvalid('purchaserId')) {
+              <small>Please select a purchaser.</small>
+            }
+          </label>
+
+          <label class="field field--wide">
+            <span>PO number *</span>
+
+            <input
+              type="text"
+              formControlName="poNumber"
+              placeholder="Enter purchase order number"
+              autocomplete="off"
+            />
+
+            @if (fieldInvalid('poNumber')) {
+              <small>
+                PO number is required and must not exceed
+                100 characters.
+              </small>
+            }
+          </label>
+
+          <label class="field">
+            <span>PO date</span>
+            <input
+              type="date"
+              formControlName="poDate"
+            />
+          </label>
+
+          <label class="field">
+            <span>Received date / Date of emission</span>
+            <input
+              type="date"
+              formControlName="receivedDate"
+            />
+          </label>
+
+          <label class="field field--full">
+            <span>Buyer contact person / Handler</span>
+            <input
+              type="text"
+              formControlName="buyerContactPerson"
+              placeholder="Enter buyer or handler name"
+              maxlength="200"
+            />
+
+            @if (fieldInvalid('buyerContactPerson')) {
+              <small>
+                Buyer contact person must not exceed
+                200 characters.
+              </small>
+            }
+          </label>
+        </div>
+      </section>
+
+      <section class="info-card">
+        <strong>After saving this PO</strong>
+        <p>
+          You can open the Purchase Order Details page,
+          upload its PDF and manage linked material rows.
+        </p>
+      </section>
+
+      <footer class="form-actions">
+        <a
+          class="button button--quiet"
+          [routerLink]="cancelLink()"
+        >
+          Cancel
+        </a>
+
+        <button
+          class="button button--primary"
+          type="submit"
+          [disabled]="isSaving()"
+        >
+          {{
+            isSaving()
+              ? 'Saving…'
+              : isEditMode()
+                ? 'Save changes'
+                : 'Create purchase order'
+          }}
+        </button>
+      </footer>
+    </form>
+  }
+</section>

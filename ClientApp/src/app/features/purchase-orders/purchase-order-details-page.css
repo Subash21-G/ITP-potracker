@@ -520,3 +520,34 @@ tbody tr:hover {
     width: 100%;
   }
 }
+/* ============================================================
+   MANAGE PURCHASE ORDER BUTTON
+   ============================================================ */
+.manage-po-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(109, 40, 217, 0.25);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.manage-po-button:hover {
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(109, 40, 217, 0.32);
+}
+
+.manage-po-button:focus-visible {
+  outline: 3px solid rgba(124, 58, 237, 0.28);
+  outline-offset: 3px;
+}

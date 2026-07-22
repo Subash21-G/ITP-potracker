@@ -20,16 +20,13 @@ export const routes: Routes = [
 
   // ============================================================
   // MATERIALS
-  // Specific routes must stay before materials/:id.
   // ============================================================
 
   {
     path: 'materials/new',
     canActivate: [authGuard],
     loadComponent: () =>
-      import(
-        './features/materials/form/material-form-page'
-      ).then(
+      import('./features/materials/form/material-form-page').then(
         (component) => component.MaterialFormPage,
       ),
   },
@@ -37,9 +34,7 @@ export const routes: Routes = [
     path: 'materials/:id/edit',
     canActivate: [authGuard],
     loadComponent: () =>
-      import(
-        './features/materials/form/material-form-page'
-      ).then(
+      import('./features/materials/form/material-form-page').then(
         (component) => component.MaterialFormPage,
       ),
   },
@@ -47,9 +42,7 @@ export const routes: Routes = [
     path: 'materials/:id/files',
     canActivate: [authGuard],
     loadComponent: () =>
-      import(
-        './features/materials/files/material-files-page'
-      ).then(
+      import('./features/materials/files/material-files-page').then(
         (component) => component.MaterialFilesPage,
       ),
   },
@@ -57,9 +50,7 @@ export const routes: Routes = [
     path: 'materials/:id',
     canActivate: [authGuard],
     loadComponent: () =>
-      import(
-        './features/materials/details/material-details-page'
-      ).then(
+      import('./features/materials/details/material-details-page').then(
         (component) => component.MaterialDetailsPage,
       ),
   },
@@ -74,8 +65,35 @@ export const routes: Routes = [
 
   // ============================================================
   // PURCHASE ORDERS
+  // Keep specific routes before purchase-orders/:id.
   // ============================================================
 
+  {
+    path: 'purchase-orders/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/purchase-orders/form/purchase-order-form-page').then(
+        (component) => component.PurchaseOrderFormPage,
+      ),
+  },
+  {
+    path: 'purchase-orders/:id/edit',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/purchase-orders/form/purchase-order-form-page').then(
+        (component) => component.PurchaseOrderFormPage,
+      ),
+  },
+  {
+    path: 'purchase-orders/:id/manage',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/purchase-orders/manage/purchase-order-manage-page'
+      ).then(
+        (component) => component.PurchaseOrderManagePage,
+      ),
+  },
   {
     path: 'purchase-orders/:id',
     canActivate: [authGuard],
@@ -90,9 +108,7 @@ export const routes: Routes = [
     path: 'purchase-orders',
     canActivate: [authGuard],
     loadComponent: () =>
-      import(
-        './features/purchase-orders/purchase-orders-page'
-      ).then(
+      import('./features/purchase-orders/purchase-orders-page').then(
         (component) => component.PurchaseOrdersPage,
       ),
   },
