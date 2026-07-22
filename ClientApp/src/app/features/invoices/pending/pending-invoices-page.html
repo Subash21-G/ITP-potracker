@@ -1,0 +1,421 @@
+<section class="page-heading">
+  <div>
+    <a class="back-link" routerLink="/invoices">← Back to invoices</a>
+    <p class="eyebrow">INVOICE MATCHING</p>
+    <h1>Pending Invoice Rows</h1>
+    <p class="page-heading__description">
+      Review imported rows that could not be safely matched to PO materials.
+    </p>
+  </div>
+
+  <div class="heading-actions">
+    <button
+      appManageOnly
+      class="button button--primary"
+      type="button"
+      [disabled]="retrying() || loading() || rowCount() === 0"
+      (click)="retryMatching()"
+    >
+      {{ retrying() ? 'Retrying…' : 'Retry Matching' }}
+    </button>
+
+    <a
+      appManageOnly
+      class="button button--quiet"
+      href="/VyaparInvoiceImport/PendingItems"
+    >
+      MVC Pending List
+    </a>
+  </div>
+</section>
+
+<section class="summary-grid" aria-label="Pending invoice summary">
+  <article class="summary-card summary-card--red">
+    <span>Pending Rows</span>
+    <strong>{{ rowCount() | number }}</strong>
+    <small>Rows waiting for material match</small>
+  </article>
+
+  <article class="summary-card summary-card--violet">
+    <span>Invoices</span>
+    <strong>{{ invoiceCount() | number }}</strong>
+    <small>Invoices with pending rows</small>
+  </article>
+
+  <article class="summary-card summary-card--blue">
+    <span>Purchase Orders</span>
+    <strong>{{ purchaseOrderCount() | number }}</strong>
+    <small>Referenced PO numbers</small>
+  </article>
+
+  <article class="summary-card summary-card--green">
+    <span>Total Quantity</span>
+    <strong>{{ totalQuantity() | number: '1.0-2' }}</strong>
+    <small>Quantity waiting for match</small>
+  </article>
+
+  <article class="summary-card summary-card--amber">
+    <span>Pending Amount</span>
+    <strong>₹{{ totalAmount() | number: '1.2-2' }}</strong>
+    <small>Value in pending rows</small>
+  </article>
+</section>
+
+<section class="panel filter-panel" aria-labelledby="pending-filter-title">
+  <div class="panel__heading">
+    <div>
+      <h2 id="pending-filter-title">Search pending rows</h2>
+      <p>
+        Search by invoice number, PO number, material number or line item.
+      </p>
+    </div>
+
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="loading()"
+      (click)="clearFilters()"
+    >
+      Clear filters
+    </button>
+  </div>
+
+  <form
+    class="filter-grid"
+    [formGroup]="filters"
+    (ngSubmit)="applyFilters()"
+  >
+    <label class="field field--wide">
+      <span>Search</span>
+      <input
+        type="search"
+        formControlName="search"
+        placeholder="Invoice, PO, material or line item"
+      />
+    </label>
+
+    <label class="field">
+      <span>Maximum rows</span>
+      <select formControlName="take">
+        <option [ngValue]="100">100</option>
+        <option [ngValue]="500">500</option>
+        <option [ngValue]="1000">1000</option>
+      </select>
+    </label>
+
+    <div class="filter-action">
+      <button
+        class="button button--primary"
+        type="submit"
+        [disabled]="loading()"
+      >
+        {{ loading() ? 'Loading…' : 'Apply filters' }}
+      </button>
+    </div>
+  </form>
+</section>
+
+@if (successMessage()) {
+  <section class="message message--success" role="status">
+    <div>
+      <strong>Retry matching complete</strong>
+      <p>{{ successMessage() }}</p>
+    </div>
+  </section>
+}
+
+@if (errorMessage()) {
+  <section class="message message--error" role="alert">
+    <div>
+      <strong>Pending rows could not be loaded</strong>
+      <p>{{ errorMessage() }}</p>
+    </div>
+
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="loading()"
+      (click)="retryLoad()"
+    >
+      Retry
+    </button>
+  </section>
+}
+
+<section class="panel results-panel" aria-labelledby="pending-results-title">
+  <div class="panel__heading">
+    <div>
+      <h2 id="pending-results-title">Unmatched invoice register</h2>
+      <p>{{ rowCount() | number }} pending rows displayed</p>
+    </div>
+
+    @if (loading()) {
+      <span class="loading-label">Loading…</span>
+    }
+  </div>
+
+  <div class="table-wrap" [class.table-wrap--loading]="loading()">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Invoice</th>
+          <th>Invoice Date</th>
+          <th>PO Number</th>
+          <th>Line Item</th>
+          <th>Material Number</th>
+          <th class="number-cell">Quantity</th>
+          <th class="number-cell">Price Unit</th>
+          <th class="number-cell">GST</th>
+          <th class="number-cell">Amount</th>
+          <th>Mismatch Reason</th>
+          <th>Imported</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (item of items(); track item.id; let rowIndex = $index) {
+          <tr>
+            <td class="row-number">{{ rowIndex + 1 }}</td>
+
+            <td>
+              <span class="invoice-number">
+                {{ item.invoiceNumber || '—' }}
+              </span>
+            </td>
+
+            <td class="date-cell">
+              {{ (item.invoiceDate | date: 'dd MMM yyyy') || '—' }}
+            </td>
+
+            <td>
+              <span class="primary-value">{{ item.poNumber || '—' }}</span>
+            </td>
+
+            <td>{{ item.lineItem || '—' }}</td>
+
+            <td>
+              <span class="material-number">
+                {{ item.materialNo || '—' }}
+              </span>
+            </td>
+
+            <td class="number-cell number-cell--strong">
+              {{ item.qty | number: '1.0-2' }}
+            </td>
+
+            <td class="number-cell">
+              ₹{{ item.priceUnit | number: '1.2-2' }}
+            </td>
+
+            <td class="number-cell">
+              ₹{{ item.gstAmount | number: '1.2-2' }}
+            </td>
+
+            <td class="number-cell number-cell--strong">
+              ₹{{ item.amount | number: '1.2-2' }}
+            </td>
+
+            <td>
+              <div class="reason-cell">
+                <span class="status-pill">Pending</span>
+                <span>
+                  {{ item.errorMessage || 'No matching material was found.' }}
+                </span>
+              </div>
+            </td>
+
+            <td class="date-cell">
+              {{ item.createdDate | date: 'dd MMM yyyy, hh:mm a' }}
+            </td>
+
+            <td>
+              <button
+                appManageOnly
+                class="button button--table"
+                type="button"
+                (click)="openManualMatch(item)"
+              >
+                Find Match
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td class="empty-state" colspan="13">
+              <strong>No pending invoice rows found</strong>
+              <span>
+                All imported rows are matched, or the current search has no
+                results.
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+@if (selectedPendingItem(); as selectedPending) {
+  <div
+    class="match-modal-backdrop"
+    role="presentation"
+    (click)="closeManualMatch()"
+  >
+    <section
+      class="match-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="manual-match-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="match-modal__header">
+        <div>
+          <p class="eyebrow">MANUAL MATCH</p>
+          <h2 id="manual-match-title">
+            Find PO material for {{ selectedPending.invoiceNumber }}
+          </h2>
+          <p>
+            Imported: PO {{ selectedPending.poNumber || '—' }},
+            line {{ selectedPending.lineItem || '—' }},
+            material {{ selectedPending.materialNo || '—' }},
+            qty {{ selectedPending.qty | number: '1.0-2' }}.
+          </p>
+        </div>
+
+        <button
+          class="modal-close"
+          type="button"
+          aria-label="Close manual match"
+          [disabled]="matchingMaterialId() !== null"
+          (click)="closeManualMatch()"
+        >
+          ×
+        </button>
+      </header>
+
+      <form
+        class="candidate-search"
+        (ngSubmit)="searchCandidates()"
+      >
+        <label class="field">
+          <span>Search all PO materials</span>
+          <input
+            type="search"
+            [formControl]="candidateSearch"
+            placeholder="PO number, material, line item or description"
+          />
+        </label>
+
+        <button
+          class="button button--primary"
+          type="submit"
+          [disabled]="loadingCandidates()"
+        >
+          {{ loadingCandidates() ? 'Searching…' : 'Search' }}
+        </button>
+      </form>
+
+      <div class="candidate-note">
+        Best candidates are ranked using PO number, material number and
+        line item. A manual confirmation is required for mismatches.
+      </div>
+
+      <div class="candidate-list">
+        @for (candidate of candidates(); track candidate.materialId) {
+          <article
+            class="candidate-card"
+            [class.candidate-card--unsafe]="!candidate.hasEnoughBalance"
+          >
+            <div class="candidate-card__top">
+              <div>
+                <strong>
+                  PO {{ candidate.poNumber || '—' }}
+                </strong>
+                <span>
+                  Line {{ candidate.lineItem || '—' }} ·
+                  Material {{ candidate.materialNo || '—' }}
+                </span>
+              </div>
+
+              <span class="score-pill">
+                Score {{ candidate.matchScore }}
+              </span>
+            </div>
+
+            <p class="candidate-description">
+              {{ candidate.shortDescription || 'No material description' }}
+            </p>
+
+            <div class="candidate-quantities">
+              <span>
+                PO Qty
+                <strong>{{ candidate.poQty | number: '1.0-2' }}</strong>
+              </span>
+              <span>
+                Invoiced
+                <strong>{{ candidate.invoiceQty | number: '1.0-2' }}</strong>
+              </span>
+              <span>
+                Balance
+                <strong>{{ candidate.balanceQty | number: '1.0-2' }}</strong>
+              </span>
+              <span>
+                Dispatched
+                <strong>{{ candidate.dispatchQty | number: '1.0-2' }}</strong>
+              </span>
+            </div>
+
+            <div class="candidate-flags">
+              <span [class.flag--match]="candidate.isExactPO">
+                {{ candidate.isExactPO ? 'PO exact' : 'PO differs' }}
+              </span>
+              <span [class.flag--match]="candidate.isExactMaterial">
+                {{
+                  candidate.isExactMaterial
+                    ? 'Material exact'
+                    : 'Material differs'
+                }}
+              </span>
+              <span [class.flag--match]="candidate.isExactLineItem">
+                {{
+                  candidate.isExactLineItem
+                    ? 'Line exact'
+                    : 'Line differs'
+                }}
+              </span>
+            </div>
+
+            <button
+              class="button button--primary candidate-match-button"
+              type="button"
+              [disabled]="
+                !candidate.hasEnoughBalance ||
+                matchingMaterialId() !== null
+              "
+              (click)="manualMatch(candidate)"
+            >
+              @if (!candidate.hasEnoughBalance) {
+                Insufficient Balance
+              } @else if (matchingMaterialId() === candidate.materialId) {
+                Matching…
+              } @else {
+                Match This Material
+              }
+            </button>
+          </article>
+        } @empty {
+          <div class="candidate-empty">
+            <strong>No candidates found</strong>
+            <span>
+              Search using the correct PO number, material number,
+              line item or description.
+            </span>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+}

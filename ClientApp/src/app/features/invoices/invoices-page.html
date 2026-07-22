@@ -1,0 +1,257 @@
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">INVOICE MANAGEMENT</p>
+    <h1>Invoices</h1>
+    <p class="page-heading__description">
+      Review imported invoices, item quantities, tax values and unmatched rows.
+    </p>
+  </div>
+
+  <div class="heading-actions">
+    <a class="button button--quiet"
+       routerLink="/invoices/pending">
+      Pending Rows
+    </a>
+
+    <a appManageOnly
+       class="button button--create"
+       href="/VyaparInvoiceImport/Upload">
+      + Upload Invoice Excel
+    </a>
+
+    <a appManageOnly
+       class="button button--quiet"
+       href="/VyaparInvoiceImport/InvoiceList">
+      MVC Invoice List
+    </a>
+  </div>
+</section>
+
+<section class="summary-grid" aria-label="Invoice summary">
+  <article class="summary-card summary-card--violet">
+    <span>Total Invoices</span>
+    <strong>{{ summary().totalInvoices | number }}</strong>
+    <small>Imported invoice documents</small>
+  </article>
+
+  <article class="summary-card summary-card--blue">
+    <span>Total Items</span>
+    <strong>{{ summary().totalItems | number }}</strong>
+    <small>Invoice line items</small>
+  </article>
+
+  <article class="summary-card summary-card--green">
+    <span>Total Quantity</span>
+    <strong>{{ summary().totalQuantity | number: '1.0-2' }}</strong>
+    <small>Quantity invoiced</small>
+  </article>
+
+  <article class="summary-card summary-card--amber">
+    <span>Total GST</span>
+    <strong>₹{{ summary().totalGstAmount | number: '1.2-2' }}</strong>
+    <small>GST value across invoices</small>
+  </article>
+
+  <article class="summary-card summary-card--slate">
+    <span>Invoice Amount</span>
+    <strong>₹{{ summary().totalInvoiceAmount | number: '1.2-2' }}</strong>
+    <small>Total invoice value</small>
+  </article>
+
+  <article class="summary-card summary-card--red">
+    <span>Pending Matches</span>
+    <strong>{{ summary().pendingItemCount | number }}</strong>
+    <small>Rows waiting for material match</small>
+  </article>
+</section>
+
+<section class="panel filter-panel" aria-labelledby="invoice-filter-title">
+  <div class="panel__heading">
+    <div>
+      <h2 id="invoice-filter-title">Filters</h2>
+      <p>Search by invoice number, customer or uploaded file name.</p>
+    </div>
+
+    <button class="button button--quiet"
+            type="button"
+            [disabled]="loading()"
+            (click)="clearFilters()">
+      Clear filters
+    </button>
+  </div>
+
+  <form class="filter-grid" [formGroup]="filters" (ngSubmit)="applyFilters()">
+    <label class="field field--wide">
+      <span>Search</span>
+      <input type="search"
+             formControlName="search"
+             placeholder="Invoice number, customer or file name" />
+    </label>
+
+    <label class="field">
+      <span>Invoice date from</span>
+      <input type="date" formControlName="dateFrom" />
+    </label>
+
+    <label class="field">
+      <span>Invoice date to</span>
+      <input type="date" formControlName="dateTo" />
+    </label>
+
+    <div class="filter-action">
+      <button class="button button--primary" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Loading…' : 'Apply filters' }}
+      </button>
+    </div>
+  </form>
+</section>
+
+@if (successMessage()) {
+<section class="message message--success" role="status">
+  <div>
+    <strong>Success</strong>
+    <p>{{ successMessage() }}</p>
+  </div>
+</section>
+}
+
+@if (errorMessage()) {
+<section class="message message--error" role="alert">
+  <div>
+    <strong>Invoice action failed</strong>
+    <p>{{ errorMessage() }}</p>
+  </div>
+
+  <button class="button button--quiet" type="button" (click)="retry()">
+    Retry
+  </button>
+</section>
+}
+
+<section class="panel results-panel" aria-labelledby="invoice-results-title">
+  <div class="panel__heading results-heading">
+    <div>
+      <h2 id="invoice-results-title">Invoice register</h2>
+      <p>
+        Showing {{ showingFrom() | number }}–{{ showingTo() | number }} of
+        {{ totalCount() | number }} invoices
+      </p>
+    </div>
+
+    <label class="page-size">
+      <span>Rows</span>
+      <select [value]="pageSize()" (change)="changePageSize($event)">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="table-wrap" [class.table-wrap--loading]="loading()">
+    <table>
+      <thead>
+        <tr>
+          <th>Invoice</th>
+          <th>Invoice Date</th>
+          <th>Customer</th>
+          <th>Items</th>
+          <th class="number-cell">Quantity</th>
+          <th class="number-cell">GST</th>
+          <th class="number-cell">Amount</th>
+          <th>Uploaded File</th>
+          <th>Imported</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (invoice of items(); track invoice.id) {
+        <tr>
+          <td>
+            <a class="invoice-number"
+               [routerLink]="['/invoices', invoice.id]">
+              {{ invoice.invoiceNumber || '—' }}
+            </a>
+          </td>
+          <td class="date-cell">
+            {{ (invoice.invoiceDate | date: 'dd MMM yyyy') || '—' }}
+          </td>
+          <td>
+            <strong class="customer-name">
+              {{ invoice.customerName || '—' }}
+            </strong>
+          </td>
+          <td>
+            <span class="count-pill">{{ invoice.itemCount | number }}</span>
+          </td>
+          <td class="number-cell number-cell--strong">
+            {{ invoice.totalQuantity | number: '1.0-2' }}
+          </td>
+          <td class="number-cell">
+            ₹{{ invoice.totalGstAmount | number: '1.2-2' }}
+          </td>
+          <td class="number-cell number-cell--strong">
+            ₹{{ invoice.totalAmount | number: '1.2-2' }}
+          </td>
+          <td>
+            @if (invoice.uploadedFileName) {
+            <span class="file-name" [title]="invoice.uploadedFileName">
+              {{ invoice.uploadedFileName }}
+            </span>
+            } @else {
+            <span class="secondary-value">No file name</span>
+            }
+          </td>
+          <td class="date-cell">
+            {{ invoice.createdDate | date: 'dd MMM yyyy, hh:mm a' }}
+          </td>
+          <td>
+            <div class="row-actions">
+              <a class="button button--table"
+                 [routerLink]="['/invoices', invoice.id]">
+                View
+              </a>
+
+              <button appManageOnly
+                      class="button button--danger"
+                      type="button"
+                      [disabled]="deletingId() !== null"
+                      (click)="deleteInvoice(invoice)">
+                {{ deletingId() === invoice.id ? 'Deleting…' : 'Delete' }}
+              </button>
+            </div>
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td class="empty-state" colspan="10">
+            <strong>No invoices found</strong>
+            <span>Change the filters or import an invoice Excel file.</span>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="pagination">
+    <span>Page {{ page() | number }} of {{ totalPages() | number }}</span>
+
+    <div>
+      <button class="button button--quiet"
+              type="button"
+              [disabled]="!hasPreviousPage() || loading()"
+              (click)="previousPage()">
+        Previous
+      </button>
+      <button class="button button--quiet"
+              type="button"
+              [disabled]="!hasNextPage() || loading()"
+              (click)="nextPage()">
+        Next
+      </button>
+    </div>
+  </footer>
+</section>

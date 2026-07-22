@@ -1,8 +1,13 @@
 import { Routes } from '@angular/router';
+
 import { authGuard } from './core/guards/auth.guard';
 import { manageAccessGuard } from './core/guards/manage-access.guard';
 
 export const routes: Routes = [
+  // ============================================================
+  // AUTHENTICATION
+  // ============================================================
+
   {
     path: 'login',
     loadComponent: () =>
@@ -10,6 +15,11 @@ export const routes: Routes = [
         (component) => component.LoginPage,
       ),
   },
+
+  // ============================================================
+  // DASHBOARD
+  // ============================================================
+
   {
     path: 'dashboard',
     canActivate: [authGuard],
@@ -21,6 +31,7 @@ export const routes: Routes = [
 
   // ============================================================
   // MATERIALS
+  // Keep specific routes before materials/:id.
   // ============================================================
 
   {
@@ -73,7 +84,9 @@ export const routes: Routes = [
     path: 'purchase-orders/new',
     canActivate: [authGuard, manageAccessGuard],
     loadComponent: () =>
-      import('./features/purchase-orders/form/purchase-order-form-page').then(
+      import(
+        './features/purchase-orders/form/purchase-order-form-page'
+      ).then(
         (component) => component.PurchaseOrderFormPage,
       ),
   },
@@ -81,7 +94,9 @@ export const routes: Routes = [
     path: 'purchase-orders/:id/edit',
     canActivate: [authGuard, manageAccessGuard],
     loadComponent: () =>
-      import('./features/purchase-orders/form/purchase-order-form-page').then(
+      import(
+        './features/purchase-orders/form/purchase-order-form-page'
+      ).then(
         (component) => component.PurchaseOrderFormPage,
       ),
   },
@@ -114,6 +129,44 @@ export const routes: Routes = [
       ),
   },
 
+  // ============================================================
+  // INVOICES
+  // Keep named routes before invoices/:id.
+  // ============================================================
+
+  {
+    path: 'invoices/pending',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/invoices/pending/pending-invoices-page'
+      ).then(
+        (component) => component.PendingInvoicesPage,
+      ),
+  },
+  {
+    path: 'invoices/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/invoices/details/invoice-details-page'
+      ).then(
+        (component) => component.InvoiceDetailsPage,
+      ),
+  },
+  {
+    path: 'invoices',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/invoices/invoices-page').then(
+        (component) => component.InvoicesPage,
+      ),
+  },
+
+  // ============================================================
+  // DEFAULT ROUTES
+  // ============================================================
+
   {
     path: '',
     pathMatch: 'full',
@@ -124,5 +177,3 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
 ];
-
-

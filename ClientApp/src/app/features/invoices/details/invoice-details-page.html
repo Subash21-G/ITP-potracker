@@ -1,0 +1,181 @@
+<section class="page-heading">
+  <div>
+    <a class="back-link" routerLink="/invoices">← Back to invoices</a>
+    <p class="eyebrow">INVOICE DETAILS</p>
+    <h1>{{ invoice()?.invoiceNumber || 'Invoice' }}</h1>
+    <p class="page-heading__description">
+      Review the invoice header, totals and imported line items.
+    </p>
+  </div>
+
+  @if (invoice()) {
+    <button
+      appManageOnly
+      class="button button--danger"
+      type="button"
+      [disabled]="deleting()"
+      (click)="deleteInvoice()"
+    >
+      {{ deleting() ? 'Deleting…' : 'Delete invoice' }}
+    </button>
+  }
+</section>
+
+@if (errorMessage()) {
+  <section class="message message--error" role="alert">
+    <div>
+      <strong>Invoice could not be opened</strong>
+      <p>{{ errorMessage() }}</p>
+    </div>
+
+    <div class="message__actions">
+      <a class="button button--quiet" routerLink="/invoices">
+        Back to invoices
+      </a>
+      <button
+        class="button button--primary"
+        type="button"
+        [disabled]="loading()"
+        (click)="retry()"
+      >
+        Retry
+      </button>
+    </div>
+  </section>
+}
+
+@if (loading()) {
+  <section class="loading-card" aria-live="polite">
+    <span class="spinner" aria-hidden="true"></span>
+    <div>
+      <strong>Loading invoice</strong>
+      <p>Please wait while the invoice details are retrieved.</p>
+    </div>
+  </section>
+}
+
+@if (invoice(); as currentInvoice) {
+  <section class="summary-grid" aria-label="Invoice totals">
+    <article class="summary-card summary-card--blue">
+      <span>Line Items</span>
+      <strong>{{ itemCount() | number }}</strong>
+      <small>Imported rows</small>
+    </article>
+
+    <article class="summary-card summary-card--green">
+      <span>Total Quantity</span>
+      <strong>{{ currentInvoice.totalQuantity | number: '1.0-2' }}</strong>
+      <small>Quantity invoiced</small>
+    </article>
+
+    <article class="summary-card summary-card--amber">
+      <span>Total GST</span>
+      <strong>₹{{ currentInvoice.totalGstAmount | number: '1.2-2' }}</strong>
+      <small>GST value</small>
+    </article>
+
+    <article class="summary-card summary-card--violet">
+      <span>Invoice Amount</span>
+      <strong>₹{{ currentInvoice.totalAmount | number: '1.2-2' }}</strong>
+      <small>Total invoice value</small>
+    </article>
+  </section>
+
+  <section class="panel metadata-panel" aria-labelledby="invoice-header-title">
+    <div class="panel__heading">
+      <div>
+        <h2 id="invoice-header-title">Invoice header</h2>
+        <p>Imported document information.</p>
+      </div>
+    </div>
+
+    <dl class="metadata-grid">
+      <div>
+        <dt>Invoice Number</dt>
+        <dd>{{ currentInvoice.invoiceNumber || '—' }}</dd>
+      </div>
+
+      <div>
+        <dt>Invoice Date</dt>
+        <dd>
+          {{ (currentInvoice.invoiceDate | date: 'dd MMM yyyy') || '—' }}
+        </dd>
+      </div>
+
+      <div>
+        <dt>Customer</dt>
+        <dd>{{ currentInvoice.customerName || '—' }}</dd>
+      </div>
+
+      <div>
+        <dt>Imported On</dt>
+        <dd>{{ currentInvoice.createdDate | date: 'dd MMM yyyy, hh:mm a' }}</dd>
+      </div>
+
+      <div class="metadata-grid__wide">
+        <dt>Uploaded File</dt>
+        <dd>{{ currentInvoice.uploadedFileName || 'No uploaded file name' }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="panel items-panel" aria-labelledby="invoice-items-title">
+    <div class="panel__heading">
+      <div>
+        <h2 id="invoice-items-title">Invoice line items</h2>
+        <p>{{ itemCount() | number }} imported rows</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>PO Number</th>
+            <th>Line Item</th>
+            <th>Material Number</th>
+            <th class="number-cell">Quantity</th>
+            <th class="number-cell">Price Unit</th>
+            <th class="number-cell">GST</th>
+            <th class="number-cell">Amount</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (item of currentInvoice.items; track item.id; let rowIndex = $index) {
+            <tr>
+              <td class="row-number">{{ rowIndex + 1 }}</td>
+              <td>
+                <span class="primary-value">{{ item.poNumber || '—' }}</span>
+              </td>
+              <td>{{ item.lineItem || '—' }}</td>
+              <td>
+                <span class="material-number">{{ item.materialNo || '—' }}</span>
+              </td>
+              <td class="number-cell number-cell--strong">
+                {{ item.qty | number: '1.0-2' }}
+              </td>
+              <td class="number-cell">
+                ₹{{ item.priceUnit | number: '1.2-2' }}
+              </td>
+              <td class="number-cell">
+                ₹{{ item.gstAmount | number: '1.2-2' }}
+              </td>
+              <td class="number-cell number-cell--strong">
+                ₹{{ item.amount | number: '1.2-2' }}
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="empty-state" colspan="8">
+                <strong>No invoice items found</strong>
+                <span>This invoice does not contain imported line items.</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}
