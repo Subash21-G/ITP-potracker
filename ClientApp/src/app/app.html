@@ -1,3 +1,22 @@
+﻿@if (isLoading()) {
+  <div
+    class="global-loader"
+    role="status"
+    aria-live="polite"
+    aria-label="Loading"
+  >
+    <div class="global-loader__card">
+      <div
+        class="global-loader__spinner"
+        aria-hidden="true"
+      ></div>
+
+      <strong>Loading</strong>
+      <span>Please wait...</span>
+    </div>
+  </div>
+}
+
 @if (!isLoginPage()) {
   <header class="app-header">
     <a
@@ -5,7 +24,12 @@
       routerLink="/dashboard"
       aria-label="PO Tracker dashboard"
     >
-      <span class="brand__mark" aria-hidden="true">PO</span>
+      <span
+        class="brand__mark"
+        aria-hidden="true"
+      >
+        PO
+      </span>
 
       <span>
         <strong>PO Tracker</strong>
@@ -18,7 +42,9 @@
         <a
           routerLink="/dashboard"
           routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
+          [routerLinkActiveOptions]="{
+            exact: true
+          }"
         >
           Dashboard
         </a>
@@ -26,7 +52,9 @@
         <a
           routerLink="/materials"
           routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
+          [routerLinkActiveOptions]="{
+            exact: true
+          }"
         >
           Materials
         </a>
@@ -34,7 +62,9 @@
         <a
           routerLink="/purchase-orders"
           routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: false }"
+          [routerLinkActiveOptions]="{
+            exact: false
+          }"
         >
           Purchase Orders
         </a>
@@ -42,27 +72,41 @@
         <a
           routerLink="/invoices"
           routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: false }"
+          [routerLinkActiveOptions]="{
+            exact: false
+          }"
         >
           Invoices
         </a>
 
-        <a class="nav-mvc" href="/Dashboard/Index">
+        <a
+          class="nav-mvc"
+          href="/Dashboard/Index"
+        >
           MVC dashboard
         </a>
       </nav>
 
       @if (currentUser()?.isAuthenticated) {
         <div class="user-area">
-          <div class="user-avatar" aria-hidden="true">
+          <div
+            class="user-avatar"
+            aria-hidden="true"
+          >
             {{ userInitials() }}
           </div>
 
           <div class="user-details">
             <strong>
-              {{ currentUser()?.fullName || currentUser()?.userName }}
+              {{
+                currentUser()?.fullName ||
+                  currentUser()?.userName
+              }}
             </strong>
-            <small>{{ currentUser()?.role }}</small>
+
+            <small>
+              {{ currentUser()?.role }}
+            </small>
           </div>
 
           <button
@@ -71,7 +115,11 @@
             (click)="logout()"
             [disabled]="isLoggingOut()"
           >
-            {{ isLoggingOut() ? 'Signing out…' : 'Logout' }}
+            {{
+              isLoggingOut()
+                ? 'Signing out...'
+                : 'Logout'
+            }}
           </button>
         </div>
       }
@@ -88,7 +136,7 @@
 
 @if (!isLoginPage()) {
   <footer class="app-footer">
-    Angular client · Existing ASP.NET MVC screens remain available
-    during migration
+    Angular client · Existing ASP.NET MVC screens remain
+    available during migration
   </footer>
 }

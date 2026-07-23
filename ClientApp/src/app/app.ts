@@ -1,10 +1,11 @@
-import {
+﻿import {
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
   signal,
 } from '@angular/core';
+
 import {
   NavigationEnd,
   Router,
@@ -12,9 +13,25 @@ import {
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { finalize, filter, map, switchMap } from 'rxjs';
-import { AuthApiService } from './core/services/auth-api.service';
+
+import {
+  toSignal,
+} from '@angular/core/rxjs-interop';
+
+import {
+  finalize,
+  filter,
+  map,
+  switchMap,
+} from 'rxjs';
+
+import {
+  AuthApiService,
+} from './core/services/auth-api.service';
+
+import {
+  LoadingService,
+} from './core/services/loading.service';
 
 @Component({
   selector: 'app-root',
@@ -30,8 +47,15 @@ import { AuthApiService } from './core/services/auth-api.service';
 export class App {
   private readonly router = inject(Router);
   private readonly authApi = inject(AuthApiService);
+  private readonly loadingService =
+    inject(LoadingService);
 
-  readonly currentUser = this.authApi.currentUser;
+  readonly currentUser =
+    this.authApi.currentUser;
+
+  readonly isLoading =
+    this.loadingService.isLoading;
+
   readonly isLoggingOut = signal(false);
 
   private readonly currentUrl = toSignal(
@@ -40,7 +64,10 @@ export class App {
         (event): event is NavigationEnd =>
           event instanceof NavigationEnd,
       ),
-      map((event) => event.urlAfterRedirects),
+      map(
+        (event) =>
+          event.urlAfterRedirects,
+      ),
     ),
     {
       initialValue: this.router.url,
@@ -61,11 +88,16 @@ export class App {
 
     const words = displayName
       .split(/\s+/)
-      .filter((word) => word.length > 0)
+      .filter(
+        (word) => word.length > 0,
+      )
       .slice(0, 2);
 
     return words
-      .map((word) => word.charAt(0).toUpperCase())
+      .map(
+        (word) =>
+          word.charAt(0).toUpperCase(),
+      )
       .join('');
   });
 
@@ -79,20 +111,26 @@ export class App {
     this.authApi
       .getXsrfToken()
       .pipe(
-        switchMap(() => this.authApi.logout()),
+        switchMap(
+          () => this.authApi.logout(),
+        ),
         finalize(() => {
           this.isLoggingOut.set(false);
         }),
       )
       .subscribe({
         next: () => {
-          void this.router.navigate(['/login']);
+          void this.router.navigate([
+            '/login',
+          ]);
         },
         error: () => {
-          // Remove the local user state even if the request cannot finish.
-          // The login guard will verify the server session again.
-          this.authApi.clearLocalAuthentication();
-          void this.router.navigate(['/login']);
+          this.authApi
+            .clearLocalAuthentication();
+
+          void this.router.navigate([
+            '/login',
+          ]);
         },
       });
   }
