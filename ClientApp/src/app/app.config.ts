@@ -12,6 +12,11 @@ import {
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
+
+import {
+  apiErrorInterceptor,
+} from './core/interceptors/api-error.interceptor';
+
 import {
   loadingInterceptor,
 } from './core/interceptors/loading.interceptor';
@@ -24,6 +29,7 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
       withInterceptors([
         loadingInterceptor,
+        apiErrorInterceptor,
       ]),
     ),
 
