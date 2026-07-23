@@ -67,6 +67,20 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'material-import',
+    canActivate: [
+      authGuard,
+      manageAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/material-import/material-import-page'
+      ).then(
+        (component) =>
+          component.MaterialImportPage,
+      ),
+  },
+  {
     path: 'materials',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -121,6 +135,20 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'po-import',
+    canActivate: [
+      authGuard,
+      manageAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/po-import/po-import-page'
+      ).then(
+        (component) =>
+          component.PoImportPage,
+      ),
+  },
+  {
     path: 'purchase-orders',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -158,6 +186,20 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'invoice-import',
+    canActivate: [
+      authGuard,
+      manageAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/invoice-import/invoice-import-page'
+      ).then(
+        (component) =>
+          component.InvoiceImportPage,
+      ),
+  },
+  {
     path: 'invoices',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -170,6 +212,71 @@ export const routes: Routes = [
   // ACCESS CONTROL
   // ============================================================
 
+  // ============================================================
+  // DISPATCH
+  // ============================================================
+
+  {
+    path: 'dispatches/:materialId',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/dispatches/dispatch-details-page'
+      ).then(
+        (component) =>
+          component.DispatchDetailsPage,
+      ),
+  },
+  {
+    path: 'dispatches',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/dispatches/dispatches-page'
+      ).then(
+        (component) =>
+          component.DispatchesPage,
+      ),
+  },
+  // ============================================================
+  // PRODUCTION
+  // ============================================================
+
+  {
+    path: 'pending-materials',
+    canActivate: [
+      authGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/pending-materials/pending-materials-page'
+      ).then(
+        (component) =>
+          component.PendingMaterialsPage,
+      ),
+  },
+  {
+    path: 'process-queue',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/production/process-queue-page'
+      ).then(
+        (component) =>
+          component.ProcessQueuePage,
+      ),
+  },
+  {
+    path: 'production-calendar',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/production/production-calendar-page'
+      ).then(
+        (component) =>
+          component.ProductionCalendarPage,
+      ),
+  },
   {
     path: 'access-denied',
     canActivate: [authGuard],
@@ -195,5 +302,3 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
 ];
-
-

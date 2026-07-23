@@ -1,0 +1,72 @@
+﻿<section class="page-heading">
+  <div>
+    <p class="eyebrow">
+      PRODUCTION MANAGEMENT
+    </p>
+
+    <h1>Production Calendar</h1>
+
+    <p class="page-heading__description">
+      Process start, dispatch, delivery and overdue
+      dates in one calendar.
+    </p>
+  </div>
+
+  <div class="heading-actions">
+    <a
+      class="button button--quiet"
+      routerLink="/process-queue">
+      Process Queue
+    </a>
+  </div>
+</section>
+
+<section
+  class="calendar-legend"
+  aria-label="Calendar event colors">
+
+  <span>
+    <i class="legend-dot legend-dot--blue"></i>
+    Process Start
+  </span>
+
+  <span>
+    <i class="legend-dot legend-dot--orange"></i>
+    Dispatch
+  </span>
+
+  <span>
+    <i class="legend-dot legend-dot--green"></i>
+    Delivery
+  </span>
+
+  <span>
+    <i class="legend-dot legend-dot--red"></i>
+    Overdue
+  </span>
+</section>
+
+@if (errorMessage()) {
+<section
+  class="calendar-error"
+  role="alert">
+  {{ errorMessage() }}
+</section>
+}
+
+<section
+  class="calendar-panel"
+  [class.calendar-panel--loading]="
+    loading()
+  ">
+
+  @if (loading()) {
+  <div class="calendar-loading">
+    Loading calendar events...
+  </div>
+  }
+
+  <full-calendar
+    [options]="calendarOptions">
+  </full-calendar>
+</section>

@@ -1,0 +1,479 @@
+﻿<section class="page-heading">
+  <div>
+    <p class="eyebrow">
+      PRODUCTION MANAGEMENT
+    </p>
+
+    <h1>Process Queue</h1>
+
+    <p class="page-heading__description">
+      Materials grouped by process start,
+      delivery and dispatch status.
+    </p>
+  </div>
+
+  <div class="heading-actions">
+    <a
+      class="button button--primary"
+      routerLink="/production-calendar">
+      Production Calendar
+    </a>
+  </div>
+</section>
+
+<section class="process-rule">
+  Process start date is automatically calculated
+  as delivery date minus one month.
+</section>
+
+<section class="summary-grid">
+  <article class="summary-card summary-card--slate">
+    <span>Total Materials</span>
+
+    <strong>
+      {{ queue().summary.totalMaterials }}
+    </strong>
+
+    <small>Matching queue materials</small>
+  </article>
+
+  <article class="summary-card summary-card--red">
+    <span>Overdue</span>
+
+    <strong>
+      {{ queue().summary.overdue }}
+    </strong>
+
+    <small>Past delivery date</small>
+  </article>
+
+  <article class="summary-card summary-card--blue">
+    <span>Start Today</span>
+
+    <strong>
+      {{ queue().summary.startToday }}
+    </strong>
+
+    <small>Production should start</small>
+  </article>
+
+  <article class="summary-card summary-card--amber">
+    <span>This Week</span>
+
+    <strong>
+      {{ queue().summary.thisWeek }}
+    </strong>
+
+    <small>Upcoming within seven days</small>
+  </article>
+
+  <article class="summary-card summary-card--violet">
+    <span>Future</span>
+
+    <strong>
+      {{ queue().summary.future }}
+    </strong>
+
+    <small>Later production work</small>
+  </article>
+</section>
+
+<section class="panel filter-panel">
+  <div class="panel__heading">
+    <div>
+      <h2>Search Queue</h2>
+
+      <p>
+        Search using PO, material, purchaser,
+        description or assigned owner.
+      </p>
+    </div>
+
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="loading()"
+      (click)="clearFilters()">
+      Clear
+    </button>
+  </div>
+
+  <form
+    class="queue-filter"
+    [formGroup]="filters"
+    (ngSubmit)="applyFilters()">
+
+    <label class="field">
+      <span>Search</span>
+
+      <input
+        type="search"
+        formControlName="search"
+        placeholder="PO, material, purchaser or owner" />
+    </label>
+
+    <button
+      class="button button--primary"
+      type="submit"
+      [disabled]="loading()">
+      {{ loading() ? 'Loading...' : 'Search' }}
+    </button>
+  </form>
+</section>
+
+@if (errorMessage()) {
+<section
+  class="message message--error"
+  role="alert">
+  <div>
+    <strong>Queue loading failed</strong>
+    <p>{{ errorMessage() }}</p>
+  </div>
+
+  <button
+    class="button button--quiet"
+    type="button"
+    (click)="retry()">
+    Retry
+  </button>
+</section>
+}
+
+<section class="queue-board">
+  <article class="queue-column queue-column--red">
+    <header>
+      <h2>Overdue</h2>
+      <span>{{ queue().summary.overdue }}</span>
+    </header>
+
+    @for (
+      material of queue().overdue;
+      track material.materialId
+    ) {
+    <a
+      class="queue-ticket"
+      [routerLink]="[
+        '/materials',
+        material.materialId
+      ]">
+
+      <strong>
+        {{ material.materialNo || 'No material number' }}
+      </strong>
+
+      <span>PO: {{ material.poNumber || '—' }}</span>
+
+      <span>
+        Start:
+        {{
+          (material.processStartDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </span>
+
+      <span>
+        Delivery:
+        {{
+          (material.deliveryDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </span>
+
+      <em>{{ material.processStatus }}</em>
+    </a>
+    } @empty {
+    <p class="queue-empty">No overdue materials.</p>
+    }
+  </article>
+
+  <article class="queue-column queue-column--blue">
+    <header>
+      <h2>Start Today</h2>
+      <span>{{ queue().summary.startToday }}</span>
+    </header>
+
+    @for (
+      material of queue().startToday;
+      track material.materialId
+    ) {
+    <a
+      class="queue-ticket"
+      [routerLink]="[
+        '/materials',
+        material.materialId
+      ]">
+
+      <strong>
+        {{ material.materialNo || 'No material number' }}
+      </strong>
+
+      <span>PO: {{ material.poNumber || '—' }}</span>
+
+      <span>
+        Start:
+        {{
+          (material.processStartDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </span>
+
+      <span>
+        Delivery:
+        {{
+          (material.deliveryDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </span>
+
+      <em>{{ material.processStatus }}</em>
+    </a>
+    } @empty {
+    <p class="queue-empty">Nothing starts today.</p>
+    }
+  </article>
+
+  <article class="queue-column queue-column--amber">
+    <header>
+      <h2>This Week</h2>
+      <span>{{ queue().summary.thisWeek }}</span>
+    </header>
+
+    @for (
+      material of queue().thisWeek;
+      track material.materialId
+    ) {
+    <a
+      class="queue-ticket"
+      [routerLink]="[
+        '/materials',
+        material.materialId
+      ]">
+
+      <strong>
+        {{ material.materialNo || 'No material number' }}
+      </strong>
+
+      <span>PO: {{ material.poNumber || '—' }}</span>
+
+      <span>
+        Start:
+        {{
+          (material.processStartDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </span>
+
+      <span>
+        Delivery:
+        {{
+          (material.deliveryDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </span>
+
+      <em>{{ material.processStatus }}</em>
+    </a>
+    } @empty {
+    <p class="queue-empty">No work this week.</p>
+    }
+  </article>
+
+  <article class="queue-column queue-column--violet">
+    <header>
+      <h2>Future</h2>
+      <span>{{ queue().summary.future }}</span>
+    </header>
+
+    @for (
+      material of queue().future;
+      track material.materialId
+    ) {
+    <a
+      class="queue-ticket"
+      [routerLink]="[
+        '/materials',
+        material.materialId
+      ]">
+
+      <strong>
+        {{ material.materialNo || 'No material number' }}
+      </strong>
+
+      <span>PO: {{ material.poNumber || '—' }}</span>
+
+      <span>
+        Start:
+        {{
+          (material.processStartDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </span>
+
+      <span>
+        Delivery:
+        {{
+          (material.deliveryDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </span>
+
+      <em>{{ material.processStatus }}</em>
+    </a>
+    } @empty {
+    <p class="queue-empty">No future materials.</p>
+    }
+  </article>
+</section>
+
+<section class="panel results-panel">
+  <div class="panel__heading results-heading">
+    <div>
+      <h2>Full Queue</h2>
+
+      <p>
+        {{ queue().totalCount }}
+        total material(s)
+      </p>
+    </div>
+
+    <label class="page-size">
+      <span>Rows</span>
+
+      <select
+        [value]="pageSize()"
+        (change)="changePageSize($event)">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="200">200</option>
+      </select>
+    </label>
+  </div>
+
+  <div
+    class="table-wrap"
+    [class.table-wrap--loading]="loading()">
+
+    <table>
+      <thead>
+        <tr>
+          <th>Material</th>
+          <th>PO</th>
+          <th>Purchaser</th>
+          <th>Process Start</th>
+          <th>Delivery</th>
+          <th>Owner</th>
+          <th>Process</th>
+          <th>Dispatch</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (
+          material of queue().items;
+          track material.materialId
+        ) {
+        <tr>
+          <td>
+            <a
+              class="invoice-number"
+              [routerLink]="[
+                '/materials',
+                material.materialId
+              ]">
+              {{ material.materialNo || '—' }}
+            </a>
+
+            <span class="queue-description">
+              {{ material.description || '—' }}
+            </span>
+          </td>
+
+          <td>
+            {{ material.poNumber || '—' }}
+          </td>
+
+          <td>
+            {{ material.purchaserName || '—' }}
+          </td>
+
+          <td class="date-cell">
+            {{
+              (material.processStartDate |
+                date: 'dd MMM yyyy') || '—'
+            }}
+          </td>
+
+          <td class="date-cell">
+            {{
+              (material.deliveryDate |
+                date: 'dd MMM yyyy') || '—'
+            }}
+          </td>
+
+          <td>
+            {{ material.assignedDashboard || '—' }}
+          </td>
+
+          <td>
+            <span class="queue-status queue-status--process">
+              {{ material.processStatus }}
+            </span>
+          </td>
+
+          <td>
+            <span class="queue-status queue-status--dispatch">
+              {{ material.dispatchStatus }}
+            </span>
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td
+            class="empty-state"
+            colspan="8">
+            <strong>No queue materials</strong>
+
+            <span>
+              Change the search or add process dates
+              to materials.
+            </span>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="pagination">
+    <span>
+      Page {{ page() }}
+      of {{ queue().totalPages }}
+    </span>
+
+    <div>
+      <button
+        class="button button--quiet"
+        type="button"
+        [disabled]="
+          !hasPreviousPage() ||
+          loading()
+        "
+        (click)="previousPage()">
+        Previous
+      </button>
+
+      <button
+        class="button button--quiet"
+        type="button"
+        [disabled]="
+          !hasNextPage() ||
+          loading()
+        "
+        (click)="nextPage()">
+        Next
+      </button>
+    </div>
+  </footer>
+</section>

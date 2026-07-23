@@ -1,0 +1,146 @@
+﻿.dispatch-material-card {
+  margin-bottom: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid #dde4ee;
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #f7f9fd
+    );
+  box-shadow:
+    0 14px 35px
+    rgba(15, 23, 42, 0.07);
+}
+
+.dispatch-material-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dispatch-material-card h2 {
+  margin: 0.25rem 0;
+  color: #101828;
+}
+
+.dispatch-material-card p {
+  margin: 0;
+  color: #667085;
+}
+
+.dispatch-label {
+  color: #6941c6;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.dispatch-material-description {
+  margin-top: 1rem !important;
+  color: #344054 !important;
+}
+
+.dispatch-status-large {
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #344054;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.dispatch-status-large--pending {
+  background: #fff2db;
+  color: #9a5b00;
+}
+
+.dispatch-status-large--partial {
+  background: #e7efff;
+  color: #2453a6;
+}
+
+.dispatch-status-large--complete {
+  background: #ddf7e8;
+  color: #167647;
+}
+
+.dispatch-facts {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.dispatch-facts div {
+  padding: 0.9rem;
+  border-radius: 14px;
+  background: #f5f7fb;
+}
+
+.dispatch-facts span {
+  display: block;
+  color: #667085;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.dispatch-facts strong {
+  display: block;
+  margin-top: 0.3rem;
+  color: #101828;
+}
+
+.dispatch-form {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dispatch-form textarea {
+  resize: vertical;
+}
+
+.field--full,
+.dispatch-form-actions {
+  grid-column: 1 / -1;
+}
+
+.dispatch-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dispatch-complete {
+  padding: 1rem;
+  border-radius: 14px;
+  background: #ddf7e8;
+  color: #167647;
+  font-weight: 800;
+}
+
+.select-cell {
+  width: 48px;
+  text-align: center;
+}
+
+.dispatch-loading {
+  padding: 2rem;
+  text-align: center;
+  color: #667085;
+}
+
+@media (max-width: 760px) {
+  .dispatch-material-card__heading {
+    flex-direction: column;
+  }
+
+  .dispatch-facts,
+  .dispatch-form {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,602 @@
+﻿<section class="page-heading">
+  <div>
+    <p class="eyebrow">
+      PURCHASE ORDER AUTOMATION
+    </p>
+
+    <h1>Import PO PDFs</h1>
+
+    <p class="page-heading__description">
+      Extract PO headers and material rows from
+      one PDF or a batch of up to 100 PDFs.
+    </p>
+  </div>
+
+  <div class="heading-actions">
+    <a
+      class="button button--quiet"
+      routerLink="/purchase-orders">
+      Purchase Orders
+    </a>
+
+    <a
+      class="button button--quiet"
+      routerLink="/materials">
+      Materials
+    </a>
+  </div>
+</section>
+
+<section class="import-mode">
+  <button
+    type="button"
+    [class.import-mode__button--active]="
+      mode() === 'single'
+    "
+    [disabled]="loading() || saving()"
+    (click)="changeMode('single')">
+    <strong>Single PO</strong>
+    <span>Upload and review one PDF</span>
+  </button>
+
+  <button
+    type="button"
+    [class.import-mode__button--active]="
+      mode() === 'batch'
+    "
+    [disabled]="loading() || saving()"
+    (click)="changeMode('batch')">
+    <strong>Batch Import</strong>
+    <span>Upload up to 100 PDFs</span>
+  </button>
+</section>
+
+<section class="upload-panel">
+  <div class="upload-panel__content">
+    <div class="upload-icon">
+      PDF
+    </div>
+
+    <div>
+      <h2>
+        {{
+          mode() === 'single'
+            ? 'Select one PO PDF'
+            : 'Select multiple PO PDFs'
+        }}
+      </h2>
+
+      <p>
+        Each PDF can be up to 20 MB.
+        Batch upload can be up to 200 MB.
+      </p>
+    </div>
+  </div>
+
+  <label class="file-picker">
+    <span>
+      {{
+        selectedFiles().length > 0
+          ? 'Change files'
+          : 'Choose PDF files'
+      }}
+    </span>
+
+    <input
+      type="file"
+      accept=".pdf,application/pdf"
+      [multiple]="mode() === 'batch'"
+      [disabled]="loading() || saving()"
+      (change)="onFilesSelected($event)" />
+  </label>
+
+  @if (selectedFiles().length > 0) {
+  <div class="selected-files">
+    <strong>
+      {{ selectedFiles().length }}
+      file(s) selected
+    </strong>
+
+    <span>
+      {{ selectedFileNames() }}
+    </span>
+  </div>
+  }
+
+  <div class="upload-actions">
+    <button
+      class="button button--primary"
+      type="button"
+      [disabled]="
+        selectedFiles().length === 0 ||
+        loading() ||
+        saving()
+      "
+      (click)="preview()">
+      {{
+        loading()
+          ? 'Extracting PO data...'
+          : 'Extract and Preview'
+      }}
+    </button>
+
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="loading() || saving()"
+      (click)="resetImport()">
+      Reset
+    </button>
+  </div>
+</section>
+
+@if (errorMessage()) {
+<section
+  class="message message--error"
+  role="alert">
+  <strong>Unable to continue</strong>
+  <p>{{ errorMessage() }}</p>
+</section>
+}
+
+@if (successMessage()) {
+<section
+  class="message message--success"
+  role="status">
+  <strong>Success</strong>
+  <p>{{ successMessage() }}</p>
+</section>
+}
+
+@if (
+  mode() === 'single' &&
+  singlePreview();
+  as preview
+) {
+<section class="preview-section">
+  <div class="section-heading">
+    <div>
+      <h2>PO Preview</h2>
+      <p>
+        Review extracted values before saving.
+      </p>
+    </div>
+
+    @if (preview.existsInDatabase) {
+    <span class="status status--warning">
+      Existing PO — will update
+    </span>
+    } @else {
+    <span class="status status--success">
+      New PO
+    </span>
+    }
+  </div>
+
+  @if (preview.purchaseOrder; as po) {
+  <section class="po-summary-grid">
+    <article>
+      <span>PO Number</span>
+      <strong>
+        {{ po.purchaseOrderNo || '—' }}
+      </strong>
+    </article>
+
+    <article>
+      <span>PO Date</span>
+      <strong>
+        {{
+          (po.poDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Received Date</span>
+      <strong>
+        {{
+          (po.receivedDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Buyer</span>
+      <strong>
+        {{ po.buyerContactPerson || '—' }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Material Rows</span>
+      <strong>{{ po.items.length }}</strong>
+    </article>
+
+    <article>
+      <span>Uploaded PDF</span>
+
+      @if (po.uploadedPdfPath) {
+      <a
+        [href]="po.uploadedPdfPath"
+        target="_blank"
+        rel="noopener">
+        Open PDF
+      </a>
+      } @else {
+      <strong>—</strong>
+      }
+    </article>
+  </section>
+
+  <section class="table-panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Line</th>
+            <th>Material</th>
+            <th>Description</th>
+            <th>Drawing</th>
+            <th>Qty</th>
+            <th>Rate</th>
+            <th>Total</th>
+            <th>Delivery</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (
+            item of po.items;
+            track $index
+          ) {
+          <tr>
+            <td>
+              {{ item.lineItem || '—' }}
+            </td>
+
+            <td>
+              {{ item.materialNo || '—' }}
+            </td>
+
+            <td>
+              <strong>
+                {{
+                  item.shortDescription ||
+                  item.fullDescription ||
+                  '—'
+                }}
+              </strong>
+            </td>
+
+            <td>
+              {{ item.drawingNo || '—' }}
+            </td>
+
+            <td>
+              {{ item.quantity | number: '1.0-3' }}
+              {{ item.unit || '' }}
+            </td>
+
+            <td>
+              {{ item.valueOfGoods | number: '1.2-2' }}
+              {{ item.priceUnit || '' }}
+            </td>
+
+            <td>
+              {{ item.totalValue | number: '1.2-2' }}
+            </td>
+
+            <td>
+              {{
+                (item.deliveryDate |
+                  date: 'dd MMM yyyy') || '—'
+              }}
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="save-actions">
+    <button
+      class="button button--primary"
+      type="button"
+      [disabled]="saving()"
+      (click)="saveSingle()">
+      {{
+        saving()
+          ? 'Saving PO...'
+          : preview.existsInDatabase
+            ? 'Update Existing PO'
+            : 'Save Purchase Order'
+      }}
+    </button>
+  </div>
+  }
+</section>
+}
+
+@if (
+  mode() === 'batch' &&
+  batchPreview();
+  as batch
+) {
+<section class="preview-section">
+  <div class="section-heading">
+    <div>
+      <h2>Batch Preview</h2>
+
+      <p>
+        Select the valid PO files to import.
+      </p>
+    </div>
+
+    <div class="selection-actions">
+      <button
+        class="button button--quiet"
+        type="button"
+        (click)="selectAllValid()">
+        Select Valid
+      </button>
+
+      <button
+        class="button button--quiet"
+        type="button"
+        (click)="clearSelection()">
+        Clear
+      </button>
+    </div>
+  </div>
+
+  <section class="batch-summary">
+    <article>
+      <span>Total Files</span>
+      <strong>{{ batch.totalFiles }}</strong>
+    </article>
+
+    <article>
+      <span>Successful</span>
+      <strong>{{ batch.successfulFiles }}</strong>
+    </article>
+
+    <article>
+      <span>Failed</span>
+      <strong>{{ batch.failedFiles }}</strong>
+    </article>
+
+    <article>
+      <span>Duplicates</span>
+      <strong>{{ batch.duplicateFiles }}</strong>
+    </article>
+
+    <article>
+      <span>Existing POs</span>
+      <strong>{{ batch.existingPOFiles }}</strong>
+    </article>
+
+    <article>
+      <span>Material Rows</span>
+      <strong>{{ batch.totalMaterialRows }}</strong>
+    </article>
+  </section>
+
+  <div class="batch-file-list">
+    @for (
+      file of batch.files;
+      track file.batchItemId
+    ) {
+    <article
+      class="batch-file"
+      [class.batch-file--failed]="
+        !file.isSuccessful
+      "
+      [class.batch-file--duplicate]="
+        file.isDuplicateInBatch
+      ">
+
+      <label class="batch-checkbox">
+        <input
+          type="checkbox"
+          [checked]="file.isSelected"
+          [disabled]="
+            !file.isSuccessful ||
+            file.isDuplicateInBatch ||
+            saving()
+          "
+          (change)="
+            toggleBatchFile(
+              file.batchItemId,
+              $any($event.target).checked
+            )
+          " />
+
+        <span></span>
+      </label>
+
+      <div class="batch-file__main">
+        <strong>{{ file.originalFileName }}</strong>
+
+        <span>
+          {{ formatFileSize(file.fileSize) }}
+        </span>
+
+        @if (file.purchaseOrder; as po) {
+        <div class="batch-file__details">
+          <span>
+            PO: {{ po.purchaseOrderNo || '—' }}
+          </span>
+
+          <span>
+            Buyer:
+            {{ po.buyerContactPerson || '—' }}
+          </span>
+
+          <span>
+            Materials: {{ po.items.length }}
+          </span>
+        </div>
+        }
+
+        @if (file.errorMessage) {
+        <p class="batch-error">
+          {{ file.errorMessage }}
+        </p>
+        }
+      </div>
+
+      <div class="batch-file__status">
+        @if (file.isDuplicateInBatch) {
+        <span class="status status--warning">
+          Duplicate
+        </span>
+        } @else if (!file.isSuccessful) {
+        <span class="status status--danger">
+          Failed
+        </span>
+        } @else if (file.existsInDatabase) {
+        <span class="status status--warning">
+          Update
+        </span>
+        } @else {
+        <span class="status status--success">
+          New
+        </span>
+        }
+      </div>
+    </article>
+    }
+  </div>
+
+  <div class="save-actions">
+    <span>
+      {{ selectedBatchCount() }}
+      valid file(s) selected
+    </span>
+
+    <button
+      class="button button--primary"
+      type="button"
+      [disabled]="
+        selectedBatchCount() === 0 ||
+        saving()
+      "
+      (click)="saveBatch()">
+      {{
+        saving()
+          ? 'Saving batch...'
+          : 'Import Selected POs'
+      }}
+    </button>
+  </div>
+</section>
+}
+
+@if (singleResult(); as result) {
+<section class="result-panel result-panel--success">
+  <h2>PO Import Completed</h2>
+
+  <div class="result-grid">
+    <article>
+      <span>Result</span>
+      <strong>{{ result.message }}</strong>
+    </article>
+
+    <article>
+      <span>Materials Saved</span>
+      <strong>
+        {{ result.materialRowsSaved }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Invoices Matched</span>
+      <strong>
+        {{ result.matchedInvoiceRows }}
+      </strong>
+    </article>
+  </div>
+
+  <a
+    class="button button--primary"
+    [routerLink]="[
+      '/purchase-orders',
+      result.purchaseOrderId
+    ]">
+    View Purchase Order
+  </a>
+</section>
+}
+
+@if (batchResult(); as result) {
+<section class="result-panel">
+  <h2>Batch Import Result</h2>
+
+  <section class="batch-summary">
+    <article>
+      <span>Processed</span>
+      <strong>{{ result.totalProcessed }}</strong>
+    </article>
+
+    <article>
+      <span>Imported</span>
+      <strong>{{ result.importedCount }}</strong>
+    </article>
+
+    <article>
+      <span>Updated</span>
+      <strong>{{ result.updatedCount }}</strong>
+    </article>
+
+    <article>
+      <span>Failed</span>
+      <strong>{{ result.failedCount }}</strong>
+    </article>
+
+    <article>
+      <span>Materials Saved</span>
+      <strong>
+        {{ result.totalMaterialRowsSaved }}
+      </strong>
+    </article>
+  </section>
+
+  <div class="batch-result-list">
+    @for (
+      item of result.results;
+      track $index
+    ) {
+    <article>
+      <div>
+        <strong>
+          {{ item.originalFileName }}
+        </strong>
+
+        <span>
+          PO: {{ item.purchaseOrderNo || '—' }}
+        </span>
+      </div>
+
+      <p>{{ item.message }}</p>
+
+      @if (item.isImported) {
+      <span class="status status--success">
+        Imported
+      </span>
+      } @else if (item.isUpdated) {
+      <span class="status status--warning">
+        Updated
+      </span>
+      } @else {
+      <span class="status status--danger">
+        Failed
+      </span>
+      }
+    </article>
+    }
+  </div>
+</section>
+}

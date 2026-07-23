@@ -13,7 +13,7 @@ using UglyToad.PdfPig;
 
 namespace POTracker.Controllers
 {
-    public class VyaparInvoiceImportController : Controller
+    public partial class VyaparInvoiceImportController : Controller
     {
         private const int MaxBatchFileCount = 100;
 

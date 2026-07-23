@@ -1,0 +1,465 @@
+﻿<section class="page-heading">
+  <div>
+    <p class="eyebrow">
+      MATERIAL AUTOMATION
+    </p>
+
+    <h1>Import Materials</h1>
+
+    <p class="page-heading__description">
+      Import up to 2,000 material rows from Excel.
+      Purchase orders, purchasers and materials
+      are created or updated automatically.
+    </p>
+  </div>
+
+  <div class="heading-actions">
+    <a
+      class="button button--quiet"
+      href="/Import/DownloadTemplate">
+      Download Excel Template
+    </a>
+
+    <a
+      class="button button--quiet"
+      routerLink="/materials">
+      Materials
+    </a>
+
+    <a
+      class="button button--quiet"
+      routerLink="/purchase-orders">
+      Purchase Orders
+    </a>
+  </div>
+</section>
+
+<section class="upload-panel">
+  <div class="upload-panel__content">
+    <div class="upload-icon">
+      XLS
+    </div>
+
+    <div>
+      <h2>Select material Excel file</h2>
+
+      <p>
+        Supported formats: XLSX and XLSM.
+        Maximum file size: 20 MB.
+        Maximum rows: 2,000.
+      </p>
+    </div>
+  </div>
+
+  <label class="file-picker">
+    <span>
+      {{
+        selectedFile()
+          ? 'Change Excel file'
+          : 'Choose Excel file'
+      }}
+    </span>
+
+    <input
+      type="file"
+      accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      [disabled]="
+        loading() ||
+        committing() ||
+        cancelling()
+      "
+      (change)="onFileSelected($event)" />
+  </label>
+
+  @if (selectedFile(); as file) {
+  <div class="selected-file">
+    <div>
+      <strong>{{ file.name }}</strong>
+      <span>{{ formatFileSize(file.size) }}</span>
+    </div>
+
+    <span class="status status--success">
+      Ready
+    </span>
+  </div>
+  }
+
+  <div class="upload-actions">
+    <button
+      class="button button--primary"
+      type="button"
+      [disabled]="
+        !selectedFile() ||
+        loading() ||
+        committing() ||
+        cancelling()
+      "
+      (click)="extractPreview()">
+      {{
+        loading()
+          ? 'Reading and validating...'
+          : 'Validate and Preview'
+      }}
+    </button>
+
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="
+        loading() ||
+        committing() ||
+        cancelling()
+      "
+      (click)="resetPage()">
+      Reset
+    </button>
+  </div>
+</section>
+
+@if (errorMessage()) {
+<section
+  class="message message--error"
+  role="alert">
+  <strong>Attention required</strong>
+  <p>{{ errorMessage() }}</p>
+</section>
+}
+
+@if (successMessage()) {
+<section
+  class="message message--success"
+  role="status">
+  <strong>Success</strong>
+  <p>{{ successMessage() }}</p>
+</section>
+}
+
+@if (preview(); as data) {
+<section class="preview-section">
+  <div class="section-heading">
+    <div>
+      <h2>Material Import Preview</h2>
+
+      <p>
+        {{ data.originalFileName }}
+      </p>
+    </div>
+
+    @if (data.invalidRows > 0) {
+    <span class="status status--danger">
+      Validation failed
+    </span>
+    } @else {
+    <span class="status status--success">
+      Ready to import
+    </span>
+    }
+  </div>
+
+  <section class="summary-grid">
+    <article>
+      <span>Total Rows</span>
+      <strong>{{ data.totalRows }}</strong>
+    </article>
+
+    <article>
+      <span>Valid Rows</span>
+      <strong>{{ data.validRows }}</strong>
+    </article>
+
+    <article>
+      <span>Invalid Rows</span>
+      <strong>{{ data.invalidRows }}</strong>
+    </article>
+
+    <article>
+      <span>Total Quantity</span>
+      <strong>
+        {{
+          data.totalQuantity |
+            number: '1.0-3'
+        }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Total Value</span>
+      <strong>
+        {{
+          data.totalValue |
+            number: '1.2-2'
+        }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Preview Created</span>
+      <strong>
+        {{
+          data.createdAt |
+            date: 'dd MMM yyyy, hh:mm a'
+        }}
+      </strong>
+    </article>
+  </section>
+
+  @if (data.invalidRows > 0) {
+  <div class="validation-notice">
+    This preview cannot be imported because one
+    or more rows contain errors. Correct the
+    source Excel file and upload it again.
+  </div>
+  }
+
+  <section class="table-panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Excel Row</th>
+            <th>Purchaser</th>
+            <th>PO Number</th>
+            <th>PO Date</th>
+            <th>Received Date</th>
+            <th>Line</th>
+            <th>Material</th>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Unit</th>
+            <th>Rate</th>
+            <th>Total</th>
+            <th>Delivery</th>
+            <th>Drawing</th>
+            <th>Assigned To</th>
+            <th>Remark</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (
+            row of data.rows;
+            track row.rowNumber
+          ) {
+          <tr
+            [class.invalid-row]="
+              !row.isValid
+            ">
+            <td>
+              @if (row.isValid) {
+              <span class="status status--success">
+                Valid
+              </span>
+              } @else {
+              <span class="status status--danger">
+                Invalid
+              </span>
+              }
+            </td>
+
+            <td>{{ row.rowNumber }}</td>
+
+            <td>
+              <strong>
+                {{ row.purchaserName || '—' }}
+              </strong>
+
+              @if (row.contactPerson) {
+              <small>
+                {{ row.contactPerson }}
+              </small>
+              }
+            </td>
+
+            <td>
+              <strong>
+                {{ row.poNumber || '—' }}
+              </strong>
+
+              @if (row.buyerContactPerson) {
+              <small>
+                Buyer:
+                {{ row.buyerContactPerson }}
+              </small>
+              }
+            </td>
+
+            <td>
+              {{
+                (row.poDate |
+                  date: 'dd MMM yyyy') || '—'
+              }}
+            </td>
+
+            <td>
+              {{
+                (row.receivedDate |
+                  date: 'dd MMM yyyy') || '—'
+              }}
+            </td>
+
+            <td>{{ row.lineItem || '—' }}</td>
+
+            <td>
+              <strong>
+                {{ row.materialNo || '—' }}
+              </strong>
+
+              @if (row.hsnSacCode) {
+              <small>
+                HSN: {{ row.hsnSacCode }}
+              </small>
+              }
+            </td>
+
+            <td class="description-cell">
+              <strong>
+                {{
+                  row.shortDescription ||
+                  row.briefDescription ||
+                  '—'
+                }}
+              </strong>
+
+              @if (
+                row.shortDescription &&
+                row.briefDescription
+              ) {
+              <small>
+                {{ row.briefDescription }}
+              </small>
+              }
+            </td>
+
+            <td>
+              {{
+                row.qty |
+                  number: '1.0-3'
+              }}
+            </td>
+
+            <td>{{ row.unit || '—' }}</td>
+
+            <td>
+              {{
+                row.valueOfGoods |
+                  number: '1.2-2'
+              }}
+
+              @if (row.priceUnit) {
+              <small>
+                {{ row.priceUnit }}
+              </small>
+              }
+            </td>
+
+            <td>
+              {{
+                row.totalValue |
+                  number: '1.2-2'
+              }}
+            </td>
+
+            <td>
+              {{
+                (row.deliveryDate |
+                  date: 'dd MMM yyyy') || '—'
+              }}
+            </td>
+
+            <td>{{ row.drawingNo || '—' }}</td>
+
+            <td>
+              {{
+                row.assignedDashboard || '—'
+              }}
+            </td>
+
+            <td>{{ row.remark || '—' }}</td>
+          </tr>
+
+          @if (!row.isValid) {
+          <tr class="error-row">
+            <td colspan="17">
+              <strong>
+                Row {{ row.rowNumber }} errors:
+              </strong>
+
+              <span>
+                {{ row.errorMessage }}
+              </span>
+            </td>
+          </tr>
+          }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="save-actions">
+    <button
+      class="button button--danger"
+      type="button"
+      [disabled]="
+        loading() ||
+        committing() ||
+        cancelling() ||
+        completed()
+      "
+      (click)="cancelPreview()">
+      {{
+        cancelling()
+          ? 'Cancelling...'
+          : 'Cancel Preview'
+      }}
+    </button>
+
+    <button
+      class="button button--primary"
+      type="button"
+      [disabled]="
+        data.invalidRows > 0 ||
+        loading() ||
+        committing() ||
+        cancelling() ||
+        completed()
+      "
+      (click)="commitImport()">
+      {{
+        committing()
+          ? 'Importing materials...'
+          : completed()
+            ? 'Import Completed'
+            : 'Import All Valid Rows'
+      }}
+    </button>
+  </div>
+</section>
+}
+
+@if (completed()) {
+<section class="result-panel">
+  <h2>Material Import Completed</h2>
+
+  <p>
+    The Excel batch was committed successfully.
+    Purchase orders and material records are now
+    available in the Angular application.
+  </p>
+
+  <div class="result-actions">
+    <a
+      class="button button--primary"
+      routerLink="/materials">
+      View Materials
+    </a>
+
+    <a
+      class="button button--quiet"
+      routerLink="/purchase-orders">
+      View Purchase Orders
+    </a>
+  </div>
+</section>
+}

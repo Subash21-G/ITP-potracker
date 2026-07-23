@@ -7,7 +7,7 @@ using POTracker.ViewModels;
 
 namespace POTracker.Controllers
 {
-    public class PendingMaterialController : Controller
+    public partial class PendingMaterialController : Controller
     {
         private readonly ApplicationDbContext _context;
 

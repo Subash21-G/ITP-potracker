@@ -1,0 +1,53 @@
+﻿.dispatch-filter-grid {
+  grid-template-columns:
+    minmax(260px, 2fr)
+    minmax(180px, 1fr)
+    auto;
+}
+
+.dispatch-po {
+  display: block;
+  color: #13213c;
+}
+
+.dispatch-purchaser {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.dispatch-description {
+  display: block;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dispatch-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #344054;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.dispatch-status--pending {
+  background: #fff2db;
+  color: #9a5b00;
+}
+
+.dispatch-status--partial {
+  background: #e7efff;
+  color: #2453a6;
+}
+
+@media (max-width: 850px) {
+  .dispatch-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}

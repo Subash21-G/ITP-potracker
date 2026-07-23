@@ -1,0 +1,421 @@
+﻿<section class="page-heading">
+  <div>
+    <p class="eyebrow">DISPATCH MANAGEMENT</p>
+
+    <h1>Dispatch Details</h1>
+
+    <p class="page-heading__description">
+      Add dispatch quantities, upload supporting files
+      and review dispatch history.
+    </p>
+  </div>
+
+  <div class="heading-actions">
+    <a
+      class="button button--quiet"
+      routerLink="/dispatches">
+      Back to Dispatch
+    </a>
+  </div>
+</section>
+
+@if (successMessage()) {
+<section
+  class="message message--success"
+  role="status">
+  <div>
+    <strong>Success</strong>
+    <p>{{ successMessage() }}</p>
+  </div>
+</section>
+}
+
+@if (errorMessage()) {
+<section
+  class="message message--error"
+  role="alert">
+  <div>
+    <strong>Dispatch action failed</strong>
+    <p>{{ errorMessage() }}</p>
+  </div>
+
+  <button
+    class="button button--quiet"
+    type="button"
+    (click)="retry()">
+    Retry
+  </button>
+</section>
+}
+
+@if (details(); as data) {
+<section
+  class="dispatch-material-card"
+  aria-label="Material dispatch summary">
+
+  <div class="dispatch-material-card__heading">
+    <div>
+      <span class="dispatch-label">
+        Purchase Order
+      </span>
+
+      <h2>
+        {{ data.material.poNumber || '—' }}
+      </h2>
+
+      <p>
+        Line {{ data.material.lineItem || '—' }}
+        ·
+        {{ data.material.materialNo || 'No material number' }}
+      </p>
+    </div>
+
+    <span
+      class="dispatch-status-large"
+      [class.dispatch-status-large--pending]="
+        data.material.dispatchStatus === 'Pending'
+      "
+      [class.dispatch-status-large--partial]="
+        data.material.dispatchStatus === 'Partial'
+      "
+      [class.dispatch-status-large--complete]="
+        data.material.dispatchStatus === 'Dispatched'
+      ">
+      {{ data.material.dispatchStatus }}
+    </span>
+  </div>
+
+  <p class="dispatch-material-description">
+    {{ data.material.description || 'No description available.' }}
+  </p>
+
+  <div class="dispatch-facts">
+    <div>
+      <span>Purchaser</span>
+      <strong>
+        {{ data.material.purchaserName || '—' }}
+      </strong>
+    </div>
+
+    <div>
+      <span>Delivery Date</span>
+      <strong>
+        {{
+          (data.material.deliveryDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </strong>
+    </div>
+
+    <div>
+      <span>Last Dispatch</span>
+      <strong>
+        {{
+          (data.material.lastDispatchDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </strong>
+    </div>
+  </div>
+</section>
+
+<section class="summary-grid">
+  <article class="summary-card summary-card--slate">
+    <span>PO Quantity</span>
+
+    <strong>
+      {{ data.material.poQuantity | number: '1.0-2' }}
+    </strong>
+
+    <small>Total ordered quantity</small>
+  </article>
+
+  <article class="summary-card summary-card--violet">
+    <span>Invoice Quantity</span>
+
+    <strong>
+      {{ data.material.invoiceQuantity | number: '1.0-2' }}
+    </strong>
+
+    <small>Total invoice quantity</small>
+  </article>
+
+  <article class="summary-card summary-card--green">
+    <span>Dispatched</span>
+
+    <strong>
+      {{ data.material.dispatchQuantity | number: '1.0-2' }}
+    </strong>
+
+    <small>Quantity already dispatched</small>
+  </article>
+
+  <article class="summary-card summary-card--amber">
+    <span>Pending</span>
+
+    <strong>
+      {{ data.material.pendingQuantity | number: '1.0-2' }}
+    </strong>
+
+    <small>Remaining dispatch balance</small>
+  </article>
+</section>
+
+<section
+  appManageOnly
+  class="panel dispatch-form-panel">
+
+  <div class="panel__heading">
+    <div>
+      <h2>Add Dispatch</h2>
+
+      <p>
+        The quantity cannot exceed
+        {{ data.material.pendingQuantity | number: '1.0-2' }}.
+      </p>
+    </div>
+  </div>
+
+  @if (data.material.pendingQuantity > 0) {
+  <form
+    class="dispatch-form"
+    [formGroup]="form"
+    (ngSubmit)="submitDispatch()">
+
+    <label class="field">
+      <span>Dispatch No *</span>
+
+      <input
+        type="text"
+        formControlName="dispatchNo"
+        placeholder="Dispatch note or challan number" />
+    </label>
+
+    <label class="field">
+      <span>Dispatch Date *</span>
+
+      <input
+        type="date"
+        formControlName="dispatchDate" />
+    </label>
+
+    <label class="field">
+      <span>Dispatch Quantity *</span>
+
+      <input
+        type="number"
+        min="0.01"
+        step="0.01"
+        [attr.max]="data.material.pendingQuantity"
+        formControlName="dispatchQuantity" />
+    </label>
+
+    <label class="field">
+      <span>Supporting File</span>
+
+      <input
+        type="file"
+        (change)="onFileSelected($event)" />
+
+      @if (selectedFile()) {
+      <small>
+        Selected: {{ selectedFile()?.name }}
+      </small>
+      }
+    </label>
+
+    <label class="field field--full">
+      <span>Remarks</span>
+
+      <textarea
+        rows="3"
+        formControlName="remarks"
+        placeholder="Optional dispatch remarks">
+      </textarea>
+    </label>
+
+    <div class="dispatch-form-actions">
+      <button
+        class="button button--primary"
+        type="submit"
+        [disabled]="saving()">
+        {{ saving() ? 'Saving...' : 'Save Dispatch' }}
+      </button>
+    </div>
+  </form>
+  } @else {
+  <div class="dispatch-complete">
+    This material is fully dispatched.
+  </div>
+  }
+</section>
+
+<section
+  class="panel results-panel"
+  aria-labelledby="dispatch-history-title">
+
+  <div class="panel__heading results-heading">
+    <div>
+      <h2 id="dispatch-history-title">
+        Dispatch History
+      </h2>
+
+      <p>
+        {{ data.dispatches.length | number }}
+        dispatch record(s)
+      </p>
+    </div>
+
+    <button
+      appManageOnly
+      class="button button--danger"
+      type="button"
+      [disabled]="
+        selectedCount() === 0 ||
+        bulkDeleting() ||
+        deletingId() !== null
+      "
+      (click)="bulkDelete()">
+      {{
+        bulkDeleting()
+          ? 'Deleting...'
+          : 'Delete Selected (' +
+            selectedCount() +
+            ')'
+      }}
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th appManageOnly class="select-cell">
+            <input
+              type="checkbox"
+              aria-label="Select all dispatches"
+              [checked]="allSelected()"
+              (change)="toggleAll($event)" />
+          </th>
+
+          <th>Dispatch No</th>
+          <th>Date</th>
+          <th class="number-cell">Quantity</th>
+          <th>Remarks</th>
+          <th>File</th>
+          <th>Created</th>
+          <th appManageOnly>Action</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (
+          dispatch of data.dispatches;
+          track dispatch.id
+        ) {
+        <tr>
+          <td appManageOnly class="select-cell">
+            <input
+              type="checkbox"
+              [checked]="
+                selectedIds().has(dispatch.id)
+              "
+              [attr.aria-label]="
+                'Select dispatch ' +
+                dispatch.dispatchNo
+              "
+              (change)="
+                toggleDispatch(
+                  dispatch.id,
+                  $event
+                )
+              " />
+          </td>
+
+          <td>
+            <strong>
+              {{ dispatch.dispatchNo }}
+            </strong>
+          </td>
+
+          <td class="date-cell">
+            {{
+              dispatch.dispatchDate |
+                date: 'dd MMM yyyy'
+            }}
+          </td>
+
+          <td class="number-cell number-cell--strong">
+            {{
+              dispatch.dispatchQuantity |
+                number: '1.0-2'
+            }}
+          </td>
+
+          <td>
+            {{ dispatch.remarks || '—' }}
+          </td>
+
+          <td>
+            @if (dispatch.filePath) {
+            <a
+              class="invoice-number"
+              [href]="dispatch.filePath"
+              target="_blank"
+              rel="noopener">
+              {{ dispatch.fileName || 'Open file' }}
+            </a>
+            } @else {
+            <span class="secondary-value">
+              No file
+            </span>
+            }
+          </td>
+
+          <td class="date-cell">
+            {{
+              dispatch.createdDate |
+                date: 'dd MMM yyyy, hh:mm a'
+            }}
+          </td>
+
+          <td appManageOnly>
+            <button
+              class="button button--danger"
+              type="button"
+              [disabled]="
+                deletingId() !== null ||
+                bulkDeleting()
+              "
+              (click)="deleteDispatch(dispatch)">
+              {{
+                deletingId() === dispatch.id
+                  ? 'Deleting...'
+                  : 'Delete'
+              }}
+            </button>
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td
+            class="empty-state"
+            colspan="8">
+            <strong>No dispatch history</strong>
+
+            <span>
+              Add the first dispatch record using
+              the form above.
+            </span>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+} @else if (loading()) {
+<section class="panel dispatch-loading">
+  Loading dispatch details...
+</section>
+}

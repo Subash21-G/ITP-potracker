@@ -1,4 +1,4 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace POTracker.Controllers
 {
-    public class ImportController : Controller
+    public partial class ImportController : Controller
     {
         private const int MaximumRowsPerImport = 2000;
         private const long MaximumExcelFileSize = 20L * 1024L * 1024L;

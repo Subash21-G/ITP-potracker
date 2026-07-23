@@ -12,7 +12,7 @@ using UglyToad.PdfPig.Content;
 
 namespace POTracker.Controllers
 {
-    public class POImportController : Controller
+    public partial class POImportController : Controller
     {
         private const int MaxBatchFileCount = 100;
 

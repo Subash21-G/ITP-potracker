@@ -102,8 +102,79 @@
         >
           Invoices
         </a>
+        <a
+          routerLink="/pending-materials"
+          (click)="closeMobileMenu()"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{
+            exact: true
+          }"
+        >
+          Pending Materials
+        </a>
+        <a
+          routerLink="/process-queue"
+          (click)="closeMobileMenu()"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{
+            exact: true
+          }"
+        >
+          Process Queue
+        </a>
+
+        <a
+          routerLink="/production-calendar"
+          (click)="closeMobileMenu()"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{
+            exact: true
+          }"
+        >
+          Calendar
+        </a>
+        <a
+          routerLink="/dispatches"
+          (click)="closeMobileMenu()"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{
+            exact: false
+          }"
+        >
+          Dispatch
+        </a>
 
         @if (currentUser()?.canOperate) {
+          <a
+            routerLink="/material-import"
+            (click)="closeMobileMenu()"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{
+              exact: true
+            }"
+          >
+            Import Materials
+          </a>
+          <a
+            routerLink="/po-import"
+            (click)="closeMobileMenu()"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{
+              exact: true
+            }"
+          >
+            Import PO PDFs
+          </a>
+          <a
+            routerLink="/invoice-import"
+            (click)="closeMobileMenu()"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{
+              exact: true
+            }"
+          >
+            Import Invoices
+          </a>
           <a
             routerLink="/invoices/pending"
             (click)="closeMobileMenu()"
@@ -176,7 +247,3 @@
     available during migration
   </footer>
 }
-
-
-
-
