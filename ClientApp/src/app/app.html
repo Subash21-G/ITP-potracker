@@ -39,10 +39,29 @@
       </span>
     </a>
 
-    <div class="header-actions">
-      <nav aria-label="Primary navigation">
+    <button
+      class="mobile-menu-button"
+      type="button"
+      aria-label="Toggle navigation menu"
+      aria-controls="primary-navigation"
+      [attr.aria-expanded]="isMobileMenuOpen()"
+      (click)="toggleMobileMenu()"
+    >
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </button>
+    <div
+      class="header-actions"
+      [class.header-actions--open]="isMobileMenuOpen()"
+    >
+      <nav
+        id="primary-navigation"
+        aria-label="Primary navigation"
+      >
         <a
           routerLink="/dashboard"
+          (click)="closeMobileMenu()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{
             exact: true
@@ -53,6 +72,7 @@
 
         <a
           routerLink="/materials"
+          (click)="closeMobileMenu()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{
             exact: true
@@ -63,6 +83,7 @@
 
         <a
           routerLink="/purchase-orders"
+          (click)="closeMobileMenu()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{
             exact: false
@@ -73,6 +94,7 @@
 
         <a
           routerLink="/invoices"
+          (click)="closeMobileMenu()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{
             exact: false
@@ -142,4 +164,6 @@
     available during migration
   </footer>
 }
+
+
 

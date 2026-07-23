@@ -71,6 +71,8 @@ export class App {
 
   readonly isLoggingOut = signal(false);
 
+  readonly isMobileMenuOpen = signal(false);
+
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter(
@@ -113,6 +115,16 @@ export class App {
       )
       .join('');
   });
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen.update(
+      (isOpen) => !isOpen,
+    );
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen.set(false);
+  }
 
   logout(): void {
     if (this.isLoggingOut()) {
@@ -158,6 +170,7 @@ export class App {
       });
   }
 }
+
 
 
 
