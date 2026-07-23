@@ -1,0 +1,77 @@
+﻿<div
+  class="toast-container"
+  aria-live="polite"
+  aria-relevant="additions removals"
+>
+  @for (
+    toast of toasts();
+    track toast.id
+  ) {
+    <article
+      class="toast"
+      [class.toast--success]="
+        toast.type === 'success'
+      "
+      [class.toast--error]="
+        toast.type === 'error'
+      "
+      [class.toast--warning]="
+        toast.type === 'warning'
+      "
+      [class.toast--info]="
+        toast.type === 'info'
+      "
+      role="status"
+    >
+      <div
+        class="toast__icon"
+        aria-hidden="true"
+      >
+        @switch (toast.type) {
+          @case ('success') {
+            ✓
+          }
+
+          @case ('error') {
+            ×
+          }
+
+          @case ('warning') {
+            !
+          }
+
+          @default {
+            i
+          }
+        }
+      </div>
+
+      <div class="toast__content">
+        <strong>
+          {{ toast.title }}
+        </strong>
+
+        <p>
+          {{ toast.message }}
+        </p>
+      </div>
+
+      <button
+        class="toast__close"
+        type="button"
+        aria-label="Close notification"
+        (click)="remove(toast.id)"
+      >
+        ×
+      </button>
+
+      <div
+        class="toast__progress"
+        [style.animation-duration.ms]="
+          toast.duration
+        "
+        aria-hidden="true"
+      ></div>
+    </article>
+  }
+</div>

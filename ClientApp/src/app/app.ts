@@ -1,4 +1,5 @@
-﻿import {
+﻿
+import {
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -33,12 +34,21 @@ import {
   LoadingService,
 } from './core/services/loading.service';
 
+import {
+  ToastService,
+} from './core/services/toast.service';
+
+import {
+  ToastContainer,
+} from './shared/toast-container/toast-container';
+
 @Component({
   selector: 'app-root',
   imports: [
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
+    ToastContainer,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -49,6 +59,9 @@ export class App {
   private readonly authApi = inject(AuthApiService);
   private readonly loadingService =
     inject(LoadingService);
+
+  private readonly toastService =
+    inject(ToastService);
 
   readonly currentUser =
     this.authApi.currentUser;
@@ -120,6 +133,11 @@ export class App {
       )
       .subscribe({
         next: () => {
+          this.toastService.success(
+            'Signed out',
+            'You have been logged out successfully.',
+          );
+
           void this.router.navigate([
             '/login',
           ]);
@@ -128,6 +146,11 @@ export class App {
           this.authApi
             .clearLocalAuthentication();
 
+          this.toastService.warning(
+            'Session closed',
+            'The server logout could not be confirmed, but your local session was cleared.',
+          );
+
           void this.router.navigate([
             '/login',
           ]);
@@ -135,3 +158,6 @@ export class App {
       });
   }
 }
+
+
+
