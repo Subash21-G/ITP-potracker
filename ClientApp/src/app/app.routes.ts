@@ -136,7 +136,10 @@ export const routes: Routes = [
 
   {
     path: 'invoices/pending',
-    canActivate: [authGuard],
+    canActivate: [
+      authGuard,
+      manageAccessGuard,
+    ],
     loadComponent: () =>
       import(
         './features/invoices/pending/pending-invoices-page'
@@ -192,4 +195,5 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
 ];
+
 

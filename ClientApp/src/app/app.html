@@ -103,6 +103,18 @@
           Invoices
         </a>
 
+        @if (currentUser()?.canOperate) {
+          <a
+            routerLink="/invoices/pending"
+            (click)="closeMobileMenu()"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{
+              exact: true
+            }"
+          >
+            Pending Invoices
+          </a>
+        }
         <a
           class="nav-mvc"
           href="/Dashboard/Index"
@@ -164,6 +176,7 @@
     available during migration
   </footer>
 }
+
 
 
 
