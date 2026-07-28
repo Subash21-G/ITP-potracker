@@ -92,6 +92,21 @@ namespace POTracker.Security
 
                     // Signed-in users may read the current session
                     // and log out.
+                    ["InvoicesApi"] = Actions(
+                        "Index",
+                        "Details"),
+
+                    ["DispatchesApi"] = Actions(
+                        "Index",
+                        "Details"),
+
+                    ["ProductionApi"] = Actions(
+                        "ProcessQueue",
+                        "CalendarEvents"),
+
+                    ["PendingMaterial"] = Actions(
+                        "GetPendingMaterialsApi"),
+
                     ["AuthApi"] = Actions(
                         "GetCurrentUser",
                         "Logout")
