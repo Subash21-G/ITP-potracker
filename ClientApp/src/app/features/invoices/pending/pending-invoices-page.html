@@ -1,4 +1,4 @@
-﻿<section class="page-heading">
+<section class="page-heading">
   <div>
     <a class="back-link" routerLink="/invoices">← Back to invoices</a>
     <p class="eyebrow">INVOICE MATCHING</p>
@@ -254,14 +254,13 @@
   <div
     class="match-modal-backdrop"
     role="presentation"
-    (click)="closeManualMatch()"
+    (click)="$event.target === $event.currentTarget && closeManualMatch()"
   >
     <section
       class="match-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="manual-match-title"
-      (click)="$event.stopPropagation()"
     >
       <header class="match-modal__header">
         <div>
@@ -285,7 +284,7 @@
           type="button"
           aria-label="Close manual match"
           [disabled]="matchingMaterialId() !== null"
-          (click)="closeManualMatch()"
+          (click)="$event.target === $event.currentTarget && closeManualMatch()"
         >
           Ã—
         </button>
