@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+﻿import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -458,3 +458,4 @@ export class PendingInvoicesPage {
     return typeof message === 'string' ? message : '';
   }
 }
+

@@ -2,7 +2,7 @@
   <header class="page-header">
     <div>
       <a class="back-link" routerLink="/materials">
-        â† Back to materials
+        ← Back to materials
       </a>
 
       <span class="eyebrow">Material record</span>
@@ -13,9 +13,9 @@
 
       @if (material(); as item) {
         <p>
-          PO {{ item.poNumber || 'â€”' }}
-          Â· Line {{ item.lineItem || 'â€”' }}
-          Â· {{ item.shortDescription || item.briefDescription || 'No description' }}
+          PO {{ item.poNumber || '—' }}
+          · Line {{ item.lineItem || '—' }}
+          · {{ item.shortDescription || item.briefDescription || 'No description' }}
         </p>
       }
     </div>
@@ -28,7 +28,7 @@
           (click)="loadMaterial()"
           [disabled]="isLoading()"
         >
-          {{ isLoading() ? 'Refreshingâ€¦' : 'Refresh' }}
+          {{ isLoading() ? 'Refreshing…' : 'Refresh' }}
         </button>
 
         <a appManageOnly
@@ -49,7 +49,7 @@
               : 'Invoice or dispatch records are linked'
           "
         >
-          {{ isDeleting() ? 'Deletingâ€¦' : 'Delete' }}
+          {{ isDeleting() ? 'Deleting…' : 'Delete' }}
         </button>
       </div>
     }
@@ -129,62 +129,99 @@
         <div class="detail-grid">
           <div class="detail-item">
             <span>PO number</span>
-            <strong>{{ item.poNumber || 'â€”' }}</strong>
+            <strong>{{ item.poNumber || '—' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Handler</span>
-            <strong>{{ item.handler || 'â€”' }}</strong>
+            <strong>{{ item.handler || '—' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Purchaser</span>
-            <strong>{{ item.purchaserName || 'â€”' }}</strong>
+            <strong>{{ item.purchaserName || '—' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Line item</span>
-            <strong>{{ item.lineItem || 'â€”' }}</strong>
+            <strong>{{ item.lineItem || '—' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Item type</span>
-            <strong>{{ item.itemType || 'â€”' }}</strong>
+            <strong>{{ item.itemType || '—' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>HSN / SAC</span>
-            <strong>{{ item.hsnSacCode || 'â€”' }}</strong>
+            <strong>{{ item.hsnSacCode || '—' }}</strong>
           </div>
 
           <div class="detail-item detail-item--wide">
             <span>Short description</span>
-            <strong>{{ item.shortDescription || 'â€”' }}</strong>
+            <strong>{{ item.shortDescription || '—' }}</strong>
           </div>
 
           <div class="detail-item detail-item--wide">
             <span>Brief description</span>
-            <p>{{ item.briefDescription || 'â€”' }}</p>
+            <p>{{ item.briefDescription || '—' }}</p>
           </div>
 
           <div class="detail-item">
             <span>Receiver</span>
-            <strong>{{ item.receiver || 'â€”' }}</strong>
+            <strong>{{ item.receiver || '—' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Unloading point</span>
-            <strong>{{ item.unloadingPoint || 'â€”' }}</strong>
+            <strong>{{ item.unloadingPoint || '—' }}</strong>
           </div>
 
           <div class="detail-item">
             <span>Department</span>
-            <strong>{{ item.dep || 'â€”' }}</strong>
+            <strong>{{ item.dep || '—' }}</strong>
           </div>
 
           <div class="detail-item">
-            <span>Recorded stock</span>
-            <strong>{{ item.stockQty | number: '1.0-2' }}</strong>
+            <span>Live stock</span>
+            <strong>
+              {{ item.liveStockQuantity | number: '1.0-2' }}
+            </strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Allocated to this line</span>
+            <strong>
+              {{ item.allocatedStockQuantity | number: '1.0-2' }}
+            </strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Stock shortage</span>
+            <strong>
+              {{ item.stockShortageQuantity | number: '1.0-2' }}
+            </strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Stock status</span>
+            <strong>{{ item.stockStatus }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Stock records</span>
+            <strong>{{ item.stockRecordCount }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Stock source</span>
+            <strong>
+              {{
+                item.stockDataLive
+                  ? 'Live connection'
+                  : 'Cached or unavailable'
+              }}
+            </strong>
           </div>
         </div>
       </article>
@@ -239,7 +276,7 @@
 
           <div>
             <span>Assigned dashboard</span>
-            <strong>{{ item.assignedDashboard || 'â€”' }}</strong>
+            <strong>{{ item.assignedDashboard || '—' }}</strong>
           </div>
         </div>
       </article>
@@ -259,7 +296,7 @@
               {{
                 item.poDate
                   ? (item.poDate | date: 'dd MMM yyyy')
-                  : 'â€”'
+                  : '—'
               }}
             </strong>
           </div>
@@ -270,7 +307,7 @@
               {{
                 item.receivingDate
                   ? (item.receivingDate | date: 'dd MMM yyyy')
-                  : 'â€”'
+                  : '—'
               }}
             </strong>
           </div>
@@ -281,7 +318,7 @@
               {{
                 item.processStartDate
                   ? (item.processStartDate | date: 'dd MMM yyyy')
-                  : 'â€”'
+                  : '—'
               }}
             </strong>
           </div>
@@ -292,7 +329,7 @@
               {{
                 item.deliveryDate
                   ? (item.deliveryDate | date: 'dd MMM yyyy')
-                  : 'â€”'
+                  : '—'
               }}
             </strong>
           </div>
@@ -303,7 +340,7 @@
               {{
                 item.dispatchDate
                   ? (item.dispatchDate | date: 'dd MMM yyyy')
-                  : 'â€”'
+                  : '—'
               }}
             </strong>
           </div>
@@ -314,7 +351,7 @@
               {{
                 item.drawingUpdatedDate
                   ? (item.drawingUpdatedDate | date: 'dd MMM yyyy')
-                  : 'â€”'
+                  : '—'
               }}
             </strong>
           </div>
@@ -342,7 +379,7 @@
 
           <div class="detail-item">
             <span>Price unit</span>
-            <strong>{{ item.priceUnit || 'â€”' }}</strong>
+            <strong>{{ item.priceUnit || '—' }}</strong>
           </div>
 
           <div class="detail-item">
@@ -354,7 +391,7 @@
             <span>CGST</span>
             <strong>
               {{ item.cgstRate | number: '1.0-2' }}%
-              Â· {{ item.cgstAmount | number: '1.2-2' }}
+              · {{ item.cgstAmount | number: '1.2-2' }}
             </strong>
           </div>
 
@@ -362,7 +399,7 @@
             <span>SGST</span>
             <strong>
               {{ item.sgstRate | number: '1.0-2' }}%
-              Â· {{ item.sgstAmount | number: '1.2-2' }}
+              · {{ item.sgstAmount | number: '1.2-2' }}
             </strong>
           </div>
 
@@ -370,7 +407,7 @@
             <span>IGST</span>
             <strong>
               {{ item.igstRate | number: '1.0-2' }}%
-              Â· {{ item.igstAmount | number: '1.2-2' }}
+              · {{ item.igstAmount | number: '1.2-2' }}
             </strong>
           </div>
 
@@ -394,37 +431,37 @@
         <div class="detail-stack">
           <div>
             <span>RM grade</span>
-            <strong>{{ item.rmGrade || 'â€”' }}</strong>
+            <strong>{{ item.rmGrade || '—' }}</strong>
           </div>
 
           <div>
             <span>RM source</span>
-            <strong>{{ item.rmSource || 'â€”' }}</strong>
+            <strong>{{ item.rmSource || '—' }}</strong>
           </div>
 
           <div>
             <span>RM process</span>
-            <strong>{{ item.rmProcess || 'â€”' }}</strong>
+            <strong>{{ item.rmProcess || '—' }}</strong>
           </div>
 
           <div>
             <span>Surface finish</span>
-            <strong>{{ item.surfaceFinish || 'â€”' }}</strong>
+            <strong>{{ item.surfaceFinish || '—' }}</strong>
           </div>
 
           <div>
             <span>Machining type</span>
-            <strong>{{ item.machiningType || 'â€”' }}</strong>
+            <strong>{{ item.machiningType || '—' }}</strong>
           </div>
 
           <div>
             <span>Process time</span>
-            <strong>{{ item.processTime || 'â€”' }}</strong>
+            <strong>{{ item.processTime || '—' }}</strong>
           </div>
 
           <div>
             <span>Material process time</span>
-            <strong>{{ item.materialProcessTime || 'â€”' }}</strong>
+            <strong>{{ item.materialProcessTime || '—' }}</strong>
           </div>
         </div>
       </article>
@@ -450,12 +487,12 @@
         <div class="file-list">
           <div>
             <span>Drawing number</span>
-            <strong>{{ item.drawingNo || 'â€”' }}</strong>
+            <strong>{{ item.drawingNo || '—' }}</strong>
           </div>
 
           <div>
             <span>Drawing version</span>
-            <strong>{{ item.drawingVersion || 'â€”' }}</strong>
+            <strong>{{ item.drawingVersion || '—' }}</strong>
           </div>
 
           @if (item.pdfFilePath) {
@@ -517,7 +554,7 @@
             {{
               item.updatedDate
                 ? (item.updatedDate | date: 'dd MMM yyyy, hh:mm a')
-                : 'â€”'
+                : '—'
             }}
           </span>
 
@@ -533,5 +570,7 @@
     </section>
   }
 </section>
+
+
 
 

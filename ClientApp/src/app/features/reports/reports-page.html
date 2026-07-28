@@ -1,0 +1,476 @@
+﻿<section class="page-heading">
+  <div>
+    <p class="eyebrow">
+      ADMINISTRATION
+    </p>
+
+    <h1>Materials Reports</h1>
+
+    <p class="page-heading__description">
+      Filter, preview and export detailed
+      material reports.
+    </p>
+  </div>
+
+  <a
+    class="button button--quiet"
+    routerLink="/dashboard">
+    Back to Dashboard
+  </a>
+</section>
+
+@if (errorMessage()) {
+  <section
+    class="message message--error"
+    role="alert">
+    <strong>Reports error</strong>
+    <p>{{ errorMessage() }}</p>
+  </section>
+}
+
+<section class="filter-card">
+  <div class="section-heading">
+    <div>
+      <h2>Report Filters</h2>
+
+      <p>
+        All filters are optional.
+        Leave them empty to include
+        every material.
+      </p>
+    </div>
+
+    @if (loadingOptions()) {
+      <span class="loading-badge">
+        Loading options...
+      </span>
+    }
+  </div>
+
+  <div class="filter-grid">
+    <label>
+      <span>From Delivery Date</span>
+
+      <input
+        type="date"
+        [(ngModel)]="fromDate" />
+    </label>
+
+    <label>
+      <span>To Delivery Date</span>
+
+      <input
+        type="date"
+        [(ngModel)]="toDate" />
+    </label>
+
+    <label>
+      <span>Process Status</span>
+
+      <select
+        [(ngModel)]="processStatus">
+        <option value="">
+          All Process Statuses
+        </option>
+
+        @for (
+          status of
+            options().processStatuses;
+          track status
+        ) {
+          <option [value]="status">
+            {{ status }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Dispatch Status</span>
+
+      <select
+        [(ngModel)]="dispatchStatus">
+        <option value="">
+          All Dispatch Statuses
+        </option>
+
+        @for (
+          status of
+            options().dispatchStatuses;
+          track status
+        ) {
+          <option [value]="status">
+            {{ status }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Purchaser</span>
+
+      <select
+        [(ngModel)]="purchaserId">
+        <option [ngValue]="null">
+          All Purchasers
+        </option>
+
+        @for (
+          purchaser of
+            options().purchasers;
+          track purchaser.id
+        ) {
+          <option
+            [ngValue]="purchaser.id">
+            {{
+              purchaser.purchaserName
+            }}
+          </option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="filter-actions">
+    <button
+      class="button button--primary"
+      type="button"
+      [disabled]="
+        loadingPreview() ||
+        downloadType() !== null
+      "
+      (click)="preview()">
+      {{
+        loadingPreview()
+          ? 'Generating...'
+          : 'Preview Report'
+      }}
+    </button>
+
+    <button
+      class="button button--excel"
+      type="button"
+      [disabled]="
+        loadingPreview() ||
+        downloadType() !== null
+      "
+      (click)="downloadExcel()">
+      {{
+        downloadType() === 'excel'
+          ? 'Exporting Excel...'
+          : 'Export Excel'
+      }}
+    </button>
+
+    <button
+      class="button button--pdf"
+      type="button"
+      [disabled]="
+        loadingPreview() ||
+        downloadType() !== null
+      "
+      (click)="downloadPdf()">
+      {{
+        downloadType() === 'pdf'
+          ? 'Exporting PDF...'
+          : 'Export PDF'
+      }}
+    </button>
+
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="
+        loadingPreview() ||
+        downloadType() !== null
+      "
+      (click)="clearFilters()">
+      Clear Filters
+    </button>
+  </div>
+</section>
+
+@if (hasPreview()) {
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span>Total Records</span>
+
+      <strong>
+        {{
+          report().summary
+            .totalRecords
+        }}
+      </strong>
+    </article>
+
+    <article class="summary-card summary-card--info">
+      <span>Total Quantity</span>
+
+      <strong>
+        {{
+          report().summary
+            .totalQty |
+              number:'1.0-2'
+        }}
+      </strong>
+    </article>
+
+    <article class="summary-card summary-card--success">
+      <span>Dispatched Quantity</span>
+
+      <strong>
+        {{
+          report().summary
+            .totalDispatchQty |
+              number:'1.0-2'
+        }}
+      </strong>
+    </article>
+
+    <article class="summary-card summary-card--warning">
+      <span>Pending Quantity</span>
+
+      <strong>
+        {{
+          report().summary
+            .totalPendingQty |
+              number:'1.0-2'
+        }}
+      </strong>
+    </article>
+
+    <article class="summary-card summary-card--cost">
+      <span>Total Cost</span>
+
+      <strong>
+        {{
+          report().summary
+            .totalCost |
+              currency:
+                'INR':
+                'symbol':
+                '1.2-2'
+        }}
+      </strong>
+    </article>
+  </section>
+
+  <section class="table-card">
+    <div class="section-heading">
+      <div>
+        <h2>Report Preview</h2>
+
+        <p>
+          {{
+            report().items.length
+          }}
+          filtered material records.
+        </p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>PO Number</th>
+            <th>Purchaser</th>
+            <th>Material</th>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Dispatch</th>
+            <th>Pending</th>
+            <th>Allocated / Live Stock</th>
+            <th>Delivery</th>
+            <th>Process</th>
+            <th>Dispatch Status</th>
+            <th>RM Grade</th>
+            <th>Cost</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (
+            item of report().items;
+            track item.materialId;
+            let index = $index
+          ) {
+            <tr>
+              <td>{{ index + 1 }}</td>
+
+              <td>
+                @if (
+                  item.purchaseOrderId
+                ) {
+                  <a
+                    class="primary-link"
+                    [routerLink]="[
+                      '/purchase-orders',
+                      item.purchaseOrderId
+                    ]">
+                    {{
+                      item.poNumber ||
+                        '—'
+                    }}
+                  </a>
+                } @else {
+                  <span>—</span>
+                }
+              </td>
+
+              <td>
+                {{
+                  item.purchaserName ||
+                    '—'
+                }}
+              </td>
+
+              <td>
+                <a
+                  class="primary-link"
+                  [routerLink]="[
+                    '/materials',
+                    item.materialId
+                  ]">
+                  {{
+                    item.materialNo ||
+                      '—'
+                  }}
+                </a>
+              </td>
+
+              <td class="description-cell">
+                {{
+                  item.description ||
+                    '—'
+                }}
+              </td>
+
+              <td>
+                {{
+                  item.qty |
+                    number:'1.0-2'
+                }}
+              </td>
+
+              <td>
+                {{
+                  item.dispatchQty |
+                    number:'1.0-2'
+                }}
+              </td>
+
+              <td>
+                {{
+                  item.pendingQty |
+                    number:'1.0-2'
+                }}
+              </td>
+
+              <td>
+                <strong>
+                  {{
+                    item.allocatedStockQuantity |
+                      number:'1.0-2'
+                  }}
+                  /
+                  {{
+                    item.liveStockQuantity |
+                      number:'1.0-2'
+                  }}
+                </strong>
+
+                <small>
+                  Pending:
+                  {{
+                    item.pendingQty |
+                      number:'1.0-2'
+                  }}
+                  · Shortage:
+                  {{
+                    item.stockShortageQuantity |
+                      number:'1.0-2'
+                  }}
+                </small>
+
+                <small>
+                  {{ item.stockStatus }}
+
+                  @if (
+                    item.stockRecordCount > 1
+                  ) {
+                    ·
+                    {{
+                      item.stockRecordCount
+                    }}
+                    stock records
+                  }
+                </small>
+              </td>
+
+              <td>
+                {{
+                  item.deliveryDate
+                    ? (
+                        item.deliveryDate |
+                          date:
+                            'dd MMM yyyy'
+                      )
+                    : '—'
+                }}
+              </td>
+
+              <td>
+                <span
+                  class="status-badge status-badge--process">
+                  {{
+                    item.processStatus ||
+                      '—'
+                  }}
+                </span>
+              </td>
+
+              <td>
+                <span
+                  class="status-badge status-badge--dispatch">
+                  {{
+                    item.dispatchStatus ||
+                      '—'
+                  }}
+                </span>
+              </td>
+
+              <td>
+                {{
+                  item.rmGrade ||
+                    '—'
+                }}
+              </td>
+
+              <td>
+                {{
+                  item.cost |
+                    currency:
+                      'INR':
+                      'symbol':
+                      '1.2-2'
+                }}
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td
+                class="empty-cell"
+                colspan="14">
+                No records were found
+                for the selected filters.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}
+

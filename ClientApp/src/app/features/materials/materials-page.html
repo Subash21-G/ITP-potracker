@@ -117,7 +117,7 @@
         type="submit"
         [disabled]="loading()"
       >
-        {{ loading() ? 'Loadingâ€¦' : 'Apply filters' }}
+        {{ loading() ? 'Loading…' : 'Apply filters' }}
       </button>
     </div>
   </form>
@@ -156,7 +156,7 @@
     <div>
       <h2 id="results-title">Results</h2>
       <p>
-        Showing {{ showingFrom() | number }}â€“{{ showingTo() | number }}
+        Showing {{ showingFrom() | number }}–{{ showingTo() | number }}
         of {{ totalRecords() | number }}
       </p>
     </div>
@@ -189,9 +189,13 @@
           <th>Material</th>
           <th>Description</th>
           <th class="number-cell">Ordered</th>
+          <th class="number-cell">Unit Price</th>
           <th class="number-cell">Invoiced</th>
           <th class="number-cell">Dispatched</th>
           <th class="number-cell">Pending</th>
+          <th class="number-cell">Allocated / Live</th>
+          <th class="number-cell">Shortage</th>
+          <th>Stock</th>
           <th>Process</th>
           <th>Dispatch</th>
           <th>Delivery</th>
@@ -210,7 +214,7 @@
                   material.purchaseOrderId
                 ]"
               >
-                {{ material.poNumber || 'â€”' }}
+                {{ material.poNumber || '—' }}
               </a>
 
               <span class="secondary-value">
@@ -218,7 +222,7 @@
               </span>
             </td>
 
-            <td>{{ material.lineItem || 'â€”' }}</td>
+            <td>{{ material.lineItem || '—' }}</td>
 
             <td>
               <a
@@ -228,7 +232,7 @@
                   material.id
                 ]"
               >
-                {{ material.materialNo || 'â€”' }}
+                {{ material.materialNo || '—' }}
               </a>
 
               @if (material.hsnSacCode) {
@@ -242,12 +246,19 @@
               class="description-cell"
               [title]="material.description"
             >
-              {{ material.description || 'â€”' }}
+              {{ material.description || '—' }}
             </td>
 
             <td class="number-cell">
               {{ material.quantity | number: '1.0-2' }}
               <span class="unit">{{ material.unit }}</span>
+            </td>
+
+            <td class="number-cell number-cell--strong">
+              &#8377;{{ material.unitPrice | number: '1.2-2' }}
+              <span class="secondary-value">
+                {{ material.priceUnit || material.unit || 'Per unit' }}
+              </span>
             </td>
 
             <td class="number-cell">
@@ -260,6 +271,49 @@
 
             <td class="number-cell number-cell--strong">
               {{ material.pendingQuantity | number: '1.0-2' }}
+            </td>
+
+            <td class="number-cell number-cell--strong">
+              {{
+                material.allocatedStockQuantity
+                  | number: '1.0-2'
+              }}
+
+              <span class="secondary-value">
+                of
+                {{
+                  material.liveStockQuantity
+                    | number: '1.0-2'
+                }}
+                live
+              </span>
+
+              @if (material.stockRecordCount > 1) {
+                <span
+                  class="secondary-value"
+                  title="Combined Stock Maintenance records"
+                >
+                  {{ material.stockRecordCount }} stock records
+                </span>
+              }
+            </td>
+
+            <td class="number-cell">
+              {{ material.stockShortageQuantity | number: '1.0-2' }}
+            </td>
+
+            <td>
+              <span
+                [class]="stockStatusClass(material.stockStatus)"
+              >
+                {{ material.stockStatus }}
+              </span>
+
+              @if (!material.stockDataLive) {
+                <span class="secondary-value">
+                  Cached or unavailable
+                </span>
+              }
             </td>
 
             <td>
@@ -281,7 +335,7 @@
             <td class="date-cell">
               {{
                 (material.deliveryDate | date: 'dd MMM yyyy') ||
-                  'â€”'
+                  '—'
               }}
             </td>
 
@@ -299,9 +353,9 @@
           </tr>
         } @empty {
           <tr>
-            <td class="empty-state" colspan="12">
+            <td class="empty-state" colspan="16">
               @if (loading()) {
-                Loading materialsâ€¦
+                Loading materials…
               } @else {
                 No materials match the selected filters.
               }
@@ -341,4 +395,8 @@
     </div>
   </div>
 </section>
+
+
+
+
 

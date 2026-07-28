@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
@@ -249,6 +249,7 @@ namespace POTracker.Controllers.Api
                     DrawingNo = material.DrawingNo ?? string.Empty,
                     Quantity = material.Qty,
                     Unit = material.Unit ?? string.Empty,
+                    UnitPrice = material.Cost,
                     InvoiceQuantity = material.InvoiceQty,
                     InvoiceBalanceQuantity =
                         material.BalanceQty > 0
@@ -652,3 +653,4 @@ namespace POTracker.Controllers.Api
         }
     }
 }
+

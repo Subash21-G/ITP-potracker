@@ -1,0 +1,192 @@
+﻿<section class="purchaser-form-page">
+  <header class="form-hero">
+    <div>
+      <a
+        class="back-link"
+        routerLink="/purchasers"
+      >
+        Back to purchasers
+      </a>
+
+      <span class="eyebrow">
+        {{
+          isEditMode()
+            ? 'Update customer profile'
+            : 'New customer profile'
+        }}
+      </span>
+
+      <h1>
+        {{
+          isEditMode()
+            ? 'Edit purchaser'
+            : 'Add purchaser'
+        }}
+      </h1>
+
+      <p>
+        Maintain customer contact and address
+        information used throughout Purchase Orders
+        and reporting.
+      </p>
+    </div>
+
+    @if (isEditMode()) {
+      <div class="linked-card">
+        <span>Linked Purchase Orders</span>
+        <strong>
+          {{ purchaseOrderCount() }}
+        </strong>
+      </div>
+    }
+  </header>
+
+  @if (errorMessage()) {
+    <div
+      class="message message--error"
+      role="alert"
+    >
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-card">
+      Loading purchaser details...
+    </div>
+  } @else {
+    <form
+      class="form-card"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      novalidate
+    >
+      <header>
+        <span class="eyebrow">
+          Purchaser information
+        </span>
+
+        <h2>Contact details</h2>
+
+        <p>
+          Purchaser name is required. All other
+          fields are optional.
+        </p>
+      </header>
+
+      <div class="form-grid">
+        <label class="field field--wide">
+          <span>Purchaser name *</span>
+
+          <input
+            type="text"
+            formControlName="purchaserName"
+            maxlength="200"
+            autocomplete="organization"
+            placeholder="Enter purchaser or customer name"
+          />
+
+          @if (
+            fieldInvalid(
+              'purchaserName'
+            )
+          ) {
+            <small>
+              Purchaser name is required.
+            </small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Contact person</span>
+
+          <input
+            type="text"
+            formControlName="contactPerson"
+            maxlength="200"
+            autocomplete="name"
+            placeholder="Contact person name"
+          />
+        </label>
+
+        <label class="field">
+          <span>Mobile number</span>
+
+          <input
+            type="tel"
+            formControlName="mobileNo"
+            maxlength="50"
+            autocomplete="tel"
+            placeholder="Mobile or telephone number"
+          />
+        </label>
+
+        <label class="field">
+          <span>Email address</span>
+
+          <input
+            type="email"
+            formControlName="email"
+            maxlength="250"
+            autocomplete="email"
+            placeholder="customer@example.com"
+          />
+
+          @if (fieldInvalid('email')) {
+            <small>
+              Enter a valid email address.
+            </small>
+          }
+        </label>
+
+        <label class="field field--full">
+          <span>Address</span>
+
+          <textarea
+            rows="6"
+            formControlName="address"
+            maxlength="1000"
+            autocomplete="street-address"
+            placeholder="Complete purchaser address"
+          ></textarea>
+        </label>
+      </div>
+
+      @if (
+        isEditMode() &&
+        purchaseOrderCount() > 0
+      ) {
+        <div class="linked-note">
+          This purchaser is currently linked to
+          {{ purchaseOrderCount() }}
+          Purchase Order record(s). The purchaser
+          can be edited but cannot be deleted while
+          those links exist.
+        </div>
+      }
+
+      <footer class="form-actions">
+        <a
+          class="quiet-button"
+          routerLink="/purchasers"
+        >
+          Cancel
+        </a>
+
+        <button
+          class="primary-button"
+          type="submit"
+          [disabled]="isSaving()"
+        >
+          {{
+            isSaving()
+              ? 'Saving...'
+              : isEditMode()
+                ? 'Save changes'
+                : 'Create purchaser'
+          }}
+        </button>
+      </footer>
+    </form>
+  }
+</section>

@@ -1,4 +1,4 @@
-namespace POTracker.Contracts.Api
+﻿namespace POTracker.Contracts.Api
 {
     /// <summary>
     /// Complete dashboard response returned to the Angular application.
@@ -40,6 +40,11 @@ namespace POTracker.Contracts.Api
         public int PendingMaterials { get; set; }
 
         public int LowStock { get; set; }
+
+        public bool StockDataLive { get; set; }
+
+        public string StockMessage { get; set; } =
+            string.Empty;
 
         public int TodayAlerts { get; set; }
 
@@ -138,3 +143,4 @@ namespace POTracker.Contracts.Api
         public string ProcessStatus { get; set; } = string.Empty;
     }
 }
+

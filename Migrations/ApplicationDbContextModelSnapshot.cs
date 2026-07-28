@@ -586,9 +586,6 @@ namespace POTracker.Migrations
                     b.Property<int>("PurchaserId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PurchaserId1")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("ReceivedDate")
                         .HasColumnType("datetime2");
 
@@ -615,8 +612,6 @@ namespace POTracker.Migrations
 
                     b.HasIndex("PONumber")
                         .IsUnique();
-
-                    b.HasIndex("PurchaserId1");
 
                     b.HasIndex("ReceivedDate");
 
@@ -842,14 +837,10 @@ namespace POTracker.Migrations
             modelBuilder.Entity("POTracker.Models.PurchaseOrder", b =>
                 {
                     b.HasOne("POTracker.Models.Purchaser", "Purchaser")
-                        .WithMany()
+                        .WithMany("PurchaseOrders")
                         .HasForeignKey("PurchaserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("POTracker.Models.Purchaser", null)
-                        .WithMany("PurchaseOrders")
-                        .HasForeignKey("PurchaserId1");
 
                     b.Navigation("Purchaser");
                 });

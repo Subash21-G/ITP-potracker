@@ -1,0 +1,279 @@
+﻿<section class="page-heading">
+  <div>
+    <p class="eyebrow">
+      ALERT MANAGEMENT
+    </p>
+
+    <h1>Notification Center</h1>
+
+    <p class="page-heading__description">
+      Review process, delivery, dispatch,
+      overdue and stock notifications.
+    </p>
+  </div>
+
+  <div class="heading-actions">
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="loading()"
+      (click)="load()">
+      {{
+        loading()
+          ? 'Refreshing...'
+          : 'Refresh'
+      }}
+    </button>
+
+    <a
+      class="button button--primary"
+      routerLink="/alerts">
+      Smart Alerts
+    </a>
+  </div>
+</section>
+
+@if (errorMessage()) {
+<section
+  class="message message--error"
+  role="alert">
+  <strong>
+    Notification Center error
+  </strong>
+
+  <p>{{ errorMessage() }}</p>
+</section>
+}
+
+<section class="summary-grid">
+  <article class="summary-card">
+    <span>Total Alerts</span>
+
+    <strong>
+      {{
+        data().summary
+          .totalAlerts
+      }}
+    </strong>
+  </article>
+
+  <article class="summary-card summary-card--warning">
+    <span>Unread</span>
+
+    <strong>
+      {{
+        data().summary
+          .unreadCount
+      }}
+    </strong>
+  </article>
+
+  <article class="summary-card summary-card--info">
+    <span>Mobile Queue</span>
+
+    <strong>
+      {{
+        data().summary
+          .mobileQueue
+      }}
+    </strong>
+  </article>
+
+  <article class="summary-card summary-card--danger">
+    <span>Due Today</span>
+
+    <strong>
+      {{
+        data().summary
+          .dueToday
+      }}
+    </strong>
+  </article>
+</section>
+
+<section class="filter-panel">
+  <label class="search-field">
+    <span>Search notifications</span>
+
+    <input
+      type="search"
+      [(ngModel)]="searchText"
+      placeholder="Material, type or message" />
+  </label>
+
+  <label>
+    <span>Status</span>
+
+    <select
+      [(ngModel)]="statusFilter">
+      <option value="all">
+        All notifications
+      </option>
+
+      <option value="unread">
+        Unread only
+      </option>
+
+      <option value="read">
+        Read only
+      </option>
+    </select>
+  </label>
+
+  <button
+    class="button button--quiet"
+    type="button"
+    (click)="clearFilters()">
+    Clear Filters
+  </button>
+</section>
+
+<section class="table-panel">
+  <div class="table-heading">
+    <div>
+      <h2>Latest Notifications</h2>
+
+      <p>
+        Showing
+        {{ filteredItems().length }}
+        of
+        {{ data().items.length }}
+        notification records.
+      </p>
+    </div>
+
+    @if (!canOperate()) {
+    <span class="read-only-badge">
+      Read-only access
+    </span>
+    }
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Material</th>
+          <th>Message</th>
+          <th>Alert Date</th>
+          <th>Mobile</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (
+          item of filteredItems();
+          track item.id
+        ) {
+        <tr
+          [class.unread-row]="
+            !item.isRead
+          ">
+          <td>
+            <span
+              [class]="
+                alertTypeClass(
+                  item.alertType
+                )
+              ">
+              {{ item.alertType }}
+            </span>
+          </td>
+
+          <td>
+            <a
+              class="primary-link"
+              [routerLink]="[
+                '/materials',
+                item.materialId
+              ]">
+              {{ item.materialNo || '—' }}
+            </a>
+          </td>
+
+          <td class="message-cell">
+            {{ item.message || '—' }}
+          </td>
+
+          <td>
+            {{
+              item.alertDate |
+                date:
+                  'dd MMM yyyy, hh:mm a'
+            }}
+          </td>
+
+          <td>
+            <span
+              class="mobile-status"
+              [class.mobile-status--sent]="
+                item.isSentToMobile
+              ">
+              {{
+                item.isSentToMobile
+                  ? 'Sent'
+                  : 'Queued'
+              }}
+            </span>
+          </td>
+
+          <td>
+            <span
+              class="read-status"
+              [class.read-status--read]="
+                item.isRead
+              ">
+              {{
+                item.isRead
+                  ? 'Read'
+                  : 'Unread'
+              }}
+            </span>
+          </td>
+
+          <td>
+            @if (
+              !item.isRead &&
+              canOperate()
+            ) {
+            <button
+              class="mark-read-button"
+              type="button"
+              [disabled]="
+                isMarkingRead(item.id)
+              "
+              (click)="markRead(item)">
+              {{
+                isMarkingRead(item.id)
+                  ? 'Updating...'
+                  : 'Mark Read'
+              }}
+            </button>
+            } @else if (item.isRead) {
+            <span class="complete-label">
+              Completed
+            </span>
+            } @else {
+            <span class="restricted-label">
+              View only
+            </span>
+            }
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td
+            class="empty-cell"
+            colspan="7">
+            No notifications matched
+            the selected filters.
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

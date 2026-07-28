@@ -1,4 +1,4 @@
-export interface DashboardResponse {
+﻿export interface DashboardResponse {
   generatedAt: string;
   overview: DashboardOverview;
   quantities: DashboardQuantitySummary;
@@ -14,6 +14,8 @@ export interface DashboardOverview {
   totalMaterials: number;
   pendingMaterials: number;
   lowStock: number;
+  stockDataLive: boolean;
+  stockMessage: string;
   todayAlerts: number;
   overdueMaterials: number;
   deliveryWithin7Days: number;
@@ -63,3 +65,4 @@ export interface DashboardRecentMaterial {
   dispatchStatus: string;
   processStatus: string;
 }
+

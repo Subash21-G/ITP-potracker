@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -25,7 +25,8 @@ namespace POTracker.Security
                 "Admin",
                 "Analytics",
                 "Audit",
-                "Report"
+                "Report",
+                "ReportsApi"
             };
 
         private static readonly Dictionary<string, HashSet<string>>
@@ -68,6 +69,11 @@ namespace POTracker.Security
                     // Angular dashboard read access.
                     ["DashboardApi"] = Actions(
                         "GetDashboard"),
+                    ["AlertsApi"] = Actions(
+                        "GetAlerts"),
+
+                    ["NotificationsApi"] = Actions(
+                        "Index"),
 
                     // Existing Angular material read access.
                     ["MaterialsApi"] = Actions(
@@ -78,6 +84,11 @@ namespace POTracker.Security
                     ["PurchaseOrdersApi"] = Actions(
                         "Index",
                         "Details"),
+                    ["PurchasersApi"] = Actions(
+                        "Index",
+                        "Details"),
+                    ["StocksApi"] = Actions(
+                        "Index"),
 
                     // Signed-in users may read the current session
                     // and log out.
@@ -329,3 +340,8 @@ namespace POTracker.Security
         }
     }
 }
+
+
+
+
+

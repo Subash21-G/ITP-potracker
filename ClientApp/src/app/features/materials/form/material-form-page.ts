@@ -1,4 +1,4 @@
-import {
+﻿import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
@@ -100,8 +100,6 @@ export class MaterialFormPage implements OnInit {
     ],
     unit: [''],
     dep: [''],
-    stockQty: [0, [Validators.min(0)]],
-
     cost: [0, [Validators.min(0)]],
     valueOfGoods: [0, [Validators.min(0)]],
     priceUnit: [''],
@@ -383,9 +381,6 @@ export class MaterialFormPage implements OnInit {
         material.unit ?? '',
       dep:
         material.dep ?? '',
-      stockQty:
-        material.stockQty ?? 0,
-
       cost:
         material.cost ?? 0,
       valueOfGoods:
@@ -584,9 +579,6 @@ export class MaterialFormPage implements OnInit {
         this.nullIfEmpty(value.unit),
       dep:
         this.nullIfEmpty(value.dep),
-      stockQty:
-        Number(value.stockQty) || 0,
-
       cost:
         Number(value.cost) || 0,
       valueOfGoods:
@@ -734,3 +726,4 @@ export class MaterialFormPage implements OnInit {
       : 'Material could not be saved.';
   }
 }
+

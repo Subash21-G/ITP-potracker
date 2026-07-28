@@ -1,6 +1,6 @@
 ﻿import { Routes } from '@angular/router';
 
-import { authGuard } from './core/guards/auth.guard';
+import { adminGuard, authGuard } from './core/guards/auth.guard';
 import { manageAccessGuard } from './core/guards/manage-access.guard';
 
 export const routes: Routes = [
@@ -158,6 +158,67 @@ export const routes: Routes = [
   },
 
   // ============================================================
+  // PURCHASERS
+  // ============================================================
+
+  {
+    path: 'purchasers/new',
+    canActivate: [
+      authGuard,
+      manageAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/purchasers/form/purchaser-form-page'
+      ).then(
+        (component) =>
+          component.PurchaserFormPage,
+      ),
+  },
+  {
+    path: 'purchasers/:id/edit',
+    canActivate: [
+      authGuard,
+      manageAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/purchasers/form/purchaser-form-page'
+      ).then(
+        (component) =>
+          component.PurchaserFormPage,
+      ),
+  },
+  {
+    path: 'purchasers',
+    canActivate: [
+      authGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/purchasers/purchasers-page'
+      ).then(
+        (component) =>
+          component.PurchasersPage,
+      ),
+  },
+  // ============================================================
+  // STOCK
+  // ============================================================
+  {
+    path: 'stocks',
+    canActivate: [
+      authGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/stocks/stocks-page'
+      ).then(
+        (component) =>
+          component.StocksPage,
+      ),
+  },
+  // ============================================================
   // INVOICES
   // Keep named routes before invoices/:id.
   // ============================================================
@@ -256,6 +317,46 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'reports',
+    canActivate: [
+      authGuard,
+      adminGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/reports/reports-page'
+      ).then(
+        (component) =>
+          component.ReportsPage,
+      ),
+  },
+  {
+    path: 'notifications',
+    canActivate: [
+      authGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/notifications/notifications-page'
+      ).then(
+        (component) =>
+          component.NotificationsPage,
+      ),
+  },
+  {
+    path: 'alerts',
+    canActivate: [
+      authGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/alerts/alerts-page'
+      ).then(
+        (component) =>
+          component.AlertsPage,
+      ),
+  },
+  {
     path: 'process-queue',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -302,3 +403,9 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
 ];
+
+
+
+
+
+

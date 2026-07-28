@@ -143,7 +143,7 @@ namespace POTracker.Data
 
             modelBuilder.Entity<PurchaseOrder>()
                 .HasOne(x => x.Purchaser)
-                .WithMany()
+                .WithMany(x => x.PurchaseOrders)
                 .HasForeignKey(x => x.PurchaserId)
                 .OnDelete(DeleteBehavior.Restrict);
 

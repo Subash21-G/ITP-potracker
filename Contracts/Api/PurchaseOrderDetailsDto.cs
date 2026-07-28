@@ -1,4 +1,4 @@
-namespace POTracker.Contracts.Api
+﻿namespace POTracker.Contracts.Api
 {
     public sealed class PurchaseOrderDetailsDto
     {
@@ -82,6 +82,8 @@ namespace POTracker.Contracts.Api
 
         public string Unit { get; init; } = string.Empty;
 
+        public decimal UnitPrice { get; init; }
+
         public decimal InvoiceQuantity { get; init; }
 
         public decimal InvoiceBalanceQuantity { get; init; }
@@ -101,3 +103,4 @@ namespace POTracker.Contracts.Api
         public bool IsOverdue { get; init; }
     }
 }
+

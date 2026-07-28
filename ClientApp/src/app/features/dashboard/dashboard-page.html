@@ -1,4 +1,4 @@
-<section class="dashboard-page">
+﻿<section class="dashboard-page">
   <header class="page-header">
     <div>
       <span class="eyebrow">Operations overview</span>
@@ -90,11 +90,29 @@
         <small>Pending or partial dispatch</small>
       </article>
 
-      <article class="overview-card">
-        <span class="card-label">Low stock</span>
-        <strong>{{ data.overview.lowStock }}</strong>
-        <small>Below minimum quantity</small>
-      </article>
+      <a
+        class="overview-card overview-card--danger"
+        routerLink="/alerts"
+      >
+        <span class="card-label">
+          Stock shortage
+        </span>
+
+        <strong>
+          {{ data.overview.lowStock }}
+        </strong>
+
+        <small>
+          {{
+            data.overview.stockDataLive
+              ? 'Live priority-allocation shortages'
+              : (
+                  data.overview.stockMessage ||
+                  'Stock Maintenance unavailable'
+                )
+          }}
+        </small>
+      </a>
 
       <article class="overview-card">
         <span class="card-label">Purchasers</span>
@@ -446,3 +464,4 @@
     </section>
   }
 </section>
+

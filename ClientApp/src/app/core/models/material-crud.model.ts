@@ -1,11 +1,10 @@
-export interface MaterialPurchaseOrderOption {
+﻿export interface MaterialPurchaseOrderOption {
   id: number;
   poNumber: string;
   handler: string;
   poDate: string | null;
   receivedDate: string | null;
 }
-
 export interface MaterialDetails {
   id: number;
   purchaseOrderId: number;
@@ -27,7 +26,13 @@ export interface MaterialDetails {
   dep: string;
   dispatchQty: number;
   pendingQty: number;
-  stockQty: number;
+  liveStockQuantity: number;
+  allocatedStockQuantity: number;
+  stockMinimumQuantity: number;
+  stockShortageQuantity: number;
+  stockStatus: string;
+  stockRecordCount: number;
+  stockDataLive: boolean;
 
   invoiceQty: number;
   balanceQty: number;
@@ -96,7 +101,6 @@ export interface MaterialUpsertRequest {
   qty: number;
   unit: string | null;
   dep: string | null;
-  stockQty: number;
 
   cost: number;
   valueOfGoods: number;
@@ -145,3 +149,6 @@ export interface MaterialFileUpload {
   pdfFile?: File | null;
   drawingFile?: File | null;
 }
+
+
+

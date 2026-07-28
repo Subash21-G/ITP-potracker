@@ -26,13 +26,15 @@
 
         public string Unit { get; init; } = string.Empty;
 
+        public decimal UnitPrice { get; init; }
+
+        public string PriceUnit { get; init; } = string.Empty;
+
         public decimal InvoiceQuantity { get; init; }
 
         public decimal DispatchQuantity { get; init; }
 
         public decimal PendingQuantity { get; init; }
-
-        public decimal RecordedStockQuantity { get; init; }
 
         public string InvoiceStatus { get; init; } = string.Empty;
 
@@ -45,5 +47,24 @@
         public string DrawingNo { get; init; } = string.Empty;
 
         public string AssignedDashboard { get; init; } = string.Empty;
+        public decimal LiveStockQuantity { get; set; }
+
+        public decimal AllocatedStockQuantity { get; set; }
+
+        public decimal StockMinimumQuantity { get; set; }
+
+        public decimal StockShortageQuantity { get; set; }
+
+        public string StockStatus { get; set; } =
+            "Not Found";
+
+        public int StockRecordCount { get; set; }
+
+        public bool StockDataLive { get; set; }
     }
 }
+
+
+
+
+

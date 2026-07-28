@@ -1,4 +1,4 @@
-import { PagedResult } from './material.model';
+﻿import { PagedResult } from './material.model';
 
 export interface PurchaseOrderDetails {
   readonly purchaseOrderId: number;
@@ -43,6 +43,7 @@ export interface PurchaseOrderMaterial {
   readonly drawingNo: string;
   readonly quantity: number;
   readonly unit: string;
+  readonly unitPrice: number;
   readonly invoiceQuantity: number;
   readonly invoiceBalanceQuantity: number;
   readonly dispatchQuantity: number;
@@ -53,3 +54,4 @@ export interface PurchaseOrderMaterial {
   readonly dispatchStatus: string;
   readonly isOverdue: boolean;
 }
+

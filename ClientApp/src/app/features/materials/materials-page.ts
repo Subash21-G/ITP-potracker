@@ -139,6 +139,33 @@ export class MaterialsPage {
     return 'status status--neutral';
   }
 
+
+  stockStatusClass(status: string): string {
+    const normalizedStatus =
+      status.toLowerCase();
+
+    if (
+      normalizedStatus.includes('available')
+    ) {
+      return 'status status--success';
+    }
+
+    if (
+      normalizedStatus.includes('shortage') ||
+      normalizedStatus.includes('partial')
+    ) {
+      return 'status status--warning';
+    }
+
+    if (
+      normalizedStatus.includes('out of stock') ||
+      normalizedStatus.includes('offline')
+    ) {
+      return 'status status--danger';
+    }
+
+    return 'status status--neutral';
+  }
   private loadMaterials(): void {
     if (this.loading()) {
       return;
@@ -202,4 +229,6 @@ export class MaterialsPage {
       : 'Materials could not be loaded. Please try again.';
   }
 }
+
+
 

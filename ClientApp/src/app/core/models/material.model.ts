@@ -1,4 +1,4 @@
-export interface MaterialListItem {
+﻿export interface MaterialListItem {
   readonly id: number;
   readonly purchaseOrderId: number;
   readonly poNumber: string;
@@ -11,10 +11,19 @@ export interface MaterialListItem {
   readonly description: string;
   readonly quantity: number;
   readonly unit: string;
+  readonly unitPrice: number;
+  readonly priceUnit: string;
   readonly invoiceQuantity: number;
   readonly dispatchQuantity: number;
   readonly pendingQuantity: number;
-  readonly recordedStockQuantity: number;
+
+  readonly liveStockQuantity: number;
+  readonly allocatedStockQuantity: number;
+  readonly stockMinimumQuantity: number;
+  readonly stockShortageQuantity: number;
+  readonly stockStatus: string;
+  readonly stockRecordCount: number;
+  readonly stockDataLive: boolean;
   readonly invoiceStatus: string;
   readonly processStatus: string;
   readonly dispatchStatus: string;
@@ -44,3 +53,7 @@ export interface MaterialQuery {
   readonly deliveryDateFrom?: string;
   readonly deliveryDateTo?: string;
 }
+
+
+
+

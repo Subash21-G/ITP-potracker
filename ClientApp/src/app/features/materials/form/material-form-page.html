@@ -1,4 +1,4 @@
-<section class="material-form-page">
+﻿<section class="material-form-page">
   <header class="page-header">
     <div>
       <a
@@ -129,161 +129,6 @@
         </header>
 
         <div class="form-grid">
-          <label class="field field--wide">
-            <span>Purchase order *</span>
-
-            <select formControlName="purchaseOrderId">
-              <option [ngValue]="0">
-                Select purchase order
-              </option>
-
-              @for (
-                option of purchaseOrders();
-                track option.id
-              ) {
-                <option [ngValue]="option.id">
-                  {{ option.poNumber }}
-                  {{
-                    option.handler
-                      ? ' — ' + option.handler
-                      : ''
-                  }}
-                </option>
-              }
-            </select>
-
-            @if (pendingInvoicePrefill()) {
-              <small class="field-help">
-                Imported PO is locked to prevent an incorrect invoice match.
-              </small>
-            } @else if (fieldInvalid('purchaseOrderId')) {
-              <small>Please select a purchase order.</small>
-            }
-          </label>
-
-          <label class="field">
-            <span>Line item</span>
-            <input
-              type="text"
-              formControlName="lineItem"
-              placeholder="10"
-            />
-          </label>
-
-          <label class="field">
-            <span>Item type</span>
-            <input
-              type="text"
-              formControlName="itemType"
-              placeholder="Standard"
-            />
-          </label>
-
-          <label class="field">
-            <span>Material number</span>
-            <input
-              type="text"
-              formControlName="materialNo"
-              placeholder="Material number"
-            />
-          </label>
-
-          <label class="field">
-            <span>HSN / SAC code</span>
-            <input
-              type="text"
-              formControlName="hsnSacCode"
-              placeholder="HSN code"
-            />
-          </label>
-
-          <label class="field field--wide">
-            <span>Short description</span>
-            <input
-              type="text"
-              formControlName="shortDescription"
-              placeholder="Short material description"
-            />
-          </label>
-
-          <label class="field field--full">
-            <span>Brief description</span>
-            <textarea
-              rows="4"
-              formControlName="briefDescription"
-              placeholder="Detailed material description"
-            ></textarea>
-          </label>
-
-          <label class="field">
-            <span>Receiver</span>
-            <input
-              type="text"
-              formControlName="receiver"
-            />
-          </label>
-
-          <label class="field">
-            <span>Unloading point</span>
-            <input
-              type="text"
-              formControlName="unloadingPoint"
-            />
-          </label>
-
-          <label class="field">
-            <span>Department</span>
-            <input
-              type="text"
-              formControlName="dep"
-            />
-          </label>
-        </div>
-      </section>
-
-      <section class="form-card">
-        <header>
-          <div>
-            <span class="eyebrow">Quantity</span>
-            <h2>Ordered and stock quantity</h2>
-          </div>
-        </header>
-
-        <div class="form-grid form-grid--four">
-          <label class="field">
-            <span>PO quantity *</span>
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              formControlName="qty"
-            />
-
-            @if (fieldInvalid('qty')) {
-              <small>
-                Quantity must be greater than zero.
-              </small>
-            }
-          </label>
-
-          <label class="field">
-            <span>Unit</span>
-            <input
-              type="text"
-              formControlName="unit"
-              placeholder="EA / KG / NOS"
-            />
-          </label>
-
-          <label class="field">
-            <span>Recorded stock quantity</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              formControlName="stockQty"
-            />
-          </label>
 
           <label class="field">
             <span>Process status</span>
@@ -541,3 +386,5 @@
     </form>
   }
 </section>
+
+

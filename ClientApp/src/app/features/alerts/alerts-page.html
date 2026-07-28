@@ -1,0 +1,343 @@
+﻿<section class="page-heading">
+  <div>
+    <p class="eyebrow">
+      OPERATIONS MONITORING
+    </p>
+
+    <h1>Smart Alerts</h1>
+
+    <p class="page-heading__description">
+      Monitor process, delivery, dispatch and
+      stock conditions requiring attention.
+    </p>
+  </div>
+
+  <div class="heading-actions">
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="loading()"
+      (click)="load()">
+      {{
+        loading()
+          ? 'Refreshing...'
+          : 'Refresh Alerts'
+      }}
+    </button>
+
+    <a
+      class="button button--quiet"
+      routerLink="/process-queue">
+      Process Queue
+    </a>
+
+    <a
+      class="button button--primary"
+      routerLink="/pending-materials">
+      Pending Materials
+    </a>
+  </div>
+</section>
+
+@if (errorMessage()) {
+<section
+  class="message message--error"
+  role="alert">
+  <strong>
+    Unable to load Smart Alerts
+  </strong>
+
+  <p>{{ errorMessage() }}</p>
+</section>
+}
+
+<section class="summary-grid">
+  <article class="summary-card summary-card--blue">
+    <span>Process Start</span>
+
+    <strong>
+      {{
+        data().summary
+          .processStartAlerts
+      }}
+    </strong>
+  </article>
+
+  <article class="summary-card summary-card--red">
+    <span>Overdue</span>
+
+    <strong>
+      {{
+        data().summary
+          .overdueMaterials
+      }}
+    </strong>
+  </article>
+
+  <article class="summary-card summary-card--yellow">
+    <span>Due Within 7 Days</span>
+
+    <strong>
+      {{
+        data().summary
+          .deliveryWithinSevenDays
+      }}
+    </strong>
+  </article>
+
+  <article class="summary-card summary-card--purple">
+    <span>Pending Process</span>
+
+    <strong>
+      {{
+        data().summary
+          .pendingProcess
+      }}
+    </strong>
+  </article>
+
+  <article class="summary-card summary-card--orange">
+    <span>Dispatch Pending</span>
+
+    <strong>
+      {{
+        data().summary
+          .dispatchPending
+      }}
+    </strong>
+  </article>
+
+  <article class="summary-card summary-card--green">
+    <span>Dispatch Date Alerts</span>
+
+    <strong>
+      {{
+        data().summary
+          .dispatchDateAlerts
+      }}
+    </strong>
+  </article>
+
+  <article class="summary-card summary-card--dark">
+    <span>Stock Shortage</span>
+
+    <strong>
+      {{
+        data().summary
+          .lowStock
+      }}
+    </strong>
+  </article>
+
+  <article class="summary-card">
+    <span>Total Alert Records</span>
+
+    <strong>
+      {{
+        data().summary
+          .totalAlerts
+      }}
+    </strong>
+  </article>
+</section>
+
+<section class="toolbar">
+  <label>
+    <span>Search alert records</span>
+
+    <input
+      type="search"
+      [(ngModel)]="searchText"
+      placeholder="Material, description or status" />
+  </label>
+
+  @if (data().generatedAt) {
+  <p>
+    Last generated:
+    {{
+      data().generatedAt |
+        date: 'dd MMM yyyy, hh:mm a'
+    }}
+  </p>
+  }
+</section>
+
+@for (
+  group of getGroups();
+  track group.key
+) {
+<section
+  class="alert-section"
+  [class]="'alert-section alert-section--' + group.tone">
+  <div class="section-heading">
+    <div>
+      <h2>{{ group.title }}</h2>
+
+      <p>{{ group.description }}</p>
+    </div>
+
+    <span class="count-badge">
+      {{
+        filterItems(group.items).length
+      }}
+    </span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Material</th>
+          <th>Description</th>
+          <th>{{ group.dateLabel }}</th>
+          <th>Delivery Date</th>
+          <th>Process</th>
+          <th>Dispatch</th>
+          <th>Allocated / Live Stock</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (
+          item of filterItems(group.items);
+          track item.materialId;
+          let rowNumber = $index
+        ) {
+        <tr>
+          <td>
+            {{ rowNumber + 1 }}
+          </td>
+
+          <td>
+            <a
+              class="primary-link"
+              [routerLink]="[
+                '/materials',
+                item.materialId
+              ]">
+              {{ item.materialNo || '—' }}
+            </a>
+
+            <small>
+              Line:
+              {{ item.lineItem || '—' }}
+            </small>
+          </td>
+
+          <td class="description-cell">
+            {{ item.description || '—' }}
+          </td>
+
+          <td>
+            {{
+              (getDate(
+                item,
+                group.dateField
+              ) | date: 'dd MMM yyyy') ||
+              '—'
+            }}
+          </td>
+
+          <td>
+            {{
+              (item.deliveryDate |
+                date: 'dd MMM yyyy') ||
+              '—'
+            }}
+          </td>
+
+          <td>
+            <span
+              [class]="
+                statusClass(
+                  item.processStatus
+                )
+              ">
+              {{ item.processStatus }}
+            </span>
+          </td>
+
+          <td>
+            <span
+              [class]="
+                statusClass(
+                  item.dispatchStatus
+                )
+              ">
+              {{ item.dispatchStatus }}
+            </span>
+          </td>
+
+          <td>
+            <strong>
+              {{
+                item.allocatedStockQuantity |
+                  number: '1.0-2'
+              }}
+              /
+              {{
+                item.liveStockQuantity |
+                  number: '1.0-2'
+              }}
+            </strong>
+
+            <small>
+              Pending:
+              {{
+                item.pendingQuantity |
+                  number: '1.0-2'
+              }}
+              · Shortage:
+              {{
+                item.stockShortageQuantity |
+                  number: '1.0-2'
+              }}
+            </small>
+
+            <span
+              [class]="
+                stockStatusClass(
+                  item.stockStatus
+                )
+              ">
+              {{ item.stockStatus }}
+            </span>
+          </td>
+
+          <td>
+            <div class="row-actions">
+              <a
+                [routerLink]="[
+                  '/materials',
+                  item.materialId
+                ]">
+                Material
+              </a>
+
+              <a
+                [routerLink]="[
+                  '/purchase-orders',
+                  item.purchaseOrderId
+                ]">
+                PO
+              </a>
+            </div>
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td
+            class="empty-cell"
+            colspan="9">
+            No matching alert records found.
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+}
+

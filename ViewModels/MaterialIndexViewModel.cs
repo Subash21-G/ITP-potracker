@@ -223,6 +223,10 @@ namespace POTracker.ViewModels
 
         public string Unit { get; set; } = string.Empty;
 
+        public decimal UnitPrice { get; set; }
+
+        public string PriceUnit { get; set; } = string.Empty;
+
         public string? DrawingNo { get; set; }
 
         // ============================================================
@@ -367,3 +371,4 @@ namespace POTracker.ViewModels
         public bool IsSelected { get; set; }
     }
 }
+

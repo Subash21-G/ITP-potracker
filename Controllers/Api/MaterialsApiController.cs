@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
@@ -44,6 +44,8 @@ namespace POTracker.Controllers.Api
         private readonly IWebHostEnvironment _environment;
         private readonly PendingInvoiceMatcher
             _pendingInvoiceMatcher;
+        private readonly ExternalStockService
+            _externalStockService;
 
         private static readonly Expression<
             Func<Material, MaterialListItemDto>>
@@ -105,6 +107,13 @@ namespace POTracker.Controllers.Api
                             material.Unit ??
                             string.Empty,
 
+                        UnitPrice =
+                            material.Cost,
+
+                        PriceUnit =
+                            material.PriceUnit ??
+                            string.Empty,
+
                         InvoiceQuantity =
                             material.InvoiceQty,
 
@@ -114,8 +123,6 @@ namespace POTracker.Controllers.Api
                         PendingQuantity =
                             material.PendingQty,
 
-                        RecordedStockQuantity =
-                            material.StockQty,
 
                         InvoiceStatus =
                             material.InvoiceStatus,
@@ -215,8 +222,6 @@ namespace POTracker.Controllers.Api
                         PendingQty =
                             material.PendingQty,
 
-                        StockQty =
-                            material.StockQty,
 
                         InvoiceQty =
                             material.InvoiceQty,
@@ -363,12 +368,15 @@ namespace POTracker.Controllers.Api
         public MaterialsApiController(
             ApplicationDbContext context,
             IWebHostEnvironment environment,
-            PendingInvoiceMatcher pendingInvoiceMatcher)
+            PendingInvoiceMatcher pendingInvoiceMatcher,
+            ExternalStockService externalStockService)
         {
             _context = context;
             _environment = environment;
             _pendingInvoiceMatcher =
                 pendingInvoiceMatcher;
+            _externalStockService =
+                externalStockService;
         }
 
         // ============================================================
@@ -436,7 +444,217 @@ namespace POTracker.Controllers.Api
                     .Take(pageSize)
                     .Select(MaterialListProjection)
                     .ToListAsync(cancellationToken);
+            var stockLoad =
+                await _externalStockService
+                    .GetAllAsync(
+                        false,
+                        cancellationToken);
 
+            var pageMaterialKeys =
+                items
+                    .Select(item =>
+                        ExternalStockService
+                            .Normalize(
+                                item.MaterialNo))
+                    .Where(key =>
+                        !string.IsNullOrWhiteSpace(
+                            key))
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToHashSet(
+                        StringComparer.OrdinalIgnoreCase);
+
+            var allocationCandidates =
+                await _context.Materials
+                    .AsNoTracking()
+                    .Where(material =>
+                        material.MaterialNo != null &&
+                        material.MaterialNo !=
+                            string.Empty)
+                    .Select(material =>
+                        new
+                        {
+                            material.Id,
+                            material.MaterialNo,
+                            material.PendingQty,
+                            material.DeliveryDate
+                        })
+                    .ToListAsync(
+                        cancellationToken);
+
+            var allocations =
+                new Dictionary<
+                    int,
+                    (
+                        decimal Allocated,
+                        decimal Shortage,
+                        string Status
+                    )>();
+
+            foreach (var materialKey in
+                     pageMaterialKeys)
+            {
+                var pageMaterial =
+                    items.First(item =>
+                        ExternalStockService
+                            .Normalize(
+                                item.MaterialNo) ==
+                        materialKey);
+
+                var stockSnapshot =
+                    ExternalStockService
+                        .BuildSnapshot(
+                            stockLoad.Items,
+                            pageMaterial.MaterialNo,
+                            0);
+
+                var remainingStock =
+                    stockSnapshot.LiveStock;
+
+                var matchingRows =
+                    allocationCandidates
+                        .Where(material =>
+                            ExternalStockService
+                                .Normalize(
+                                    material.MaterialNo) ==
+                            materialKey)
+                        .OrderBy(material =>
+                            material.DeliveryDate ??
+                            DateTime.MaxValue)
+                        .ThenBy(material =>
+                            material.Id)
+                        .ToList();
+
+                foreach (var material in
+                         matchingRows)
+                {
+                    var requiredQuantity =
+                        Math.Max(
+                            0,
+                            material.PendingQty);
+
+                    var allocatedQuantity =
+                        Math.Min(
+                            remainingStock,
+                            requiredQuantity);
+
+                    var shortageQuantity =
+                        Math.Max(
+                            0,
+                            requiredQuantity -
+                            allocatedQuantity);
+
+                    remainingStock =
+                        Math.Max(
+                            0,
+                            remainingStock -
+                            allocatedQuantity);
+
+                    string allocationStatus;
+
+                    if (stockSnapshot.RecordCount == 0)
+                    {
+                        allocationStatus =
+                            "Not Found";
+                    }
+                    else if (requiredQuantity <= 0)
+                    {
+                        allocationStatus =
+                            "No Pending";
+                    }
+                    else if (
+                        allocatedQuantity >=
+                        requiredQuantity)
+                    {
+                        allocationStatus =
+                            "Available";
+                    }
+                    else if (
+                        allocatedQuantity > 0)
+                    {
+                        allocationStatus =
+                            "Partial Stock";
+                    }
+                    else if (
+                        stockSnapshot.LiveStock <= 0)
+                    {
+                        allocationStatus =
+                            "Out of Stock";
+                    }
+                    else
+                    {
+                        allocationStatus =
+                            "Shortage";
+                    }
+
+                    allocations[material.Id] =
+                        (
+                            allocatedQuantity,
+                            shortageQuantity,
+                            allocationStatus
+                        );
+                }
+            }
+
+            foreach (var item in items)
+            {
+                var stockSnapshot =
+                    ExternalStockService
+                        .BuildSnapshot(
+                            stockLoad.Items,
+                            item.MaterialNo,
+                            item.PendingQuantity);
+
+                item.LiveStockQuantity =
+                    stockSnapshot.LiveStock;
+
+                item.StockMinimumQuantity =
+                    stockSnapshot.MinimumStock;
+
+                item.StockRecordCount =
+                    stockSnapshot.RecordCount;
+
+                item.StockDataLive =
+                    stockLoad.IsOnline;
+
+                if (
+                    allocations.TryGetValue(
+                        item.Id,
+                        out var allocation))
+                {
+                    item.AllocatedStockQuantity =
+                        allocation.Allocated;
+
+                    item.StockShortageQuantity =
+                        allocation.Shortage;
+
+                    item.StockStatus =
+                        allocation.Status;
+                }
+                else
+                {
+                    item.AllocatedStockQuantity =
+                        0;
+
+                    item.StockShortageQuantity =
+                        Math.Max(
+                            0,
+                            item.PendingQuantity);
+
+                    item.StockStatus =
+                        stockSnapshot.RecordCount == 0
+                            ? "Not Found"
+                            : "Shortage";
+                }
+
+                if (
+                    !stockLoad.IsOnline &&
+                    stockLoad.Items.Count == 0)
+                {
+                    item.StockStatus =
+                        "Stock API Offline";
+                }
+            }
             return Ok(
                 new PagedResult<MaterialListItemDto>
                 {
@@ -1024,22 +1242,180 @@ namespace POTracker.Controllers.Api
         // ============================================================
         // QUERY HELPERS
         // ============================================================
-
         private async Task<MaterialDetailsDto?>
             GetMaterialDetailsAsync(
                 int id,
                 CancellationToken cancellationToken)
         {
-            return await _context.Materials
-                .AsNoTracking()
-                .Where(material =>
-                    material.Id == id)
-                .Select(
-                    MaterialDetailsProjection)
-                .FirstOrDefaultAsync(
-                    cancellationToken);
-        }
+            var details =
+                await _context.Materials
+                    .AsNoTracking()
+                    .Where(material =>
+                        material.Id == id)
+                    .Select(
+                        MaterialDetailsProjection)
+                    .FirstOrDefaultAsync(
+                        cancellationToken);
 
+            if (details == null)
+            {
+                return null;
+            }
+
+            var stockLoad =
+                await _externalStockService
+                    .GetAllAsync(
+                        false,
+                        cancellationToken);
+
+            var stockSnapshot =
+                ExternalStockService
+                    .BuildSnapshot(
+                        stockLoad.Items,
+                        details.MaterialNo,
+                        details.PendingQty);
+
+            details.LiveStockQuantity =
+                stockSnapshot.LiveStock;
+
+            details.StockMinimumQuantity =
+                stockSnapshot.MinimumStock;
+
+            details.StockRecordCount =
+                stockSnapshot.RecordCount;
+
+            details.StockDataLive =
+                stockLoad.IsOnline;
+
+            var normalizedMaterialNo =
+                ExternalStockService.Normalize(
+                    details.MaterialNo);
+
+            var candidates =
+                await _context.Materials
+                    .AsNoTracking()
+                    .Where(material =>
+                        material.MaterialNo != null &&
+                        material.MaterialNo !=
+                            string.Empty)
+                    .Select(material =>
+                        new
+                        {
+                            material.Id,
+                            material.MaterialNo,
+                            material.PendingQty,
+                            material.DeliveryDate
+                        })
+                    .ToListAsync(
+                        cancellationToken);
+
+            var matchingRows =
+                candidates
+                    .Where(material =>
+                        ExternalStockService
+                            .Normalize(
+                                material.MaterialNo) ==
+                        normalizedMaterialNo)
+                    .OrderBy(material =>
+                        material.DeliveryDate ??
+                        DateTime.MaxValue)
+                    .ThenBy(material =>
+                        material.Id)
+                    .ToList();
+
+            var remainingStock =
+                stockSnapshot.LiveStock;
+
+            foreach (var material in matchingRows)
+            {
+                var requiredQuantity =
+                    Math.Max(
+                        0,
+                        material.PendingQty);
+
+                var allocatedQuantity =
+                    Math.Min(
+                        remainingStock,
+                        requiredQuantity);
+
+                var shortageQuantity =
+                    Math.Max(
+                        0,
+                        requiredQuantity -
+                        allocatedQuantity);
+
+                remainingStock =
+                    Math.Max(
+                        0,
+                        remainingStock -
+                        allocatedQuantity);
+
+                if (material.Id != details.Id)
+                {
+                    continue;
+                }
+
+                details.AllocatedStockQuantity =
+                    allocatedQuantity;
+
+                details.StockShortageQuantity =
+                    shortageQuantity;
+
+                if (stockSnapshot.RecordCount == 0)
+                {
+                    details.StockStatus =
+                        "Not Found";
+                }
+                else if (requiredQuantity <= 0)
+                {
+                    details.StockStatus =
+                        "No Pending";
+                }
+                else if (
+                    allocatedQuantity >=
+                    requiredQuantity)
+                {
+                    details.StockStatus =
+                        "Available";
+                }
+                else if (allocatedQuantity > 0)
+                {
+                    details.StockStatus =
+                        "Partial Stock";
+                }
+                else if (
+                    stockSnapshot.LiveStock <= 0)
+                {
+                    details.StockStatus =
+                        "Out of Stock";
+                }
+                else
+                {
+                    details.StockStatus =
+                        "Shortage";
+                }
+
+                break;
+            }
+
+            if (
+                !stockLoad.IsOnline &&
+                stockLoad.Items.Count == 0)
+            {
+                details.StockStatus =
+                    "Stock API Offline";
+
+                details.AllocatedStockQuantity =
+                    0;
+
+                details.StockShortageQuantity =
+                    Math.Max(
+                        0,
+                        details.PendingQty);
+            }
+
+            return details;
+        }
         private static IQueryable<Material>
             ApplyFilters(
                 IQueryable<Material> query,
@@ -1211,10 +1587,6 @@ namespace POTracker.Controllers.Api
 
             material.Dep =
                 Clean(request.Dep);
-
-            material.StockQty =
-                request.StockQty;
-
             material.Cost =
                 request.Cost;
 
@@ -1537,3 +1909,11 @@ namespace POTracker.Controllers.Api
         }
     }
 }
+
+
+
+
+
+
+
+

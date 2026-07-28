@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
+using POTracker.Services;
 
 namespace POTracker.Controllers.Api
 {
@@ -21,10 +22,18 @@ namespace POTracker.Controllers.Api
     {
         private readonly ApplicationDbContext _context;
 
+        private readonly ExternalStockService
+            _externalStockService;
+
         public DashboardApiController(
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            ExternalStockService
+                externalStockService)
         {
             _context = context;
+
+            _externalStockService =
+                externalStockService;
         }
 
         /// <summary>
@@ -59,14 +68,103 @@ namespace POTracker.Controllers.Api
                     .AsNoTracking()
                     .CountAsync(cancellationToken);
 
-            var lowStock =
-                await _context.Stocks
+            var stockCandidates =
+                await _context.Materials
                     .AsNoTracking()
-                    .CountAsync(
-                        stock =>
-                            stock.AvailableQty <=
-                            stock.MinimumQty,
+                    .Where(material =>
+                        material.PendingQty > 0 &&
+                        material.ProcessStatus !=
+                            "Completed")
+                    .Select(material =>
+                        new
+                        {
+                            material.Id,
+
+                            MaterialNo =
+                                material.MaterialNo ??
+                                string.Empty,
+
+                            material.PendingQty,
+
+                            material.DeliveryDate
+                        })
+                    .ToListAsync(
                         cancellationToken);
+
+            var stockLoad =
+                await _externalStockService
+                    .GetAllAsync(
+                        false,
+                        cancellationToken);
+
+            var lowStock =
+                0;
+
+            if (
+                stockLoad.Items.Count > 0 ||
+                stockLoad.IsOnline)
+            {
+                foreach (
+                    var materialGroup in
+                    stockCandidates.GroupBy(
+                        material =>
+                            ExternalStockService
+                                .Normalize(
+                                    material.MaterialNo),
+                        StringComparer
+                            .OrdinalIgnoreCase))
+                {
+                    var firstMaterial =
+                        materialGroup.First();
+
+                    var stockSnapshot =
+                        ExternalStockService
+                            .BuildSnapshot(
+                                stockLoad.Items,
+                                firstMaterial.MaterialNo,
+                                0);
+
+                    var remainingStock =
+                        stockSnapshot.LiveStock;
+
+                    foreach (
+                        var material in
+                        materialGroup
+                            .OrderBy(item =>
+                                item.DeliveryDate ??
+                                DateTime.MaxValue)
+                            .ThenBy(item =>
+                                item.Id))
+                    {
+                        var requiredQuantity =
+                            Math.Max(
+                                0,
+                                material.PendingQty);
+
+                        var allocatedQuantity =
+                            Math.Min(
+                                remainingStock,
+                                requiredQuantity);
+
+                        var shortageQuantity =
+                            Math.Max(
+                                0,
+                                requiredQuantity -
+                                allocatedQuantity);
+
+                        remainingStock =
+                            Math.Max(
+                                0,
+                                remainingStock -
+                                allocatedQuantity);
+
+                        if (shortageQuantity > 0)
+                        {
+                            lowStock++;
+                        }
+                    }
+                }
+            }
 
             var todayAlerts =
                 await _context.Alerts
@@ -285,6 +383,17 @@ namespace POTracker.Controllers.Api
                             LowStock =
                                 lowStock,
 
+                            StockDataLive =
+                                stockLoad.IsOnline,
+
+                            StockMessage =
+                                stockLoad.ErrorMessage ??
+                                (
+                                    stockLoad.IsOnline
+                                        ? "Stock Maintenance connected."
+                                        : "Stock Maintenance unavailable."
+                                ),
+
                             TodayAlerts =
                                 todayAlerts,
 
@@ -381,3 +490,5 @@ namespace POTracker.Controllers.Api
         }
     }
 }
+
+

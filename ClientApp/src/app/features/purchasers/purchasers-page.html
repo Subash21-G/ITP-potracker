@@ -1,0 +1,317 @@
+﻿<section class="purchasers-page">
+  <header class="hero">
+    <div>
+      <span class="eyebrow">
+        Customer directory
+      </span>
+
+      <h1>Purchasers</h1>
+
+      <p>
+        Manage purchaser contacts, addresses and
+        linked Purchase Order records without leaving
+        the Angular application.
+      </p>
+    </div>
+
+    <a
+      class="primary-button"
+      routerLink="/purchasers/new"
+      appManageOnly
+    >
+      Add Purchaser
+    </a>
+  </header>
+
+  <section class="summary-grid">
+    <article class="summary-card summary-card--blue">
+      <span>Total purchasers</span>
+      <strong>
+        {{ totalCount() | number }}
+      </strong>
+      <small>Matching current search</small>
+    </article>
+
+    <article class="summary-card summary-card--violet">
+      <span>Linked purchasers</span>
+      <strong>
+        {{ linkedPurchasers() | number }}
+      </strong>
+      <small>Used by Purchase Orders</small>
+    </article>
+
+    <article class="summary-card summary-card--green">
+      <span>Linked Purchase Orders</span>
+      <strong>
+        {{ linkedPurchaseOrders() | number }}
+      </strong>
+      <small>Across visible purchasers</small>
+    </article>
+
+    <article class="summary-card summary-card--orange">
+      <span>Available to delete</span>
+      <strong>
+        {{ standalonePurchasers() | number }}
+      </strong>
+      <small>No Purchase Order link</small>
+    </article>
+  </section>
+
+  <section class="content-card">
+    <header class="content-header">
+      <div>
+        <span class="eyebrow">
+          Directory
+        </span>
+
+        <h2>Purchaser records</h2>
+
+        <p>
+          Viewer accounts have read-only access.
+          Admin and Production accounts can manage records.
+        </p>
+      </div>
+
+      <button
+        class="quiet-button"
+        type="button"
+        [disabled]="loading()"
+        (click)="refresh()"
+      >
+        {{
+          loading()
+            ? 'Refreshing...'
+            : 'Refresh'
+        }}
+      </button>
+    </header>
+
+    <form
+      class="search-panel"
+      (ngSubmit)="search()"
+    >
+      <label>
+        <span>Search purchasers</span>
+
+        <input
+          type="search"
+          [formControl]="searchControl"
+          placeholder="Name, contact, mobile or email"
+        />
+      </label>
+
+      <div class="search-actions">
+        <button
+          class="primary-button"
+          type="submit"
+          [disabled]="loading()"
+        >
+          Search
+        </button>
+
+        <button
+          class="quiet-button"
+          type="button"
+          [disabled]="loading()"
+          (click)="clearSearch()"
+        >
+          Clear
+        </button>
+      </div>
+    </form>
+
+    @if (errorMessage()) {
+      <div
+        class="message message--error"
+        role="alert"
+      >
+        <strong>Purchasers could not be loaded</strong>
+        <span>{{ errorMessage() }}</span>
+
+        <button
+          type="button"
+          (click)="refresh()"
+        >
+          Try again
+        </button>
+      </div>
+    }
+
+    @if (
+      loading() &&
+      items().length === 0
+    ) {
+      <div class="skeleton-list">
+        @for (
+          row of [1, 2, 3, 4, 5];
+          track row
+        ) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    } @else if (
+      !errorMessage() &&
+      items().length === 0
+    ) {
+      <div class="empty-state">
+        <strong>No purchasers found</strong>
+
+        <span>
+          Change the search or create a new
+          purchaser record.
+        </span>
+      </div>
+    } @else if (items().length > 0) {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Purchaser</th>
+              <th>Contact</th>
+              <th>Mobile</th>
+              <th>Email</th>
+              <th>Address</th>
+              <th>PO records</th>
+              <th class="actions-column">
+                Actions
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (
+              item of items();
+              track item.id;
+              let index = $index
+            ) {
+              <tr>
+                <td class="row-number">
+                  {{ index + 1 }}
+                </td>
+
+                <td>
+                  <strong class="purchaser-name">
+                    {{ item.purchaserName }}
+                  </strong>
+
+                  <small>
+                    ID {{ item.id }}
+                  </small>
+                </td>
+
+                <td>
+                  {{
+                    item.contactPerson ||
+                    '-'
+                  }}
+                </td>
+
+                <td>
+                  @if (item.mobileNo) {
+                    <a
+                      class="contact-link"
+                      [href]="'tel:' + item.mobileNo"
+                    >
+                      {{ item.mobileNo }}
+                    </a>
+                  } @else {
+                    -
+                  }
+                </td>
+
+                <td>
+                  @if (item.email) {
+                    <a
+                      class="contact-link"
+                      [href]="'mailto:' + item.email"
+                    >
+                      {{ item.email }}
+                    </a>
+                  } @else {
+                    -
+                  }
+                </td>
+
+                <td class="address-cell">
+                  {{
+                    item.address ||
+                    '-'
+                  }}
+                </td>
+
+                <td>
+                  <span
+                    class="count-badge"
+                    [class.count-badge--linked]="
+                      item.purchaseOrderCount > 0
+                    "
+                  >
+                    {{
+                      item.purchaseOrderCount
+                        | number
+                    }}
+                  </span>
+                </td>
+
+                <td class="actions-column">
+                  <div
+                    class="row-actions"
+                    appManageOnly
+                  >
+                    <a
+                      class="edit-button"
+                      [routerLink]="[
+                        '/purchasers',
+                        item.id,
+                        'edit'
+                      ]"
+                    >
+                      Edit
+                    </a>
+
+                    <button
+                      class="delete-button"
+                      type="button"
+                      [class.delete-button--locked]="
+                        item.purchaseOrderCount > 0
+                      "
+                      [disabled]="
+                        deletingId() === item.id ||
+                        item.purchaseOrderCount > 0
+                      "
+                      [title]="
+                        item.purchaseOrderCount > 0
+                          ? 'Linked purchasers cannot be deleted'
+                          : 'Delete purchaser'
+                      "
+                      (click)="deletePurchaser(item)"
+                    >
+                      @if (
+                        deletingId() === item.id
+                      ) {
+                        Deleting...
+                      } @else if (
+                        item.purchaseOrderCount > 0
+                      ) {
+                        In use
+                      } @else {
+                        Delete
+                      }
+                    </button>
+                  </div>
+
+                  @if (!canOperate()) {
+                    <span class="read-only-label">
+                      Read only
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</section>

@@ -1,0 +1,371 @@
+﻿<section class="stocks-page">
+  <header class="hero">
+    <div>
+      <span class="eyebrow">
+        Stock Maintenance integration
+      </span>
+
+      <h1>Live Stock Control Center</h1>
+
+      <p>
+        View live inventory maintained in the separate
+        Stock Maintenance application. Stock cannot be
+        created, edited or deleted from POTracker.
+      </p>
+    </div>
+
+    <span class="read-only-label">
+      Read-only connection
+    </span>
+  </header>
+
+  <section class="summary-grid">
+    <article class="summary-card summary-card--blue">
+      <span>Stock records</span>
+      <strong>
+        {{ summary().totalRecords | number }}
+      </strong>
+      <small>Matching current search</small>
+    </article>
+
+    <article class="summary-card summary-card--violet">
+      <span>Unique materials</span>
+      <strong>
+        {{ summary().uniqueMaterials | number }}
+      </strong>
+      <small>Matched by material number</small>
+    </article>
+
+    <article class="summary-card summary-card--red">
+      <span>Low stock</span>
+      <strong>
+        {{ summary().lowStockRecords | number }}
+      </strong>
+      <small>At or below minimum level</small>
+    </article>
+
+    <article class="summary-card summary-card--green">
+      <span>Available</span>
+      <strong>
+        {{ summary().availableRecords | number }}
+      </strong>
+      <small>Above minimum level</small>
+    </article>
+
+    <article class="summary-card summary-card--cyan">
+      <span>Total quantity</span>
+      <strong>
+        {{
+          summary().totalCurrentStock
+            | number:'1.0-2'
+        }}
+      </strong>
+      <small>Current Stock Maintenance quantity</small>
+    </article>
+
+    <article class="summary-card summary-card--orange">
+      <span>Inventory value</span>
+      <strong>
+        ₹{{
+          summary().totalInventoryValue
+            | number:'1.0-2'
+        }}
+      </strong>
+      <small>Total value of matching records</small>
+    </article>
+  </section>
+
+  <section class="content-card">
+    <header class="content-header">
+      <div>
+        <span class="eyebrow">
+          External inventory
+        </span>
+
+        <h2>Stock Maintenance records</h2>
+
+        <p>
+          Duplicate material numbers are displayed as
+          separate stock records. PO material availability
+          combines their current quantities.
+        </p>
+      </div>
+
+      <button
+        class="quiet-button"
+        type="button"
+        [disabled]="loading()"
+        (click)="refresh()"
+      >
+        {{
+          loading()
+            ? 'Refreshing...'
+            : 'Refresh live data'
+        }}
+      </button>
+    </header>
+
+    <div
+      class="message"
+      [class.message--error]="!sourceOnline()"
+    >
+      <strong>
+        {{
+          sourceOnline()
+            ? 'Stock Maintenance connected'
+            : 'Stock Maintenance connection warning'
+        }}
+      </strong>
+
+      <span>{{ sourceMessage() }}</span>
+
+      @if (refreshedAt()) {
+        <small>
+          Last checked:
+          {{
+            refreshedAt()
+              | date:'dd MMM yyyy, hh:mm a'
+          }}
+        </small>
+      }
+    </div>
+
+    <form
+      class="filter-panel"
+      (ngSubmit)="search()"
+    >
+      <label>
+        <span>Search stock</span>
+
+        <input
+          type="search"
+          [formControl]="searchControl"
+          placeholder="Material number, description, supplier or location"
+        />
+      </label>
+
+      <div class="filter-actions">
+        <button
+          class="primary-button"
+          type="submit"
+          [disabled]="loading()"
+        >
+          Search
+        </button>
+
+        <button
+          class="quiet-button"
+          type="button"
+          [disabled]="loading()"
+          (click)="clearSearch()"
+        >
+          Clear
+        </button>
+      </div>
+    </form>
+
+    @if (errorMessage()) {
+      <div
+        class="message message--error"
+        role="alert"
+      >
+        <strong>Stock could not be loaded</strong>
+        <span>{{ errorMessage() }}</span>
+
+        <button
+          type="button"
+          (click)="refresh()"
+        >
+          Try again
+        </button>
+      </div>
+    }
+
+    @if (
+      loading() &&
+      items().length === 0
+    ) {
+      <div class="skeleton-list">
+        @for (
+          row of [1, 2, 3, 4, 5];
+          track row
+        ) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    } @else if (
+      !errorMessage() &&
+      items().length === 0
+    ) {
+      <div class="empty-state">
+        <strong>No stock records found</strong>
+        <span>
+          Change the search or verify the Stock
+          Maintenance application.
+        </span>
+      </div>
+    } @else if (items().length > 0) {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Description</th>
+              <th>Supplier</th>
+              <th>Location</th>
+              <th>Current</th>
+              <th>Minimum</th>
+              <th>Unit price</th>
+              <th>Total value</th>
+              <th>Status</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (
+              item of items();
+              track item.id
+            ) {
+              <tr
+                [class.low-stock-row]="
+                  item.isLowStock
+                "
+              >
+                <td>
+                  <strong class="material-number">
+                    {{ item.materialNo || '-' }}
+                  </strong>
+
+                  <small>
+                    {{ item.materialCode || 'No code' }}
+                  </small>
+                </td>
+
+                <td>
+                  {{ item.description || '-' }}
+                </td>
+
+                <td>
+                  {{ item.supplierName || '-' }}
+                </td>
+
+                <td>
+                  {{ item.location || '-' }}
+                </td>
+
+                <td class="quantity-cell">
+                  {{
+                    item.currentStock
+                      | number:'1.0-2'
+                  }}
+                </td>
+
+                <td class="quantity-cell">
+                  {{
+                    item.minimumStock
+                      | number:'1.0-2'
+                  }}
+                </td>
+
+                <td class="quantity-cell">
+                  ₹{{
+                    item.unitPrice
+                      | number:'1.0-2'
+                  }}
+                </td>
+
+                <td class="quantity-cell">
+                  ₹{{
+                    item.totalValue
+                      | number:'1.0-2'
+                  }}
+                </td>
+
+                <td>
+                  <span
+                    class="status"
+                    [class.status--low]="
+                      item.isLowStock
+                    "
+                    [class.status--healthy]="
+                      !item.isLowStock
+                    "
+                  >
+                    {{ item.status }}
+                  </span>
+                </td>
+
+                <td>
+                  {{
+                    item.lastUpdated
+                      ? (
+                          item.lastUpdated
+                            | date:'dd MMM yyyy'
+                        )
+                      : '-'
+                  }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="pagination">
+        <div>
+          Showing
+          <strong>{{ showingFrom() }}</strong>
+          to
+          <strong>{{ showingTo() }}</strong>
+          of
+          <strong>{{ totalRecords() }}</strong>
+        </div>
+
+        <label>
+          <span>Rows</span>
+
+          <select
+            [value]="pageSize()"
+            (change)="changePageSize($event)"
+          >
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </label>
+
+        <div class="page-buttons">
+          <button
+            class="quiet-button"
+            type="button"
+            [disabled]="
+              !hasPreviousPage() ||
+              loading()
+            "
+            (click)="previousPage()"
+          >
+            Previous
+          </button>
+
+          <span>
+            Page {{ page() }} of {{ totalPages() }}
+          </span>
+
+          <button
+            class="quiet-button"
+            type="button"
+            [disabled]="
+              !hasNextPage() ||
+              loading()
+            "
+            (click)="nextPage()"
+          >
+            Next
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</section>

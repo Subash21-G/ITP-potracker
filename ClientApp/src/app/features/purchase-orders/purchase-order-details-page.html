@@ -47,12 +47,6 @@
         <h2>{{ purchaseOrder.poNumber }}</h2>
       </div>
       <div class="heading-actions">
-        <a
-          class="button button--quiet"
-          [href]="'/PurchaseOrder/Details/' + purchaseOrder.purchaseOrderId"
-        >
-          MVC details
-        </a>
         @if (purchaseOrder.pdfFilePath) {
           <a
             class="button button--primary"
@@ -198,7 +192,7 @@
         <span class="section-kicker">Linked materials</span>
         <h2 id="linked-materials-title">Material list</h2>
         <p>
-          Showing {{ showingFrom() | number }}â€“{{ showingTo() | number }} of
+          Showing {{ showingFrom() | number }}–{{ showingTo() | number }} of
           {{ materialTotalRecords() | number }}
         </p>
       </div>
@@ -226,6 +220,7 @@
             <th>Material</th>
             <th>Description</th>
             <th class="number-cell">PO qty</th>
+            <th class="number-cell">Price per No</th>
             <th class="number-cell">Invoice balance</th>
             <th class="number-cell">Dispatch balance</th>
             <th>Delivery</th>
@@ -238,10 +233,10 @@
         <tbody>
           @for (material of materials(); track material.id) {
             <tr [class.overdue-row]="material.isOverdue">
-              <td>{{ material.lineItem || 'â€”' }}</td>
+              <td>{{ material.lineItem || '—' }}</td>
               <td>
-                <a class="material-number" [href]="'/Material/Details/' + material.id">
-                  {{ material.materialNo || 'â€”' }}
+                <a class="material-number" [routerLink]="['/materials', material.id]">
+                  {{ material.materialNo || '—' }}
                 </a>
                 @if (material.drawingNo) {
                   <span class="secondary-value">Drg: {{ material.drawingNo }}</span>
@@ -251,11 +246,14 @@
                 }
               </td>
               <td class="description-cell" [title]="material.description">
-                {{ material.description || 'â€”' }}
+                {{ material.description || '—' }}
               </td>
               <td class="number-cell number-cell--strong">
                 {{ material.quantity | number: '1.0-2' }}
                 <span class="unit">{{ material.unit }}</span>
+              </td>
+              <td class="number-cell number-cell--strong">
+                &#8377;{{ material.unitPrice | number: '1.2-2' }}
               </td>
               <td class="number-cell quantity--warning">
                 {{ material.invoiceBalanceQuantity | number: '1.0-2' }}
@@ -285,16 +283,16 @@
                 </span>
               </td>
               <td>
-                <a class="button button--table" [href]="'/Material/Details/' + material.id">
+                <a class="button button--table" [routerLink]="['/materials', material.id]">
                   View
                 </a>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td class="empty-state" colspan="11">
+              <td class="empty-state" colspan="12">
                 @if (loading()) {
-                  Loading materialsâ€¦
+                  Loading materials…
                 } @else {
                   No materials are linked to this Purchase Order.
                 }
@@ -328,7 +326,12 @@
     </div>
   </section>
 } @else if (loading()) {
-  <section class="panel loading-panel" aria-live="polite">Loading Purchase Order detailsâ€¦</section>
+  <section class="panel loading-panel" aria-live="polite">Loading Purchase Order details…</section>
 }
+
+
+
+
+
 
 

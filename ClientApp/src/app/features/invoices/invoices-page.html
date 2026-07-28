@@ -1,4 +1,4 @@
-<section class="page-heading">
+﻿<section class="page-heading">
   <div>
     <p class="eyebrow">INVOICE MANAGEMENT</p>
     <h1>Invoices</h1>
@@ -15,14 +15,8 @@
 
     <a appManageOnly
        class="button button--create"
-       href="/VyaparInvoiceImport/Upload">
+       [routerLink]="['/invoice-import']">
       + Upload Invoice Excel
-    </a>
-
-    <a appManageOnly
-       class="button button--quiet"
-       href="/VyaparInvoiceImport/InvoiceList">
-      MVC Invoice List
     </a>
   </div>
 </section>
@@ -255,3 +249,5 @@
     </div>
   </footer>
 </section>
+
+

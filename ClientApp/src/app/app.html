@@ -93,6 +93,26 @@
         </a>
 
         <a
+          routerLink="/purchasers"
+          (click)="closeMobileMenu()"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{
+            exact: false
+          }"
+        >
+          Purchasers
+        </a>
+        <a
+          routerLink="/stocks"
+          (click)="closeMobileMenu()"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{
+            exact: false
+          }"
+        >
+          Stock Control
+        </a>
+        <a
           routerLink="/invoices"
           (click)="closeMobileMenu()"
           routerLinkActive="active"
@@ -111,6 +131,26 @@
           }"
         >
           Pending Materials
+        </a>
+        <a
+          routerLink="/notifications"
+          (click)="closeMobileMenu()"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{
+            exact: true
+          }"
+        >
+          Notifications
+        </a>
+        <a
+          routerLink="/alerts"
+          (click)="closeMobileMenu()"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{
+            exact: true
+          }"
+        >
+          Smart Alerts
         </a>
         <a
           routerLink="/process-queue"
@@ -144,6 +184,18 @@
           Dispatch
         </a>
 
+        @if (currentUser()?.isAdmin) {
+          <a
+            routerLink="/reports"
+            (click)="closeMobileMenu()"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{
+              exact: true
+            }"
+          >
+            Reports
+          </a>
+        }
         @if (currentUser()?.canOperate) {
           <a
             routerLink="/material-import"
@@ -186,12 +238,6 @@
             Pending Invoices
           </a>
         }
-        <a
-          class="nav-mvc"
-          href="/Dashboard/Index"
-        >
-          MVC dashboard
-        </a>
       </nav>
 
       @if (currentUser()?.isAuthenticated) {
@@ -247,3 +293,9 @@
     available during migration
   </footer>
 }
+
+
+
+
+
+

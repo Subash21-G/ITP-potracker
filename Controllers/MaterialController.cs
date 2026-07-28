@@ -1062,6 +1062,12 @@ namespace POTracker.Controllers
                 Unit =
                     material.Unit ?? "",
 
+                UnitPrice =
+                    material.Cost,
+
+                PriceUnit =
+                    material.PriceUnit ?? "", 
+
                 DrawingNo =
                     material.DrawingNo,
 
@@ -1949,7 +1955,7 @@ namespace POTracker.Controllers
             worksheet.Cell("A1").Value =
                 "PO TRACKER - MATERIAL LIST";
 
-            worksheet.Range("A1:T1").Merge();
+            worksheet.Range("A1:V1").Merge();
 
             worksheet.Cell("A2").Value =
                 $"Generated: {DateTime.Now:dd-MM-yyyy hh:mm tt}";
@@ -1959,7 +1965,7 @@ namespace POTracker.Controllers
             worksheet.Cell("A3").Value =
                 $"Total materials: {rowCount}";
 
-            worksheet.Range("A3:T3").Merge();
+            worksheet.Range("A3:V3").Merge();
         }
 
         private static void WriteMaterialExcelHeaders(
@@ -1977,6 +1983,8 @@ namespace POTracker.Controllers
                 "HSN/SAC",
                 "Description",
                 "PO Qty",
+                "Unit Price",
+                "Price Unit",
                 "Invoice Qty",
                 "Balance Qty",
                 "Dispatch Qty",
@@ -2048,38 +2056,43 @@ namespace POTracker.Controllers
 
                 worksheet.Cell(excelRow, 9).Value =
                     item.Description;
-
                 worksheet.Cell(excelRow, 10).Value =
                     item.POQuantity;
 
                 worksheet.Cell(excelRow, 11).Value =
-                    item.InvoiceQuantity;
+                    item.UnitPrice;
 
                 worksheet.Cell(excelRow, 12).Value =
-                    item.BalanceQuantity;
+                    item.PriceUnit;
 
                 worksheet.Cell(excelRow, 13).Value =
-                    item.DispatchQuantity;
+                    item.InvoiceQuantity;
 
                 worksheet.Cell(excelRow, 14).Value =
-                    item.PendingDispatchQuantity;
+                    item.BalanceQuantity;
 
                 worksheet.Cell(excelRow, 15).Value =
-                    item.InvoiceStatus;
+                    item.DispatchQuantity;
 
                 worksheet.Cell(excelRow, 16).Value =
-                    item.DispatchStatus;
+                    item.PendingDispatchQuantity;
 
                 worksheet.Cell(excelRow, 17).Value =
-                    item.LiveStockQuantity;
+                    item.InvoiceStatus;
 
                 worksheet.Cell(excelRow, 18).Value =
-                    item.ShortageQuantity;
+                    item.DispatchStatus;
 
                 worksheet.Cell(excelRow, 19).Value =
-                    item.StockStatus;
+                    item.LiveStockQuantity;
 
                 worksheet.Cell(excelRow, 20).Value =
+                    item.ShortageQuantity;
+
+                worksheet.Cell(excelRow, 21).Value =
+                    item.StockStatus;
+
+                worksheet.Cell(excelRow, 22).Value =
                     item.DrawingNo ?? "";
 
                 StyleMaterialExcelStatus(
@@ -2096,7 +2109,7 @@ namespace POTracker.Controllers
             int rowCount)
         {
             var titleRange =
-                worksheet.Range("A1:T1");
+                worksheet.Range("A1:V1");
 
             titleRange.Style.Fill.BackgroundColor =
                 XLColor.FromHtml("#4C2FD4");
@@ -2110,12 +2123,12 @@ namespace POTracker.Controllers
             titleRange.Style.Alignment.Horizontal =
                 XLAlignmentHorizontalValues.Center;
 
-            worksheet.Range("A2:T3")
+            worksheet.Range("A2:V3")
                 .Style.Alignment.Horizontal =
                 XLAlignmentHorizontalValues.Center;
 
             var header =
-                worksheet.Range("A5:T5");
+                worksheet.Range("A5:V5");
 
             header.Style.Fill.BackgroundColor =
                 XLColor.FromHtml("#EDE9FE");
@@ -2150,7 +2163,7 @@ namespace POTracker.Controllers
                         6,
                         1,
                         5 + rowCount,
-                        20)
+                        22)
                     .Style.Border.BottomBorder =
                     XLBorderStyleValues.Hair;
             }
@@ -2158,17 +2171,17 @@ namespace POTracker.Controllers
             worksheet.SheetView.FreezeRows(5);
             worksheet.RangeUsed()?.SetAutoFilter();
 
-            worksheet.Columns(1, 20)
+            worksheet.Columns(1, 22)
                 .AdjustToContents();
 
             worksheet.Column(3).Width = 22;
             worksheet.Column(9).Width = 35;
             worksheet.Column(9)
                 .Style.Alignment.WrapText = true;
-            worksheet.Column(15).Width = 20;
-            worksheet.Column(16).Width = 18;
-            worksheet.Column(19).Width = 15;
-            worksheet.Column(20).Width = 24;
+            worksheet.Column(17).Width = 20;
+            worksheet.Column(18).Width = 18;
+            worksheet.Column(21).Width = 15;
+            worksheet.Column(22).Width = 24;
         }
 
         private static void StyleMaterialExcelStatus(
@@ -2177,7 +2190,7 @@ namespace POTracker.Controllers
             MaterialIndexRowViewModel item)
         {
             var stockCell =
-                worksheet.Cell(row, 19);
+                worksheet.Cell(row, 21);
 
             if (item.StockStatus == "Available")
             {
@@ -2242,3 +2255,8 @@ namespace POTracker.Controllers
         }
     }
 }
+
+
+
+
+

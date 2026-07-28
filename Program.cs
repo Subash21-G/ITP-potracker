@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http.Features;
+﻿using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
@@ -154,6 +154,10 @@ builder.Services.AddHttpClient("StockApi", client =>
 // ============================================================
 // BUILD APPLICATION
 // ============================================================
+builder.Services.AddMemoryCache();
+
+builder.Services.AddScoped<
+    POTracker.Services.ExternalStockService>();
 
 var app = builder.Build();
 

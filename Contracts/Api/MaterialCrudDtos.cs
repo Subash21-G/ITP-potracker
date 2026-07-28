@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace POTracker.Contracts.Api
 {
@@ -63,7 +63,20 @@ namespace POTracker.Contracts.Api
 
         public decimal PendingQty { get; init; }
 
-        public decimal StockQty { get; init; }
+
+        public decimal LiveStockQuantity { get; set; }
+
+        public decimal AllocatedStockQuantity { get; set; }
+
+        public decimal StockMinimumQuantity { get; set; }
+
+        public decimal StockShortageQuantity { get; set; }
+
+        public string StockStatus { get; set; } = "Not Found";
+
+        public int StockRecordCount { get; set; }
+
+        public bool StockDataLive { get; set; }
 
         // INVOICE DETAILS
         public decimal InvoiceQty { get; init; }
@@ -207,13 +220,6 @@ namespace POTracker.Contracts.Api
         [StringLength(100)]
         public string? Dep { get; set; }
 
-        [Range(
-            typeof(decimal),
-            "0",
-            "9999999999999999",
-            ErrorMessage = "Stock quantity cannot be negative.")]
-        public decimal StockQty { get; set; }
-
         // COST DETAILS
         [Range(
             typeof(decimal),
@@ -319,3 +325,6 @@ namespace POTracker.Contracts.Api
         public int MaterialId { get; init; }
     }
 }
+
+
+

@@ -1,4 +1,4 @@
-﻿import {
+import {
   ApplicationConfig,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
