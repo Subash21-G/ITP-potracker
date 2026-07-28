@@ -1,4 +1,4 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
@@ -335,19 +335,24 @@ namespace POTracker.Controllers
             {
                 search = search.Trim();
 
-                query = query.Where(x =>
-                    x.MaterialNo.Contains(search) ||
-                    (x.LineItem != null && x.LineItem.Contains(search)) ||
-                    (x.HsnSacCode != null && x.HsnSacCode.Contains(search)) ||
-                    (x.ShortDescription != null && x.ShortDescription.Contains(search)) ||
-                    (x.BriefDescription != null && x.BriefDescription.Contains(search)) ||
-                    (x.DrawingNo != null && x.DrawingNo.Contains(search)) ||
-                    (x.PurchaseOrder != null &&
-                     x.PurchaseOrder.PONumber.Contains(search)) ||
-                    (x.PurchaseOrder != null &&
-                     x.PurchaseOrder.BuyerContactPerson != null &&
-                     x.PurchaseOrder.BuyerContactPerson.Contains(search)));
-            }
+ query = query.Where(x =>
+    (x.MaterialNo != null &&
+     x.MaterialNo.Contains(search)) ||
+    (x.LineItem != null &&
+     x.LineItem.Contains(search)) ||
+    (x.HsnSacCode != null &&
+     x.HsnSacCode.Contains(search)) ||
+    (x.ShortDescription != null &&
+     x.ShortDescription.Contains(search)) ||
+    (x.BriefDescription != null &&
+     x.BriefDescription.Contains(search)) ||
+    (x.DrawingNo != null &&
+     x.DrawingNo.Contains(search)) ||
+    (x.PurchaseOrder != null &&
+     x.PurchaseOrder.PONumber.Contains(search)) ||
+    (x.PurchaseOrder != null &&
+     x.PurchaseOrder.BuyerContactPerson != null &&
+     x.PurchaseOrder.BuyerContactPerson.Contains(search)));         }
 
             if (!string.IsNullOrWhiteSpace(poNumber))
             {
@@ -514,7 +519,7 @@ namespace POTracker.Controllers
                     material.ReceivingDate,
 
                 LineItem = material.LineItem ?? "",
-                MaterialNo = material.MaterialNo,
+                MaterialNo = material.MaterialNo ?? "",
                 HsnSacCode = material.HsnSacCode,
                 ShortDescription = material.ShortDescription,
                 BriefDescription = material.BriefDescription,
@@ -675,22 +680,6 @@ namespace POTracker.Controllers
                 })
                 .OrderBy(x => x.Value)
                 .ToListAsync();
-
-            static List<PendingMaterialFilterOptionViewModel>
-                ConvertOptions(
-                    IEnumerable<dynamic> items)
-            {
-                return items
-                    .Select(x =>
-                        new PendingMaterialFilterOptionViewModel
-                        {
-                            Value = x.Value,
-                            Text = x.Value,
-                            Count = x.Count
-                        })
-                    .ToList();
-            }
-
             return new DropdownData
             {
                 Handlers = handlers

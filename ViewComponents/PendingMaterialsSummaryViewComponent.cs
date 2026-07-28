@@ -67,7 +67,7 @@ namespace POTracker.ViewComponents
                             material.ReceivingDate,
 
                         MaterialNo =
-                            material.MaterialNo,
+                         material.MaterialNo ?? "",
 
                         Description =
                             !string.IsNullOrWhiteSpace(

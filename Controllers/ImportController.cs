@@ -129,7 +129,7 @@ namespace POTracker.Controllers
             headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
             worksheet.SheetView.FreezeRows(1);
-            worksheet.RangeUsed().SetAutoFilter();
+          worksheet.RangeUsed()?.SetAutoFilter();
             worksheet.Columns().AdjustToContents(12, 32);
             worksheet.Column(11).Width = 45;
             worksheet.Column(21).Width = 35;

@@ -222,14 +222,14 @@ namespace POTracker.Controllers
                     .ToList();
 
             var duplicateGroups =
-                successfulFiles
-                    .GroupBy(
-                        x => x.PurchaseOrder!
-                            .PurchaseOrderNo
-                            .Trim(),
-                        StringComparer.OrdinalIgnoreCase)
-                    .Where(x => x.Count() > 1)
-                    .ToList();
+    successfulFiles
+        .GroupBy(
+            x => x.PurchaseOrder!
+                .PurchaseOrderNo!
+                .Trim(),
+            StringComparer.OrdinalIgnoreCase)
+        .Where(x => x.Count() > 1)
+        .ToList();
 
             foreach (var duplicateGroup in duplicateGroups)
             {
