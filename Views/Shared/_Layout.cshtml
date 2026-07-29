@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http
 
 @{
     string? currentController = ViewContext.RouteData.Values["controller"]?.ToString();
@@ -202,11 +202,10 @@
                         <span class="nav-label">PO PDF Import</span>
                     </a>
 
-                    <a asp-controller="Import"
-                       asp-action="Index"
-                       class="nav-link @(IsActive("Import") ? "active" : "")">
+                    <a href="/app/material-import"
+                       class="nav-link">
                         <span class="nav-icon nav-green">⇧</span>
-                        <span class="nav-label">Material Excel Import</span>
+                        <span class="nav-label">Material Excel / PDF Import</span>
                     </a>
 
                     <div class="nav-group @(invoiceMenuActive ? "active open" : "")"
