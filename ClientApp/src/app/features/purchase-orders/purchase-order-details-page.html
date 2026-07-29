@@ -1,4 +1,4 @@
-﻿<section class="page-heading">
+<section class="page-heading">
   <div>
     <p class="eyebrow">PURCHASE ORDER MANAGEMENT</p>
     <h1>Purchase Order Details</h1>
@@ -30,7 +30,7 @@
     </div>
     <div class="message__actions">
       @if (errorStatus() === 401) {
-        <a class="button button--primary" href="/Account/Login">Sign in</a>
+        <a class="button button--primary" href="/app/login">Sign in</a>
       }
       @if (errorStatus() !== 400 && errorStatus() !== 404) {
         <button class="button button--quiet" type="button" (click)="retry()">Retry</button>

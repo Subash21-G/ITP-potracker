@@ -1,11 +1,34 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using POTracker.Services;
 using POTracker.ViewModels;
 
 namespace POTracker.Controllers
 {
     public partial class VyaparInvoiceImportController
     {
+        // ============================================================
+        // ANGULAR API - DOWNLOAD INVOICE IMPORT TEMPLATE
+        // ============================================================
+
+        [HttpGet("~/api/invoice-import/template")]
+        [Produces(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public IActionResult DownloadExcelTemplateApi()
+        {
+            var fileContent =
+                InvoiceImportTemplateService
+                    .CreateInvoiceImportTemplate();
+
+            return File(
+                fileContent,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "POTracker_Invoice_Import_Template.xlsx");
+        }
+
         // ============================================================
         // ANGULAR API - PREVIEW SINGLE INVOICE FILE
         // ============================================================

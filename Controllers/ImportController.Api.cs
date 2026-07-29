@@ -1,10 +1,43 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using POTracker.Services;
 using POTracker.ViewModels;
 
 namespace POTracker.Controllers
 {
     public partial class ImportController
     {
+        // ============================================================
+        // ANGULAR API - DOWNLOAD MATERIAL IMPORT TEMPLATE
+        // ============================================================
+
+        [HttpGet("~/api/material-import/template")]
+        [Produces(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public IActionResult DownloadTemplateApi()
+        {
+            if (!IsLoggedIn())
+            {
+                return Unauthorized(new
+                {
+                    message =
+                        "Your session has expired. Sign in again."
+                });
+            }
+
+            var fileContent =
+                ExcelImportTemplateService
+                    .CreateMaterialImportTemplate(
+                        MaximumRowsPerImport);
+
+            return File(
+                fileContent,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "POTracker_Material_Import_Template.xlsx");
+        }
+
         // ============================================================
         // ANGULAR API - UPLOAD AND PREVIEW MATERIAL EXCEL
         // ============================================================
