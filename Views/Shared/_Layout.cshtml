@@ -195,9 +195,8 @@
                         <span>Import & Tracking</span>
                     </div>
 
-                    <a asp-controller="POImport"
-                       asp-action="Upload"
-                       class="nav-link @(IsActive("POImport") ? "active" : "")">
+                    <a href="/app/po-import"
+                       class="nav-link">
                         <span class="nav-icon nav-orange">⇩</span>
                         <span class="nav-label">PO PDF Import</span>
                     </a>
@@ -441,8 +440,7 @@
 
                     @if (canOperate)
                     {
-                        <a asp-controller="POImport"
-                           asp-action="Upload"
+                        <a href="/app/po-import"
                            class="top-action top-action-po">
                             <span class="top-action-icon">＋</span>
                             <span>Import PO</span>

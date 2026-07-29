@@ -1,4 +1,4 @@
-﻿@model POTracker.ViewModels.PurchaseOrderIndexViewModel
+@model POTracker.ViewModels.PurchaseOrderIndexViewModel
 
 @{
     ViewData["Title"] = "Purchase Orders";
@@ -544,8 +544,7 @@
             </div>
 
             <role-access roles="Admin,Production">
-                <a asp-controller="POImport"
-                   asp-action="Upload"
+                <a href="/app/po-import"
                    class="poi-import-link">
                     Import PO PDF
                 </a>
