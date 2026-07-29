@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using ClosedXML.Excel;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.ViewModels;
@@ -199,6 +200,100 @@ namespace POTracker.Controllers
                     TotalRecords = totalRecords,
                     TotalPages = totalPages
                 });
+        }
+
+        /// <summary>
+        /// Exports all filtered Pending Materials used by the Angular screen.
+        /// </summary>
+        [HttpGet("~/api/pending-materials/export-excel")]
+        [Produces(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult>
+            ExportPendingMaterialsExcelApi(
+                string? search,
+                string? poNumber,
+                string? handler,
+                string? assignedDashboard,
+                string? processStatus,
+                string? invoiceStatus,
+                string? dispatchStatus,
+                DateTime? poDateFrom,
+                DateTime? poDateTo,
+                DateTime? poReceivedDateFrom,
+                DateTime? poReceivedDateTo,
+                DateTime? deliveryDateFrom,
+                DateTime? deliveryDateTo,
+                bool overdueOnly = false,
+                bool dueThisWeekOnly = false,
+                CancellationToken cancellationToken = default)
+        {
+            if (!IsLoggedIn())
+            {
+                return Unauthorized(new
+                {
+                    message =
+                        "Your session has expired. Sign in again."
+                });
+            }
+
+            var materials =
+                await ApplyFilters(
+                        CreatePendingQuery(),
+                        search,
+                        poNumber,
+                        handler,
+                        assignedDashboard,
+                        processStatus,
+                        invoiceStatus,
+                        dispatchStatus,
+                        poDateFrom,
+                        poDateTo,
+                        poReceivedDateFrom,
+                        poReceivedDateTo,
+                        deliveryDateFrom,
+                        deliveryDateTo,
+                        overdueOnly,
+                        dueThisWeekOnly)
+                    .OrderBy(material =>
+                        !material.DeliveryDate.HasValue
+                            ? 2
+                            : material.DeliveryDate.Value.Date <
+                              DateTime.Today
+                                ? 0
+                                : 1)
+                    .ThenBy(material =>
+                        material.DeliveryDate)
+                    .ThenByDescending(material =>
+                        material.Id)
+                    .ToListAsync(cancellationToken);
+
+            var rows = materials
+                .Select(MapRow)
+                .ToList();
+
+            using var workbook =
+                new XLWorkbook();
+
+            var worksheet =
+                workbook.Worksheets.Add(
+                    "Pending Materials");
+
+            WriteExcel(
+                worksheet,
+                rows);
+
+            using var stream =
+                new MemoryStream();
+
+            workbook.SaveAs(stream);
+
+            return File(
+                stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Pending_Materials_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
         }
 
         private static PendingMaterialItemDto

@@ -1,4 +1,4 @@
-﻿import { ManageOnlyDirective } from '../../core/directives/manage-only.directive';
+import { ManageOnlyDirective } from '../../core/directives/manage-only.directive';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -154,7 +154,7 @@ export class PurchaseOrdersPage {
 
     const queryString = params.toString();
 
-    return queryString ? `/PurchaseOrder/ExportExcel?${queryString}` : '/PurchaseOrder/ExportExcel';
+    return queryString ? `/api/purchase-orders/export-excel?${queryString}` : '/api/purchase-orders/export-excel';
   }
 
   private loadPurchaseOrders(): void {

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using ClosedXML.Excel;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
@@ -120,6 +121,76 @@ namespace POTracker.Controllers.Api
                 PageSize = pageSize,
                 TotalRecords = totalRecords
             });
+        }
+
+        /// <summary>
+        /// Exports all filtered Purchase Orders used by the Angular screen.
+        /// </summary>
+        [HttpGet("export-excel")]
+        [Produces(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> ExportExcel(
+            string? search,
+            string? handler,
+            DateTime? poDateFrom,
+            DateTime? poDateTo,
+            DateTime? poReceivedDateFrom,
+            DateTime? poReceivedDateTo,
+            string? status,
+            string? materialStatus,
+            CancellationToken cancellationToken = default)
+        {
+            var filteredPurchaseOrders =
+                ApplyPurchaseOrderFilters(
+                    _context.PurchaseOrders.AsNoTracking(),
+                    search,
+                    handler,
+                    poDateFrom,
+                    poDateTo,
+                    poReceivedDateFrom,
+                    poReceivedDateTo);
+
+            var aggregateRows =
+                await ApplyAggregateFilters(
+                        CreateAggregateQuery(
+                            filteredPurchaseOrders),
+                        status,
+                        materialStatus)
+                    .OrderByDescending(row =>
+                        row.POReceivedDate ??
+                        row.PODate ??
+                        row.CreatedDate)
+                    .ThenByDescending(row =>
+                        row.PurchaseOrderId)
+                    .ToListAsync(cancellationToken);
+
+            var rows = aggregateRows
+                .Select(MapListItem)
+                .ToList();
+
+            using var workbook =
+                new XLWorkbook();
+
+            var worksheet =
+                workbook.Worksheets.Add(
+                    "Purchase Orders");
+
+            WritePurchaseOrderExcel(
+                worksheet,
+                rows);
+
+            using var stream =
+                new MemoryStream();
+
+            workbook.SaveAs(stream);
+
+            return File(
+                stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Purchase_Orders_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
         }
 
         /// <summary>
@@ -602,6 +673,294 @@ namespace POTracker.Controllers.Api
             return row.CompletedMaterials > 0
                 ? "Partially Completed"
                 : "Pending";
+        }
+
+        private static void WritePurchaseOrderExcel(
+            IXLWorksheet worksheet,
+            IReadOnlyList<PurchaseOrderListItemDto> rows)
+        {
+            worksheet.Cell("A1").Value =
+                "PO TRACKER - PURCHASE ORDERS";
+
+            worksheet.Range("A1:U1").Merge();
+
+            worksheet.Cell("A2").Value =
+                $"Generated: {DateTime.Now:dd-MM-yyyy hh:mm tt}";
+
+            worksheet.Range("A2:U2").Merge();
+
+            worksheet.Cell("A3").Value =
+                $"Total purchase orders: {rows.Count}";
+
+            worksheet.Range("A3:U3").Merge();
+
+            var headers = new[]
+            {
+                "S.No",
+                "PO Number",
+                "Handler / Person",
+                "PO Date",
+                "PO Received Date",
+                "PO Status",
+                "Material Status",
+                "Total Materials",
+                "Pending Materials",
+                "Completed Materials",
+                "Not Invoiced Materials",
+                "Pending Dispatch Materials",
+                "Overdue Materials",
+                "Total PO Qty",
+                "Invoice Qty",
+                "Invoice Balance",
+                "Dispatch Qty",
+                "Dispatch Balance",
+                "Earliest Delivery",
+                "Latest Delivery",
+                "PDF Available"
+            };
+
+            for (var index = 0;
+                 index < headers.Length;
+                 index++)
+            {
+                worksheet.Cell(
+                    5,
+                    index + 1).Value =
+                    headers[index];
+            }
+
+            var rowNumber = 6;
+
+            for (var index = 0;
+                 index < rows.Count;
+                 index++)
+            {
+                var item = rows[index];
+
+                worksheet.Cell(
+                    rowNumber,
+                    1).Value =
+                    index + 1;
+
+                worksheet.Cell(
+                    rowNumber,
+                    2).Value =
+                    item.PONumber;
+
+                worksheet.Cell(
+                    rowNumber,
+                    3).Value =
+                    string.IsNullOrWhiteSpace(item.Handler)
+                        ? "Unassigned"
+                        : item.Handler;
+
+                if (item.PODate.HasValue)
+                {
+                    worksheet.Cell(
+                        rowNumber,
+                        4).Value =
+                        item.PODate.Value;
+                }
+
+                if (item.POReceivedDate.HasValue)
+                {
+                    worksheet.Cell(
+                        rowNumber,
+                        5).Value =
+                        item.POReceivedDate.Value;
+                }
+
+                worksheet.Cell(rowNumber, 6).Value =
+                    item.Status;
+
+                worksheet.Cell(rowNumber, 7).Value =
+                    item.MaterialStatus;
+
+                worksheet.Cell(rowNumber, 8).Value =
+                    item.TotalMaterials;
+
+                worksheet.Cell(rowNumber, 9).Value =
+                    item.PendingMaterials;
+
+                worksheet.Cell(rowNumber, 10).Value =
+                    item.CompletedMaterials;
+
+                worksheet.Cell(rowNumber, 11).Value =
+                    item.NotInvoicedMaterials;
+
+                worksheet.Cell(rowNumber, 12).Value =
+                    item.PendingDispatchMaterials;
+
+                worksheet.Cell(rowNumber, 13).Value =
+                    item.OverdueMaterials;
+
+                worksheet.Cell(rowNumber, 14).Value =
+                    item.TotalPOQuantity;
+
+                worksheet.Cell(rowNumber, 15).Value =
+                    item.TotalInvoiceQuantity;
+
+                worksheet.Cell(rowNumber, 16).Value =
+                    item.TotalInvoiceBalanceQuantity;
+
+                worksheet.Cell(rowNumber, 17).Value =
+                    item.TotalDispatchQuantity;
+
+                worksheet.Cell(rowNumber, 18).Value =
+                    item.TotalPendingDispatchQuantity;
+
+                if (item.EarliestDeliveryDate.HasValue)
+                {
+                    worksheet.Cell(
+                        rowNumber,
+                        19).Value =
+                        item.EarliestDeliveryDate.Value;
+                }
+
+                if (item.LatestDeliveryDate.HasValue)
+                {
+                    worksheet.Cell(
+                        rowNumber,
+                        20).Value =
+                        item.LatestDeliveryDate.Value;
+                }
+
+                worksheet.Cell(rowNumber, 21).Value =
+                    string.IsNullOrWhiteSpace(
+                        item.PdfFilePath)
+                        ? "No"
+                        : "Yes";
+
+                StyleExcelStatus(
+                    worksheet,
+                    rowNumber,
+                    item);
+
+                rowNumber++;
+            }
+
+            var title =
+                worksheet.Range("A1:U1");
+
+            title.Style.Fill.BackgroundColor =
+                XLColor.FromHtml("#4C2FD4");
+
+            title.Style.Font.FontColor =
+                XLColor.White;
+
+            title.Style.Font.Bold = true;
+            title.Style.Font.FontSize = 16;
+
+            title.Style.Alignment.Horizontal =
+                XLAlignmentHorizontalValues.Center;
+
+            worksheet.Range("A2:U3")
+                .Style.Alignment.Horizontal =
+                XLAlignmentHorizontalValues.Center;
+
+            var header =
+                worksheet.Range("A5:U5");
+
+            header.Style.Fill.BackgroundColor =
+                XLColor.FromHtml("#EDE9FE");
+
+            header.Style.Font.FontColor =
+                XLColor.FromHtml("#2D1B69");
+
+            header.Style.Font.Bold = true;
+
+            if (rows.Count > 0)
+            {
+                worksheet.Range(
+                        6,
+                        4,
+                        5 + rows.Count,
+                        5)
+                    .Style.DateFormat.Format =
+                    "dd-mmm-yyyy";
+
+                worksheet.Range(
+                        6,
+                        19,
+                        5 + rows.Count,
+                        20)
+                    .Style.DateFormat.Format =
+                    "dd-mmm-yyyy";
+
+                worksheet.Range(
+                        6,
+                        14,
+                        5 + rows.Count,
+                        18)
+                    .Style.NumberFormat.Format =
+                    "0.00";
+            }
+
+            worksheet.SheetView.FreezeRows(5);
+
+            worksheet.RangeUsed()?
+                .SetAutoFilter();
+
+            worksheet.Columns(1, 21)
+                .AdjustToContents();
+
+            worksheet.Column(3).Width = 22;
+            worksheet.Column(6).Width = 16;
+            worksheet.Column(7).Width = 20;
+        }
+
+        private static void StyleExcelStatus(
+            IXLWorksheet worksheet,
+            int rowNumber,
+            PurchaseOrderListItemDto item)
+        {
+            var statusCell =
+                worksheet.Cell(
+                    rowNumber,
+                    6);
+
+            if (item.Status == "Completed")
+            {
+                statusCell.Style.Fill.BackgroundColor =
+                    XLColor.FromHtml("#DCFCE7");
+
+                statusCell.Style.Font.FontColor =
+                    XLColor.FromHtml("#166534");
+            }
+            else if (item.Status == "In Progress")
+            {
+                statusCell.Style.Fill.BackgroundColor =
+                    XLColor.FromHtml("#DBEAFE");
+
+                statusCell.Style.Font.FontColor =
+                    XLColor.FromHtml("#1D4ED8");
+            }
+            else
+            {
+                statusCell.Style.Fill.BackgroundColor =
+                    XLColor.FromHtml("#FEF3C7");
+
+                statusCell.Style.Font.FontColor =
+                    XLColor.FromHtml("#92400E");
+            }
+
+            statusCell.Style.Font.Bold = true;
+
+            if (item.OverdueMaterials > 0)
+            {
+                var overdueCell =
+                    worksheet.Cell(
+                        rowNumber,
+                        13);
+
+                overdueCell.Style.Fill.BackgroundColor =
+                    XLColor.FromHtml("#FFE4E6");
+
+                overdueCell.Style.Font.FontColor =
+                    XLColor.FromHtml("#9F1239");
+
+                overdueCell.Style.Font.Bold = true;
+            }
         }
 
         private static int NormalizePageSize(int pageSize)

@@ -1,4 +1,4 @@
-﻿import {
+import {
   HttpClient,
   HttpParams,
 } from '@angular/common/http';
@@ -266,8 +266,8 @@ export class PendingMaterialApiService {
       params.toString();
 
     return queryString
-      ? `/PendingMaterial/ExportExcel?${queryString}`
-      : '/PendingMaterial/ExportExcel';
+      ? `/api/pending-materials/export-excel?${queryString}`
+      : '/api/pending-materials/export-excel';
   }
 
   private appendText(
