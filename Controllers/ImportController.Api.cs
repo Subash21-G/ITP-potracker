@@ -1,4 +1,6 @@
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using POTracker.Services;
 using POTracker.ViewModels;
 
@@ -58,31 +60,187 @@ namespace POTracker.Controllers
                 });
             }
 
-            var uploadResult =
-                await Upload(excelFile);
-
-            if (uploadResult is RedirectToActionResult redirect &&
-                string.Equals(
-                    redirect.ActionName,
-                    nameof(Preview),
-                    StringComparison.OrdinalIgnoreCase))
+            if (excelFile == null ||
+                excelFile.Length == 0)
             {
-                var batchId =
-                    redirect.RouteValues?
-                        ["batchId"]
-                        ?.ToString();
+                return BadRequest(new
+                {
+                    message =
+                        "Please select an Excel file."
+                });
+            }
 
-                var batch =
-                    await LoadBatchAsync(batchId);
+            if (excelFile.Length > MaximumExcelFileSize)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "The Excel file is too large. Maximum allowed size is 20 MB."
+                });
+            }
 
-                if (batch == null)
+            var extension =
+                Path.GetExtension(
+                    excelFile.FileName);
+
+            var allowedExtensions =
+                new[]
+                {
+                    ".xlsx",
+                    ".xlsm"
+                };
+
+            if (!allowedExtensions.Contains(
+                    extension,
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "Only .xlsx and .xlsm Excel files are supported."
+                });
+            }
+
+            try
+            {
+                await using var uploadStream =
+                    new MemoryStream();
+
+                await excelFile.CopyToAsync(
+                    uploadStream);
+
+                uploadStream.Position = 0;
+
+                using var workbook =
+                    new XLWorkbook(
+                        uploadStream);
+
+                var worksheet =
+                    workbook.Worksheets
+                        .FirstOrDefault();
+
+                if (worksheet == null)
                 {
                     return BadRequest(new
                     {
                         message =
-                            "The material import preview could not be loaded."
+                            "The Excel workbook does not contain any worksheet."
                     });
                 }
+
+                var headerMap =
+                    BuildHeaderMap(
+                        worksheet);
+
+                var missingHeaders =
+                    GetMissingRequiredHeaders(
+                        headerMap);
+
+                if (missingHeaders.Count > 0)
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "Missing required Excel columns: " +
+                            string.Join(
+                                ", ",
+                                missingHeaders) +
+                            "."
+                    });
+                }
+
+                var lastRow =
+                    worksheet
+                        .LastRowUsed()
+                        ?.RowNumber() ?? 1;
+
+                var dataRowCount =
+                    Math.Max(
+                        0,
+                        lastRow - 1);
+
+                if (dataRowCount == 0)
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "The Excel file does not contain any material rows."
+                    });
+                }
+
+                if (dataRowCount > MaximumRowsPerImport)
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            $"A maximum of {MaximumRowsPerImport} rows can be imported at one time. " +
+                            $"This file contains approximately {dataRowCount} data rows."
+                    });
+                }
+
+                var materialRows =
+                    new List<MaterialImportRowViewModel>();
+
+                for (var rowNumber = 2;
+                     rowNumber <= lastRow;
+                     rowNumber++)
+                {
+                    if (IsRowEmpty(
+                            worksheet,
+                            rowNumber,
+                            headerMap))
+                    {
+                        continue;
+                    }
+
+                    var materialRow =
+                        ParseExcelRow(
+                            worksheet,
+                            rowNumber,
+                            headerMap);
+
+                    ValidateRow(
+                        materialRow);
+
+                    materialRows.Add(
+                        materialRow);
+                }
+
+                if (materialRows.Count == 0)
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "No non-empty material rows were found in the Excel file."
+                    });
+                }
+
+                ValidateDuplicateRows(
+                    materialRows);
+
+                ValidatePurchaseOrderConsistency(
+                    materialRows);
+
+                var batch =
+                    new MaterialImportBatchViewModel
+                    {
+                        BatchId =
+                            Guid.NewGuid()
+                                .ToString("N"),
+
+                        OriginalFileName =
+                            Path.GetFileName(
+                                excelFile.FileName),
+
+                        CreatedAt =
+                            DateTime.Now,
+
+                        Rows =
+                            materialRows
+                    };
+
+                await SaveBatchAsync(
+                    batch);
 
                 var rows =
                     batch.Rows.Select(row => new
@@ -169,22 +327,15 @@ namespace POTracker.Controllers
                                 row.TotalValue)
                 });
             }
-
-            var errorMessage =
-                TempData["Error"]
-                    ?.ToString() ??
-                ViewData["Error"]
-                    ?.ToString() ??
-                "Unable to process the material Excel file.";
-
-            TempData.Remove("Error");
-            ViewData.Remove("Error");
-
-            return BadRequest(new
+            catch (Exception ex)
             {
-                message =
-                    errorMessage
-            });
+                return BadRequest(new
+                {
+                    message =
+                        "Unable to process the Excel file. " +
+                        ex.Message
+                });
+            }
         }
 
         // ============================================================
@@ -216,49 +367,191 @@ namespace POTracker.Controllers
                 });
             }
 
-            var commitResult =
-                await Commit(
+            var batch =
+                await LoadBatchAsync(
                     request.BatchId);
 
-            if (commitResult is RedirectToActionResult redirect &&
-                string.Equals(
-                    redirect.ControllerName,
-                    "Material",
-                    StringComparison.OrdinalIgnoreCase))
+            if (batch == null)
             {
-                var message =
-                    TempData["Success"]
-                        ?.ToString() ??
-                    "Material import completed successfully.";
+                return BadRequest(new
+                {
+                    message =
+                        "The import batch has expired or could not be found. Please upload the file again."
+                });
+            }
 
-                TempData.Remove("Success");
-                TempData.Remove("Error");
-                ViewData.Remove("Error");
+            if (batch.Rows.Count == 0)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "The import batch does not contain any material rows."
+                });
+            }
+
+            if (batch.Rows.Any(row =>
+                    !row.IsValid))
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "This import contains invalid rows. Correct the Excel file and upload it again."
+                });
+            }
+
+            await using var transaction =
+                await _context.Database
+                    .BeginTransactionAsync();
+
+            try
+            {
+                var purchaserMap =
+                    await CreateOrUpdatePurchasersAsync(
+                        batch.Rows);
+
+                var purchaseOrderMap =
+                    await CreateOrUpdatePurchaseOrdersAsync(
+                        batch.Rows,
+                        purchaserMap);
+
+                await _context.SaveChangesAsync();
+
+                var purchaseOrderIds =
+                    purchaseOrderMap.Values
+                        .Select(purchaseOrder =>
+                            purchaseOrder.Id)
+                        .Distinct()
+                        .ToList();
+
+                var existingMaterials =
+                    await _context.Materials
+                        .Where(material =>
+                            purchaseOrderIds.Contains(
+                                material.PurchaseOrderId))
+                        .ToListAsync();
+
+                var materialMap =
+                    existingMaterials
+                        .GroupBy(material =>
+                            CreateMaterialKey(
+                                material.PurchaseOrderId,
+                                material.LineItem,
+                                material.MaterialNo))
+                        .ToDictionary(
+                            group =>
+                                group.Key,
+                            group =>
+                                group.First(),
+                            StringComparer.OrdinalIgnoreCase);
+
+                var createdCount = 0;
+                var updatedCount = 0;
+
+                foreach (var row in batch.Rows)
+                {
+                    var poKey =
+                        NormalizeKey(
+                            row.PONumber);
+
+                    var purchaseOrder =
+                        purchaseOrderMap[poKey];
+
+                    var lineItem =
+                        NormalizeLineItem(
+                            row.LineItem,
+                            row.RowNumber);
+
+                    var materialKey =
+                        CreateMaterialKey(
+                            purchaseOrder.Id,
+                            lineItem,
+                            row.MaterialNo);
+
+                    if (materialMap.TryGetValue(
+                            materialKey,
+                            out var material))
+                    {
+                        ApplyRowToExistingMaterial(
+                            material,
+                            row,
+                            purchaseOrder.Id,
+                            lineItem);
+
+                        _context.Materials.Update(
+                            material);
+
+                        updatedCount++;
+                    }
+                    else
+                    {
+                        material =
+                            CreateMaterial(
+                                row,
+                                purchaseOrder.Id,
+                                lineItem);
+
+                        _context.Materials.Add(
+                            material);
+
+                        materialMap[materialKey] =
+                            material;
+
+                        createdCount++;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var matchedInvoiceRows = 0;
+
+                foreach (var purchaseOrderId
+                         in purchaseOrderIds)
+                {
+                    try
+                    {
+                        matchedInvoiceRows +=
+                            await _pendingInvoiceMatcher
+                                .MatchPendingInvoicesForPurchaseOrderAsync(
+                                    purchaseOrderId);
+                    }
+                    catch
+                    {
+                        // Material import remains successful when an
+                        // optional pending-invoice match fails.
+                    }
+                }
+
+                DeleteBatchFile(
+                    batch.BatchId);
+
+                var message =
+                    $"Material import completed. Created: {createdCount}, " +
+                    $"Updated: {updatedCount}, Pending invoices matched: {matchedInvoiceRows}.";
 
                 return Ok(new
                 {
                     message,
+
                     batchId =
-                        request.BatchId
+                        batch.BatchId,
+
+                    createdCount,
+                    updatedCount,
+                    matchedInvoiceRows
                 });
             }
-
-            var errorMessage =
-                TempData["Error"]
-                    ?.ToString() ??
-                ViewData["Error"]
-                    ?.ToString() ??
-                "The material import could not be completed.";
-
-            TempData.Remove("Success");
-            TempData.Remove("Error");
-            ViewData.Remove("Error");
-
-            return BadRequest(new
+            catch (Exception ex)
             {
-                message =
-                    errorMessage
-            });
+                await transaction.RollbackAsync();
+
+                return BadRequest(new
+                {
+                    message =
+                        "Material import failed. No partial import was saved. " +
+                        ex.Message
+                });
+            }
         }
 
         // ============================================================

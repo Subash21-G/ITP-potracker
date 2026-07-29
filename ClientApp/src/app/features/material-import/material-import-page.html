@@ -7,9 +7,9 @@
     <h1>Import Materials</h1>
 
     <p class="page-heading__description">
-      Import up to 2,000 material rows from Excel.
-      Purchase orders, purchasers and materials
-      are created or updated automatically.
+      Import up to 2,000 material rows from Excel
+      or extract purchase-order materials from PDF.
+      Review the extracted data before saving.
     </p>
   </div>
 
@@ -34,19 +34,67 @@
   </div>
 </section>
 
+<section class="import-mode">
+  <button
+    type="button"
+    [class.import-mode__button--active]="
+      mode() === 'excel'
+    "
+    [disabled]="
+      loading() ||
+      committing() ||
+      cancelling()
+    "
+    (click)="changeMode('excel')">
+    <strong>Excel Import</strong>
+    <span>
+      Upload XLSX or XLSM with up to 2,000 rows
+    </span>
+  </button>
+
+  <button
+    type="button"
+    [class.import-mode__button--active]="
+      mode() === 'pdf'
+    "
+    [disabled]="
+      loading() ||
+      committing() ||
+      cancelling()
+    "
+    (click)="changeMode('pdf')">
+    <strong>PDF Import</strong>
+    <span>
+      Extract PO headers and material rows
+    </span>
+  </button>
+</section>
+
 <section class="upload-panel">
   <div class="upload-panel__content">
     <div class="upload-icon">
-      XLS
+      {{
+        mode() === 'pdf'
+          ? 'PDF'
+          : 'XLS'
+      }}
     </div>
 
     <div>
-      <h2>Select material Excel file</h2>
+      <h2>
+        {{
+          mode() === 'pdf'
+            ? 'Select purchase-order PDF'
+            : 'Select material Excel file'
+        }}
+      </h2>
 
       <p>
-        Supported formats: XLSX and XLSM.
-        Maximum file size: 20 MB.
-        Maximum rows: 2,000.
+        {{
+          mode() === 'pdf'
+            ? 'Supported format: text-based PDF. Maximum file size: 20 MB.'
+            : 'Supported formats: XLSX and XLSM. Maximum file size: 20 MB. Maximum rows: 2,000.'
+        }}
       </p>
     </div>
   </div>
@@ -55,14 +103,26 @@
     <span>
       {{
         selectedFile()
-          ? 'Change Excel file'
-          : 'Choose Excel file'
+          ? (
+              mode() === 'pdf'
+                ? 'Change PDF file'
+                : 'Change Excel file'
+            )
+          : (
+              mode() === 'pdf'
+                ? 'Choose PDF file'
+                : 'Choose Excel file'
+            )
       }}
     </span>
 
     <input
       type="file"
-      accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      [accept]="
+        mode() === 'pdf'
+          ? '.pdf,application/pdf'
+          : '.xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      "
       [disabled]="
         loading() ||
         committing() ||
@@ -97,8 +157,16 @@
       (click)="extractPreview()">
       {{
         loading()
-          ? 'Reading and validating...'
-          : 'Validate and Preview'
+          ? (
+              mode() === 'pdf'
+                ? 'Extracting PDF data...'
+                : 'Reading and validating...'
+            )
+          : (
+              mode() === 'pdf'
+                ? 'Extract and Preview'
+                : 'Validate and Preview'
+            )
       }}
     </button>
 
@@ -134,6 +202,237 @@
 </section>
 }
 
+@if (pdfPreview(); as file) {
+<section class="preview-section">
+  <div class="section-heading">
+    <div>
+      <h2>PDF Material Preview</h2>
+
+      <p>
+        {{ file.originalFileName }}
+      </p>
+    </div>
+
+    @if (file.existsInDatabase) {
+    <span class="status status--warning">
+      Existing PO — will update
+    </span>
+    } @else {
+    <span class="status status--success">
+      New purchase order
+    </span>
+    }
+  </div>
+
+  @if (file.purchaseOrder; as po) {
+  <section class="summary-grid pdf-summary-grid">
+    <article>
+      <span>PO Number</span>
+      <strong>
+        {{ po.purchaseOrderNo || '—' }}
+      </strong>
+    </article>
+
+    <article>
+      <span>PO Date</span>
+      <strong>
+        {{
+          (po.poDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Received Date</span>
+      <strong>
+        {{
+          (po.receivedDate |
+            date: 'dd MMM yyyy') || '—'
+        }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Buyer</span>
+      <strong>
+        {{ po.buyerContactPerson || '—' }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Vendor</span>
+      <strong>
+        {{ po.vendorName || '—' }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Material Rows</span>
+      <strong>
+        {{ po.items.length }}
+      </strong>
+    </article>
+  </section>
+
+  @if (po.warnings.length > 0) {
+  <div class="validation-notice">
+    <strong>Extraction warnings:</strong>
+
+    @for (
+      warning of po.warnings;
+      track $index
+    ) {
+    <span class="warning-item">
+      {{ warning }}
+    </span>
+    }
+  </div>
+  }
+
+  <section class="table-panel">
+    <div class="table-wrap">
+      <table class="pdf-preview-table">
+        <thead>
+          <tr>
+            <th>Line</th>
+            <th>Material</th>
+            <th>HSN/SAC</th>
+            <th>Description</th>
+            <th>Drawing</th>
+            <th>Qty</th>
+            <th>Unit</th>
+            <th>Rate</th>
+            <th>Price Unit</th>
+            <th>Total</th>
+            <th>Delivery</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (
+            item of po.items;
+            track $index
+          ) {
+          <tr>
+            <td>
+              {{ item.lineItem || '—' }}
+            </td>
+
+            <td>
+              <strong>
+                {{ item.materialNo || '—' }}
+              </strong>
+            </td>
+
+            <td>
+              {{ item.hsnSacCode || '—' }}
+            </td>
+
+            <td class="description-cell">
+              <strong>
+                {{
+                  item.shortDescription ||
+                  item.fullDescription ||
+                  '—'
+                }}
+              </strong>
+
+              @if (
+                item.shortDescription &&
+                item.fullDescription
+              ) {
+              <small>
+                {{ item.fullDescription }}
+              </small>
+              }
+            </td>
+
+            <td>
+              {{ item.drawingNo || '—' }}
+            </td>
+
+            <td>
+              {{
+                item.quantity |
+                  number: '1.0-3'
+              }}
+            </td>
+
+            <td>
+              {{ item.unit || '—' }}
+            </td>
+
+            <td>
+              {{
+                item.valueOfGoods |
+                  number: '1.2-2'
+              }}
+            </td>
+
+            <td>
+              {{ item.priceUnit || '—' }}
+            </td>
+
+            <td>
+              {{
+                item.totalValue |
+                  number: '1.2-2'
+              }}
+            </td>
+
+            <td>
+              {{
+                (item.deliveryDate |
+                  date: 'dd MMM yyyy') || '—'
+              }}
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="save-actions">
+    <button
+      class="button button--danger"
+      type="button"
+      [disabled]="
+        loading() ||
+        committing() ||
+        cancelling() ||
+        completed()
+      "
+      (click)="cancelPreview()">
+      Clear PDF Preview
+    </button>
+
+    <button
+      class="button button--primary"
+      type="button"
+      [disabled]="
+        po.items.length === 0 ||
+        loading() ||
+        committing() ||
+        cancelling() ||
+        completed()
+      "
+      (click)="commitImport()">
+      {{
+        committing()
+          ? 'Saving PDF materials...'
+          : completed()
+            ? 'Import Completed'
+            : file.existsInDatabase
+              ? 'Update PO and Materials'
+              : 'Import PO and Materials'
+      }}
+    </button>
+  </div>
+  }
+</section>
+}
 @if (preview(); as data) {
 <section class="preview-section">
   <div class="section-heading">
@@ -440,15 +739,71 @@
 
 @if (completed()) {
 <section class="result-panel">
-  <h2>Material Import Completed</h2>
+  <h2>
+    {{
+      mode() === 'pdf'
+        ? 'PDF Import Completed'
+        : 'Material Import Completed'
+    }}
+  </h2>
 
   <p>
-    The Excel batch was committed successfully.
-    Purchase orders and material records are now
-    available in the Angular application.
+    {{
+      mode() === 'pdf'
+        ? 'The purchase order and extracted material rows were saved successfully.'
+        : 'The Excel batch was committed successfully. Purchase orders and material records are now available.'
+    }}
   </p>
 
+  @if (
+    mode() === 'pdf' &&
+    pdfResult();
+    as result
+  ) {
+  <section class="summary-grid result-summary-grid">
+    <article>
+      <span>Materials Saved</span>
+      <strong>
+        {{ result.materialRowsSaved }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Invoices Matched</span>
+      <strong>
+        {{ result.matchedInvoiceRows }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Operation</span>
+      <strong>
+        {{
+          result.wasCreated
+            ? 'Created'
+            : 'Updated'
+        }}
+      </strong>
+    </article>
+  </section>
+  }
+
   <div class="result-actions">
+    @if (
+      mode() === 'pdf' &&
+      pdfResult();
+      as result
+    ) {
+    <a
+      class="button button--primary"
+      [routerLink]="[
+        '/purchase-orders',
+        result.purchaseOrderId
+      ]">
+      View Purchase Order
+    </a>
+    }
+
     <a
       class="button button--primary"
       routerLink="/materials">
