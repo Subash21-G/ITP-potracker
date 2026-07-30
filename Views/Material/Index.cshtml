@@ -1,4 +1,4 @@
-﻿@model POTracker.ViewModels.MaterialIndexViewModel
+@model POTracker.ViewModels.MaterialIndexViewModel
 
 @{
     ViewData["Title"] = "Materials";
@@ -482,8 +482,7 @@
                 </p>
             </div>
 
-            <a asp-controller="PendingMaterial"
-               asp-action="Index"
+            <a href="/app/pending-materials"
                class="mi-pending-link">
                 View Pending Materials
             </a>

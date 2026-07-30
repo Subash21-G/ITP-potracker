@@ -1,4 +1,4 @@
-﻿@model POTracker.ViewModels.DashboardPendingSummaryViewModel
+@model POTracker.ViewModels.DashboardPendingSummaryViewModel
 
 @{
     string DueClass(
@@ -70,8 +70,7 @@
             </p>
         </div>
 
-        <a asp-controller="PendingMaterial"
-           asp-action="Index"
+        <a href="/app/pending-materials"
            class="dpw-view-all">
             View All Pending
         </a>
@@ -336,9 +335,7 @@
 
         @if (Model.UnassignedMaterials > 0)
         {
-            <a asp-controller="PendingMaterial"
-               asp-action="Index"
-               asp-route-assignedDashboard=""
+            <a href="/app/pending-materials"
                class="dpw-unassigned-link">
                 @Model.UnassignedMaterials unassigned
             </a>
