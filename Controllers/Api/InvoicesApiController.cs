@@ -10,7 +10,7 @@ namespace POTracker.Controllers.Api
 {
     [ApiController]
     [Route("api/invoices")]
-    public sealed class InvoicesApiController : ControllerBase
+    public sealed partial class InvoicesApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly PendingInvoiceMatcher _pendingInvoiceMatcher;
@@ -258,11 +258,19 @@ namespace POTracker.Controllers.Api
                     Id = batch.Id,
                     FileName = batch.FileName ?? string.Empty,
                     ImportDate = batch.ImportDate,
-                    TotalRows = batch.TotalRows,
-                    SuccessRows = batch.SuccessRows,
-                    FailedRows = batch.FailedRows,
+                    TotalRows =
+                        batch.Rows.Count > 0
+                            ? batch.Rows.Count
+                            : batch.TotalRows,
+                    SuccessRows = batch.Rows.Count(row =>
+                        row.Status == "Success"),
+                    FailedRows = 0,
                     PendingRows = batch.Rows.Count(row =>
-                        row.Status == "Pending")
+                        row.Status == null ||
+                        (row.Status != "Success" &&
+                         row.Status != "Deleted")),
+                    DeletedRows = batch.Rows.Count(row =>
+                        row.Status == "Deleted")
                 })
                 .ToListAsync();
 
@@ -1107,6 +1115,270 @@ namespace POTracker.Controllers.Api
             }
         }
 
+        // ============================================================
+        // BULK DELETE INVOICES AND RESTORE MATERIAL QUANTITIES
+        // ============================================================
+
+        [HttpPost("bulk-delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult<InvoiceBulkDeleteResponseDto>>
+            BulkDelete(
+                [FromBody]
+                InvoiceBulkDeleteRequestDto? request)
+        {
+            var invoiceIds =
+                request?.InvoiceIds
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList() ??
+                new List<int>();
+
+            if (invoiceIds.Count == 0)
+            {
+                return BadRequest(
+                    new InvoiceBulkDeleteResponseDto
+                    {
+                        Success = false,
+                        Message =
+                            "Select at least one invoice to delete.",
+                        RequestedCount = 0,
+                        DeletedCount = 0,
+                        MissingCount = 0
+                    });
+            }
+
+            if (invoiceIds.Count > 200)
+            {
+                return BadRequest(
+                    new InvoiceBulkDeleteResponseDto
+                    {
+                        Success = false,
+                        Message =
+                            "A maximum of 200 invoices can be deleted " +
+                            "at one time.",
+                        RequestedCount = invoiceIds.Count,
+                        DeletedCount = 0,
+                        MissingCount = 0
+                    });
+            }
+
+            await using var transaction =
+                await _context.Database
+                    .BeginTransactionAsync();
+
+            try
+            {
+                var invoices =
+                    await _context.Invoices
+                        .Include(invoice =>
+                            invoice.Items)
+                        .Where(invoice =>
+                            invoiceIds.Contains(
+                                invoice.Id))
+                        .OrderBy(invoice =>
+                            invoice.Id)
+                        .ToListAsync();
+
+                var missingCount =
+                    invoiceIds.Count -
+                    invoices.Count;
+
+                if (invoices.Count == 0)
+                {
+                    await transaction.RollbackAsync();
+
+                    return NotFound(
+                        new InvoiceBulkDeleteResponseDto
+                        {
+                            Success = false,
+                            Message =
+                                "None of the selected invoices were found.",
+                            RequestedCount = invoiceIds.Count,
+                            DeletedCount = 0,
+                            MissingCount = invoiceIds.Count
+                        });
+                }
+
+                var deletedInvoiceIds =
+                    invoices
+                        .Select(invoice =>
+                            invoice.Id)
+                        .ToList();
+
+                var quantityByMaterial =
+                    invoices
+                        .SelectMany(invoice =>
+                            invoice.Items)
+                        .Where(item =>
+                            item.MaterialId > 0)
+                        .GroupBy(item =>
+                            item.MaterialId)
+                        .ToDictionary(
+                            group =>
+                                group.Key,
+                            group =>
+                                group.Sum(item =>
+                                    item.InvoiceQty));
+
+                var materialIds =
+                    quantityByMaterial.Keys
+                        .ToList();
+
+                var materials =
+                    materialIds.Count == 0
+                        ? new List<Material>()
+                        : await _context.Materials
+                            .Where(material =>
+                                materialIds.Contains(
+                                    material.Id))
+                            .ToListAsync();
+
+                foreach (var material in materials)
+                {
+                    if (!quantityByMaterial.TryGetValue(
+                            material.Id,
+                            out var invoiceQuantity))
+                    {
+                        continue;
+                    }
+
+                    material.InvoiceQty =
+                        Math.Max(
+                            0m,
+                            material.InvoiceQty -
+                            invoiceQuantity);
+
+                    material.BalanceQty =
+                        Math.Max(
+                            0m,
+                            material.Qty -
+                            material.InvoiceQty);
+
+                    material.InvoiceStatus =
+                        GetInvoiceStatus(
+                            material.Qty,
+                            material.InvoiceQty,
+                            material.BalanceQty);
+
+                    material.DispatchQty =
+                        Math.Max(
+                            0m,
+                            material.DispatchQty -
+                            invoiceQuantity);
+
+                    material.PendingQty =
+                        Math.Max(
+                            0m,
+                            material.Qty -
+                            material.DispatchQty);
+
+                    if (material.DispatchQty <= 0)
+                    {
+                        material.DispatchDate =
+                            null;
+                    }
+
+                    material.DispatchStatus =
+                        GetDispatchStatus(
+                            material.Qty,
+                            material.DispatchQty,
+                            material.PendingQty);
+                }
+
+                var pendingItems =
+                    await _context.PendingInvoiceItems
+                        .Where(item =>
+                            deletedInvoiceIds.Contains(
+                                item.InvoiceId))
+                        .ToListAsync();
+
+                if (pendingItems.Count > 0)
+                {
+                    _context.PendingInvoiceItems
+                        .RemoveRange(
+                            pendingItems);
+                }
+
+                var invoiceNumbers =
+                    invoices
+                        .Select(invoice =>
+                            invoice.InvoiceNumber)
+                        .Where(invoiceNumber =>
+                            !string.IsNullOrWhiteSpace(
+                                invoiceNumber))
+                        .Select(invoiceNumber =>
+                            invoiceNumber!)
+                        .Distinct(
+                            StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                if (invoiceNumbers.Count > 0)
+                {
+                    var importRows =
+                        await _context
+                            .VyaparInvoiceImportRows
+                            .Where(row =>
+                                row.InvoiceNumber != null &&
+                                invoiceNumbers.Contains(
+                                    row.InvoiceNumber))
+                            .ToListAsync();
+
+                    foreach (var row in importRows)
+                    {
+                        row.Status =
+                            "Deleted";
+
+                        row.ErrorMessage =
+                            "Invoice deleted. This row can be imported again.";
+                    }
+                }
+
+                _context.Invoices.RemoveRange(
+                    invoices);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var message =
+                    $"{invoices.Count} invoice(s) deleted successfully. " +
+                    "Material invoice and dispatch quantities were restored.";
+
+                if (missingCount > 0)
+                {
+                    message +=
+                        $" {missingCount} selected invoice(s) were not found.";
+                }
+
+                return Ok(
+                    new InvoiceBulkDeleteResponseDto
+                    {
+                        Success = true,
+                        Message = message,
+                        RequestedCount = invoiceIds.Count,
+                        DeletedCount = invoices.Count,
+                        MissingCount = missingCount,
+                        DeletedInvoiceIds =
+                            deletedInvoiceIds
+                    });
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new InvoiceBulkDeleteResponseDto
+                    {
+                        Success = false,
+                        Message =
+                            "Unable to delete the selected invoices. " +
+                            "No partial changes were saved.",
+                        RequestedCount = invoiceIds.Count,
+                        DeletedCount = 0,
+                        MissingCount = 0
+                    });
+            }
+        }
         // ============================================================
         // DELETE IMPORT HISTORY ONLY
         // Actual invoices and material quantities are not changed.

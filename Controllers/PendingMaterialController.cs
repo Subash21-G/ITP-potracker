@@ -783,17 +783,17 @@ namespace POTracker.Controllers
             worksheet.Cell("A1").Value =
                 "PO TRACKER - PENDING MATERIALS";
 
-            worksheet.Range("A1:V1").Merge();
+            worksheet.Range("A1:W1").Merge();
 
             worksheet.Cell("A2").Value =
                 $"Generated: {DateTime.Now:dd-MM-yyyy hh:mm tt}";
 
-            worksheet.Range("A2:V2").Merge();
+            worksheet.Range("A2:W2").Merge();
 
             worksheet.Cell("A3").Value =
                 $"Total pending materials: {rows.Count}";
 
-            worksheet.Range("A3:V3").Merge();
+            worksheet.Range("A3:W3").Merge();
 
             var headers = new[]
             {
@@ -818,6 +818,7 @@ namespace POTracker.Controllers
                 "Due Status",
                 "Overdue Days",
                 "Assigned Person",
+                "Price Per Qty",
                 "Drawing Number"
             };
 
@@ -886,6 +887,8 @@ namespace POTracker.Controllers
                 worksheet.Cell(excelRow, 21).Value =
                     item.AssignedDashboard ?? "Unassigned";
                 worksheet.Cell(excelRow, 22).Value =
+                    item.UnitCost;
+                worksheet.Cell(excelRow, 23).Value =
                     item.DrawingNo ?? "";
 
                 if (item.IsOverdue)
@@ -905,7 +908,7 @@ namespace POTracker.Controllers
                 excelRow++;
             }
 
-            var title = worksheet.Range("A1:V1");
+            var title = worksheet.Range("A1:W1");
 
             title.Style.Fill.BackgroundColor =
                 XLColor.FromHtml("#4C2FD4");
@@ -915,11 +918,11 @@ namespace POTracker.Controllers
             title.Style.Alignment.Horizontal =
                 XLAlignmentHorizontalValues.Center;
 
-            worksheet.Range("A2:V3")
+            worksheet.Range("A2:W3")
                 .Style.Alignment.Horizontal =
                 XLAlignmentHorizontalValues.Center;
 
-            var header = worksheet.Range("A5:V5");
+            var header = worksheet.Range("A5:W5");
 
             header.Style.Fill.BackgroundColor =
                 XLColor.FromHtml("#EDE9FE");
@@ -940,11 +943,15 @@ namespace POTracker.Controllers
                 worksheet.Range(6, 9, 5 + rows.Count, 13)
                     .Style.NumberFormat.Format =
                     "0.00";
+
+                worksheet.Range(6, 22, 5 + rows.Count, 22)
+                    .Style.NumberFormat.Format =
+                    "₹ #,##0.00";
             }
 
             worksheet.SheetView.FreezeRows(5);
             worksheet.RangeUsed()?.SetAutoFilter();
-            worksheet.Columns(1, 22).AdjustToContents();
+            worksheet.Columns(1, 23).AdjustToContents();
 
             worksheet.Column(3).Width = 22;
             worksheet.Column(8).Width = 35;
@@ -953,7 +960,8 @@ namespace POTracker.Controllers
             worksheet.Column(16).Width = 20;
             worksheet.Column(17).Width = 18;
             worksheet.Column(21).Width = 18;
-            worksheet.Column(22).Width = 26;
+            worksheet.Column(22).Width = 16;
+            worksheet.Column(23).Width = 26;
         }
 
         private sealed class DropdownData

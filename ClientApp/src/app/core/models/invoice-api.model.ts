@@ -71,6 +71,7 @@ export interface InvoiceImportBatch {
   successRows: number;
   failedRows: number;
   pendingRows: number;
+  deletedRows: number;
 }
 
 export interface PendingInvoiceItem {
@@ -99,7 +100,7 @@ export interface InvoiceImportResponse {
   successRows: number;
   failedRows: number;
   pendingRows: number;
-}
+  }
 
 
 export interface PendingInvoiceMatchCandidate {
@@ -157,4 +158,16 @@ export interface InvoiceImportBatchDeleteResponse {
   success: boolean;
   message: string;
   batchId: number;
+}
+export interface InvoiceBulkDeleteRequest {
+  invoiceIds: number[];
+}
+
+export interface InvoiceBulkDeleteResponse {
+  success: boolean;
+  message: string;
+  requestedCount: number;
+  deletedCount: number;
+  missingCount: number;
+  deletedInvoiceIds: number[];
 }

@@ -1,0 +1,492 @@
+<section class="report-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">
+        Vyapar invoice import
+      </span>
+
+      <h1>Invoice Import Report</h1>
+
+      <p>
+        Review successful, pending and deleted rows with the exact
+        import result or pending reason.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <a
+        class="button button--quiet"
+        routerLink="/invoice-import/history"
+      >
+        Back to History
+      </a>
+
+      <a
+        class="button button--primary"
+        routerLink="/invoice-import"
+      >
+        Upload Invoices
+      </a>
+
+      <a
+        class="button button--quiet"
+        routerLink="/invoices"
+      >
+        Manage Invoices
+      </a>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div
+      class="alert alert--error"
+      role="alert"
+    >
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (loading() && !report()) {
+    <section class="panel empty-state">
+      <strong>Loading invoice import report…</strong>
+    </section>
+  }
+
+  @if (report(); as currentReport) {
+    <section class="batch-information">
+      <div>
+        <span>Imported File</span>
+        <strong>
+          {{ currentReport.fileName || 'Unnamed file' }}
+        </strong>
+      </div>
+
+      <div>
+        <span>Import Date</span>
+        <strong>
+          {{
+            currentReport.importDate
+              | date: 'dd-MM-yyyy hh:mm a'
+          }}
+        </strong>
+      </div>
+
+      <div>
+        <span>Batch ID</span>
+        <strong>#{{ currentReport.batchId }}</strong>
+      </div>
+    </section>
+
+    <section
+      class="summary-grid"
+      aria-label="Invoice import report summary"
+    >
+      <article class="summary-card">
+        <span>Total Rows</span>
+        <strong>
+          {{ currentReport.summary.totalRows }}
+        </strong>
+        <small>Rows processed</small>
+      </article>
+
+      <article class="summary-card summary-card--success">
+        <span>Success Rows</span>
+        <strong>
+          {{ currentReport.summary.successRows }}
+        </strong>
+        <small>Matched and updated</small>
+      </article>
+
+      <article class="summary-card summary-card--warning">
+        <span>Pending Rows</span>
+        <strong>
+          {{ currentReport.summary.pendingRows }}
+        </strong>
+        <small>Waiting or needs review</small>
+      </article>
+
+      <article class="summary-card summary-card--neutral">
+        <span>Deleted Rows</span>
+        <strong>
+          {{ currentReport.summary.deletedRows }}
+        </strong>
+        <small>Related invoice deleted</small>
+      </article>
+
+      <article class="summary-card summary-card--quantity">
+        <span>Total Invoice Qty</span>
+        <strong>
+          {{
+            currentReport.summary.totalInvoiceQuantity
+              | number: '1.0-2'
+          }}
+        </strong>
+        <small>Quantity in this batch</small>
+      </article>
+    </section>
+
+    <section class="overview-grid">
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">
+              Import progress
+            </span>
+
+            <h2>Result Overview</h2>
+          </div>
+        </div>
+
+        <div class="progress-list">
+          <div class="progress-item">
+            <div class="progress-label">
+              <span>Success</span>
+
+              <strong>
+                {{
+                  currentReport.summary.successPercent
+                }}%
+              </strong>
+            </div>
+
+            <div class="progress-track">
+              <span
+                class="progress-value progress-value--success"
+                [style.width.%]="
+                  currentReport.summary.successPercent
+                "
+              ></span>
+            </div>
+          </div>
+
+          <div class="progress-item">
+            <div class="progress-label">
+              <span>Pending</span>
+
+              <strong>
+                {{
+                  currentReport.summary.pendingPercent
+                }}%
+              </strong>
+            </div>
+
+            <div class="progress-track">
+              <span
+                class="progress-value progress-value--warning"
+                [style.width.%]="
+                  currentReport.summary.pendingPercent
+                "
+              ></span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">
+              Status guidance
+            </span>
+
+            <h2>Report Meaning</h2>
+          </div>
+        </div>
+
+        <div class="guidance-list">
+          <div class="guidance guidance--success">
+            <strong>Success</strong>
+
+            <span>
+              PO, material and line item matched. Quantities were
+              updated.
+            </span>
+          </div>
+
+          <div class="guidance guidance--warning">
+            <strong>Pending</strong>
+
+            <span>
+              A safe match was unavailable. Read the exact reason
+              in the Message column.
+            </span>
+          </div>
+
+          <div class="guidance guidance--neutral">
+            <strong>Deleted</strong>
+
+            <span>
+              The related invoice was deleted after the original
+              import.
+            </span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading panel-heading--wrap">
+        <div>
+          <span class="eyebrow">
+            Find report row
+          </span>
+
+          <h2>Search and Filter</h2>
+
+          <p>
+            Filters apply to the rows loaded on the current page.
+          </p>
+        </div>
+
+        <span class="count-badge">
+          {{ filteredItems().length }} row(s) visible
+        </span>
+      </div>
+
+      <div class="filter-grid">
+        <label class="filter-field filter-field--search">
+          <span>Search</span>
+
+          <input
+            type="search"
+            name="reportSearch"
+            placeholder="PO, material, invoice or reason"
+            [ngModel]="searchText()"
+            (ngModelChange)="searchText.set($event)"
+          />
+        </label>
+
+        <label class="filter-field">
+          <span>Import Status</span>
+
+          <select
+            name="statusFilter"
+            [ngModel]="statusFilter()"
+            (ngModelChange)="statusFilter.set($event)"
+          >
+            <option value="">
+              All Statuses
+            </option>
+
+            <option value="Success">
+              Success
+            </option>
+
+            <option value="Pending">
+              Pending
+            </option>
+
+            <option value="Deleted">
+              Deleted
+            </option>
+          </select>
+        </label>
+
+        <div class="filter-actions">
+          <button
+            class="button button--quiet"
+            type="button"
+            (click)="clearFilters()"
+          >
+            Clear Filters
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading panel-heading--wrap">
+        <div>
+          <span class="eyebrow">
+            Row details
+          </span>
+
+          <h2>Row-wise Import Report</h2>
+
+          <p>
+            Message shows why a row remains Pending.
+          </p>
+        </div>
+
+        <span class="count-badge">
+          Showing {{ showingFrom() }}–{{ showingTo() }}
+          of {{ currentReport.summary.totalRows }}
+        </span>
+      </div>
+
+      @if (filteredItems().length === 0) {
+        <div class="empty-state">
+          <strong>No report rows match the selected filters</strong>
+
+          <span>
+            Clear the search or status filter and try again.
+          </span>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>PO No</th>
+                <th>Line Item</th>
+                <th>Material No</th>
+                <th>Invoice No</th>
+                <th>Invoice Qty</th>
+                <th>Status</th>
+                <th>Exact Message / Reason</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (
+                row of filteredItems();
+                track row.id;
+                let index = $index
+              ) {
+                <tr>
+                  <td>
+                    {{ rowNumber(index) }}
+                  </td>
+
+                  <td>
+                    <strong class="reference-number">
+                      {{ row.poNumber || '—' }}
+                    </strong>
+                  </td>
+
+                  <td>
+                    {{ row.lineItem || '—' }}
+                  </td>
+
+                  <td>
+                    <strong class="reference-number">
+                      {{ row.materialNumber || '—' }}
+                    </strong>
+                  </td>
+
+                  <td>
+                    {{ row.invoiceNumber || '—' }}
+                  </td>
+
+                  <td>
+                    <strong class="quantity">
+                      {{
+                        row.invoiceQuantity
+                          | number: '1.0-2'
+                      }}
+                    </strong>
+                  </td>
+
+                  <td>
+                    <span
+                      [class]="statusClass(row.status)"
+                    >
+                      {{ row.status }}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span
+                      [class]="messageClass(row.status)"
+                      [title]="row.message"
+                    >
+                      {{ row.message }}
+                    </span>
+                  </td>
+
+                  <td>
+                    @if (referenceValue(row)) {
+                      <a
+                        class="action-link"
+                        routerLink="/materials"
+                        [queryParams]="{
+                          search: referenceValue(row)
+                        }"
+                      >
+                        {{ referenceLabel(row) }}
+                      </a>
+                    } @else {
+                      <span class="muted">
+                        No reference
+                      </span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+
+            <tfoot>
+              <tr>
+                <th colspan="5">
+                  Page Total
+                </th>
+
+                <th>
+                  {{ filteredPageQuantity() | number: '1.0-2' }}
+                </th>
+
+                <th colspan="3"></th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+
+      <footer class="pagination">
+        <div>
+          <strong>
+            Page {{ currentReport.currentPage }}
+            of {{ currentReport.totalPages }}
+          </strong>
+
+          <span>
+            {{ currentReport.summary.totalRows }} total row(s)
+          </span>
+        </div>
+
+        <div class="pagination-actions">
+          <label>
+            <span>Rows</span>
+
+            <select
+              [value]="pageSize()"
+              [disabled]="loading()"
+              (change)="changePageSize($event)"
+            >
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+            </select>
+          </label>
+
+          <button
+            class="button button--quiet"
+            type="button"
+            [disabled]="
+              !hasPreviousPage() ||
+              loading()
+            "
+            (click)="previousPage()"
+          >
+            Previous
+          </button>
+
+          <button
+            class="button button--quiet"
+            type="button"
+            [disabled]="
+              !hasNextPage() ||
+              loading()
+            "
+            (click)="nextPage()"
+          >
+            Next
+          </button>
+        </div>
+      </footer>
+    </section>
+  }
+</section>

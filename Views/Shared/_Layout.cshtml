@@ -232,9 +232,8 @@
                              id="invoiceManagementMenu"
                              data-nav-submenu>
 
-                            <a asp-controller="VyaparInvoiceImport"
-                               asp-action="Upload"
-                               class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "Upload") ? "active" : "")">
+                            <a href="/app/invoice-import"
+                               class="nav-sublink">
 
                                 <span class="nav-subdot"
                                       aria-hidden="true">
@@ -243,9 +242,8 @@
                                 <span>Upload Invoice</span>
                             </a>
 
-                            <a asp-controller="VyaparInvoiceImport"
-                               asp-action="InvoiceList"
-                               class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "InvoiceList") ? "active" : "")">
+                            <a href="/app/invoices"
+                               class="nav-sublink">
 
                                 <span class="nav-subdot"
                                       aria-hidden="true">
@@ -254,9 +252,8 @@
                                 <span>Imported Invoices</span>
                             </a>
 
-                            <a asp-controller="VyaparInvoiceImport"
-                               asp-action="InvoiceStatus"
-                               class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "InvoiceStatus") ? "active" : "")">
+                            <a href="/app/invoices"
+                               class="nav-sublink">
 
                                 <span class="nav-subdot"
                                       aria-hidden="true">
@@ -265,9 +262,8 @@
                                 <span>Invoice Status</span>
                             </a>
 
-                            <a asp-controller="VyaparInvoiceImport"
-                               asp-action="History"
-                               class="nav-sublink @(IsActiveAction("VyaparInvoiceImport", "History") || IsActiveAction("VyaparInvoiceImport", "ErrorReport") ? "active" : "")">
+                            <a href="/app/invoice-import/history"
+                               class="nav-sublink">
 
                                 <span class="nav-subdot"
                                       aria-hidden="true">
@@ -446,8 +442,7 @@
                             <span>Import PO</span>
                         </a>
 
-                        <a asp-controller="VyaparInvoiceImport"
-                           asp-action="Upload"
+                        <a href="/app/invoice-import"
                            class="top-action top-action-invoice">
                             <span class="top-action-icon">₹</span>
                             <span>Invoice</span>

@@ -1,7 +1,19 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable, switchMap } from 'rxjs';
 import {
+  HttpClient,
+  HttpParams,
+} from '@angular/common/http';
+import {
+  inject,
+  Injectable,
+} from '@angular/core';
+import {
+  Observable,
+  switchMap,
+} from 'rxjs';
+
+import {
+  InvoiceBulkDeleteRequest,
+  InvoiceBulkDeleteResponse,
   InvoiceDeleteResponse,
   InvoiceDetails,
   InvoiceImportBatch,
@@ -15,7 +27,11 @@ import {
   PendingInvoiceRetryResponse,
 } from '../models/invoice-api.model';
 import { AuthApiService } from './auth-api.service';
-
+import {
+  InvoiceImportHistoryBulkDeleteRequest,
+  InvoiceImportHistoryBulkDeleteResponse,
+  InvoiceImportReportResponse,
+} from '../models/invoice-import-history-api.model';
 @Injectable({
   providedIn: 'root',
 })
@@ -168,6 +184,64 @@ export class InvoiceApiService {
       switchMap(() =>
         this.http.delete<InvoiceDeleteResponse>(
           `/api/invoices/${id}`,
+          {
+            withCredentials: true,
+          },
+        ),
+      ),
+    );
+  }
+
+  downloadInvoicesExcel(): Observable<Blob> {
+    return this.http.get(
+      '/api/invoices/export-excel',
+      {
+        responseType: 'blob',
+        withCredentials: true,
+      },
+    );
+  }
+  bulkDeleteInvoices(
+    request: InvoiceBulkDeleteRequest,
+  ): Observable<InvoiceBulkDeleteResponse> {
+    return this.authApi.getXsrfToken().pipe(
+      switchMap(() =>
+        this.http.post<InvoiceBulkDeleteResponse>(
+          '/api/invoices/bulk-delete',
+          request,
+          {
+            withCredentials: true,
+          },
+        ),
+      ),
+    );
+  }
+  getImportHistoryReport(
+    batchId: number,
+    page = 1,
+    pageSize = 50,
+  ): Observable<InvoiceImportReportResponse> {
+    const params = new HttpParams()
+      .set('page', String(page))
+      .set('pageSize', String(pageSize));
+
+    return this.http.get<InvoiceImportReportResponse>(
+      `/api/invoices/import-history/${batchId}/report`,
+      {
+        params,
+        withCredentials: true,
+      },
+    );
+  }
+
+  bulkDeleteImportHistory(
+    request: InvoiceImportHistoryBulkDeleteRequest,
+  ): Observable<InvoiceImportHistoryBulkDeleteResponse> {
+    return this.authApi.getXsrfToken().pipe(
+      switchMap(() =>
+        this.http.post<InvoiceImportHistoryBulkDeleteResponse>(
+          '/api/invoices/import-history/bulk-delete',
+          request,
           {
             withCredentials: true,
           },

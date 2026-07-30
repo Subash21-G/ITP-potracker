@@ -135,6 +135,8 @@ namespace POTracker.Contracts.Api
         public int FailedRows { get; init; }
 
         public int PendingRows { get; init; }
+
+        public int DeletedRows { get; init; }
     }
 
     /// <summary>
@@ -191,7 +193,8 @@ namespace POTracker.Contracts.Api
         public int FailedRows { get; init; }
 
         public int PendingRows { get; init; }
-    }
+
+        }
 
 
     /// <summary>
@@ -307,5 +310,30 @@ namespace POTracker.Contracts.Api
         public string Message { get; init; } = string.Empty;
 
         public int BatchId { get; init; }
+    }
+    /// <summary>
+    /// Invoice IDs selected for bulk deletion.
+    /// </summary>
+    public sealed class InvoiceBulkDeleteRequestDto
+    {
+        public List<int> InvoiceIds { get; init; } = new();
+    }
+
+    /// <summary>
+    /// Result returned after deleting multiple invoices.
+    /// </summary>
+    public sealed class InvoiceBulkDeleteResponseDto
+    {
+        public bool Success { get; init; }
+
+        public string Message { get; init; } = string.Empty;
+
+        public int RequestedCount { get; init; }
+
+        public int DeletedCount { get; init; }
+
+        public int MissingCount { get; init; }
+
+        public List<int> DeletedInvoiceIds { get; init; } = new();
     }
 }

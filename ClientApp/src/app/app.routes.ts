@@ -1,4 +1,4 @@
-﻿import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 
 import { adminGuard, authGuard } from './core/guards/auth.guard';
 import { manageAccessGuard } from './core/guards/manage-access.guard';
@@ -244,6 +244,34 @@ export const routes: Routes = [
         './features/invoices/details/invoice-details-page'
       ).then(
         (component) => component.InvoiceDetailsPage,
+      ),
+  },
+  {
+    path: 'invoice-import/history/:batchId/report',
+    canActivate: [
+      authGuard,
+      manageAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/invoice-import/history/report/invoice-import-report-page'
+      ).then(
+        (component) =>
+          component.InvoiceImportReportPage,
+      ),
+  },
+  {
+    path: 'invoice-import/history',
+    canActivate: [
+      authGuard,
+      manageAccessGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/invoice-import/history/invoice-import-history-page'
+      ).then(
+        (component) =>
+          component.InvoiceImportHistoryPage,
       ),
   },
   {

@@ -1,0 +1,474 @@
+<section class="history-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">
+        Vyapar invoice imports
+      </span>
+
+      <h1>Invoice Import History</h1>
+
+      <p>
+        Track successful, pending and deleted invoice rows.
+        Deleting history does not delete invoices or change quantities.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <a
+        class="button button--primary"
+        routerLink="/invoice-import"
+      >
+        Upload Invoices
+      </a>
+
+      <a
+        class="button button--quiet"
+        routerLink="/invoices"
+      >
+        Manage Invoices
+      </a>
+
+      <a
+        class="button button--quiet"
+        routerLink="/invoices/pending"
+      >
+        Pending Rows
+      </a>
+
+      <button
+        class="button button--quiet"
+        type="button"
+        [disabled]="loading()"
+        (click)="refresh()"
+      >
+        {{ loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div
+      class="alert alert--error"
+      role="alert"
+    >
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div
+      class="alert alert--success"
+      role="status"
+    >
+      {{ successMessage() }}
+    </div>
+  }
+
+  <section
+    class="summary-grid"
+    aria-label="Import history summary"
+  >
+    <article class="summary-card">
+      <span>Total Imports</span>
+      <strong>{{ totalBatches() }}</strong>
+      <small>History batches shown</small>
+    </article>
+
+    <article class="summary-card">
+      <span>Total Rows</span>
+      <strong>{{ totalRows() }}</strong>
+      <small>Rows processed</small>
+    </article>
+
+    <article class="summary-card summary-card--success">
+      <span>Success Rows</span>
+      <strong>{{ successRows() }}</strong>
+      <small>Matched and updated</small>
+    </article>
+
+    <article class="summary-card summary-card--warning">
+      <span>Pending Rows</span>
+      <strong>{{ pendingRows() }}</strong>
+      <small>Waiting for review</small>
+    </article>
+
+    <article class="summary-card summary-card--neutral">
+      <span>Deleted Rows</span>
+      <strong>{{ deletedRows() }}</strong>
+      <small>Invoices deleted later</small>
+    </article>
+  </section>
+
+  <section class="overview-grid">
+    <article class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">
+            Import progress
+          </span>
+
+          <h2>Result Overview</h2>
+        </div>
+      </div>
+
+      <div class="progress-list">
+        <div class="progress-item">
+          <div class="progress-label">
+            <span>Success</span>
+            <strong>{{ successPercent() }}%</strong>
+          </div>
+
+          <div class="progress-track">
+            <span
+              class="progress-value progress-value--success"
+              [style.width.%]="successPercent()"
+            ></span>
+          </div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-label">
+            <span>Pending</span>
+            <strong>{{ pendingPercent() }}%</strong>
+          </div>
+
+          <div class="progress-track">
+            <span
+              class="progress-value progress-value--warning"
+              [style.width.%]="pendingPercent()"
+            ></span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">
+            Status guidance
+          </span>
+
+          <h2>Status Meaning</h2>
+        </div>
+      </div>
+
+      <div class="guidance-list">
+        <div class="guidance guidance--success">
+          <strong>Success</strong>
+          <span>
+            PO, material and line item matched successfully.
+          </span>
+        </div>
+
+        <div class="guidance guidance--warning">
+          <strong>Pending</strong>
+          <span>
+            A safe database match was not available. Open the
+            report to view the exact reason.
+          </span>
+        </div>
+
+        <div class="guidance guidance--neutral">
+          <strong>Deleted</strong>
+          <span>
+            The related invoice was deleted after import.
+          </span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading panel-heading--wrap">
+      <div>
+        <span class="eyebrow">
+          Find import batch
+        </span>
+
+        <h2>Import Batch List</h2>
+
+        <p>
+          Up to 500 recent history records are displayed.
+        </p>
+      </div>
+
+      <span class="count-badge">
+        {{ totalBatches() }} batch(es)
+      </span>
+    </div>
+
+    <form
+      class="search-bar"
+      (ngSubmit)="applySearch()"
+    >
+      <label>
+        <span>Search by file name</span>
+
+        <input
+          type="search"
+          name="historySearch"
+          placeholder="Enter an imported file name"
+          [ngModel]="searchText()"
+          (ngModelChange)="searchText.set($event)"
+        />
+      </label>
+
+      <div class="search-actions">
+        <button
+          class="button button--primary"
+          type="submit"
+          [disabled]="loading()"
+        >
+          Search
+        </button>
+
+        <button
+          class="button button--quiet"
+          type="button"
+          [disabled]="loading()"
+          (click)="clearSearch()"
+        >
+          Clear
+        </button>
+      </div>
+    </form>
+
+    @if (history().length > 0) {
+      <div class="bulk-toolbar">
+        <div>
+          <strong>
+            {{ selectedCount() }} selected
+          </strong>
+
+          <span>
+            Maximum 200 history records
+          </span>
+        </div>
+
+        <div class="bulk-actions">
+          <button
+            class="button button--quiet"
+            type="button"
+            [disabled]="loading() || bulkDeleting()"
+            (click)="toggleVisibleSelection(true)"
+          >
+            Select All
+          </button>
+
+          <button
+            class="button button--quiet"
+            type="button"
+            [disabled]="selectedCount() === 0 || bulkDeleting()"
+            (click)="clearSelection()"
+          >
+            Clear Selection
+          </button>
+
+          <button
+            class="button button--danger"
+            type="button"
+            [disabled]="
+              selectedCount() === 0 ||
+              bulkDeleting() ||
+              deletingId() !== null
+            "
+            (click)="bulkDeleteHistory()"
+          >
+            {{
+              bulkDeleting()
+                ? 'Deleting…'
+                : 'Delete Selected History'
+            }}
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (loading() && history().length === 0) {
+      <div class="empty-state">
+        <strong>Loading invoice import history…</strong>
+      </div>
+    } @else if (history().length === 0) {
+      <div class="empty-state">
+        <strong>No invoice import history found</strong>
+
+        <span>
+          Import an invoice file to create the first history record.
+        </span>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="selection-column">
+                <input
+                  type="checkbox"
+                  aria-label="Select all visible history records"
+                  [checked]="allVisibleSelected()"
+                  (change)="
+                    toggleVisibleSelection(
+                      $any($event.target).checked
+                    )
+                  "
+                />
+              </th>
+
+              <th>#</th>
+              <th>File Name</th>
+              <th>Import Date</th>
+              <th>Total</th>
+              <th>Success</th>
+              <th>Pending</th>
+              <th>Deleted</th>
+              <th>Success %</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (
+              batch of history();
+              track batch.id;
+              let index = $index
+            ) {
+              <tr>
+                <td class="selection-column">
+                  <input
+                    type="checkbox"
+                    [attr.aria-label]="
+                      'Select history ' + batch.fileName
+                    "
+                    [checked]="isSelected(batch.id)"
+                    (change)="
+                      toggleBatchSelection(
+                        batch.id,
+                        $any($event.target).checked
+                      )
+                    "
+                  />
+                </td>
+
+                <td>{{ index + 1 }}</td>
+
+                <td>
+                  <strong class="file-name">
+                    {{ batch.fileName || 'Unnamed file' }}
+                  </strong>
+                </td>
+
+                <td>
+                  {{
+                    batch.importDate
+                      | date: 'dd-MM-yyyy hh:mm a'
+                  }}
+                </td>
+
+                <td>
+                  <span class="number-badge">
+                    {{ batch.totalRows }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="number-badge number-badge--success">
+                    {{ batch.successRows }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="number-badge number-badge--warning">
+                    {{ batch.pendingRows }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="number-badge">
+                    {{ batch.deletedRows }}
+                  </span>
+                </td>
+
+                <td>
+                  <div class="table-progress">
+                    <div class="progress-track">
+                      <span
+                        class="progress-value progress-value--success"
+                        [style.width.%]="
+                          batchSuccessPercent(batch)
+                        "
+                      ></span>
+                    </div>
+
+                    <strong>
+                      {{ batchSuccessPercent(batch) }}%
+                    </strong>
+                  </div>
+                </td>
+
+                <td>
+                  <span
+                    [class]="
+                      statusClass(
+                        batchStatus(batch)
+                      )
+                    "
+                  >
+                    {{ batchStatus(batch) }}
+                  </span>
+                </td>
+
+                <td>
+                  <div class="row-actions">
+                    <a
+                      class="action-link"
+                      [routerLink]="[
+                        '/invoice-import/history',
+                        batch.id,
+                        'report'
+                      ]"
+                    >
+                      View Report
+                    </a>
+
+                    <button
+                      class="action-link action-link--danger"
+                      type="button"
+                      [disabled]="
+                        deletingId() !== null ||
+                        bulkDeleting()
+                      "
+                      (click)="deleteHistory(batch)"
+                    >
+                      {{
+                        deletingId() === batch.id
+                          ? 'Deleting…'
+                          : 'Delete History'
+                      }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+
+          <tfoot>
+            <tr>
+              <th colspan="4">
+                Total
+              </th>
+
+              <th>{{ totalRows() }}</th>
+              <th>{{ successRows() }}</th>
+              <th>{{ pendingRows() }}</th>
+              <th>{{ deletedRows() }}</th>
+              <th>{{ successPercent() }}%</th>
+              <th colspan="2"></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    }
+  </section>
+</section>

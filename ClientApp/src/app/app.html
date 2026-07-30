@@ -1,4 +1,4 @@
-﻿<app-toast-container />
+<app-toast-container />
 
 @if (isLoading()) {
   <div
@@ -226,6 +226,16 @@
             }"
           >
             Import Invoices
+          </a>
+          <a
+            routerLink="/invoice-import/history"
+            (click)="closeMobileMenu()"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{
+              exact: true
+            }"
+          >
+            Import History
           </a>
           <a
             routerLink="/invoices/pending"

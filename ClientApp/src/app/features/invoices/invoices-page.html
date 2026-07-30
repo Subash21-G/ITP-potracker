@@ -1,4 +1,4 @@
-﻿<section class="page-heading">
+<section class="page-heading">
   <div>
     <p class="eyebrow">INVOICE MANAGEMENT</p>
     <h1>Invoices</h1>
@@ -12,6 +12,12 @@
        routerLink="/invoices/pending">
       Pending Rows
     </a>
+    <button class="button button--quiet"
+            type="button"
+            [disabled]="downloadingExcel() || loading()"
+            (click)="downloadInvoicesExcel()">
+      {{ downloadingExcel() ? 'Exporting…' : 'Export Excel' }}
+    </button>
 
     <a appManageOnly
        class="button button--create"
@@ -132,6 +138,28 @@
       </p>
     </div>
 
+    <div appManageOnly class="heading-actions">
+      @if (selectedCount() > 0) {
+      <span class="secondary-value">
+        {{ selectedCount() | number }} selected
+      </span>
+
+      <button class="button button--quiet"
+              type="button"
+              [disabled]="bulkDeleting()"
+              (click)="clearSelection()">
+        Clear selection
+      </button>
+
+      <button class="button button--danger"
+              type="button"
+              [disabled]="bulkDeleting() || deletingId() !== null"
+              (click)="bulkDeleteInvoices()">
+        {{ bulkDeleting() ? 'Deleting…' : 'Delete selected' }}
+      </button>
+      }
+    </div>
+
     <label class="page-size">
       <span>Rows</span>
       <select [value]="pageSize()" (change)="changePageSize($event)">
@@ -147,6 +175,13 @@
     <table>
       <thead>
         <tr>
+          <th appManageOnly>
+            <input type="checkbox"
+                   aria-label="Select all visible invoices"
+                   [checked]="allVisibleSelected()"
+                   [disabled]="loading() || bulkDeleting() || items().length === 0"
+                   (change)="toggleVisibleSelection($any($event.target).checked)" />
+          </th>
           <th>Invoice</th>
           <th>Invoice Date</th>
           <th>Customer</th>
@@ -163,6 +198,16 @@
       <tbody>
         @for (invoice of items(); track invoice.id) {
         <tr>
+          <td appManageOnly>
+            <input type="checkbox"
+                   [attr.aria-label]="'Select invoice ' + invoice.invoiceNumber"
+                   [checked]="isInvoiceSelected(invoice.id)"
+                   [disabled]="bulkDeleting() || deletingId() !== null"
+                   (change)="toggleInvoiceSelection(
+                     invoice.id,
+                     $any($event.target).checked
+                   )" />
+          </td>
           <td>
             <a class="invoice-number"
                [routerLink]="['/invoices', invoice.id]">
@@ -211,7 +256,7 @@
               <button appManageOnly
                       class="button button--danger"
                       type="button"
-                      [disabled]="deletingId() !== null"
+                      [disabled]="deletingId() !== null || bulkDeleting()"
                       (click)="deleteInvoice(invoice)">
                 {{ deletingId() === invoice.id ? 'Deleting…' : 'Delete' }}
               </button>
@@ -220,7 +265,7 @@
         </tr>
         } @empty {
         <tr>
-          <td class="empty-state" colspan="10">
+          <td class="empty-state" colspan="11">
             <strong>No invoices found</strong>
             <span>Change the filters or import an invoice Excel file.</span>
           </td>

@@ -1,4 +1,4 @@
-﻿import { ManageOnlyDirective } from '../../core/directives/manage-only.directive';
+import { ManageOnlyDirective } from '../../core/directives/manage-only.directive';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -11,7 +11,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import {
+  ActivatedRoute,
+  RouterLink,
+} from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { MaterialListItem } from '../../core/models/material.model';
@@ -31,6 +34,7 @@ import { MaterialsApiService } from '../../core/services/materials-api.service';
 })
 export class MaterialsPage {
   private readonly materialsApi = inject(MaterialsApiService);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly filters = new FormGroup({
@@ -62,6 +66,17 @@ export class MaterialsPage {
   );
 
   constructor() {
+    const initialSearch =
+      this.route.snapshot.queryParamMap
+        .get('search')
+        ?.trim() ?? '';
+
+    if (initialSearch) {
+      this.filters.controls.search.setValue(
+        initialSearch,
+      );
+    }
+
     this.loadMaterials();
   }
 

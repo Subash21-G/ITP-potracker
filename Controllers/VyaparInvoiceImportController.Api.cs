@@ -44,54 +44,41 @@ namespace POTracker.Controllers
             [FromForm] IFormFile? file)
         {
             var result =
-                await Upload(file);
+                await ProcessSingleInvoiceFileAsync(
+                    file);
 
-            if (result is ViewResult viewResult &&
-                viewResult.Model is
-                    InvoiceImportPreviewViewModel preview)
+            if (!result.IsSuccessful ||
+                result.Invoice == null)
             {
-                var existsInDatabase =
-                    !string.IsNullOrWhiteSpace(
-                        preview.InvoiceNumber) &&
-                    await _context.Invoices
-                        .AsNoTracking()
-                        .AnyAsync(invoice =>
-                            invoice.InvoiceNumber ==
-                            preview.InvoiceNumber.Trim());
-
-                return Ok(new
+                return BadRequest(new
                 {
-                    originalFileName =
-                        preview.UploadedFileName,
-
-                    fileSize =
-                        file?.Length ?? 0,
-
-                    isSuccessful = true,
-
-                    existsInDatabase,
-
-                    errorMessage =
-                        (string?)null,
-
-                    invoice = preview
+                    message =
+                        result.ErrorMessage ??
+                        "Unable to extract the invoice file."
                 });
             }
 
-            var errorMessage =
-                ViewData["Error"]?.ToString() ??
-                TempData["Error"]?.ToString() ??
-                "Unable to extract the invoice file.";
-
-            TempData.Remove("Error");
-            ViewData.Remove("Error");
-
-            return BadRequest(new
+            return Ok(new
             {
-                message = errorMessage
+                originalFileName =
+                    result.OriginalFileName,
+
+                fileSize =
+                    result.FileSize,
+
+                isSuccessful =
+                    true,
+
+                existsInDatabase =
+                    result.ExistsInDatabase,
+
+                errorMessage =
+                    (string?)null,
+
+                invoice =
+                    result.Invoice
             });
         }
-
         // ============================================================
         // ANGULAR API - PREVIEW MULTIPLE INVOICE FILES
         // ============================================================
@@ -107,30 +94,24 @@ namespace POTracker.Controllers
             [FromForm]
             List<IFormFile>? invoiceFiles)
         {
-            var result =
-                await UploadBatch(invoiceFiles);
+            var (
+                preview,
+                errorMessage) =
+                await ProcessInvoiceBatchFilesAsync(
+                    invoiceFiles);
 
-            if (result is ViewResult viewResult &&
-                viewResult.Model is
-                    InvoiceBatchImportPreviewViewModel preview)
+            if (preview == null)
             {
-                return Ok(preview);
+                return BadRequest(new
+                {
+                    message =
+                        errorMessage ??
+                        "Unable to extract the invoice files."
+                });
             }
 
-            var errorMessage =
-                ViewData["Error"]?.ToString() ??
-                TempData["Error"]?.ToString() ??
-                "Unable to extract the invoice files.";
-
-            TempData.Remove("Error");
-            ViewData.Remove("Error");
-
-            return BadRequest(new
-            {
-                message = errorMessage
-            });
+            return Ok(preview);
         }
-
         // ============================================================
         // ANGULAR API - SAVE SINGLE INVOICE
         // ============================================================
@@ -142,91 +123,39 @@ namespace POTracker.Controllers
             InvoiceImportPreviewViewModel model)
         {
             var result =
-                await SaveAll(model);
+                await SaveInvoiceAsync(
+                    model);
 
-            if (result is RedirectToActionResult redirect &&
-                string.Equals(
-                    redirect.ActionName,
-                    nameof(History),
-                    StringComparison.OrdinalIgnoreCase))
+            if (!result.IsSuccessful)
             {
-                var invoiceNumber =
-                    model.InvoiceNumber?.Trim() ??
-                    string.Empty;
-
-                var invoice =
-                    await _context.Invoices
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(item =>
-                            item.InvoiceNumber ==
-                            invoiceNumber);
-
-                var latestBatch =
-                    await _context
-                        .VyaparInvoiceImportBatches
-                        .AsNoTracking()
-                        .Where(batch =>
-                            batch.FileName ==
-                            model.UploadedFileName)
-                        .OrderByDescending(batch =>
-                            batch.Id)
-                        .FirstOrDefaultAsync();
-
-                var totalRows =
-                    latestBatch?.TotalRows ??
-                    model.Items.Count;
-
-                var successRows =
-                    latestBatch?.SuccessRows ??
-                    0;
-
-                var pendingRows =
-                    Math.Max(
-                        0,
-                        totalRows -
-                        successRows);
-
-                var message =
-                    TempData["Success"]
-                        ?.ToString() ??
-                    "Invoice imported successfully.";
-
-                TempData.Remove("Success");
-                TempData.Remove("Error");
-                ViewData.Remove("Error");
-
-                return Ok(new
+                return BadRequest(new
                 {
-                    message,
-
-                    invoiceId =
-                        invoice?.Id ?? 0,
-
-                    invoiceNumber,
-
-                    totalRows,
-
-                    successRows,
-
-                    pendingRows
+                    message =
+                        result.Message
                 });
             }
 
-            var errorMessage =
-                ViewData["Error"]?.ToString() ??
-                TempData["Error"]?.ToString() ??
-                "The invoice could not be saved.";
-
-            TempData.Remove("Success");
-            TempData.Remove("Error");
-            ViewData.Remove("Error");
-
-            return BadRequest(new
+            return Ok(new
             {
-                message = errorMessage
+                message =
+                    result.Message,
+
+                invoiceId =
+                    result.InvoiceId,
+
+                invoiceNumber =
+                    result.InvoiceNumber,
+
+                totalRows =
+                    result.TotalRows,
+
+                successRows =
+                    result.SuccessRows,
+
+                pendingRows =
+                    result.PendingRows
             });
         }
-
         // ============================================================
         // ANGULAR API - SAVE MULTIPLE INVOICES
         // ============================================================
@@ -237,33 +166,23 @@ namespace POTracker.Controllers
             [FromBody]
             InvoiceBatchImportPreviewViewModel model)
         {
-            var result =
-                await SaveBatch(model);
+            var (
+                result,
+                errorMessage) =
+                await SaveInvoiceBatchAsync(
+                    model);
 
-            if (result is ViewResult viewResult &&
-                viewResult.Model is
-                    InvoiceBatchImportResultViewModel batchResult)
+            if (result == null)
             {
-                TempData.Remove("Success");
-                TempData.Remove("Error");
-                ViewData.Remove("Error");
-
-                return Ok(batchResult);
+                return BadRequest(new
+                {
+                    message =
+                        errorMessage ??
+                        "The invoice batch could not be saved."
+                });
             }
 
-            var errorMessage =
-                ViewData["Error"]?.ToString() ??
-                TempData["Error"]?.ToString() ??
-                "The invoice batch could not be saved.";
-
-            TempData.Remove("Success");
-            TempData.Remove("Error");
-            ViewData.Remove("Error");
-
-            return BadRequest(new
-            {
-                message = errorMessage
-            });
+            return Ok(result);
         }
     }
 }
