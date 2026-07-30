@@ -203,6 +203,23 @@ export const routes: Routes = [
       ),
   },
   // ============================================================
+  // LOCAL STOCK REGISTER
+  // ============================================================
+  {
+    path: 'local-stocks',
+    canActivate: [
+      authGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/local-stocks/local-stocks-page'
+      ).then(
+        component =>
+          component.LocalStocksPage,
+      ),
+  },
+
+  // ============================================================
   // STOCK
   // ============================================================
   {

@@ -110,7 +110,17 @@
             exact: false
           }"
         >
-          Stock Control
+          Live Stock
+        </a>
+        <a
+          routerLink="/local-stocks"
+          (click)="closeMobileMenu()"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{
+            exact: true
+          }"
+        >
+          Local Stock
         </a>
         <a
           routerLink="/drawings"

@@ -1,0 +1,465 @@
+<section class="local-stock-page">
+  <header class="hero">
+    <div>
+      <span class="eyebrow">
+        POTracker database
+      </span>
+
+      <h1>Local Stock Register</h1>
+
+      <p>
+        Maintain POTracker's local raw-material stock list
+        separately from the connected Live Stock system.
+      </p>
+    </div>
+
+    <div class="hero-actions">
+      <a
+        class="button button--light"
+        routerLink="/stocks"
+      >
+        View Live Stock
+      </a>
+
+      <button
+        appManageOnly
+        class="button button--light"
+        type="button"
+        (click)="startCreate()"
+      >
+        + Add Local Stock
+      </button>
+    </div>
+  </header>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span>Total items</span>
+      <strong>
+        {{ summary().totalItems | number }}
+      </strong>
+      <small>Matching current search</small>
+    </article>
+
+    <article class="summary-card summary-card--danger">
+      <span>Low stock</span>
+      <strong>
+        {{ summary().lowStockItems | number }}
+      </strong>
+      <small>At or below minimum</small>
+    </article>
+
+    <article class="summary-card summary-card--success">
+      <span>Healthy</span>
+      <strong>
+        {{ summary().healthyItems | number }}
+      </strong>
+      <small>Above minimum quantity</small>
+    </article>
+
+    <article class="summary-card summary-card--info">
+      <span>Updated today</span>
+      <strong>
+        {{ summary().updatedToday | number }}
+      </strong>
+      <small>Changed during this day</small>
+    </article>
+  </section>
+
+  @if (formVisible()) {
+    <section
+      appManageOnly
+      class="panel form-panel"
+    >
+      <header class="panel-header">
+        <div>
+          <span class="eyebrow">
+            {{
+              isEditing()
+                ? 'Update record'
+                : 'New record'
+            }}
+          </span>
+
+          <h2>
+            {{
+              isEditing()
+                ? 'Edit Local Stock'
+                : 'Add Local Stock'
+            }}
+          </h2>
+        </div>
+      </header>
+
+      <form
+        class="stock-form"
+        [formGroup]="form"
+        (ngSubmit)="save()"
+      >
+        <div class="form-grid">
+          <label>
+            <span>Material No *</span>
+
+            <input
+              type="text"
+              formControlName="materialNo"
+              autocomplete="off"
+            />
+
+            @if (
+              form.controls.materialNo.touched &&
+              form.controls.materialNo.invalid
+            ) {
+              <small class="field-error">
+                Material number is required.
+              </small>
+            }
+          </label>
+
+          <label>
+            <span>Material Name</span>
+
+            <input
+              type="text"
+              formControlName="materialName"
+              autocomplete="off"
+            />
+          </label>
+
+          <label>
+            <span>RM Grade</span>
+
+            <input
+              type="text"
+              formControlName="rmGrade"
+              autocomplete="off"
+            />
+          </label>
+
+          <label>
+            <span>Location</span>
+
+            <input
+              type="text"
+              formControlName="location"
+              autocomplete="off"
+            />
+          </label>
+
+          <label>
+            <span>Available Quantity</span>
+
+            <input
+              type="number"
+              step="0.01"
+              formControlName="availableQty"
+            />
+          </label>
+
+          <label>
+            <span>Minimum Quantity</span>
+
+            <input
+              type="number"
+              step="0.01"
+              formControlName="minimumQty"
+            />
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button
+            class="button button--primary"
+            type="submit"
+            [disabled]="saving()"
+          >
+            {{
+              saving()
+                ? 'Saving…'
+                : (
+                    isEditing()
+                      ? 'Update Stock'
+                      : 'Save Stock'
+                  )
+            }}
+          </button>
+
+          <button
+            class="button button--quiet"
+            type="button"
+            [disabled]="saving()"
+            (click)="cancelForm()"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (successMessage()) {
+    <div
+      class="message message--success"
+      role="status"
+    >
+      <strong>Completed</strong>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div
+      class="message message--error"
+      role="alert"
+    >
+      <strong>Local Stock operation failed</strong>
+      <span>{{ errorMessage() }}</span>
+
+      <button
+        type="button"
+        (click)="retry()"
+      >
+        Try again
+      </button>
+    </div>
+  }
+
+  <section class="panel">
+    <header class="panel-header">
+      <div>
+        <span class="eyebrow">
+          Local inventory
+        </span>
+
+        <h2>Stock records</h2>
+
+        <p>
+          Duplicate material numbers remain supported,
+          matching the original Stock MVC workflow.
+        </p>
+      </div>
+    </header>
+
+    <form
+      class="search-panel"
+      (ngSubmit)="applySearch()"
+    >
+      <label>
+        <span>Search local stock</span>
+
+        <input
+          type="search"
+          [formControl]="searchControl"
+          placeholder="Material number, name, grade or location"
+        />
+      </label>
+
+      <div class="search-actions">
+        <button
+          class="button button--primary"
+          type="submit"
+          [disabled]="loading()"
+        >
+          Search
+        </button>
+
+        <button
+          class="button button--quiet"
+          type="button"
+          [disabled]="loading()"
+          (click)="clearSearch()"
+        >
+          Clear
+        </button>
+      </div>
+    </form>
+
+    @if (
+      loading() &&
+      items().length === 0
+    ) {
+      <div class="loading-state">
+        Loading local stock records…
+      </div>
+    } @else if (
+      !errorMessage() &&
+      items().length === 0
+    ) {
+      <div class="empty-state">
+        <strong>No local stock records found</strong>
+        <span>
+          Add a record or change the search.
+        </span>
+      </div>
+    } @else if (items().length > 0) {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>RM Grade</th>
+              <th>Location</th>
+              <th>Available</th>
+              <th>Minimum</th>
+              <th>Status</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (
+              item of items();
+              track item.id
+            ) {
+              <tr
+                [class.low-stock-row]="
+                  item.isLowStock
+                "
+              >
+                <td>
+                  <strong>
+                    {{ item.materialNo }}
+                  </strong>
+
+                  <br />
+
+                  <small>
+                    {{ item.materialName || '-' }}
+                  </small>
+                </td>
+
+                <td>
+                  {{ item.rmGrade || '-' }}
+                </td>
+
+                <td>
+                  {{ item.location || '-' }}
+                </td>
+
+                <td class="quantity">
+                  {{
+                    item.availableQty
+                      | number:'1.0-2'
+                  }}
+                </td>
+
+                <td class="quantity">
+                  {{
+                    item.minimumQty
+                      | number:'1.0-2'
+                  }}
+                </td>
+
+                <td>
+                  <span
+                    class="status"
+                    [class.status--danger]="
+                      item.isLowStock
+                    "
+                    [class.status--success]="
+                      !item.isLowStock
+                    "
+                  >
+                    {{ item.status }}
+                  </span>
+                </td>
+
+                <td>
+                  {{
+                    item.updatedDate
+                      | date:'dd MMM yyyy'
+                  }}
+                </td>
+
+                <td>
+                  <div class="row-actions">
+                    <button
+                      appManageOnly
+                      class="action-button action-button--edit"
+                      type="button"
+                      (click)="startEdit(item)"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      appManageOnly
+                      class="action-button action-button--delete"
+                      type="button"
+                      [disabled]="
+                        deletingId() === item.id
+                      "
+                      (click)="deleteStock(item)"
+                    >
+                      {{
+                        deletingId() === item.id
+                          ? 'Deleting…'
+                          : 'Delete'
+                      }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="pagination">
+        <div>
+          Showing
+          <strong>{{ showingFrom() }}</strong>
+          to
+          <strong>{{ showingTo() }}</strong>
+          of
+          <strong>{{ totalRecords() }}</strong>
+        </div>
+
+        <label>
+          Rows
+
+          <select
+            [value]="pageSize()"
+            (change)="changePageSize($event)"
+          >
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </label>
+
+        <div class="page-actions">
+          <button
+            class="button button--quiet"
+            type="button"
+            [disabled]="
+              !hasPreviousPage() ||
+              loading()
+            "
+            (click)="previousPage()"
+          >
+            Previous
+          </button>
+
+          <span>
+            Page {{ page() }} of {{ totalPages() }}
+          </span>
+
+          <button
+            class="button button--quiet"
+            type="button"
+            [disabled]="
+              !hasNextPage() ||
+              loading()
+            "
+            (click)="nextPage()"
+          >
+            Next
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</section>
