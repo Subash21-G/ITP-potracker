@@ -1,4 +1,4 @@
-﻿import {
+import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
@@ -71,6 +71,10 @@ export class MaterialFormPage implements OnInit {
   readonly isEditMode = signal(false);
   readonly pendingInvoicePrefill =
     signal<PendingInvoiceMaterialPrefill | null>(null);
+
+  readonly requestedPurchaseOrderId =
+    signal<number | null>(null);
+
   readonly missingPurchaseOrderNumber = signal('');
 
   readonly form = this.formBuilder.nonNullable.group({
@@ -154,6 +158,10 @@ export class MaterialFormPage implements OnInit {
     if (parsedId === null) {
       this.pendingInvoicePrefill.set(
         this.readPendingInvoicePrefill(),
+      );
+
+      this.requestedPurchaseOrderId.set(
+        this.readPurchaseOrderIdPrefill(),
       );
 
       this.loadCreateForm();
@@ -265,8 +273,25 @@ export class MaterialFormPage implements OnInit {
   cancelLink(): readonly (string | number)[] {
     const id = this.materialId();
 
-    if (id === null && this.pendingInvoicePrefill()) {
+    if (
+      id === null &&
+      this.pendingInvoicePrefill()
+    ) {
       return ['/invoices/pending'];
+    }
+
+    const requestedPurchaseOrderId =
+      this.requestedPurchaseOrderId();
+
+    if (
+      id === null &&
+      requestedPurchaseOrderId !==
+        null
+    ) {
+      return [
+        '/purchase-orders',
+        requestedPurchaseOrderId,
+      ];
     }
 
     return id === null
@@ -307,13 +332,49 @@ export class MaterialFormPage implements OnInit {
               prefill,
               options,
             );
+
             return;
           }
 
-          if (options.length === 1) {
-            this.form.controls.purchaseOrderId.setValue(
-              options[0].id,
+          const requestedPurchaseOrderId =
+            this.requestedPurchaseOrderId();
+
+          if (
+            requestedPurchaseOrderId !==
+            null
+          ) {
+            const requestedPurchaseOrder =
+              options.find(
+                (option) =>
+                  option.id ===
+                  requestedPurchaseOrderId,
+              );
+
+            if (requestedPurchaseOrder) {
+              this.form.controls.purchaseOrderId
+                .setValue(
+                  requestedPurchaseOrder.id,
+                );
+
+              return;
+            }
+
+            this.errorMessage.set(
+              `Purchase order ${requestedPurchaseOrderId} was not found. ` +
+                'Choose an available purchase order.',
             );
+
+            return;
+          }
+
+          if (
+            !this.errorMessage() &&
+            options.length === 1
+          ) {
+            this.form.controls.purchaseOrderId
+              .setValue(
+                options[0].id,
+              );
           }
         },
         error: (error: HttpErrorResponse) => {
@@ -432,6 +493,47 @@ export class MaterialFormPage implements OnInit {
       remark:
         material.remark ?? '',
     });
+  }
+
+
+  private readPurchaseOrderIdPrefill():
+    number | null {
+    const params =
+      this.route.snapshot.queryParamMap;
+
+    if (
+      params.get('source') ===
+      'pending-invoice'
+    ) {
+      return null;
+    }
+
+    const rawPurchaseOrderId =
+      params
+        .get('purchaseOrderId')
+        ?.trim();
+
+    if (!rawPurchaseOrderId) {
+      return null;
+    }
+
+    const purchaseOrderId =
+      Number(rawPurchaseOrderId);
+
+    if (
+      !Number.isInteger(
+        purchaseOrderId,
+      ) ||
+      purchaseOrderId <= 0
+    ) {
+      this.errorMessage.set(
+        'The purchase order link is invalid. Choose an available purchase order.',
+      );
+
+      return null;
+    }
+
+    return purchaseOrderId;
   }
 
 
