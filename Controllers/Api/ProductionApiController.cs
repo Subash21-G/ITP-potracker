@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
@@ -80,7 +80,6 @@ namespace POTracker.Controllers.Api
                 StartToday =
                     await baseQuery.CountAsync(material =>
                         material.ProcessStartDate != null &&
-                        material.ProcessStartDate >= today &&
                         material.ProcessStartDate < tomorrow &&
                         material.ProcessStatus == "Pending"),
 
@@ -121,7 +120,6 @@ namespace POTracker.Controllers.Api
             var startToday = await MapQueueItems(
                 baseQuery.Where(material =>
                     material.ProcessStartDate != null &&
-                        material.ProcessStartDate >= today &&
                         material.ProcessStartDate < tomorrow &&
                         material.ProcessStatus == "Pending")
                 .OrderBy(material => material.ProcessStartDate)
