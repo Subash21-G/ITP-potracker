@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Html
 @model List<POTracker.Models.Material>
 
 @{
@@ -99,17 +99,17 @@
 
     <div class="alert-dashboard-grid">
 
-        <a href="/Alert/Index" class="dashboard-alert-card red-alert">
+        <a href="/app/alerts" class="dashboard-alert-card red-alert">
             <h3>@overdueCount</h3>
             <p>Overdue Materials</p>
         </a>
 
-        <a href="/Alert/Index" class="dashboard-alert-card yellow-alert">
+        <a href="/app/alerts" class="dashboard-alert-card yellow-alert">
             <h3>@deliveryWithin7DaysCount</h3>
             <p>Delivery Within 7 Days</p>
         </a>
 
-        <a href="/Alert/Index" class="dashboard-alert-card blue-alert">
+        <a href="/app/alerts" class="dashboard-alert-card blue-alert">
             <h3>@processStartAlertCount</h3>
             <p>Process Start Alerts</p>
         </a>

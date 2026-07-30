@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http
 
 @{
     var role = Context.Session.GetString("Role") ?? string.Empty;
@@ -68,8 +68,7 @@
 {
     <li class="nav-item">
         <a class="nav-link"
-           asp-controller="Alert"
-           asp-action="Index">
+           href="/app/alerts">
 
             <i class="bi bi-bell-fill"></i>
             Smart Alerts
