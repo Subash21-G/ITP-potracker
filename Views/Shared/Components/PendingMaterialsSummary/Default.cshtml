@@ -230,10 +230,7 @@
                             </td>
 
                             <td>
-                                <a asp-controller="Material"
-                                   asp-action="Details"
-                                   asp-route-id="@item.MaterialId"
-                                   class="dpw-material-number">
+                                <a href="/app/materials/@item.MaterialId"`r`n                                   class="dpw-material-number">
                                     @item.MaterialNo
                                 </a>
 
@@ -303,18 +300,12 @@
 
                             <td>
                                 <div class="dpw-row-actions">
-                                    <a asp-controller="Material"
-                                       asp-action="Details"
-                                       asp-route-id="@item.MaterialId"
-                                       class="dpw-action dpw-action-view">
+                                    <a href="/app/materials/@item.MaterialId"`r`n                                       class="dpw-action dpw-action-view">
                                         View
                                     </a>
 
                                     <role-access roles="Admin,Production">
-                                        <a asp-controller="Material"
-                                           asp-action="Edit"
-                                           asp-route-id="@item.MaterialId"
-                                           class="dpw-action dpw-action-edit">
+                                        <a href="/app/materials/@item.MaterialId/edit"`r`n                                           class="dpw-action dpw-action-edit">
                                             Edit
                                         </a>
                                     </role-access>

@@ -344,10 +344,7 @@
             </div>
 
             <role-access roles="Admin,Production">
-                <a asp-controller="Material"
-                   asp-action="Create"
-                   asp-route-purchaseOrderId="@Model.Id"
-                   class="pod-btn pod-btn-primary">
+                <a href="/app/materials/new?purchaseOrderId=@Model.Id"`r`n                   class="pod-btn pod-btn-primary">
                     + Add Material
                 </a>
             </role-access>
@@ -369,10 +366,7 @@
                 </p>
 
                 <role-access roles="Admin,Production">
-                    <a asp-controller="Material"
-                       asp-action="Create"
-                       asp-route-purchaseOrderId="@Model.Id"
-                       class="pod-btn pod-btn-primary">
+                    <a href="/app/materials/new?purchaseOrderId=@Model.Id"`r`n                   class="pod-btn pod-btn-primary">
                         Add First Material
                     </a>
                 </role-access>
@@ -436,10 +430,7 @@
                                 </td>
 
                                 <td>
-                                    <a asp-controller="Material"
-                                       asp-action="Details"
-                                       asp-route-id="@item.Id"
-                                       class="pod-material-number">
+                                    <a href="/app/materials/@item.Id"`r`n                                       class="pod-material-number">
                                         @item.MaterialNo
                                     </a>
 
@@ -534,18 +525,12 @@
                                 <td>
                                     <div class="pod-row-actions">
 
-                                        <a asp-controller="Material"
-                                           asp-action="Details"
-                                           asp-route-id="@item.Id"
-                                           class="pod-row-btn pod-row-view">
+                                        <a href="/app/materials/@item.Id"`r`n                                           class="pod-row-btn pod-row-view">
                                             View
                                         </a>
 
                                         <role-access roles="Admin,Production">
-                                            <a asp-controller="Material"
-                                               asp-action="Edit"
-                                               asp-route-id="@item.Id"
-                                               class="pod-row-btn pod-row-edit">
+                                            <a href="/app/materials/@item.Id/edit"`r`n                                               class="pod-row-btn pod-row-edit">
                                                 Edit
                                             </a>
 
