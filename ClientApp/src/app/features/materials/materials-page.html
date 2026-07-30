@@ -1,4 +1,4 @@
-﻿<section class="page-heading">
+<section class="page-heading">
   <div>
     <p class="eyebrow">PURCHASE ORDER OPERATIONS</p>
     <h1>Materials</h1>
@@ -12,6 +12,39 @@
       <strong>{{ totalRecords() | number }}</strong>
       <span>matching records</span>
     </div>
+
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="loading() || downloadingExcel()"
+      (click)="downloadExcel()"
+    >
+      {{
+        downloadingExcel()
+          ? 'Exporting…'
+          : 'Export Excel'
+      }}
+    </button>
+
+    <button
+      appManageOnly
+      class="button button--danger"
+      type="button"
+      [disabled]="
+        loading() ||
+        bulkDeleting() ||
+        selectedCount() === 0
+      "
+      (click)="bulkDeleteMaterials()"
+    >
+      {{
+        bulkDeleting()
+          ? 'Deleting…'
+          : 'Delete selected (' +
+            selectedCount() +
+            ')'
+      }}
+    </button>
 
     <a appManageOnly
       class="button button--create"
@@ -151,6 +184,18 @@
   </section>
 }
 
+@if (successMessage()) {
+  <section
+    class="message message--success"
+    role="status"
+  >
+    <div>
+      <strong>Completed</strong>
+      <p>{{ successMessage() }}</p>
+    </div>
+  </section>
+}
+
 <section class="panel table-panel" aria-labelledby="results-title">
   <div class="panel__heading results-heading">
     <div>
@@ -184,6 +229,16 @@
     <table>
       <thead>
         <tr>
+          <th class="select-cell">
+            <input
+              appManageOnly
+              type="checkbox"
+              aria-label="Select all materials on this page"
+              [checked]="allCurrentPageSelected()"
+              [disabled]="loading() || items().length === 0"
+              (change)="toggleCurrentPage($event)"
+            />
+          </th>
           <th>PO / Handler</th>
           <th>Line</th>
           <th>Material</th>
@@ -205,7 +260,30 @@
 
       <tbody>
         @for (material of items(); track material.id) {
-          <tr>
+          <tr
+            [class.row--selected]="
+              selectedIds().has(material.id)
+            "
+          >
+            <td class="select-cell">
+              <input
+                appManageOnly
+                type="checkbox"
+                [checked]="
+                  selectedIds().has(material.id)
+                "
+                [attr.aria-label]="
+                  'Select material ' +
+                  (material.materialNo || material.id)
+                "
+                (change)="
+                  toggleMaterial(
+                    material.id,
+                    $event
+                  )
+                "
+              />
+            </td>
             <td>
               <a
                 class="primary-link"
@@ -353,7 +431,7 @@
           </tr>
         } @empty {
           <tr>
-            <td class="empty-state" colspan="16">
+            <td class="empty-state" colspan="17">
               @if (loading()) {
                 Loading materials…
               } @else {

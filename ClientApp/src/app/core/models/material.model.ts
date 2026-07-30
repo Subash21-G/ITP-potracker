@@ -57,3 +57,19 @@ export interface MaterialQuery {
 
 
 
+
+export interface MaterialBulkDeleteRequest {
+  readonly materialIds: readonly number[];
+}
+
+export interface MaterialBulkDeleteResponse {
+  readonly success: boolean;
+  readonly message: string;
+  readonly requestedCount: number;
+  readonly deletedCount: number;
+  readonly skippedCount: number;
+  readonly missingCount: number;
+  readonly invoiceLinkedCount: number;
+  readonly dispatchLinkedCount: number;
+  readonly deletedMaterialIds: readonly number[];
+}

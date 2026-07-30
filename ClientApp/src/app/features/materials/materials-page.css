@@ -197,6 +197,17 @@ select:focus {
   background: #f1f5f9;
 }
 
+.button--danger {
+  color: #ffffff;
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.button--danger:hover:not(:disabled) {
+  background: #991b1b;
+  border-color: #991b1b;
+}
+
 .message {
   display: flex;
   padding: 16px 18px;
@@ -210,6 +221,12 @@ select:focus {
   color: #7f1d1d;
   background: #fff7ed;
   border: 1px solid #fed7aa;
+}
+
+.message--success {
+  color: #14532d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
 }
 
 .message strong,
@@ -252,6 +269,25 @@ select:focus {
   opacity: 0.58;
 }
 
+.select-cell {
+  width: 48px;
+  min-width: 48px;
+  text-align: center;
+}
+
+.select-cell input {
+  width: 17px;
+  min-height: 17px;
+  margin: 0;
+  padding: 0;
+  accent-color: #0f766e;
+  cursor: pointer;
+}
+
+.select-cell input:disabled {
+  cursor: not-allowed;
+}
+
 table {
   width: 100%;
   min-width: 1360px;
@@ -286,6 +322,10 @@ td {
 
 tbody tr:hover {
   background: #f8fafc;
+}
+
+tbody tr.row--selected {
+  background: #f0fdfa;
 }
 
 .primary-link,
@@ -437,6 +477,7 @@ tbody tr:hover {
   }
 
   .record-summary,
+  .heading-actions .button,
   .button--create {
     width: 100%;
   }

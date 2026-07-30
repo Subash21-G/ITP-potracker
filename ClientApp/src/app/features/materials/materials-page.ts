@@ -17,7 +17,9 @@ import {
 } from '@angular/router';
 import { finalize } from 'rxjs';
 
-import { MaterialListItem } from '../../core/models/material.model';
+import {
+  MaterialListItem,
+} from '../../core/models/material.model';
 import { MaterialsApiService } from '../../core/services/materials-api.service';
 
 @Component({
@@ -55,9 +57,47 @@ export class MaterialsPage {
   readonly loading = signal(false);
   readonly errorMessage = signal('');
   readonly errorStatus = signal<number | null>(null);
+  readonly successMessage = signal('');
+  readonly downloadingExcel = signal(false);
+  readonly bulkDeleting = signal(false);
+
+  readonly selectedIds =
+    signal<ReadonlySet<number>>(
+      new Set<number>(),
+    );
 
   readonly hasPreviousPage = computed(() => this.page() > 1);
-  readonly hasNextPage = computed(() => this.page() < this.totalPages());
+  readonly hasNextPage =
+    computed(
+      () =>
+        this.page() <
+        this.totalPages(),
+    );
+
+  readonly selectedCount =
+    computed(
+      () =>
+        this.selectedIds().size,
+    );
+
+  readonly allCurrentPageSelected =
+    computed(() => {
+      const materials =
+        this.items();
+
+      const selected =
+        this.selectedIds();
+
+      return (
+        materials.length > 0 &&
+        materials.every(
+          (material) =>
+            selected.has(
+              material.id,
+            ),
+        )
+      );
+    });
   readonly showingFrom = computed(() =>
     this.totalRecords() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
   );
@@ -82,12 +122,16 @@ export class MaterialsPage {
 
   applyFilters(): void {
     this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
     this.loadMaterials();
   }
 
   clearFilters(): void {
     this.filters.reset();
     this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
     this.loadMaterials();
   }
 
@@ -100,6 +144,7 @@ export class MaterialsPage {
 
     this.pageSize.set(value);
     this.page.set(1);
+    this.clearSelection();
     this.loadMaterials();
   }
 
@@ -108,7 +153,12 @@ export class MaterialsPage {
       return;
     }
 
-    this.page.update((currentPage) => currentPage - 1);
+    this.page.update(
+      (currentPage) =>
+        currentPage - 1,
+    );
+
+    this.clearSelection();
     this.loadMaterials();
   }
 
@@ -117,10 +167,303 @@ export class MaterialsPage {
       return;
     }
 
-    this.page.update((currentPage) => currentPage + 1);
+    this.page.update(
+      (currentPage) =>
+        currentPage + 1,
+    );
+
+    this.clearSelection();
     this.loadMaterials();
   }
 
+  toggleMaterial(
+    materialId: number,
+    event: Event,
+  ): void {
+    const checked =
+      (
+        event.target as
+          HTMLInputElement
+      ).checked;
+
+    this.selectedIds.update(
+      (selectedIds) => {
+        const updated =
+          new Set(selectedIds);
+
+        if (checked) {
+          updated.add(
+            materialId,
+          );
+        } else {
+          updated.delete(
+            materialId,
+          );
+        }
+
+        return updated;
+      },
+    );
+  }
+
+  toggleCurrentPage(
+    event: Event,
+  ): void {
+    const checked =
+      (
+        event.target as
+          HTMLInputElement
+      ).checked;
+
+    if (!checked) {
+      this.clearSelection();
+      return;
+    }
+
+    this.selectedIds.set(
+      new Set(
+        this.items().map(
+          (material) =>
+            material.id,
+        ),
+      ),
+    );
+  }
+
+  downloadExcel(): void {
+    if (
+      this.downloadingExcel() ||
+      this.loading()
+    ) {
+      return;
+    }
+
+    const filterValues =
+      this.filters.getRawValue();
+
+    this.downloadingExcel.set(
+      true,
+    );
+
+    this.errorMessage.set('');
+    this.successMessage.set('');
+
+    this.materialsApi
+      .downloadExcel({
+        page: 1,
+        pageSize:
+          this.pageSize(),
+        ...filterValues,
+      })
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(() =>
+          this.downloadingExcel.set(
+            false,
+          ),
+        ),
+      )
+      .subscribe({
+        next: (file) => {
+          if (
+            !file ||
+            file.size === 0
+          ) {
+            this.errorMessage.set(
+              'The material Excel export was empty.',
+            );
+
+            return;
+          }
+
+          const downloadUrl =
+            URL.createObjectURL(
+              file,
+            );
+
+          const downloadLink =
+            document.createElement(
+              'a',
+            );
+
+          const timestamp =
+            new Date()
+              .toISOString()
+              .slice(0, 19)
+              .replace(
+                'T',
+                '_',
+              )
+              .replaceAll(
+                ':',
+                '',
+              )
+              .replaceAll(
+                '-',
+                '',
+              );
+
+          downloadLink.href =
+            downloadUrl;
+
+          downloadLink.download =
+            `Materials_${timestamp}.xlsx`;
+
+          document.body.appendChild(
+            downloadLink,
+          );
+
+          downloadLink.click();
+          downloadLink.remove();
+
+          URL.revokeObjectURL(
+            downloadUrl,
+          );
+
+          this.successMessage.set(
+            'Material Excel export downloaded successfully.',
+          );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeMutationError(
+              error,
+              'Material Excel export could not be downloaded.',
+            ),
+          );
+        },
+      });
+  }
+
+  bulkDeleteMaterials(): void {
+    const materialIds =
+      Array.from(
+        this.selectedIds(),
+      );
+
+    if (
+      materialIds.length === 0 ||
+      this.bulkDeleting() ||
+      this.loading()
+    ) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Delete ${materialIds.length} selected material(s)?\n\n` +
+          'Materials linked to invoices or dispatch records will be safely skipped.',
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.bulkDeleting.set(
+      true,
+    );
+
+    this.errorMessage.set('');
+    this.successMessage.set('');
+
+    this.materialsApi
+      .bulkDelete({
+        materialIds,
+      })
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(() =>
+          this.bulkDeleting.set(
+            false,
+          ),
+        ),
+      )
+      .subscribe({
+        next: (response) => {
+          const deletedIds =
+            new Set(
+              response
+                .deletedMaterialIds,
+            );
+
+          this.selectedIds.update(
+            (selectedIds) =>
+              new Set(
+                Array.from(
+                  selectedIds,
+                ).filter(
+                  (materialId) =>
+                    !deletedIds.has(
+                      materialId,
+                    ),
+                ),
+              ),
+          );
+
+          if (
+            response.deletedCount >
+            0
+          ) {
+            this.successMessage.set(
+              response.message ||
+                'Selected materials deleted successfully.',
+            );
+
+            const currentPageDeleted =
+              this.items().length >
+                0 &&
+              this.items().every(
+                (material) =>
+                  deletedIds.has(
+                    material.id,
+                  ),
+              );
+
+            if (
+              currentPageDeleted &&
+              this.page() > 1
+            ) {
+              this.page.update(
+                (currentPage) =>
+                  currentPage - 1,
+              );
+            }
+
+            this.loadMaterials();
+            return;
+          }
+
+          this.errorMessage.set(
+            response.message ||
+              'No selected materials were deleted.',
+          );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeMutationError(
+              error,
+              'The selected materials could not be deleted.',
+            ),
+          );
+        },
+      });
+  }
+
+  private clearSelection(): void {
+    this.selectedIds.set(
+      new Set<number>(),
+    );
+  }
   retry(): void {
     this.loadMaterials();
   }
@@ -208,18 +551,67 @@ export class MaterialsPage {
           this.page.set(response.page);
           this.pageSize.set(response.pageSize);
           this.totalRecords.set(response.totalRecords);
-          this.totalPages.set(response.totalPages);
-        },
+          this.totalPages.set(
+            response.totalPages,
+          );
+
+          const visibleIds =
+            new Set(
+              response.items.map(
+                (material) =>
+                  material.id,
+              ),
+            );
+
+          this.selectedIds.update(
+            (selectedIds) =>
+              new Set(
+                Array.from(
+                  selectedIds,
+                ).filter(
+                  (materialId) =>
+                    visibleIds.has(
+                      materialId,
+                    ),
+                ),
+              ),
+          );        },
         error: (error: HttpErrorResponse) => {
           this.items.set([]);
           this.totalRecords.set(0);
           this.totalPages.set(1);
+          this.clearSelection();
           this.errorStatus.set(error.status);
           this.errorMessage.set(this.describeError(error));
         },
       });
   }
 
+  private describeMutationError(
+    error: HttpErrorResponse,
+    fallbackMessage: string,
+  ): string {
+    if (error.status === 0) {
+      return 'The PO Tracker API is unavailable.';
+    }
+
+    if (error.status === 401) {
+      return 'Your PO Tracker session has expired. Sign in again.';
+    }
+
+    if (error.status === 403) {
+      return 'Your account does not have permission to perform this action.';
+    }
+
+    const apiMessage =
+      error.error?.message ??
+      error.error?.error;
+
+    return typeof apiMessage ===
+      'string'
+      ? apiMessage
+      : fallbackMessage;
+  }
   private describeError(error: HttpErrorResponse): string {
     if (error.status === 0) {
       return 'The PO Tracker API is unavailable. Start the ASP.NET application and check proxy.conf.json.';
