@@ -1,4 +1,4 @@
-﻿@model POTracker.Models.Material
+@model POTracker.Models.Material
 
 @{
     ViewData["Title"] = "Material Details";
@@ -139,9 +139,7 @@
 
                 @if (Model.PendingQty > 0)
                 {
-                    <a asp-controller="Dispatch"
-                       asp-action="Create"
-                       asp-route-materialId="@Model.Id"
+                    <a href="/app/dispatches/@Model.Id"
                        class="md-btn md-btn-success">
                         Add Dispatch
                     </a>
@@ -760,9 +758,7 @@
                 <role-access roles="Admin,Production">
                     @if (Model.PendingQty > 0)
                     {
-                        <a asp-controller="Dispatch"
-                           asp-action="Create"
-                           asp-route-materialId="@Model.Id"
+                        <a href="/app/dispatches/@Model.Id"
                            class="md-btn md-btn-success">
                             Add Dispatch
                         </a>
@@ -838,19 +834,10 @@
 
                                 <td>
                                     <role-access roles="Admin,Production">
-                                        <form asp-controller="Dispatch"
-                                              asp-action="Delete"
-                                              asp-route-id="@dispatch.Id"
-                                              method="post"
-                                              onsubmit="return confirm('Delete this dispatch record? Pending quantity will be restored.');">
-
-                                            @Html.AntiForgeryToken()
-
-                                            <button type="submit"
-                                                    class="md-table-delete">
-                                                Delete
-                                            </button>
-                                        </form>
+                                        <a href="/app/dispatches/@Model.Id"
+                                           class="md-table-delete">
+                                            Manage
+                                        </a>
                                     </role-access>
                                 </td>
                             </tr>

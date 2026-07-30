@@ -1,4 +1,4 @@
-﻿@model POTracker.Models.PurchaseOrder
+@model POTracker.Models.PurchaseOrder
 
 @{
     ViewData["Title"] = "PO Details";
@@ -551,9 +551,7 @@
 
                                             @if (item.PendingQty > 0)
                                             {
-                                                <a asp-controller="Dispatch"
-                                                   asp-action="Create"
-                                                   asp-route-materialId="@item.Id"
+                                                <a href="/app/dispatches/@item.Id"
                                                    class="pod-row-btn pod-row-dispatch">
                                                     Dispatch
                                                 </a>
