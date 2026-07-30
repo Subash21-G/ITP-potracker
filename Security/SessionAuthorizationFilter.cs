@@ -1,130 +1,127 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace POTracker.Security
 {
     /// <summary>
-    /// Applies the application's session login and role rules from one
-    /// central place. This prevents a hidden menu item or API endpoint
-    /// from being opened by typing its URL directly.
+    /// Applies session authentication and role rules to MVC and API
+    /// controllers during the final Angular migration stage.
     /// </summary>
-    public sealed class SessionAuthorizationFilter : IAuthorizationFilter
+    public sealed class SessionAuthorizationFilter :
+        IAuthorizationFilter
     {
-        private static readonly HashSet<string> SupportedRoles =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                "Admin",
-                "Production",
-                "Viewer"
-            };
-
-        private static readonly HashSet<string> AdminOnlyControllers =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                "Admin",
-                "Analytics",
-                "Audit",
-                "Report",
-                "ReportsApi"
-            };
-
-        private static readonly Dictionary<string, HashSet<string>>
-            ViewerActions =
-                new(StringComparer.OrdinalIgnoreCase)
+        private static readonly HashSet<string>
+            SupportedRoles =
+                new(
+                    StringComparer.OrdinalIgnoreCase)
                 {
-                    ["Dashboard"] = Actions("Index"),
-                    ["Purchaser"] = Actions("Index"),
-                    ["PurchaseOrder"] = Actions(
-                        "Index",
-                        "Details",
-                        "ExportExcel"),
-                    ["Material"] = Actions(
-                        "Index",
-                        "Details",
-                        "ExportExcel"),
-                    ["PendingMaterial"] = Actions(
-                        "Index",
-                        "ExportExcel"),
-                    ["Dispatch"] = Actions(
-                        "Index",
-                        "Details"),
-                    ["ProcessQueue"] = Actions("Index"),
-                    ["Stock"] = Actions("Index"),
-                    ["Drawing"] = Actions("Index"),
-                    ["Calendar"] = Actions(
-                        "Index",
-                        "GetEvents"),
-                    ["Alert"] = Actions("Index"),
-                    ["Notification"] = Actions("Index"),
-                    ["Home"] = Actions(
-                        "Index",
-                        "Privacy")
+                    "Admin",
+                    "Production",
+                    "Viewer"
                 };
 
-        private static readonly Dictionary<string, HashSet<string>>
-            ViewerApiActions =
-                new(StringComparer.OrdinalIgnoreCase)
+        private static readonly HashSet<string>
+            AdminOnlyControllers =
+                new(
+                    StringComparer.OrdinalIgnoreCase)
                 {
-                    // Angular dashboard read access.
-                    ["DashboardApi"] = Actions(
-                        "GetDashboard"),
-                    ["AlertsApi"] = Actions(
-                        "GetAlerts"),
+                    // Temporary MVC controllers.
+                    "Admin",
+                    "Analytics",
+                    "Audit",
+                    "Report",
 
-                    ["NotificationsApi"] = Actions(
-                        "Index"),
+                    // Angular JSON APIs.
+                    "AdminApi",
+                    "AnalyticsApi",
+                    "AuditApi",
+                    "ReportsApi"
+                };
 
-                    // Existing Angular material read access.
-                    ["MaterialsApi"] = Actions(
-                        "Index",
-                        "Details"),
+        private static readonly Dictionary<
+            string,
+            HashSet<string>>
+            ViewerMvcActions =
+                new(
+                    StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Dashboard"] =
+                        Actions("Index"),
 
-                    // Existing Angular purchase-order read access.
-                    ["PurchaseOrdersApi"] = Actions(
-                        "Index",
-                        "Details"),
-                    ["PurchasersApi"] = Actions(
-                        "Index",
-                        "Details"),
-                    ["StocksApi"] = Actions(
-                        "Index"),
+                    ["Purchaser"] =
+                        Actions("Index"),
 
-                    // Signed-in users may read the current session
-                    // and log out.
-                    ["InvoicesApi"] = Actions(
-                        "Index",
-                        "Details"),
+                    ["PurchaseOrder"] =
+                        Actions(
+                            "Index",
+                            "Details",
+                            "ExportExcel"),
 
-                    ["DispatchesApi"] = Actions(
-                        "Index",
-                        "Details"),
+                    ["Material"] =
+                        Actions(
+                            "Index",
+                            "Details",
+                            "ExportExcel"),
 
-                    ["ProductionApi"] = Actions(
-                        "ProcessQueue",
-                        "CalendarEvents"),
+                    ["PendingMaterial"] =
+                        Actions(
+                            "Index",
+                            "ExportExcel"),
 
-                    ["PendingMaterial"] = Actions(
-                        "GetPendingMaterialsApi"),
+                    ["Dispatch"] =
+                        Actions(
+                            "Index",
+                            "Details"),
 
-                    ["AuthApi"] = Actions(
-                        "GetCurrentUser",
-                        "Logout")
+                    ["ProcessQueue"] =
+                        Actions("Index"),
+
+                    ["Stock"] =
+                        Actions("Index"),
+
+                    ["Drawing"] =
+                        Actions("Index"),
+
+                    ["Calendar"] =
+                        Actions(
+                            "Index",
+                            "GetEvents"),
+
+                    ["Alert"] =
+                        Actions("Index"),
+
+                    ["Notification"] =
+                        Actions("Index"),
+
+                    ["Home"] =
+                        Actions(
+                            "Index",
+                            "Privacy")
                 };
 
         public void OnAuthorization(
             AuthorizationFilterContext context)
         {
             var controller =
-                GetRouteValue(context, "controller");
+                GetRouteValue(
+                    context,
+                    "controller");
 
             var action =
-                GetRouteValue(context, "action");
+                GetRouteValue(
+                    context,
+                    "action");
 
             var isApiRequest =
-                IsApiRequest(context);
+                IsApiRequest(
+                    context);
 
-            if (IsPublicEndpoint(controller, action))
+            if (
+                IsPublicEndpoint(
+                    controller,
+                    action)
+            )
             {
                 return;
             }
@@ -133,9 +130,13 @@ namespace POTracker.Security
                 context.HttpContext.Session;
 
             var userName =
-                session.GetString("UserName");
+                session.GetString(
+                    "UserName");
 
-            if (string.IsNullOrWhiteSpace(userName))
+            if (
+                string.IsNullOrWhiteSpace(
+                    userName)
+            )
             {
                 RejectUnauthenticated(
                     context,
@@ -145,10 +146,15 @@ namespace POTracker.Security
             }
 
             var role =
-                session.GetString("Role")?.Trim();
+                session.GetString(
+                    "Role")?.Trim();
 
-            if (string.IsNullOrWhiteSpace(role) ||
-                !SupportedRoles.Contains(role))
+            if (
+                string.IsNullOrWhiteSpace(
+                    role) ||
+                !SupportedRoles.Contains(
+                    role)
+            )
             {
                 session.Clear();
 
@@ -159,14 +165,20 @@ namespace POTracker.Security
                 return;
             }
 
-            if (role.Equals(
+            if (
+                role.Equals(
                     "Admin",
-                    StringComparison.OrdinalIgnoreCase))
+                    StringComparison
+                        .OrdinalIgnoreCase)
+            )
             {
                 return;
             }
 
-            if (AdminOnlyControllers.Contains(controller))
+            if (
+                AdminOnlyControllers.Contains(
+                    controller)
+            )
             {
                 RejectForbidden(
                     context,
@@ -175,18 +187,23 @@ namespace POTracker.Security
                 return;
             }
 
-            if (role.Equals(
+            if (
+                role.Equals(
                     "Production",
-                    StringComparison.OrdinalIgnoreCase))
+                    StringComparison
+                        .OrdinalIgnoreCase)
+            )
             {
                 return;
             }
 
-            if (IsViewerRequestAllowed(
+            if (
+                IsViewerRequestAllowed(
                     context,
                     controller,
                     action,
-                    isApiRequest))
+                    isApiRequest)
+            )
             {
                 return;
             }
@@ -205,93 +222,129 @@ namespace POTracker.Security
             var method =
                 context.HttpContext.Request.Method;
 
-            // Viewer accounts are read-only, except logout.
             var isViewerLogout =
                 controller.Equals(
                     "AuthApi",
-                    StringComparison.OrdinalIgnoreCase) &&
+                    StringComparison
+                        .OrdinalIgnoreCase) &&
                 action.Equals(
                     "Logout",
-                    StringComparison.OrdinalIgnoreCase) &&
-                HttpMethods.IsPost(method);
+                    StringComparison
+                        .OrdinalIgnoreCase) &&
+                HttpMethods.IsPost(
+                    method);
 
             if (isViewerLogout)
             {
                 return true;
             }
 
-            if (!HttpMethods.IsGet(method) &&
-                !HttpMethods.IsHead(method))
+            if (
+                !HttpMethods.IsGet(
+                    method) &&
+                !HttpMethods.IsHead(
+                    method)
+            )
             {
                 return false;
             }
 
-            var allowedActionsByController =
-                isApiRequest
-                    ? ViewerApiActions
-                    : ViewerActions;
+            // Viewer accounts may read every non-admin API.
+            // This prevents newly added read endpoints from being
+            // accidentally blocked by a stale action-name list.
+            if (isApiRequest)
+            {
+                return
+                    !AdminOnlyControllers.Contains(
+                        controller);
+            }
 
-            return allowedActionsByController.TryGetValue(
-                       controller,
-                       out var allowedActions) &&
-                   allowedActions.Contains(action);
+            return
+                ViewerMvcActions.TryGetValue(
+                    controller,
+                    out var allowedActions) &&
+                allowedActions.Contains(
+                    action);
         }
 
         private static bool IsApiRequest(
             AuthorizationFilterContext context)
         {
             return context.HttpContext.Request.Path
-                .StartsWithSegments("/api");
+                .StartsWithSegments(
+                    "/api");
         }
 
         private static bool IsPublicEndpoint(
             string controller,
             string action)
         {
-            // Existing MVC login and registration pages remain public.
-            if (controller.Equals(
+            // Existing MVC account pages remain public until removal.
+            if (
+                controller.Equals(
                     "Account",
-                    StringComparison.OrdinalIgnoreCase))
+                    StringComparison
+                        .OrdinalIgnoreCase)
+            )
             {
                 return true;
             }
 
-            // Angular needs these endpoints before a session exists.
-            // Logout is deliberately not public.
-            if (controller.Equals(
+            if (
+                controller.Equals(
                     "AuthApi",
-                    StringComparison.OrdinalIgnoreCase))
+                    StringComparison
+                        .OrdinalIgnoreCase)
+            )
             {
                 return action.Equals(
                            "GetXsrfToken",
-                           StringComparison.OrdinalIgnoreCase) ||
+                           StringComparison
+                               .OrdinalIgnoreCase) ||
                        action.Equals(
                            "GetCurrentUser",
-                           StringComparison.OrdinalIgnoreCase) ||
+                           StringComparison
+                               .OrdinalIgnoreCase) ||
                        action.Equals(
                            "Login",
-                           StringComparison.OrdinalIgnoreCase);
+                           StringComparison
+                               .OrdinalIgnoreCase) ||
+                       action.Equals(
+                           "Register",
+                           StringComparison
+                               .OrdinalIgnoreCase);
             }
 
-            return controller.Equals(
-                       "Home",
-                       StringComparison.OrdinalIgnoreCase) &&
-                   (action.Equals(
+            return
+                controller.Equals(
+                    "Home",
+                    StringComparison
+                        .OrdinalIgnoreCase) &&
+                (
+                    action.Equals(
                         "Error",
-                        StringComparison.OrdinalIgnoreCase) ||
+                        StringComparison
+                            .OrdinalIgnoreCase) ||
                     action.Equals(
                         "AccessDenied",
-                        StringComparison.OrdinalIgnoreCase));
+                        StringComparison
+                            .OrdinalIgnoreCase)
+                );
         }
 
         private static string GetRouteValue(
             AuthorizationFilterContext context,
             string key)
         {
-            return context.ActionDescriptor.RouteValues
-                       .TryGetValue(key, out var value)
-                ? value ?? string.Empty
-                : string.Empty;
+            return
+                context.ActionDescriptor
+                    .RouteValues
+                    .TryGetValue(
+                        key,
+                        out var value)
+                    ? value ??
+                      string.Empty
+                    : string.Empty;
         }
 
         private static HashSet<string> Actions(
@@ -299,7 +352,8 @@ namespace POTracker.Security
         {
             return new HashSet<string>(
                 actions,
-                StringComparer.OrdinalIgnoreCase);
+                StringComparer
+                    .OrdinalIgnoreCase);
         }
 
         private static void RejectUnauthenticated(
@@ -341,7 +395,8 @@ namespace POTracker.Security
                         })
                     {
                         StatusCode =
-                            StatusCodes.Status403Forbidden
+                            StatusCodes
+                                .Status403Forbidden
                     };
 
                 return;
@@ -355,8 +410,3 @@ namespace POTracker.Security
         }
     }
 }
-
-
-
-
-

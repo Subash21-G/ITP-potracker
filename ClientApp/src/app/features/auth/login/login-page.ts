@@ -1,68 +1,146 @@
 import {
+  HttpErrorResponse,
+} from '@angular/common/http';
+
+import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
   inject,
   signal,
 } from '@angular/core';
+
 import {
   FormBuilder,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+
 import {
   ActivatedRoute,
   Router,
   RouterLink,
 } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
-import { finalize, switchMap } from 'rxjs';
-import { AuthApiService } from '../../../core/services/auth-api.service';
+
+import {
+  finalize,
+  switchMap,
+} from 'rxjs';
+
+import {
+  AuthApiService,
+} from '../../../core/services/auth-api.service';
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+  ],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection:
+    ChangeDetectionStrategy.OnPush,
 })
 export class LoginPage implements OnInit {
-  private readonly formBuilder = inject(FormBuilder);
-  private readonly authApi = inject(AuthApiService);
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
+  private readonly formBuilder =
+    inject(FormBuilder);
 
-  readonly isSubmitting = signal(false);
-  readonly showPassword = signal(false);
-  readonly errorMessage = signal('');
+  private readonly authApi =
+    inject(AuthApiService);
 
-  readonly loginForm = this.formBuilder.nonNullable.group({
-    userName: ['', [Validators.required]],
-    password: ['', [Validators.required]],
-  });
+  private readonly router =
+    inject(Router);
+
+  private readonly route =
+    inject(ActivatedRoute);
+
+  readonly isSubmitting =
+    signal(false);
+
+  readonly showPassword =
+    signal(false);
+
+  readonly errorMessage =
+    signal('');
+
+  readonly successMessage =
+    signal('');
+
+  readonly loginForm =
+    this.formBuilder.nonNullable.group({
+      userName: [
+        '',
+        [
+          Validators.required,
+        ],
+      ],
+
+      password: [
+        '',
+        [
+          Validators.required,
+        ],
+      ],
+    });
 
   ngOnInit(): void {
+    const wasRegistered =
+      this.route.snapshot
+        .queryParamMap
+        .get(
+          'registered',
+        ) === '1';
+
+    const isFirstAdministrator =
+      this.route.snapshot
+        .queryParamMap
+        .get(
+          'firstAdmin',
+        ) === '1';
+
+    if (wasRegistered) {
+      this.successMessage.set(
+        isFirstAdministrator
+          ? 'Administrator account created successfully. Sign in to continue.'
+          : 'Registration completed successfully. Sign in to continue.',
+      );
+    }
+
     if (
-      this.authApi.authenticationChecked() &&
-      this.authApi.isAuthenticated()
+      this.authApi
+        .authenticationChecked() &&
+      this.authApi
+        .isAuthenticated()
     ) {
-      void this.router.navigateByUrl(this.getSafeReturnUrl());
+      void this.router.navigateByUrl(
+        this.getSafeReturnUrl(),
+      );
+
       return;
     }
 
-    if (!this.authApi.authenticationChecked()) {
-      this.authApi.getCurrentUser().subscribe({
-        next: (user) => {
-          if (user.isAuthenticated) {
-            void this.router.navigateByUrl(
-              this.getSafeReturnUrl(),
-            );
-          }
-        },
-        error: () => {
-          this.authApi.clearLocalAuthentication();
-        },
-      });
+    if (
+      !this.authApi
+        .authenticationChecked()
+    ) {
+      this.authApi
+        .getCurrentUser()
+        .subscribe({
+          next: user => {
+            if (user.isAuthenticated) {
+              void this.router
+                .navigateByUrl(
+                  this.getSafeReturnUrl(),
+                );
+            }
+          },
+
+          error: () => {
+            this.authApi
+              .clearLocalAuthentication();
+          },
+        });
     }
   }
 
@@ -70,31 +148,43 @@ export class LoginPage implements OnInit {
     this.errorMessage.set('');
 
     if (this.loginForm.invalid) {
-      this.loginForm.markAllAsTouched();
+      this.loginForm
+        .markAllAsTouched();
+
       return;
     }
 
-    this.isSubmitting.set(true);
+    this.isSubmitting.set(
+      true,
+    );
 
     this.authApi
       .getXsrfToken()
       .pipe(
         switchMap(() =>
           this.authApi.login(
-            this.loginForm.getRawValue(),
+            this.loginForm
+              .getRawValue(),
           ),
         ),
-        finalize(() => {
-          this.isSubmitting.set(false);
-        }),
+
+        finalize(() =>
+          this.isSubmitting.set(
+            false,
+          ),
+        ),
       )
       .subscribe({
-        next: (response) => {
-          if (!response.success || !response.user) {
+        next: response => {
+          if (
+            !response.success ||
+            !response.user
+          ) {
             this.errorMessage.set(
               response.message ||
                 'Unable to sign in. Please try again.',
             );
+
             return;
           }
 
@@ -102,17 +192,25 @@ export class LoginPage implements OnInit {
             this.getSafeReturnUrl(),
           );
         },
-        error: (error: HttpErrorResponse) => {
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
           const apiMessage =
-            typeof error.error?.message === 'string'
+            typeof error.error
+              ?.message === 'string'
               ? error.error.message
               : '';
 
-          if (error.status === 400 || error.status === 401) {
+          if (
+            error.status === 400 ||
+            error.status === 401
+          ) {
             this.errorMessage.set(
               apiMessage ||
                 'Invalid username or password.',
             );
+
             return;
           }
 
@@ -125,14 +223,20 @@ export class LoginPage implements OnInit {
   }
 
   togglePasswordVisibility(): void {
-    this.showPassword.update((value) => !value);
+    this.showPassword.update(
+      value =>
+        !value,
+    );
   }
 
   private getSafeReturnUrl(): string {
     const returnUrl =
-      this.route.snapshot.queryParamMap.get(
-        'returnUrl',
-      ) ?? '/dashboard';
+      this.route.snapshot
+        .queryParamMap
+        .get(
+          'returnUrl',
+        ) ??
+      '/dashboard';
 
     const isSafeLocalUrl =
       returnUrl.startsWith('/') &&

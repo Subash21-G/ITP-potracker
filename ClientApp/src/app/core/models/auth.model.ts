@@ -1,21 +1,34 @@
 export interface LoginRequest {
-  userName: string;
-  password: string;
+  readonly userName: string;
+  readonly password: string;
+}
+
+export interface RegisterRequest {
+  readonly fullName: string;
+  readonly userName: string;
+  readonly password: string;
 }
 
 export interface CurrentUser {
-  isAuthenticated: boolean;
-  userName: string;
-  fullName: string;
-  role: string;
-  isAdmin: boolean;
-  isProduction: boolean;
-  isViewer: boolean;
-  canOperate: boolean;
+  readonly isAuthenticated: boolean;
+  readonly userName: string;
+  readonly fullName: string;
+  readonly role: string;
+  readonly isAdmin: boolean;
+  readonly isProduction: boolean;
+  readonly isViewer: boolean;
+  readonly canOperate: boolean;
 }
 
 export interface AuthenticationResponse {
-  success: boolean;
-  message: string;
-  user: CurrentUser | null;
+  readonly success: boolean;
+  readonly message: string;
+  readonly user: CurrentUser | null;
+}
+
+export interface RegistrationResponse {
+  readonly success: boolean;
+  readonly message: string;
+  readonly isFirstAdministrator: boolean;
+  readonly role: string;
 }

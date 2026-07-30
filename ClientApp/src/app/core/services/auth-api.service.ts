@@ -1,39 +1,74 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import {
+  HttpClient,
+} from '@angular/common/http';
+
+import {
+  Injectable,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+
+import {
+  Observable,
+  tap,
+} from 'rxjs';
+
 import {
   AuthenticationResponse,
   CurrentUser,
   LoginRequest,
+  RegisterRequest,
+  RegistrationResponse,
 } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthApiService {
-  private readonly http = inject(HttpClient);
+  private readonly http =
+    inject(HttpClient);
 
-  private readonly currentUserState = signal<CurrentUser | null>(null);
-  private readonly authenticationCheckedState = signal(false);
+  private readonly currentUserState =
+    signal<CurrentUser | null>(
+      null,
+    );
 
-  readonly currentUser = this.currentUserState.asReadonly();
+  private readonly authenticationCheckedState =
+    signal(false);
+
+  readonly currentUser =
+    this.currentUserState.asReadonly();
+
   readonly authenticationChecked =
-    this.authenticationCheckedState.asReadonly();
+    this.authenticationCheckedState
+      .asReadonly();
 
-  readonly isAuthenticated = computed(
-    () => this.currentUserState()?.isAuthenticated === true,
-  );
+  readonly isAuthenticated =
+    computed(() =>
+      this.currentUserState()
+        ?.isAuthenticated === true,
+    );
 
-  readonly isAdmin = computed(
-    () => this.currentUserState()?.isAdmin === true,
-  );
+  readonly isAdmin =
+    computed(() =>
+      this.currentUserState()
+        ?.isAdmin === true,
+    );
 
-  readonly canOperate = computed(
-    () => this.currentUserState()?.canOperate === true,
-  );
+  readonly canOperate =
+    computed(() =>
+      this.currentUserState()
+        ?.canOperate === true,
+    );
 
-  getXsrfToken(): Observable<{ success: boolean }> {
-    return this.http.get<{ success: boolean }>(
+  getXsrfToken():
+    Observable<{
+      success: boolean;
+    }> {
+    return this.http.get<{
+      success: boolean;
+    }>(
       '/api/auth/xsrf-token',
       {
         withCredentials: true,
@@ -41,15 +76,23 @@ export class AuthApiService {
     );
   }
 
-  getCurrentUser(): Observable<CurrentUser> {
+  getCurrentUser():
+    Observable<CurrentUser> {
     return this.http
-      .get<CurrentUser>('/api/auth/me', {
-        withCredentials: true,
-      })
+      .get<CurrentUser>(
+        '/api/auth/me',
+        {
+          withCredentials: true,
+        },
+      )
       .pipe(
-        tap((user) => {
-          this.currentUserState.set(user);
-          this.authenticationCheckedState.set(true);
+        tap(user => {
+          this.currentUserState.set(
+            user,
+          );
+
+          this.authenticationCheckedState
+            .set(true);
         }),
       );
   }
@@ -66,17 +109,37 @@ export class AuthApiService {
         },
       )
       .pipe(
-        tap((response) => {
-          if (response.success && response.user) {
-            this.currentUserState.set(response.user);
+        tap(response => {
+          if (
+            response.success &&
+            response.user
+          ) {
+            this.currentUserState.set(
+              response.user,
+            );
           }
 
-          this.authenticationCheckedState.set(true);
+          this.authenticationCheckedState
+            .set(true);
         }),
       );
   }
 
-  logout(): Observable<AuthenticationResponse> {
+  register(
+    request: RegisterRequest,
+  ): Observable<RegistrationResponse> {
+    return this.http
+      .post<RegistrationResponse>(
+        '/api/auth/register',
+        request,
+        {
+          withCredentials: true,
+        },
+      );
+  }
+
+  logout():
+    Observable<AuthenticationResponse> {
     return this.http
       .post<AuthenticationResponse>(
         '/api/auth/logout',
@@ -87,14 +150,22 @@ export class AuthApiService {
       )
       .pipe(
         tap(() => {
-          this.currentUserState.set(null);
-          this.authenticationCheckedState.set(true);
+          this.currentUserState.set(
+            null,
+          );
+
+          this.authenticationCheckedState
+            .set(true);
         }),
       );
   }
 
   clearLocalAuthentication(): void {
-    this.currentUserState.set(null);
-    this.authenticationCheckedState.set(true);
+    this.currentUserState.set(
+      null,
+    );
+
+    this.authenticationCheckedState
+      .set(true);
   }
 }

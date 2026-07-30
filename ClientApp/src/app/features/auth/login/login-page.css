@@ -406,3 +406,23 @@ form {
     margin-bottom: 38px;
   }
 }
+
+.alert--success {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.alert--success span {
+  background: #16a34a;
+}
+
+.login-help a {
+  color: #0f766e;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.login-help a:hover {
+  text-decoration: underline;
+}

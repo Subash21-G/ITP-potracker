@@ -16,6 +16,17 @@ export const routes: Routes = [
       ),
   },
 
+  {
+    path: 'register',
+    loadComponent: () =>
+      import(
+        './features/auth/register/register-page'
+      ).then(
+        component =>
+          component.RegisterPage,
+      ),
+  },
+
   // ============================================================
   // DASHBOARD
   // ============================================================
@@ -259,6 +270,7 @@ export const routes: Routes = [
     path: 'analytics',
     canActivate: [
       authGuard,
+      adminGuard,
     ],
     loadComponent: () =>
       import(
@@ -276,6 +288,7 @@ export const routes: Routes = [
     path: 'audit',
     canActivate: [
       authGuard,
+      adminGuard,
     ],
     loadComponent: () =>
       import(
@@ -368,6 +381,36 @@ export const routes: Routes = [
   // ============================================================
   // ACCESS CONTROL
   // ============================================================
+
+  {
+    path: 'admin/users',
+    canActivate: [
+      authGuard,
+      adminGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/admin/users/admin-users-page'
+      ).then(
+        component =>
+          component.AdminUsersPage,
+      ),
+  },
+
+  {
+    path: 'admin/settings',
+    canActivate: [
+      authGuard,
+      adminGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/admin/settings/admin-settings-page'
+      ).then(
+        component =>
+          component.AdminSettingsPage,
+      ),
+  },
 
   // ============================================================
   // DISPATCH

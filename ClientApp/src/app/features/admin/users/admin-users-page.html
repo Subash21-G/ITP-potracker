@@ -1,0 +1,224 @@
+<section class="admin-page">
+  <header class="hero">
+    <div>
+      <span class="eyebrow">
+        Administration
+      </span>
+
+      <h1>User & Role Management</h1>
+
+      <p>
+        Manage Admin, Production and Viewer access
+        from the Angular workspace.
+      </p>
+    </div>
+
+    <div class="hero-actions">
+      <a
+        class="button button--light"
+        routerLink="/admin/settings"
+      >
+        Settings
+      </a>
+
+      <a
+        class="button button--light"
+        routerLink="/register"
+        [queryParams]="{
+          returnUrl: '/admin/users'
+        }"
+      >
+        + Add User
+      </a>
+    </div>
+  </header>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span>Total users</span>
+      <strong>
+        {{ summary().totalUsers | number }}
+      </strong>
+      <small>All registered accounts</small>
+    </article>
+
+    <article class="summary-card">
+      <span>Administrators</span>
+      <strong>
+        {{ summary().administrators | number }}
+      </strong>
+      <small>Full system access</small>
+    </article>
+
+    <article class="summary-card">
+      <span>Production</span>
+      <strong>
+        {{ summary().productionUsers | number }}
+      </strong>
+      <small>Operational access</small>
+    </article>
+
+    <article class="summary-card">
+      <span>Viewers</span>
+      <strong>
+        {{ summary().viewers | number }}
+      </strong>
+      <small>Read-only access</small>
+    </article>
+  </section>
+
+  @if (successMessage()) {
+    <div
+      class="message message--success"
+      role="status"
+    >
+      <strong>Role updated</strong>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div
+      class="message message--error"
+      role="alert"
+    >
+      <strong>Administration request failed</strong>
+      <span>{{ errorMessage() }}</span>
+
+      <button
+        type="button"
+        (click)="retry()"
+      >
+        Try again
+      </button>
+    </div>
+  }
+
+  <section class="panel">
+    <header class="panel-header">
+      <div>
+        <span class="eyebrow">
+          Access control
+        </span>
+
+        <h2>Registered users</h2>
+
+        <p>
+          Users must sign out and sign in again
+          after their role changes.
+        </p>
+      </div>
+    </header>
+
+    @if (
+      loading() &&
+      users().length === 0
+    ) {
+      <div class="loading-state">
+        Loading user accounts…
+      </div>
+    } @else if (
+      !errorMessage() &&
+      users().length === 0
+    ) {
+      <div class="empty-state">
+        <strong>No user accounts found</strong>
+      </div>
+    } @else if (users().length > 0) {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Full name</th>
+              <th>Username</th>
+              <th>Current role</th>
+              <th>Change role</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (
+              user of users();
+              track user.id
+            ) {
+              <tr>
+                <td>
+                  <div class="user-name">
+                    <strong>
+                      {{ user.fullName }}
+                    </strong>
+
+                    @if (user.isCurrentUser) {
+                      <span class="current-user">
+                        You
+                      </span>
+                    }
+                  </div>
+                </td>
+
+                <td>{{ user.userName }}</td>
+
+                <td>
+                  <span class="role-badge">
+                    {{ user.role }}
+                  </span>
+                </td>
+
+                <td>
+                  @if (user.isCurrentUser) {
+                    <span class="role-help">
+                      Sign in as another administrator
+                      to change this role.
+                    </span>
+                  } @else {
+                    <div class="role-actions">
+                      <select
+                        [value]="selectedRole(user)"
+                        [disabled]="
+                          updatingUserId() === user.id
+                        "
+                        [attr.aria-label]="
+                          'Role for ' + user.fullName
+                        "
+                        (change)="
+                          changeSelectedRole(
+                            user.id,
+                            $event
+                          )
+                        "
+                      >
+                        @for (
+                          role of allowedRoles();
+                          track role
+                        ) {
+                          <option [value]="role">
+                            {{ role }}
+                          </option>
+                        }
+                      </select>
+
+                      <button
+                        class="button button--primary"
+                        type="button"
+                        [disabled]="
+                          updatingUserId() !== null
+                        "
+                        (click)="saveRole(user)"
+                      >
+                        {{
+                          updatingUserId() === user.id
+                            ? 'Saving…'
+                            : 'Save Role'
+                        }}
+                      </button>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</section>

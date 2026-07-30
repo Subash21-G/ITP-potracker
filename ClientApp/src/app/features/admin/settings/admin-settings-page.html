@@ -1,0 +1,106 @@
+<section class="admin-page">
+  <header class="hero">
+    <div>
+      <span class="eyebrow">
+        Administration
+      </span>
+
+      <h1>Master Settings</h1>
+
+      <p>
+        Review status values, owners, alert rules
+        and system defaults.
+      </p>
+    </div>
+
+    <div class="hero-actions">
+      <a
+        class="button button--light"
+        routerLink="/admin/users"
+      >
+        User Management
+      </a>
+    </div>
+  </header>
+
+  <section class="settings-grid">
+    <article class="setting-card">
+      <span class="eyebrow">
+        Production
+      </span>
+
+      <h2>Process Status</h2>
+
+      <div class="status-list">
+        @for (
+          status of processStatuses;
+          track status
+        ) {
+          <span class="status-pill">
+            {{ status }}
+          </span>
+        }
+      </div>
+    </article>
+
+    <article class="setting-card">
+      <span class="eyebrow">
+        Delivery
+      </span>
+
+      <h2>Dispatch Status</h2>
+
+      <div class="status-list">
+        @for (
+          status of dispatchStatuses;
+          track status
+        ) {
+          <span class="status-pill">
+            {{ status }}
+          </span>
+        }
+      </div>
+    </article>
+
+    <article class="setting-card">
+      <span class="eyebrow">
+        Scheduling
+      </span>
+
+      <h2>Alert Rules</h2>
+
+      <ul>
+        <li>
+          Process start: delivery date minus one month.
+        </li>
+
+        <li>
+          Dispatch reminder: delivery date minus seven days.
+        </li>
+
+        <li>
+          Overdue: after the delivery date.
+        </li>
+      </ul>
+    </article>
+
+    <article class="setting-card">
+      <span class="eyebrow">
+        Responsibility
+      </span>
+
+      <h2>Owners</h2>
+
+      <div class="status-list">
+        @for (
+          owner of owners;
+          track owner
+        ) {
+          <span class="status-pill">
+            {{ owner }}
+          </span>
+        }
+      </div>
+    </article>
+  </section>
+</section>

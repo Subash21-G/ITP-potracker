@@ -1,7 +1,16 @@
-﻿namespace POTracker.Contracts.Api
+namespace POTracker.Contracts.Api
 {
     public sealed class LoginRequestDto
     {
+        public string UserName { get; set; } = string.Empty;
+
+        public string Password { get; set; } = string.Empty;
+    }
+
+    public sealed class RegisterRequestDto
+    {
+        public string FullName { get; set; } = string.Empty;
+
         public string UserName { get; set; } = string.Empty;
 
         public string Password { get; set; } = string.Empty;
@@ -43,5 +52,16 @@
         public string Message { get; set; } = string.Empty;
 
         public CurrentUserDto? User { get; set; }
+    }
+
+    public sealed class RegistrationResponseDto
+    {
+        public bool Success { get; set; }
+
+        public string Message { get; set; } = string.Empty;
+
+        public bool IsFirstAdministrator { get; set; }
+
+        public string Role { get; set; } = string.Empty;
     }
 }

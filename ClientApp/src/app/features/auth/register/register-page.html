@@ -1,0 +1,267 @@
+<div class="login-page">
+  <section
+    class="login-showcase"
+    aria-label="PO Tracker introduction"
+  >
+    <a
+      class="brand"
+      routerLink="/login"
+      aria-label="PO Tracker login"
+    >
+      <span
+        class="brand__mark"
+        aria-hidden="true"
+      >
+        PO
+      </span>
+
+      <span>
+        <strong>PO Tracker</strong>
+        <small>Operations workspace</small>
+      </span>
+    </a>
+
+    <div class="showcase-copy">
+      <span class="eyebrow">
+        Secure account access
+      </span>
+
+      <h1>
+        Join the production and purchase-order workspace.
+      </h1>
+
+      <p>
+        Accounts use secure BCrypt passwords and
+        role-based access for daily PO Tracker work.
+      </p>
+
+      <div class="feature-list">
+        <article>
+          <span aria-hidden="true">01</span>
+
+          <div>
+            <strong>Secure password storage</strong>
+            <p>
+              Passwords are stored only as BCrypt hashes.
+            </p>
+          </div>
+        </article>
+
+        <article>
+          <span aria-hidden="true">02</span>
+
+          <div>
+            <strong>Controlled permissions</strong>
+            <p>
+              New accounts receive Viewer access unless
+              they are the first administrator.
+            </p>
+          </div>
+        </article>
+
+        <article>
+          <span aria-hidden="true">03</span>
+
+          <div>
+            <strong>One operations workspace</strong>
+            <p>
+              Review purchase orders, materials,
+              invoices, stock and dispatches.
+            </p>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <p class="showcase-footer">
+      PO Tracker · Production operations platform
+    </p>
+  </section>
+
+  <main class="login-content">
+    <section
+      class="login-card"
+      aria-labelledby="register-title"
+    >
+      <div class="mobile-brand">
+        <span
+          class="brand__mark"
+          aria-hidden="true"
+        >
+          PO
+        </span>
+
+        <div>
+          <strong>PO Tracker</strong>
+          <small>Operations workspace</small>
+        </div>
+      </div>
+
+      <header>
+        <span class="eyebrow">
+          Account registration
+        </span>
+
+        <h2 id="register-title">
+          Create account
+        </h2>
+
+        <p>
+          Enter the user details required by PO Tracker.
+        </p>
+      </header>
+
+      @if (errorMessage()) {
+        <div
+          class="alert alert--error"
+          role="alert"
+        >
+          <span aria-hidden="true">!</span>
+          <p>{{ errorMessage() }}</p>
+        </div>
+      }
+
+      <form
+        [formGroup]="registerForm"
+        (ngSubmit)="submit()"
+        novalidate
+      >
+        <div class="field">
+          <label for="register-full-name">
+            Full name
+          </label>
+
+          <input
+            id="register-full-name"
+            type="text"
+            formControlName="fullName"
+            autocomplete="name"
+            maxlength="100"
+            placeholder="Enter full name"
+            [attr.aria-invalid]="
+              registerForm.controls.fullName.invalid &&
+              registerForm.controls.fullName.touched
+            "
+          />
+
+          @if (
+            registerForm.controls.fullName.invalid &&
+            registerForm.controls.fullName.touched
+          ) {
+            <small class="field-error">
+              Full name is required and must not
+              exceed 100 characters.
+            </small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="register-user-name">
+            Username
+          </label>
+
+          <input
+            id="register-user-name"
+            type="text"
+            formControlName="userName"
+            autocomplete="username"
+            minlength="4"
+            maxlength="50"
+            placeholder="Enter username"
+            [attr.aria-invalid]="
+              registerForm.controls.userName.invalid &&
+              registerForm.controls.userName.touched
+            "
+          />
+
+          @if (
+            registerForm.controls.userName.invalid &&
+            registerForm.controls.userName.touched
+          ) {
+            <small class="field-error">
+              Use 4–50 letters, numbers, dot,
+              underscore or hyphen.
+            </small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="register-password">
+            Password
+          </label>
+
+          <div class="password-control">
+            <input
+              id="register-password"
+              [type]="
+                showPassword()
+                  ? 'text'
+                  : 'password'
+              "
+              formControlName="password"
+              autocomplete="new-password"
+              minlength="8"
+              placeholder="Enter secure password"
+              [attr.aria-invalid]="
+                registerForm.controls.password.invalid &&
+                registerForm.controls.password.touched
+              "
+            />
+
+            <button
+              class="password-toggle"
+              type="button"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="
+                showPassword()
+                  ? 'Hide password'
+                  : 'Show password'
+              "
+              [attr.aria-pressed]="showPassword()"
+            >
+              {{
+                showPassword()
+                  ? 'Hide'
+                  : 'Show'
+              }}
+            </button>
+          </div>
+
+          @if (
+            registerForm.controls.password.invalid &&
+            registerForm.controls.password.touched
+          ) {
+            <small class="field-error">
+              Use at least 8 characters with uppercase,
+              lowercase and a number.
+            </small>
+          }
+        </div>
+
+        <button
+          class="submit-button"
+          type="submit"
+          [disabled]="isSubmitting()"
+        >
+          @if (isSubmitting()) {
+            <span
+              class="spinner"
+              aria-hidden="true"
+            ></span>
+
+            Creating account…
+          } @else {
+            Create account
+          }
+        </button>
+      </form>
+
+      <p class="login-help">
+        Already have an account?
+        <a routerLink="/login">
+          Sign in
+        </a>
+      </p>
+    </section>
+  </main>
+</div>

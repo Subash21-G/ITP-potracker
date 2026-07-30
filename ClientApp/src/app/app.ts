@@ -89,8 +89,9 @@ export class App {
     },
   );
 
-  readonly isLoginPage = computed(() =>
-    this.currentUrl().startsWith('/login'),
+  readonly isAuthenticationPage = computed(() =>
+    this.currentUrl().startsWith('/login') ||
+    this.currentUrl().startsWith('/register'),
   );
 
   readonly userInitials = computed(() => {

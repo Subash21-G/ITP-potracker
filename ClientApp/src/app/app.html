@@ -19,7 +19,7 @@
   </div>
 }
 
-@if (!isLoginPage()) {
+@if (!isAuthenticationPage()) {
   <header class="app-header">
     <a
       class="brand"
@@ -236,6 +236,27 @@
           >
             Audit Log
           </a>
+          <a
+            routerLink="/admin/users"
+            (click)="closeMobileMenu()"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{
+              exact: true
+            }"
+          >
+            Users
+          </a>
+
+          <a
+            routerLink="/admin/settings"
+            (click)="closeMobileMenu()"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{
+              exact: true
+            }"
+          >
+            Settings
+          </a>
         }
         @if (currentUser()?.canOperate) {
           <a
@@ -333,12 +354,12 @@
 
 <main
   class="app-main"
-  [class.app-main--login]="isLoginPage()"
+  [class.app-main--login]="isAuthenticationPage()"
 >
   <router-outlet />
 </main>
 
-@if (!isLoginPage()) {
+@if (!isAuthenticationPage()) {
   <footer class="app-footer">
     Angular client · Existing ASP.NET MVC screens remain
     available during migration
