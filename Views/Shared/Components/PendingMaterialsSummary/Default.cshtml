@@ -190,9 +190,7 @@
                         <tr class="@(item.IsOverdue ? "dpw-overdue-row" : "")">
 
                             <td>
-                                <a asp-controller="PurchaseOrder"
-                                   asp-action="Details"
-                                   asp-route-id="@item.PurchaseOrderId"
+                                <a href="/app/purchase-orders/@item.PurchaseOrderId"
                                    class="dpw-po-number">
                                     @item.PONumber
                                 </a>
