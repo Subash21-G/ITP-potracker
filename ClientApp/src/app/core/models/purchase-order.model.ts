@@ -60,3 +60,18 @@ export interface PurchaseOrderQuery {
   readonly status?: string;
   readonly materialStatus?: string;
 }
+
+export interface PurchaseOrderBulkDeleteRequest {
+  readonly purchaseOrderIds: readonly number[];
+}
+
+export interface PurchaseOrderBulkDeleteResponse {
+  readonly success: boolean;
+  readonly message: string;
+  readonly requestedCount: number;
+  readonly deletedCount: number;
+  readonly skippedCount: number;
+  readonly missingCount: number;
+  readonly linkedMaterialCount: number;
+  readonly deletedPurchaseOrderIds: readonly number[];
+}

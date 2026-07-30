@@ -649,3 +649,45 @@ tbody tr:hover {
     min-width: 0;
   }
 }
+
+.button--danger {
+  color: #ffffff;
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.button--danger:hover:not(:disabled) {
+  background: #991b1b;
+  border-color: #991b1b;
+}
+
+.message--success {
+  color: #14532d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.select-cell {
+  width: 48px;
+  min-width: 48px;
+  text-align: center;
+}
+
+.select-cell input {
+  width: 17px;
+  height: 17px;
+  min-height: 17px;
+  margin: 0;
+  padding: 0;
+  accent-color: #6d28d9;
+  cursor: pointer;
+}
+
+.select-cell input:disabled {
+  cursor: not-allowed;
+}
+
+tbody tr.row--selected,
+tbody tr.row--selected:hover {
+  background: #f5f3ff;
+}

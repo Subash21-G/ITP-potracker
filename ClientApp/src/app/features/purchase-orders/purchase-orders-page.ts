@@ -64,9 +64,51 @@ export class PurchaseOrdersPage {
   readonly loading = signal(false);
   readonly errorMessage = signal('');
   readonly errorStatus = signal<number | null>(null);
+  readonly successMessage = signal('');
+  readonly bulkDeleting = signal(false);
 
-  readonly hasPreviousPage = computed(() => this.page() > 1);
-  readonly hasNextPage = computed(() => this.page() < this.totalPages());
+  readonly selectedIds =
+    signal<ReadonlySet<number>>(
+      new Set<number>(),
+    );
+
+  readonly hasPreviousPage =
+    computed(
+      () =>
+        this.page() > 1,
+    );
+
+  readonly hasNextPage =
+    computed(
+      () =>
+        this.page() <
+        this.totalPages(),
+    );
+
+  readonly selectedCount =
+    computed(
+      () =>
+        this.selectedIds().size,
+    );
+
+  readonly allCurrentPageSelected =
+    computed(() => {
+      const purchaseOrders =
+        this.items();
+
+      const selectedIds =
+        this.selectedIds();
+
+      return (
+        purchaseOrders.length > 0 &&
+        purchaseOrders.every(
+          (purchaseOrder) =>
+            selectedIds.has(
+              purchaseOrder.purchaseOrderId,
+            ),
+        )
+      );
+    });
   readonly showingFrom = computed(() =>
     this.totalRecords() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
   );
@@ -78,12 +120,16 @@ export class PurchaseOrdersPage {
 
   applyFilters(): void {
     this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
     this.loadPurchaseOrders();
   }
 
   clearFilters(): void {
     this.filters.reset();
     this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
     this.loadPurchaseOrders();
   }
 
@@ -96,6 +142,8 @@ export class PurchaseOrdersPage {
 
     this.pageSize.set(value);
     this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
     this.loadPurchaseOrders();
   }
 
@@ -104,7 +152,13 @@ export class PurchaseOrdersPage {
       return;
     }
 
-    this.page.update((currentPage) => currentPage - 1);
+    this.page.update(
+      (currentPage) =>
+        currentPage - 1,
+    );
+
+    this.clearSelection();
+    this.successMessage.set('');
     this.loadPurchaseOrders();
   }
 
@@ -113,8 +167,171 @@ export class PurchaseOrdersPage {
       return;
     }
 
-    this.page.update((currentPage) => currentPage + 1);
+    this.page.update(
+      (currentPage) =>
+        currentPage + 1,
+    );
+
+    this.clearSelection();
+    this.successMessage.set('');
     this.loadPurchaseOrders();
+  }
+
+  togglePurchaseOrder(
+    purchaseOrderId: number,
+    event: Event,
+  ): void {
+    const checked =
+      (
+        event.target as
+          HTMLInputElement
+      ).checked;
+
+    this.selectedIds.update(
+      (selectedIds) => {
+        const updated =
+          new Set(selectedIds);
+
+        if (checked) {
+          updated.add(
+            purchaseOrderId,
+          );
+        } else {
+          updated.delete(
+            purchaseOrderId,
+          );
+        }
+
+        return updated;
+      },
+    );
+  }
+
+  toggleCurrentPage(
+    event: Event,
+  ): void {
+    const checked =
+      (
+        event.target as
+          HTMLInputElement
+      ).checked;
+
+    if (!checked) {
+      this.clearSelection();
+      return;
+    }
+
+    this.selectedIds.set(
+      new Set(
+        this.items().map(
+          (purchaseOrder) =>
+            purchaseOrder.purchaseOrderId,
+        ),
+      ),
+    );
+  }
+
+  bulkDeletePurchaseOrders(): void {
+    const purchaseOrderIds =
+      Array.from(
+        this.selectedIds(),
+      );
+
+    if (
+      purchaseOrderIds.length === 0 ||
+      this.bulkDeleting() ||
+      this.loading()
+    ) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Delete ${purchaseOrderIds.length} selected Purchase Order(s)?\n\n` +
+          'Purchase Orders with linked materials will be safely skipped.',
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.bulkDeleting.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+
+    this.purchaseOrdersApi
+      .bulkDelete({
+        purchaseOrderIds,
+      })
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(() =>
+          this.bulkDeleting.set(
+            false,
+          ),
+        ),
+      )
+      .subscribe({
+        next: (response) => {
+          const deletedIds =
+            new Set(
+              response
+                .deletedPurchaseOrderIds,
+            );
+
+          if (
+            response.deletedCount > 0
+          ) {
+            const currentPageDeleted =
+              this.items().length > 0 &&
+              this.items().every(
+                (purchaseOrder) =>
+                  deletedIds.has(
+                    purchaseOrder
+                      .purchaseOrderId,
+                  ),
+              );
+
+            if (
+              currentPageDeleted &&
+              this.page() > 1
+            ) {
+              this.page.update(
+                (currentPage) =>
+                  currentPage - 1,
+              );
+            }
+
+            this.clearSelection();
+
+            this.successMessage.set(
+              response.message ||
+                'Selected Purchase Orders deleted successfully.',
+            );
+
+            this.loadPurchaseOrders();
+            return;
+          }
+
+          this.errorMessage.set(
+            response.message ||
+              'No selected Purchase Orders were deleted.',
+          );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeMutationError(
+              error,
+              'The selected Purchase Orders could not be deleted.',
+            ),
+          );
+        },
+      });
   }
 
   retry(): void {
@@ -157,6 +374,12 @@ export class PurchaseOrdersPage {
     return queryString ? `/api/purchase-orders/export-excel?${queryString}` : '/api/purchase-orders/export-excel';
   }
 
+  private clearSelection(): void {
+    this.selectedIds.set(
+      new Set<number>(),
+    );
+  }
+
   private loadPurchaseOrders(): void {
     if (this.loading()) {
       return;
@@ -187,16 +410,44 @@ export class PurchaseOrdersPage {
           this.pageSize.set(response.pageSize);
           this.totalRecords.set(response.totalRecords);
           this.totalPages.set(response.totalPages);
+          this.clearSelection();
         },
         error: (error: HttpErrorResponse) => {
           this.items.set([]);
           this.summary.set(EMPTY_SUMMARY);
           this.totalRecords.set(0);
           this.totalPages.set(1);
+          this.clearSelection();
           this.errorStatus.set(error.status);
           this.errorMessage.set(this.describeError(error));
         },
       });
+  }
+
+  private describeMutationError(
+    error: HttpErrorResponse,
+    fallbackMessage: string,
+  ): string {
+    if (error.status === 0) {
+      return 'The PO Tracker API is unavailable.';
+    }
+
+    if (error.status === 401) {
+      return 'Your PO Tracker session has expired. Sign in again.';
+    }
+
+    if (error.status === 403) {
+      return 'Your account does not have permission to delete Purchase Orders.';
+    }
+
+    const apiMessage =
+      error.error?.message ??
+      error.error?.error;
+
+    return typeof apiMessage ===
+      'string'
+      ? apiMessage
+      : fallbackMessage;
   }
 
   private describeError(error: HttpErrorResponse): string {

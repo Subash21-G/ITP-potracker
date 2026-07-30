@@ -193,6 +193,245 @@ namespace POTracker.Controllers.Api
                 $"Purchase_Orders_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
         }
 
+        // ============================================================
+        // BULK DELETE
+        // ============================================================
+
+        /// <summary>
+        /// Deletes selected Purchase Orders that have no linked materials.
+        /// Orders with linked materials are safely skipped.
+        /// </summary>
+        [HttpPost("bulk-delete")]
+        [ValidateAntiForgeryToken]
+        [ProducesResponseType(
+            typeof(PurchaseOrderBulkDeleteResponseDto),
+            StatusCodes.Status200OK)]
+        [ProducesResponseType(
+            typeof(PurchaseOrderBulkDeleteResponseDto),
+            StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(
+            typeof(PurchaseOrderBulkDeleteResponseDto),
+            StatusCodes.Status404NotFound)]
+        public async Task<
+            ActionResult<PurchaseOrderBulkDeleteResponseDto>>
+            BulkDelete(
+                [FromBody]
+                PurchaseOrderBulkDeleteRequestDto? request,
+                CancellationToken cancellationToken = default)
+        {
+            var purchaseOrderIds =
+                request?.PurchaseOrderIds
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList() ??
+                new List<int>();
+
+            if (purchaseOrderIds.Count == 0)
+            {
+                return BadRequest(
+                    new PurchaseOrderBulkDeleteResponseDto
+                    {
+                        Success = false,
+                        Message =
+                            "Select at least one Purchase Order to delete."
+                    });
+            }
+
+            if (purchaseOrderIds.Count > 200)
+            {
+                return BadRequest(
+                    new PurchaseOrderBulkDeleteResponseDto
+                    {
+                        Success = false,
+                        Message =
+                            "A maximum of 200 Purchase Orders can be deleted at one time.",
+                        RequestedCount =
+                            purchaseOrderIds.Count
+                    });
+            }
+
+            await using var transaction =
+                await _context.Database
+                    .BeginTransactionAsync(
+                        cancellationToken);
+
+            try
+            {
+                var purchaseOrders =
+                    await _context.PurchaseOrders
+                        .Where(purchaseOrder =>
+                            purchaseOrderIds.Contains(
+                                purchaseOrder.Id))
+                        .OrderBy(purchaseOrder =>
+                            purchaseOrder.Id)
+                        .ToListAsync(
+                            cancellationToken);
+
+                var missingCount =
+                    purchaseOrderIds.Count -
+                    purchaseOrders.Count;
+
+                if (purchaseOrders.Count == 0)
+                {
+                    await transaction.RollbackAsync(
+                        cancellationToken);
+
+                    return NotFound(
+                        new PurchaseOrderBulkDeleteResponseDto
+                        {
+                            Success = false,
+                            Message =
+                                "None of the selected Purchase Orders were found.",
+                            RequestedCount =
+                                purchaseOrderIds.Count,
+                            MissingCount =
+                                purchaseOrderIds.Count
+                        });
+                }
+
+                var existingIds =
+                    purchaseOrders
+                        .Select(purchaseOrder =>
+                            purchaseOrder.Id)
+                        .ToList();
+
+                var linkedMaterialCounts =
+                    await _context.Materials
+                        .Where(material =>
+                            existingIds.Contains(
+                                material.PurchaseOrderId))
+                        .GroupBy(material =>
+                            material.PurchaseOrderId)
+                        .Select(group =>
+                            new
+                            {
+                                PurchaseOrderId =
+                                    group.Key,
+                                MaterialCount =
+                                    group.Count()
+                            })
+                        .ToDictionaryAsync(
+                            item =>
+                                item.PurchaseOrderId,
+                            item =>
+                                item.MaterialCount,
+                            cancellationToken);
+
+                var blockedPurchaseOrders =
+                    purchaseOrders
+                        .Where(purchaseOrder =>
+                            linkedMaterialCounts
+                                .ContainsKey(
+                                    purchaseOrder.Id))
+                        .ToList();
+
+                var deletablePurchaseOrders =
+                    purchaseOrders
+                        .Where(purchaseOrder =>
+                            !linkedMaterialCounts
+                                .ContainsKey(
+                                    purchaseOrder.Id))
+                        .ToList();
+
+                var deletedPurchaseOrderIds =
+                    deletablePurchaseOrders
+                        .Select(purchaseOrder =>
+                            purchaseOrder.Id)
+                        .ToList();
+
+                if (deletablePurchaseOrders.Count > 0)
+                {
+                    _context.PurchaseOrders
+                        .RemoveRange(
+                            deletablePurchaseOrders);
+
+                    await _context.SaveChangesAsync(
+                        cancellationToken);
+                }
+
+                await transaction.CommitAsync(
+                    cancellationToken);
+
+                var skippedCount =
+                    blockedPurchaseOrders.Count;
+
+                var linkedMaterialCount =
+                    blockedPurchaseOrders.Sum(
+                        purchaseOrder =>
+                            linkedMaterialCounts
+                                .TryGetValue(
+                                    purchaseOrder.Id,
+                                    out var count)
+                                ? count
+                                : 0);
+
+                var message =
+                    deletedPurchaseOrderIds.Count > 0
+                        ? $"{deletedPurchaseOrderIds.Count} Purchase Order(s) deleted successfully."
+                        : "No selected Purchase Orders were deleted.";
+
+                var reasons =
+                    new List<string>();
+
+                if (skippedCount > 0)
+                {
+                    reasons.Add(
+                        $"{skippedCount} linked PO(s) with " +
+                        $"{linkedMaterialCount} material(s)");
+                }
+
+                if (missingCount > 0)
+                {
+                    reasons.Add(
+                        $"{missingCount} PO(s) not found");
+                }
+
+                if (reasons.Count > 0)
+                {
+                    message +=
+                        $" {skippedCount + missingCount} Purchase Order(s) " +
+                        $"were not deleted ({string.Join(", ", reasons)}).";
+                }
+
+                return Ok(
+                    new PurchaseOrderBulkDeleteResponseDto
+                    {
+                        Success =
+                            deletedPurchaseOrderIds.Count > 0,
+                        Message =
+                            message,
+                        RequestedCount =
+                            purchaseOrderIds.Count,
+                        DeletedCount =
+                            deletedPurchaseOrderIds.Count,
+                        SkippedCount =
+                            skippedCount,
+                        MissingCount =
+                            missingCount,
+                        LinkedMaterialCount =
+                            linkedMaterialCount,
+                        DeletedPurchaseOrderIds =
+                            deletedPurchaseOrderIds
+                    });
+            }
+            catch
+            {
+                await transaction.RollbackAsync(
+                    cancellationToken);
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new PurchaseOrderBulkDeleteResponseDto
+                    {
+                        Success = false,
+                        Message =
+                            "Unable to delete the selected Purchase Orders. No partial deletion was saved.",
+                        RequestedCount =
+                            purchaseOrderIds.Count
+                    });
+            }
+        }
+
         /// <summary>
         /// Returns one Purchase Order and a SQL-paginated page of its
         /// linked materials without serializing EF navigation properties.

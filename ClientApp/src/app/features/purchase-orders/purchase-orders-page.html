@@ -14,7 +14,33 @@
     >
       + Create Purchase Order
     </a>
-    <a class="button button--primary" [href]="exportUrl()">Export filtered Excel</a>
+
+    <button
+      appManageOnly
+      class="button button--danger"
+      type="button"
+      [disabled]="
+        loading() ||
+        bulkDeleting() ||
+        selectedCount() === 0
+      "
+      (click)="bulkDeletePurchaseOrders()"
+    >
+      {{
+        bulkDeleting()
+          ? 'Deleting…'
+          : 'Delete selected (' +
+            selectedCount() +
+            ')'
+      }}
+    </button>
+
+    <a
+      class="button button--primary"
+      [href]="exportUrl()"
+    >
+      Export filtered Excel
+    </a>
   </div>
 </section>
 
@@ -167,6 +193,18 @@
   </section>
 }
 
+@if (successMessage()) {
+  <section
+    class="message message--success"
+    role="status"
+  >
+    <div>
+      <strong>Completed</strong>
+      <p>{{ successMessage() }}</p>
+    </div>
+  </section>
+}
+
 <section class="panel table-panel" aria-labelledby="po-results-title">
   <div class="panel__heading results-heading">
     <div>
@@ -192,6 +230,19 @@
     <table>
       <thead>
         <tr>
+          <th class="select-cell">
+            <input
+              appManageOnly
+              type="checkbox"
+              aria-label="Select all Purchase Orders on this page"
+              [checked]="allCurrentPageSelected()"
+              [disabled]="
+                loading() ||
+                items().length === 0
+              "
+              (change)="toggleCurrentPage($event)"
+            />
+          </th>
           <th>PO / Handler</th>
           <th>PO date</th>
           <th>Received</th>
@@ -208,7 +259,37 @@
       </thead>
       <tbody>
         @for (purchaseOrder of items(); track purchaseOrder.purchaseOrderId) {
-          <tr [class.overdue-row]="purchaseOrder.overdueMaterials > 0">
+          <tr
+            [class.overdue-row]="
+              purchaseOrder.overdueMaterials > 0
+            "
+            [class.row--selected]="
+              selectedIds().has(
+                purchaseOrder.purchaseOrderId
+              )
+            "
+          >
+            <td class="select-cell">
+              <input
+                appManageOnly
+                type="checkbox"
+                [checked]="
+                  selectedIds().has(
+                    purchaseOrder.purchaseOrderId
+                  )
+                "
+                [attr.aria-label]="
+                  'Select Purchase Order ' +
+                  purchaseOrder.poNumber
+                "
+                (change)="
+                  togglePurchaseOrder(
+                    purchaseOrder.purchaseOrderId,
+                    $event
+                  )
+                "
+              />
+            </td>
             <td>
               <a
                 class="po-number"
@@ -348,7 +429,7 @@
           </tr>
         } @empty {
           <tr>
-            <td class="empty-state" colspan="12">
+            <td class="empty-state" colspan="13">
               @if (loading()) {
                 Loading Purchase Orders…
               } @else {
