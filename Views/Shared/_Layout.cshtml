@@ -295,9 +295,8 @@
                     <span class="nav-label">Stocks</span>
                 </a>
 
-                <a asp-controller="Drawing"
-                   asp-action="Index"
-                   class="nav-link @(IsActive("Drawing") ? "active" : "")">
+                <a href="/app/drawings"
+                   class="nav-link">
                     <span class="nav-icon nav-violet">✧</span>
                     <span class="nav-label">Drawings</span>
                 </a>
@@ -332,16 +331,14 @@
                         <span class="nav-label">Reports</span>
                     </a>
 
-                    <a asp-controller="Analytics"
-                       asp-action="Index"
-                       class="nav-link @(IsActive("Analytics") ? "active" : "")">
+                    <a href="/app/analytics"
+                       class="nav-link">
                         <span class="nav-icon nav-cyan">↗</span>
                         <span class="nav-label">Analytics</span>
                     </a>
 
-                    <a asp-controller="Audit"
-                       asp-action="Index"
-                       class="nav-link @(IsActive("Audit") ? "active" : "")">
+                    <a href="/app/audit"
+                       class="nav-link">
                         <span class="nav-icon nav-blue">≡</span>
                         <span class="nav-label">Audit Log</span>
                     </a>

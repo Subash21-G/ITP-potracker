@@ -1,0 +1,334 @@
+<section class="insights-page">
+  <header class="hero">
+    <div>
+      <span class="eyebrow">
+        Engineering documents
+      </span>
+
+      <h1>Drawing Revision Tracker</h1>
+
+      <p>
+        Track drawing versions, uploads, PDF files and
+        revision dates from one Angular workspace.
+      </p>
+    </div>
+
+    <div class="actions">
+      <a
+        appManageOnly
+        class="button button--primary"
+        routerLink="/materials/new"
+      >
+        + Add Material
+      </a>
+    </div>
+  </header>
+
+  <section class="metric-grid">
+    <article class="metric-card">
+      <span>Total materials</span>
+      <strong>
+        {{ summary().totalMaterials | number }}
+      </strong>
+      <small>All tracked material records</small>
+    </article>
+
+    <article class="metric-card">
+      <span>Missing drawings</span>
+      <strong>
+        {{ summary().missingDrawings | number }}
+      </strong>
+      <small>No uploaded drawing file</small>
+    </article>
+
+    <article class="metric-card">
+      <span>Updated this week</span>
+      <strong>
+        {{ summary().updatedThisWeek | number }}
+      </strong>
+      <small>Drawing updated in seven days</small>
+    </article>
+
+    <article class="metric-card">
+      <span>With version</span>
+      <strong>
+        {{ summary().withVersion | number }}
+      </strong>
+      <small>Revision version recorded</small>
+    </article>
+  </section>
+
+  <section class="panel">
+    <header class="panel-header">
+      <div>
+        <span class="eyebrow">
+          Revision register
+        </span>
+
+        <h2>Material drawings</h2>
+
+        <p>
+          Search by material, PO or drawing version.
+        </p>
+      </div>
+    </header>
+
+    <form
+      class="filter-panel"
+      (ngSubmit)="applyFilters()"
+    >
+      <div class="filter-grid">
+        <label>
+          <span>Search</span>
+
+          <input
+            type="search"
+            [formControl]="searchControl"
+            placeholder="Material, PO or drawing version"
+          />
+        </label>
+
+        <label>
+          <span>Drawing status</span>
+
+          <select
+            [formControl]="statusControl"
+          >
+            <option value="">All statuses</option>
+            <option value="available">Available</option>
+            <option value="missing">Missing</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="filter-actions">
+        <button
+          class="button button--quiet"
+          type="submit"
+          [disabled]="loading()"
+        >
+          Apply
+        </button>
+
+        <button
+          class="button button--quiet"
+          type="button"
+          [disabled]="loading()"
+          (click)="clearFilters()"
+        >
+          Clear
+        </button>
+      </div>
+    </form>
+
+    @if (errorMessage()) {
+      <div
+        class="notice notice--error"
+        role="alert"
+      >
+        <strong>Drawings could not be loaded</strong>
+        <p>{{ errorMessage() }}</p>
+
+        <button
+          class="button button--quiet"
+          type="button"
+          (click)="retry()"
+        >
+          Try again
+        </button>
+      </div>
+    }
+
+    @if (
+      loading() &&
+      items().length === 0
+    ) {
+      <div class="loading-state">
+        Loading drawing records…
+      </div>
+    } @else if (
+      !errorMessage() &&
+      items().length === 0
+    ) {
+      <div class="empty-state">
+        <strong>No drawing records found</strong>
+        <span>Change the selected filters.</span>
+      </div>
+    } @else if (items().length > 0) {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>PO</th>
+              <th>Version</th>
+              <th>Updated</th>
+              <th>Drawing</th>
+              <th>PDF</th>
+              <th>Status</th>
+              <th>Manage</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (
+              item of items();
+              track item.materialId
+            ) {
+              <tr>
+                <td>
+                  <a
+                    class="material-link"
+                    [routerLink]="[
+                      '/materials',
+                      item.materialId
+                    ]"
+                  >
+                    {{ item.materialNo || '-' }}
+                  </a>
+
+                  <br />
+
+                  <small>
+                    {{ item.description || '-' }}
+                  </small>
+                </td>
+
+                <td>{{ item.poNumber || '-' }}</td>
+                <td>{{ item.drawingVersion || '-' }}</td>
+
+                <td>
+                  {{
+                    item.drawingUpdatedDate
+                      ? (
+                          item.drawingUpdatedDate
+                            | date:'dd MMM yyyy'
+                        )
+                      : '-'
+                  }}
+                </td>
+
+                <td>
+                  @if (item.drawingFilePath) {
+                    <a
+                      class="file-link"
+                      [href]="item.drawingFilePath"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open drawing
+                    </a>
+                  } @else {
+                    <span>-</span>
+                  }
+                </td>
+
+                <td>
+                  @if (item.pdfFilePath) {
+                    <a
+                      class="file-link"
+                      [href]="item.pdfFilePath"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open PDF
+                    </a>
+                  } @else {
+                    <span>-</span>
+                  }
+                </td>
+
+                <td>
+                  <span
+                    class="status"
+                    [class.status--good]="
+                      item.hasDrawing
+                    "
+                    [class.status--warning]="
+                      !item.hasDrawing
+                    "
+                  >
+                    {{
+                      item.hasDrawing
+                        ? 'Available'
+                        : 'Missing'
+                    }}
+                  </span>
+                </td>
+
+                <td>
+                  <a
+                    appManageOnly
+                    class="file-link"
+                    [routerLink]="[
+                      '/materials',
+                      item.materialId,
+                      'files'
+                    ]"
+                  >
+                    Upload files
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="pagination">
+        <div>
+          Showing
+          <strong>{{ showingFrom() }}</strong>
+          to
+          <strong>{{ showingTo() }}</strong>
+          of
+          <strong>{{ totalRecords() }}</strong>
+        </div>
+
+        <label>
+          Rows
+
+          <select
+            [value]="pageSize()"
+            (change)="changePageSize($event)"
+          >
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </label>
+
+        <div class="pagination-actions">
+          <button
+            class="button button--quiet"
+            type="button"
+            [disabled]="
+              !hasPreviousPage() ||
+              loading()
+            "
+            (click)="previousPage()"
+          >
+            Previous
+          </button>
+
+          <span>
+            Page {{ page() }} of {{ totalPages() }}
+          </span>
+
+          <button
+            class="button button--quiet"
+            type="button"
+            [disabled]="
+              !hasNextPage() ||
+              loading()
+            "
+            (click)="nextPage()"
+          >
+            Next
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</section>

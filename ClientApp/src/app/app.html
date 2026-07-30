@@ -113,6 +113,16 @@
           Stock Control
         </a>
         <a
+          routerLink="/drawings"
+          (click)="closeMobileMenu()"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{
+            exact: true
+          }"
+        >
+          Drawings
+        </a>
+        <a
           routerLink="/invoices"
           (click)="closeMobileMenu()"
           routerLinkActive="active"
@@ -194,6 +204,27 @@
             }"
           >
             Reports
+          </a>
+          <a
+            routerLink="/analytics"
+            (click)="closeMobileMenu()"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{
+              exact: true
+            }"
+          >
+            Analytics
+          </a>
+
+          <a
+            routerLink="/audit"
+            (click)="closeMobileMenu()"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{
+              exact: true
+            }"
+          >
+            Audit Log
           </a>
         }
         @if (currentUser()?.canOperate) {

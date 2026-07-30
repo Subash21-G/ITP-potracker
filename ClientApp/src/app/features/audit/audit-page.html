@@ -1,0 +1,162 @@
+<section class="insights-page">
+  <header class="hero">
+    <div>
+      <span class="eyebrow">
+        Recent activity
+      </span>
+
+      <h1>Audit Log</h1>
+
+      <p>
+        Trace recent production, schedule and dispatch
+        activity generated from the latest material records.
+      </p>
+    </div>
+
+    <div class="actions">
+      <a
+        class="button button--primary"
+        routerLink="/reports"
+      >
+        Reports
+      </a>
+
+      <button
+        class="button button--primary"
+        type="button"
+        [disabled]="loading()"
+        (click)="refresh()"
+      >
+        {{
+          loading()
+            ? 'Refreshing…'
+            : 'Refresh'
+        }}
+      </button>
+    </div>
+  </header>
+
+  <div class="notice">
+    <strong>Starter audit history</strong>
+
+    <p>
+      This page reflects the 25 latest material records.
+      A dedicated AuditLog table can later provide field-level
+      old and new value history.
+    </p>
+
+    @if (generatedAt()) {
+      <small>
+        Generated:
+        {{
+          generatedAt()
+            | date:'dd MMM yyyy, hh:mm a'
+        }}
+      </small>
+    }
+  </div>
+
+  <section class="panel">
+    <header class="panel-header">
+      <div>
+        <span class="eyebrow">
+          Latest records
+        </span>
+
+        <h2>Material activity</h2>
+
+        <p>
+          Showing {{ items().length | number }}
+          recent entries.
+        </p>
+      </div>
+    </header>
+
+    @if (errorMessage()) {
+      <div
+        class="notice notice--error"
+        role="alert"
+      >
+        <strong>Audit records could not be loaded</strong>
+        <p>{{ errorMessage() }}</p>
+      </div>
+    }
+
+    @if (
+      loading() &&
+      items().length === 0
+    ) {
+      <div class="loading-state">
+        Loading audit records…
+      </div>
+    } @else if (
+      !errorMessage() &&
+      items().length === 0
+    ) {
+      <div class="empty-state">
+        <strong>No recent material activity</strong>
+      </div>
+    } @else if (items().length > 0) {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Material</th>
+              <th>PO</th>
+              <th>Action</th>
+              <th>Process</th>
+              <th>Dispatch</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (
+              item of items();
+              track item.materialId
+            ) {
+              <tr>
+                <td>
+                  {{
+                    item.createdDate
+                      | date:'dd MMM yyyy, hh:mm a'
+                  }}
+                </td>
+
+                <td>
+                  <a
+                    class="material-link"
+                    [routerLink]="[
+                      '/materials',
+                      item.materialId
+                    ]"
+                  >
+                    {{ item.materialNo || '-' }}
+                  </a>
+                </td>
+
+                <td>{{ item.poNumber || '-' }}</td>
+                <td>{{ item.action }}</td>
+
+                <td>
+                  <span class="status status--info">
+                    {{ item.processStatus || '-' }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="status status--warning">
+                    {{ item.dispatchStatus || '-' }}
+                  </span>
+                </td>
+
+                <td>{{ item.owner || '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</section>

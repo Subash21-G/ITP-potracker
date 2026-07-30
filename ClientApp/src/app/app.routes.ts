@@ -219,6 +219,57 @@ export const routes: Routes = [
       ),
   },
   // ============================================================
+  // DRAWINGS
+  // ============================================================
+  {
+    path: 'drawings',
+    canActivate: [
+      authGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/drawings/drawings-page'
+      ).then(
+        component =>
+          component.DrawingsPage,
+      ),
+  },
+
+  // ============================================================
+  // ANALYTICS
+  // ============================================================
+  {
+    path: 'analytics',
+    canActivate: [
+      authGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/analytics/analytics-page'
+      ).then(
+        component =>
+          component.AnalyticsPage,
+      ),
+  },
+
+  // ============================================================
+  // AUDIT
+  // ============================================================
+  {
+    path: 'audit',
+    canActivate: [
+      authGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/audit/audit-page'
+      ).then(
+        component =>
+          component.AuditPage,
+      ),
+  },
+
+  // ============================================================
   // INVOICES
   // Keep named routes before invoices/:id.
   // ============================================================

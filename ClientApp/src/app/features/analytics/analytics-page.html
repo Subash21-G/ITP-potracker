@@ -1,0 +1,251 @@
+<section class="insights-page">
+  <header class="hero">
+    <div>
+      <span class="eyebrow">
+        Performance intelligence
+      </span>
+
+      <h1>Purchaser Performance Analytics</h1>
+
+      <p>
+        Compare purchaser PO load, material volume,
+        completed work and pending production.
+      </p>
+    </div>
+
+    <div class="actions">
+      <a
+        class="button button--primary"
+        routerLink="/reports"
+      >
+        Reports
+      </a>
+
+      <button
+        class="button button--primary"
+        type="button"
+        [disabled]="loading()"
+        (click)="refresh()"
+      >
+        {{
+          loading()
+            ? 'Refreshing…'
+            : 'Refresh'
+        }}
+      </button>
+    </div>
+  </header>
+
+  <section class="metric-grid">
+    <article class="metric-card">
+      <span>Purchasers</span>
+      <strong>
+        {{ summary().purchaserCount | number }}
+      </strong>
+      <small>Configured purchaser records</small>
+    </article>
+
+    <article class="metric-card">
+      <span>Total materials</span>
+      <strong>
+        {{ summary().totalMaterials | number }}
+      </strong>
+      <small>Materials linked to purchaser POs</small>
+    </article>
+
+    <article class="metric-card">
+      <span>Overdue</span>
+      <strong>
+        {{ summary().overdueMaterials | number }}
+      </strong>
+      <small>Past delivery and not completed</small>
+    </article>
+
+    <article class="metric-card">
+      <span>PO count</span>
+      <strong>
+        {{ summary().purchaseOrderCount | number }}
+      </strong>
+      <small>All linked Purchase Orders</small>
+    </article>
+  </section>
+
+  @if (errorMessage()) {
+    <div
+      class="notice notice--error"
+      role="alert"
+    >
+      <strong>Analytics could not be loaded</strong>
+      <p>{{ errorMessage() }}</p>
+    </div>
+  }
+
+  @if (
+    loading() &&
+    purchasers().length === 0
+  ) {
+    <div class="loading-state">
+      Loading purchaser analytics…
+    </div>
+  } @else {
+    <section class="split-grid">
+      <article class="panel">
+        <header class="panel-header">
+          <div>
+            <span class="eyebrow">
+              Top five
+            </span>
+
+            <h2>Purchaser load</h2>
+
+            <p>Compared by linked material count.</p>
+          </div>
+        </header>
+
+        <div class="load-list">
+          @for (
+            purchaser of topPurchasers();
+            track purchaser.purchaserId
+          ) {
+            <div class="load-row">
+              <span>{{ purchaser.purchaserName }}</span>
+
+              <div class="load-bar">
+                <span
+                  [style.width.%]="
+                    loadPercentage(
+                      purchaser.materialCount
+                    )
+                  "
+                ></span>
+              </div>
+
+              <strong>
+                {{ purchaser.materialCount | number }}
+              </strong>
+            </div>
+          } @empty {
+            <div class="empty-state">
+              <strong>No purchaser data</strong>
+            </div>
+          }
+        </div>
+      </article>
+
+      <article class="panel">
+        <header class="panel-header">
+          <div>
+            <span class="eyebrow">
+              Delay snapshot
+            </span>
+
+            <h2>Current workload</h2>
+          </div>
+        </header>
+
+        <div class="snapshot">
+          <p>
+            Use this comparison to identify purchasers
+            carrying high material volume and pending work.
+          </p>
+
+          <p>
+            Overdue materials:
+            <strong>
+              {{ summary().overdueMaterials | number }}
+            </strong>
+          </p>
+
+          @if (generatedAt()) {
+            <small>
+              Generated:
+              {{
+                generatedAt()
+                  | date:'dd MMM yyyy, hh:mm a'
+              }}
+            </small>
+          }
+        </div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <header class="panel-header">
+        <div>
+          <span class="eyebrow">
+            Full comparison
+          </span>
+
+          <h2>Purchaser performance</h2>
+        </div>
+      </header>
+
+      @if (purchasers().length === 0) {
+        <div class="empty-state">
+          <strong>No purchaser records found</strong>
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Purchaser</th>
+                <th>PO count</th>
+                <th>Materials</th>
+                <th>Pending</th>
+                <th>Completed</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (
+                purchaser of purchasers();
+                track purchaser.purchaserId
+              ) {
+                <tr>
+                  <td>
+                    <strong>
+                      {{ purchaser.purchaserName }}
+                    </strong>
+                  </td>
+
+                  <td>
+                    {{
+                      purchaser.purchaseOrderCount
+                        | number
+                    }}
+                  </td>
+
+                  <td>
+                    {{
+                      purchaser.materialCount
+                        | number
+                    }}
+                  </td>
+
+                  <td>
+                    <span class="status status--warning">
+                      {{
+                        purchaser.pendingMaterials
+                          | number
+                      }}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span class="status status--good">
+                      {{
+                        purchaser.completedMaterials
+                          | number
+                      }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</section>
