@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http
 
 @{
     ViewData["Title"] = "Access Denied";
@@ -13,8 +13,7 @@
             Your <strong>@role</strong> role does not have permission to open
             this page or perform this action.
         </p>
-        <a asp-controller="Dashboard"
-           asp-action="Index"
+        <a href="/app/dashboard"
            class="btn btn-primary">
             Return to Dashboard
         </a>

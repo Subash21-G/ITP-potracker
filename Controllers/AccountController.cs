@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
 using POTracker.Models;
@@ -121,7 +121,7 @@ namespace POTracker.Controllers
         {
             if (HttpContext.Session.GetString("UserName") != null)
             {
-                return RedirectToAction("Index", "Dashboard");
+                return Redirect("/app/dashboard");
             }
 
             return View();
@@ -164,7 +164,7 @@ namespace POTracker.Controllers
             HttpContext.Session.SetString("FullName", user.FullName);
             HttpContext.Session.SetString("Role", user.Role);
 
-            return RedirectToAction("Index", "Dashboard");
+            return Redirect("/app/dashboard");
         }
 
         [HttpPost]

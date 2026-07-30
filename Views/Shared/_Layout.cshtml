@@ -116,8 +116,7 @@
                aria-label="Primary navigation">
 
             <div class="sidebar-brand">
-                <a asp-controller="Dashboard"
-                   asp-action="Index"
+                <a href="/app/dashboard"
                    class="brand-link">
 
                     <div class="brand-icon"
@@ -154,9 +153,8 @@
                     <span>Workspace</span>
                 </div>
 
-                <a asp-controller="Dashboard"
-                   asp-action="Index"
-                   class="nav-link @(IsActive("Dashboard") ? "active" : "")">
+                <a href="/app/dashboard"
+                   class="nav-link">
                     <span class="nav-icon nav-violet">⌂</span>
                     <span class="nav-label">Dashboard</span>
                 </a>
@@ -333,9 +331,8 @@
                         <span>Administration</span>
                     </div>
 
-                    <a asp-controller="Report"
-                       asp-action="Index"
-                       class="nav-link @(IsActive("Report") ? "active" : "")">
+                    <a href="/app/reports"
+                       class="nav-link">
                         <span class="nav-icon nav-green">▥</span>
                         <span class="nav-label">Reports</span>
                     </a>

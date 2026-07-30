@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
@@ -8,7 +8,7 @@ namespace POTracker.Controllers.Api
 {
     /// <summary>
     /// Read-only dashboard data used by the Angular application.
-    /// The existing MVC DashboardController remains available
+    /// This endpoint provides data for the Angular dashboard
     /// during the gradual migration.
     /// </summary>
     [ApiController]
