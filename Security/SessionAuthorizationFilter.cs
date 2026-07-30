@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace POTracker.Security
 {
     /// <summary>
-    /// Applies session authentication and role rules to MVC and API
-    /// controllers during the final Angular migration stage.
+    /// Applies session authentication and role authorization to
+    /// the Angular JSON API controllers.
     /// </summary>
     public sealed class SessionAuthorizationFilter :
         IAuthorizationFilter
@@ -26,78 +26,10 @@ namespace POTracker.Security
                 new(
                     StringComparer.OrdinalIgnoreCase)
                 {
-                    // Temporary MVC controllers.
-                    "Admin",
-                    "Analytics",
-                    "Audit",
-                    "Report",
-
-                    // Angular JSON APIs.
                     "AdminApi",
                     "AnalyticsApi",
                     "AuditApi",
                     "ReportsApi"
-                };
-
-        private static readonly Dictionary<
-            string,
-            HashSet<string>>
-            ViewerMvcActions =
-                new(
-                    StringComparer.OrdinalIgnoreCase)
-                {
-                    ["Dashboard"] =
-                        Actions("Index"),
-
-                    ["Purchaser"] =
-                        Actions("Index"),
-
-                    ["PurchaseOrder"] =
-                        Actions(
-                            "Index",
-                            "Details",
-                            "ExportExcel"),
-
-                    ["Material"] =
-                        Actions(
-                            "Index",
-                            "Details",
-                            "ExportExcel"),
-
-                    ["PendingMaterial"] =
-                        Actions(
-                            "Index",
-                            "ExportExcel"),
-
-                    ["Dispatch"] =
-                        Actions(
-                            "Index",
-                            "Details"),
-
-                    ["ProcessQueue"] =
-                        Actions("Index"),
-
-                    ["Stock"] =
-                        Actions("Index"),
-
-                    ["Drawing"] =
-                        Actions("Index"),
-
-                    ["Calendar"] =
-                        Actions(
-                            "Index",
-                            "GetEvents"),
-
-                    ["Alert"] =
-                        Actions("Index"),
-
-                    ["Notification"] =
-                        Actions("Index"),
-
-                    ["Home"] =
-                        Actions(
-                            "Index",
-                            "Privacy")
                 };
 
         public void OnAuthorization(
@@ -112,10 +44,6 @@ namespace POTracker.Security
                 GetRouteValue(
                     context,
                     "action");
-
-            var isApiRequest =
-                IsApiRequest(
-                    context);
 
             if (
                 IsPublicEndpoint(
@@ -139,8 +67,7 @@ namespace POTracker.Security
             )
             {
                 RejectUnauthenticated(
-                    context,
-                    isApiRequest);
+                    context);
 
                 return;
             }
@@ -159,8 +86,7 @@ namespace POTracker.Security
                 session.Clear();
 
                 RejectUnauthenticated(
-                    context,
-                    isApiRequest);
+                    context);
 
                 return;
             }
@@ -168,8 +94,7 @@ namespace POTracker.Security
             if (
                 role.Equals(
                     "Admin",
-                    StringComparison
-                        .OrdinalIgnoreCase)
+                    StringComparison.OrdinalIgnoreCase)
             )
             {
                 return;
@@ -181,8 +106,7 @@ namespace POTracker.Security
             )
             {
                 RejectForbidden(
-                    context,
-                    isApiRequest);
+                    context);
 
                 return;
             }
@@ -190,8 +114,7 @@ namespace POTracker.Security
             if (
                 role.Equals(
                     "Production",
-                    StringComparison
-                        .OrdinalIgnoreCase)
+                    StringComparison.OrdinalIgnoreCase)
             )
             {
                 return;
@@ -201,40 +124,35 @@ namespace POTracker.Security
                 IsViewerRequestAllowed(
                     context,
                     controller,
-                    action,
-                    isApiRequest)
+                    action)
             )
             {
                 return;
             }
 
             RejectForbidden(
-                context,
-                isApiRequest);
+                context);
         }
 
         private static bool IsViewerRequestAllowed(
             AuthorizationFilterContext context,
             string controller,
-            string action,
-            bool isApiRequest)
+            string action)
         {
             var method =
                 context.HttpContext.Request.Method;
 
-            var isViewerLogout =
+            var isLogout =
                 controller.Equals(
                     "AuthApi",
-                    StringComparison
-                        .OrdinalIgnoreCase) &&
+                    StringComparison.OrdinalIgnoreCase) &&
                 action.Equals(
                     "Logout",
-                    StringComparison
-                        .OrdinalIgnoreCase) &&
+                    StringComparison.OrdinalIgnoreCase) &&
                 HttpMethods.IsPost(
                     method);
 
-            if (isViewerLogout)
+            if (isLogout)
             {
                 return true;
             }
@@ -249,87 +167,37 @@ namespace POTracker.Security
                 return false;
             }
 
-            // Viewer accounts may read every non-admin API.
-            // This prevents newly added read endpoints from being
-            // accidentally blocked by a stale action-name list.
-            if (isApiRequest)
-            {
-                return
-                    !AdminOnlyControllers.Contains(
-                        controller);
-            }
-
             return
-                ViewerMvcActions.TryGetValue(
-                    controller,
-                    out var allowedActions) &&
-                allowedActions.Contains(
-                    action);
-        }
-
-        private static bool IsApiRequest(
-            AuthorizationFilterContext context)
-        {
-            return context.HttpContext.Request.Path
-                .StartsWithSegments(
-                    "/api");
+                !AdminOnlyControllers.Contains(
+                    controller);
         }
 
         private static bool IsPublicEndpoint(
             string controller,
             string action)
         {
-            // Existing MVC account pages remain public until removal.
             if (
-                controller.Equals(
-                    "Account",
-                    StringComparison
-                        .OrdinalIgnoreCase)
-            )
-            {
-                return true;
-            }
-
-            if (
-                controller.Equals(
+                !controller.Equals(
                     "AuthApi",
-                    StringComparison
-                        .OrdinalIgnoreCase)
+                    StringComparison.OrdinalIgnoreCase)
             )
             {
-                return action.Equals(
-                           "GetXsrfToken",
-                           StringComparison
-                               .OrdinalIgnoreCase) ||
-                       action.Equals(
-                           "GetCurrentUser",
-                           StringComparison
-                               .OrdinalIgnoreCase) ||
-                       action.Equals(
-                           "Login",
-                           StringComparison
-                               .OrdinalIgnoreCase) ||
-                       action.Equals(
-                           "Register",
-                           StringComparison
-                               .OrdinalIgnoreCase);
+                return false;
             }
 
             return
-                controller.Equals(
-                    "Home",
-                    StringComparison
-                        .OrdinalIgnoreCase) &&
-                (
-                    action.Equals(
-                        "Error",
-                        StringComparison
-                            .OrdinalIgnoreCase) ||
-                    action.Equals(
-                        "AccessDenied",
-                        StringComparison
-                            .OrdinalIgnoreCase)
-                );
+                action.Equals(
+                    "GetXsrfToken",
+                    StringComparison.OrdinalIgnoreCase) ||
+                action.Equals(
+                    "GetCurrentUser",
+                    StringComparison.OrdinalIgnoreCase) ||
+                action.Equals(
+                    "Login",
+                    StringComparison.OrdinalIgnoreCase) ||
+                action.Equals(
+                    "Register",
+                    StringComparison.OrdinalIgnoreCase);
         }
 
         private static string GetRouteValue(
@@ -342,71 +210,36 @@ namespace POTracker.Security
                     .TryGetValue(
                         key,
                         out var value)
-                    ? value ??
-                      string.Empty
+                    ? value ?? string.Empty
                     : string.Empty;
         }
 
-        private static HashSet<string> Actions(
-            params string[] actions)
-        {
-            return new HashSet<string>(
-                actions,
-                StringComparer
-                    .OrdinalIgnoreCase);
-        }
-
         private static void RejectUnauthenticated(
-            AuthorizationFilterContext context,
-            bool isApiRequest)
+            AuthorizationFilterContext context)
         {
-            if (isApiRequest)
-            {
-                context.Result =
-                    new UnauthorizedObjectResult(
-                        new
-                        {
-                            error =
-                                "Authentication is required."
-                        });
-
-                return;
-            }
-
             context.Result =
-                new RedirectToActionResult(
-                    "Login",
-                    "Account",
-                    null);
+                new UnauthorizedObjectResult(
+                    new
+                    {
+                        error =
+                            "Authentication is required."
+                    });
         }
 
         private static void RejectForbidden(
-            AuthorizationFilterContext context,
-            bool isApiRequest)
+            AuthorizationFilterContext context)
         {
-            if (isApiRequest)
-            {
-                context.Result =
-                    new ObjectResult(
-                        new
-                        {
-                            error =
-                                "You do not have permission for this operation."
-                        })
-                    {
-                        StatusCode =
-                            StatusCodes
-                                .Status403Forbidden
-                    };
-
-                return;
-            }
-
             context.Result =
-                new RedirectToActionResult(
-                    "AccessDenied",
-                    "Home",
-                    null);
+                new ObjectResult(
+                    new
+                    {
+                        error =
+                            "You do not have permission for this operation."
+                    })
+                {
+                    StatusCode =
+                        StatusCodes.Status403Forbidden
+                };
         }
     }
 }

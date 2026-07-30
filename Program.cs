@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
@@ -9,12 +9,21 @@ using System.IO.Compression;
 var builder = WebApplication.CreateBuilder(args);
 
 // ============================================================
-// MVC AND GLOBAL SESSION AUTHORIZATION
+// API CONTROLLERS AND GLOBAL SESSION AUTHORIZATION
 // ============================================================
 
-builder.Services.AddControllersWithViews(options =>
+builder.Services.AddControllers(options =>
 {
     options.Filters.Add<SessionAuthorizationFilter>();
+});
+
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Extensions["traceId"] =
+            context.HttpContext.TraceIdentifier;
+    };
 });
 
 // ============================================================
@@ -167,7 +176,7 @@ var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler();
     app.UseHsts();
 }
 
@@ -266,32 +275,71 @@ app.UseSession();
 app.UseAuthorization();
 
 // ============================================================
-// ROUTES
+// API ROUTES
 // ============================================================
 
 // Attribute-routed JSON APIs used by Angular.
 app.MapControllers();
 
-// Existing MVC/Razor pages remain available during migration.
-app.MapControllerRoute(
-    name: "default",
-    pattern:
-        "{controller=Account}/{action=Login}/{id?}");
-
 // ============================================================
-// ANGULAR SPA ROUTING
+// ANGULAR ENTRY AND LEGACY URL REDIRECTS
 // ============================================================
 
-// Redirect the Angular application root to the first completed
-// Angular module during the gradual migration.
+// The application root enters the Angular dashboard.
+// Angular guards redirect signed-out users to /app/login.
+app.MapGet(
+    "/",
+    () => Results.Redirect("/app/dashboard"));
+
 app.MapGet(
     "/app",
-    () => Results.Redirect("/app/materials"));
+    () => Results.Redirect("/app/dashboard"));
+
+// Preserve old bookmarks while serving only Angular pages.
+app.MapGet(
+    "/Account",
+    () => Results.Redirect("/app/login"));
+
+app.MapGet(
+    "/Account/Login",
+    () => Results.Redirect("/app/login"));
+
+app.MapGet(
+    "/Account/Register",
+    () => Results.Redirect("/app/register"));
+
+app.MapGet(
+    "/Admin",
+    () => Results.Redirect("/app/admin/users"));
+
+app.MapGet(
+    "/Admin/Users",
+    () => Results.Redirect("/app/admin/users"));
+
+app.MapGet(
+    "/Admin/Settings",
+    () => Results.Redirect("/app/admin/settings"));
+
+app.MapGet(
+    "/Home",
+    () => Results.Redirect("/app/dashboard"));
+
+app.MapGet(
+    "/Home/Index",
+    () => Results.Redirect("/app/dashboard"));
+
+app.MapGet(
+    "/Home/Privacy",
+    () => Results.Redirect("/app/dashboard"));
+
+app.MapGet(
+    "/Home/AccessDenied",
+    () => Results.Redirect("/app/access-denied"));
 
 // Return Angular index.html when the browser directly opens or
 // refreshes an Angular client-side route.
 //
-// Only routes under /app use this fallback, so MVC and API 404
+// Only routes under /app use this fallback, so API 404
 // responses remain unaffected.
 app.MapFallbackToFile(
     "app/{*path:nonfile}",
