@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using ClosedXML.Excel;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
@@ -1239,6 +1240,776 @@ namespace POTracker.Controllers.Api
                 });
         }
 
+        // ============================================================
+        // FILTERED MATERIAL EXCEL EXPORT
+        // ============================================================
+
+        /// <summary>
+        /// Exports every material matching the Angular list filters.
+        /// </summary>
+        [HttpGet("export-excel")]
+        public async Task<IActionResult> ExportExcel(
+            string? search,
+            string? poNumber,
+            string? handler,
+            string? invoiceStatus,
+            string? dispatchStatus,
+            DateTime? deliveryDateFrom,
+            DateTime? deliveryDateTo,
+            CancellationToken cancellationToken = default)
+        {
+            var items =
+                await ApplyFilters(
+                        _context.Materials.AsNoTracking(),
+                        search,
+                        poNumber,
+                        handler,
+                        invoiceStatus,
+                        dispatchStatus,
+                        deliveryDateFrom,
+                        deliveryDateTo)
+                    .OrderByDescending(material =>
+                        material.Id)
+                    .Select(MaterialListProjection)
+                    .ToListAsync(cancellationToken);
+
+            await PopulateExportStockAsync(
+                items,
+                cancellationToken);
+
+            using var workbook =
+                new XLWorkbook();
+
+            var worksheet =
+                workbook.Worksheets.Add(
+                    "Materials");
+
+            WriteMaterialExcel(
+                worksheet,
+                items);
+
+            using var stream =
+                new MemoryStream();
+
+            workbook.SaveAs(stream);
+
+            return File(
+                stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Materials_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+        }
+
+        // ============================================================
+        // BULK DELETE
+        // ============================================================
+
+        /// <summary>
+        /// Deletes selected materials that have no linked invoice items
+        /// or dispatch records. Linked materials are safely skipped.
+        /// </summary>
+        [HttpPost("bulk-delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<
+            ActionResult<MaterialBulkDeleteResponseDto>>
+            BulkDelete(
+                [FromBody]
+                MaterialBulkDeleteRequestDto? request,
+                CancellationToken cancellationToken = default)
+        {
+            var materialIds =
+                request?.MaterialIds
+                    .Where(id =>
+                        id > 0)
+                    .Distinct()
+                    .ToList() ??
+                new List<int>();
+
+            if (materialIds.Count == 0)
+            {
+                return BadRequest(
+                    new MaterialBulkDeleteResponseDto
+                    {
+                        Success = false,
+                        Message =
+                            "Select at least one material to delete."
+                    });
+            }
+
+            if (materialIds.Count > 200)
+            {
+                return BadRequest(
+                    new MaterialBulkDeleteResponseDto
+                    {
+                        Success = false,
+                        Message =
+                            "A maximum of 200 materials can be deleted at one time.",
+                        RequestedCount =
+                            materialIds.Count
+                    });
+            }
+
+            await using var transaction =
+                await _context.Database
+                    .BeginTransactionAsync(
+                        cancellationToken);
+
+            try
+            {
+                var materials =
+                    await _context.Materials
+                        .Include(material =>
+                            material.InvoiceItems)
+                        .Include(material =>
+                            material.Dispatches)
+                        .Where(material =>
+                            materialIds.Contains(
+                                material.Id))
+                        .OrderBy(material =>
+                            material.Id)
+                        .ToListAsync(
+                            cancellationToken);
+
+                var missingCount =
+                    materialIds.Count -
+                    materials.Count;
+
+                if (materials.Count == 0)
+                {
+                    await transaction.RollbackAsync(
+                        cancellationToken);
+
+                    return NotFound(
+                        new MaterialBulkDeleteResponseDto
+                        {
+                            Success = false,
+                            Message =
+                                "None of the selected materials were found.",
+                            RequestedCount =
+                                materialIds.Count,
+                            MissingCount =
+                                materialIds.Count
+                        });
+                }
+
+                var invoiceLinkedCount =
+                    materials.Count(material =>
+                        material.InvoiceItems.Count > 0);
+
+                var dispatchLinkedCount =
+                    materials.Count(material =>
+                        material.Dispatches.Count > 0);
+
+                var deletableMaterials =
+                    materials
+                        .Where(material =>
+                            material.InvoiceItems.Count == 0 &&
+                            material.Dispatches.Count == 0)
+                        .ToList();
+
+                var skippedCount =
+                    materials.Count -
+                    deletableMaterials.Count;
+
+                var deletedMaterialIds =
+                    deletableMaterials
+                        .Select(material =>
+                            material.Id)
+                        .ToList();
+
+                if (deletedMaterialIds.Count > 0)
+                {
+                    var alerts =
+                        await _context.Alerts
+                            .Where(alert =>
+                                deletedMaterialIds.Contains(
+                                    alert.MaterialId))
+                            .ToListAsync(
+                                cancellationToken);
+
+                    if (alerts.Count > 0)
+                    {
+                        _context.Alerts.RemoveRange(
+                            alerts);
+                    }
+
+                    _context.Materials.RemoveRange(
+                        deletableMaterials);
+
+                    await _context.SaveChangesAsync(
+                        cancellationToken);
+                }
+
+                await transaction.CommitAsync(
+                    cancellationToken);
+
+                var message =
+                    deletedMaterialIds.Count > 0
+                        ? $"{deletedMaterialIds.Count} material(s) deleted successfully."
+                        : "No selected materials were deleted.";
+
+                var skippedDetails =
+                    new List<string>();
+
+                if (invoiceLinkedCount > 0)
+                {
+                    skippedDetails.Add(
+                        $"{invoiceLinkedCount} invoice-linked");
+                }
+
+                if (dispatchLinkedCount > 0)
+                {
+                    skippedDetails.Add(
+                        $"{dispatchLinkedCount} dispatch-linked");
+                }
+
+                if (missingCount > 0)
+                {
+                    skippedDetails.Add(
+                        $"{missingCount} not found");
+                }
+
+                if (skippedDetails.Count > 0)
+                {
+                    message +=
+                        $" {skippedCount + missingCount} material(s) were not deleted " +
+                        $"({string.Join(", ", skippedDetails)}).";
+                }
+
+                return Ok(
+                    new MaterialBulkDeleteResponseDto
+                    {
+                        Success =
+                            deletedMaterialIds.Count > 0,
+                        Message =
+                            message,
+                        RequestedCount =
+                            materialIds.Count,
+                        DeletedCount =
+                            deletedMaterialIds.Count,
+                        SkippedCount =
+                            skippedCount,
+                        MissingCount =
+                            missingCount,
+                        InvoiceLinkedCount =
+                            invoiceLinkedCount,
+                        DispatchLinkedCount =
+                            dispatchLinkedCount,
+                        DeletedMaterialIds =
+                            deletedMaterialIds
+                    });
+            }
+            catch
+            {
+                await transaction.RollbackAsync(
+                    cancellationToken);
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new MaterialBulkDeleteResponseDto
+                    {
+                        Success = false,
+                        Message =
+                            "Unable to delete the selected materials. No partial deletion was saved.",
+                        RequestedCount =
+                            materialIds.Count
+                    });
+            }
+        }
+
+        private async Task PopulateExportStockAsync(
+            List<MaterialListItemDto> items,
+            CancellationToken cancellationToken)
+        {
+            if (items.Count == 0)
+            {
+                return;
+            }
+
+            var stockLoad =
+                await _externalStockService
+                    .GetAllAsync(
+                        false,
+                        cancellationToken);
+
+            var materialKeys =
+                items
+                    .Select(item =>
+                        ExternalStockService.Normalize(
+                            item.MaterialNo))
+                    .Where(key =>
+                        !string.IsNullOrWhiteSpace(
+                            key))
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToHashSet(
+                        StringComparer.OrdinalIgnoreCase);
+
+            var allocationCandidates =
+                await _context.Materials
+                    .AsNoTracking()
+                    .Where(material =>
+                        material.MaterialNo != null &&
+                        material.MaterialNo !=
+                            string.Empty)
+                    .Select(material =>
+                        new
+                        {
+                            material.Id,
+                            material.MaterialNo,
+                            material.PendingQty,
+                            material.DeliveryDate
+                        })
+                    .ToListAsync(
+                        cancellationToken);
+
+            var allocations =
+                new Dictionary<
+                    int,
+                    (
+                        decimal Allocated,
+                        decimal Shortage,
+                        string Status
+                    )>();
+
+            foreach (var materialKey in
+                     materialKeys)
+            {
+                var exportMaterial =
+                    items.First(item =>
+                        ExternalStockService.Normalize(
+                            item.MaterialNo) ==
+                        materialKey);
+
+                var stockSnapshot =
+                    ExternalStockService.BuildSnapshot(
+                        stockLoad.Items,
+                        exportMaterial.MaterialNo,
+                        0);
+
+                var remainingStock =
+                    stockSnapshot.LiveStock;
+
+                var matchingRows =
+                    allocationCandidates
+                        .Where(material =>
+                            ExternalStockService.Normalize(
+                                material.MaterialNo) ==
+                            materialKey)
+                        .OrderBy(material =>
+                            material.DeliveryDate ??
+                            DateTime.MaxValue)
+                        .ThenBy(material =>
+                            material.Id)
+                        .ToList();
+
+                foreach (var material in
+                         matchingRows)
+                {
+                    var requiredQuantity =
+                        Math.Max(
+                            0,
+                            material.PendingQty);
+
+                    var allocatedQuantity =
+                        Math.Min(
+                            remainingStock,
+                            requiredQuantity);
+
+                    var shortageQuantity =
+                        Math.Max(
+                            0,
+                            requiredQuantity -
+                            allocatedQuantity);
+
+                    remainingStock =
+                        Math.Max(
+                            0,
+                            remainingStock -
+                            allocatedQuantity);
+
+                    string status;
+
+                    if (stockSnapshot.RecordCount == 0)
+                    {
+                        status = "Not Found";
+                    }
+                    else if (requiredQuantity <= 0)
+                    {
+                        status = "No Pending";
+                    }
+                    else if (
+                        allocatedQuantity >=
+                        requiredQuantity)
+                    {
+                        status = "Available";
+                    }
+                    else if (allocatedQuantity > 0)
+                    {
+                        status = "Partial Stock";
+                    }
+                    else if (
+                        stockSnapshot.LiveStock <= 0)
+                    {
+                        status = "Out of Stock";
+                    }
+                    else
+                    {
+                        status = "Shortage";
+                    }
+
+                    allocations[material.Id] =
+                        (
+                            allocatedQuantity,
+                            shortageQuantity,
+                            status
+                        );
+                }
+            }
+
+            foreach (var item in items)
+            {
+                var stockSnapshot =
+                    ExternalStockService.BuildSnapshot(
+                        stockLoad.Items,
+                        item.MaterialNo,
+                        item.PendingQuantity);
+
+                item.LiveStockQuantity =
+                    stockSnapshot.LiveStock;
+
+                item.StockMinimumQuantity =
+                    stockSnapshot.MinimumStock;
+
+                item.StockRecordCount =
+                    stockSnapshot.RecordCount;
+
+                item.StockDataLive =
+                    stockLoad.IsOnline;
+
+                if (
+                    allocations.TryGetValue(
+                        item.Id,
+                        out var allocation))
+                {
+                    item.AllocatedStockQuantity =
+                        allocation.Allocated;
+
+                    item.StockShortageQuantity =
+                        allocation.Shortage;
+
+                    item.StockStatus =
+                        allocation.Status;
+                }
+                else
+                {
+                    item.AllocatedStockQuantity = 0;
+
+                    item.StockShortageQuantity =
+                        Math.Max(
+                            0,
+                            item.PendingQuantity);
+
+                    item.StockStatus =
+                        stockSnapshot.RecordCount == 0
+                            ? "Not Found"
+                            : "Shortage";
+                }
+
+                if (
+                    !stockLoad.IsOnline &&
+                    stockLoad.Items.Count == 0)
+                {
+                    item.StockStatus =
+                        "Stock API Offline";
+                }
+            }
+        }
+
+        private static void WriteMaterialExcel(
+            IXLWorksheet worksheet,
+            IReadOnlyList<MaterialListItemDto> items)
+        {
+            worksheet.Cell("A1").Value =
+                "PO TRACKER - MATERIAL LIST";
+
+            worksheet.Range("A1:V1").Merge();
+
+            worksheet.Cell("A2").Value =
+                $"Generated: {DateTime.Now:dd-MM-yyyy hh:mm tt}";
+
+            worksheet.Range("A2:V2").Merge();
+
+            worksheet.Cell("A3").Value =
+                $"Total materials: {items.Count}";
+
+            worksheet.Range("A3:V3").Merge();
+
+            var headers = new[]
+            {
+                "S.No",
+                "PO Number",
+                "Handler / Person",
+                "PO Date",
+                "PO Received Date",
+                "Line Item",
+                "Material Number",
+                "HSN/SAC",
+                "Description",
+                "PO Qty",
+                "Unit Price",
+                "Price Unit",
+                "Invoice Qty",
+                "Balance Qty",
+                "Dispatch Qty",
+                "Pending Dispatch Qty",
+                "Invoice Status",
+                "Dispatch Status",
+                "Live Stock",
+                "Shortage",
+                "Stock Status",
+                "Drawing Number"
+            };
+
+            for (
+                var index = 0;
+                index < headers.Length;
+                index++)
+            {
+                worksheet.Cell(
+                    5,
+                    index + 1).Value =
+                    headers[index];
+            }
+
+            for (
+                var index = 0;
+                index < items.Count;
+                index++)
+            {
+                var item =
+                    items[index];
+
+                var row =
+                    index + 6;
+
+                worksheet.Cell(row, 1).Value =
+                    index + 1;
+
+                worksheet.Cell(row, 2).Value =
+                    item.PONumber;
+
+                worksheet.Cell(row, 3).Value =
+                    string.IsNullOrWhiteSpace(
+                        item.Handler)
+                        ? "Unassigned"
+                        : item.Handler;
+
+                if (item.PODate.HasValue)
+                {
+                    worksheet.Cell(row, 4).Value =
+                        item.PODate.Value;
+                }
+
+                if (item.POReceivedDate.HasValue)
+                {
+                    worksheet.Cell(row, 5).Value =
+                        item.POReceivedDate.Value;
+                }
+
+                worksheet.Cell(row, 6).Value =
+                    item.LineItem;
+
+                worksheet.Cell(row, 7).Value =
+                    item.MaterialNo;
+
+                worksheet.Cell(row, 8).Value =
+                    item.HsnSacCode ??
+                    string.Empty;
+
+                worksheet.Cell(row, 9).Value =
+                    item.Description;
+
+                worksheet.Cell(row, 10).Value =
+                    item.Quantity;
+
+                worksheet.Cell(row, 11).Value =
+                    item.UnitPrice;
+
+                worksheet.Cell(row, 12).Value =
+                    item.PriceUnit;
+
+                worksheet.Cell(row, 13).Value =
+                    item.InvoiceQuantity;
+
+                worksheet.Cell(row, 14).Value =
+                    Math.Max(
+                        0,
+                        item.Quantity -
+                        item.InvoiceQuantity);
+
+                worksheet.Cell(row, 15).Value =
+                    item.DispatchQuantity;
+
+                worksheet.Cell(row, 16).Value =
+                    item.PendingQuantity;
+
+                worksheet.Cell(row, 17).Value =
+                    item.InvoiceStatus;
+
+                worksheet.Cell(row, 18).Value =
+                    item.DispatchStatus;
+
+                worksheet.Cell(row, 19).Value =
+                    item.LiveStockQuantity;
+
+                worksheet.Cell(row, 20).Value =
+                    item.StockShortageQuantity;
+
+                worksheet.Cell(row, 21).Value =
+                    item.StockStatus;
+
+                worksheet.Cell(row, 22).Value =
+                    item.DrawingNo;
+
+                StyleMaterialExcelStatus(
+                    worksheet,
+                    row,
+                    item.StockStatus);
+            }
+
+            var title =
+                worksheet.Range("A1:V1");
+
+            title.Style.Fill.BackgroundColor =
+                XLColor.FromHtml("#4C2FD4");
+
+            title.Style.Font.FontColor =
+                XLColor.White;
+
+            title.Style.Font.Bold = true;
+            title.Style.Font.FontSize = 16;
+
+            title.Style.Alignment.Horizontal =
+                XLAlignmentHorizontalValues.Center;
+
+            worksheet.Range("A2:V3")
+                .Style.Alignment.Horizontal =
+                XLAlignmentHorizontalValues.Center;
+
+            var header =
+                worksheet.Range("A5:V5");
+
+            header.Style.Fill.BackgroundColor =
+                XLColor.FromHtml("#EDE9FE");
+
+            header.Style.Font.FontColor =
+                XLColor.FromHtml("#2D1B69");
+
+            header.Style.Font.Bold = true;
+
+            header.Style.Alignment.Horizontal =
+                XLAlignmentHorizontalValues.Center;
+
+            if (items.Count > 0)
+            {
+                worksheet.Range(
+                        6,
+                        4,
+                        5 + items.Count,
+                        5)
+                    .Style.DateFormat.Format =
+                    "dd-mmm-yyyy";
+
+                worksheet.Range(
+                        6,
+                        10,
+                        5 + items.Count,
+                        20)
+                    .Style.NumberFormat.Format =
+                    "0.00";
+
+                worksheet.Range(
+                        6,
+                        1,
+                        5 + items.Count,
+                        22)
+                    .Style.Border.BottomBorder =
+                    XLBorderStyleValues.Hair;
+            }
+
+            worksheet.SheetView.FreezeRows(5);
+
+            worksheet.Range(
+                    5,
+                    1,
+                    Math.Max(
+                        5,
+                        5 + items.Count),
+                    22)
+                .SetAutoFilter();
+
+            worksheet.Columns(1, 22)
+                .AdjustToContents();
+
+            worksheet.Column(3).Width = 22;
+            worksheet.Column(9).Width = 35;
+
+            worksheet.Column(9)
+                .Style.Alignment.WrapText = true;
+
+            worksheet.Column(17).Width = 20;
+            worksheet.Column(18).Width = 18;
+            worksheet.Column(21).Width = 18;
+            worksheet.Column(22).Width = 24;
+        }
+
+        private static void StyleMaterialExcelStatus(
+            IXLWorksheet worksheet,
+            int row,
+            string stockStatus)
+        {
+            var cell =
+                worksheet.Cell(
+                    row,
+                    21);
+
+            if (
+                string.Equals(
+                    stockStatus,
+                    "Available",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                cell.Style.Fill.BackgroundColor =
+                    XLColor.FromHtml("#DCFCE7");
+
+                cell.Style.Font.FontColor =
+                    XLColor.FromHtml("#166534");
+            }
+            else if (
+                stockStatus.Contains(
+                    "Shortage",
+                    StringComparison.OrdinalIgnoreCase) ||
+                stockStatus.Contains(
+                    "Partial",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                cell.Style.Fill.BackgroundColor =
+                    XLColor.FromHtml("#FEF3C7");
+
+                cell.Style.Font.FontColor =
+                    XLColor.FromHtml("#92400E");
+            }
+            else
+            {
+                cell.Style.Fill.BackgroundColor =
+                    XLColor.FromHtml("#FFE4E6");
+
+                cell.Style.Font.FontColor =
+                    XLColor.FromHtml("#9F1239");
+            }
+
+            cell.Style.Font.Bold = true;
+        }
         // ============================================================
         // QUERY HELPERS
         // ============================================================

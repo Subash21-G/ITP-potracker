@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace POTracker.Contracts.Api
 {
@@ -324,7 +325,36 @@ namespace POTracker.Contracts.Api
 
         public int MaterialId { get; init; }
     }
+    /// <summary>
+    /// Material identifiers selected for bulk deletion.
+    /// </summary>
+    public sealed class MaterialBulkDeleteRequestDto
+    {
+        public List<int> MaterialIds { get; init; } = new();
+    }
+
+    /// <summary>
+    /// Result returned after attempting to delete multiple materials.
+    /// Linked invoice and dispatch materials are safely skipped.
+    /// </summary>
+    public sealed class MaterialBulkDeleteResponseDto
+    {
+        public bool Success { get; init; }
+
+        public string Message { get; init; } = string.Empty;
+
+        public int RequestedCount { get; init; }
+
+        public int DeletedCount { get; init; }
+
+        public int SkippedCount { get; init; }
+
+        public int MissingCount { get; init; }
+
+        public int InvoiceLinkedCount { get; init; }
+
+        public int DispatchLinkedCount { get; init; }
+
+        public List<int> DeletedMaterialIds { get; init; } = new();
+    }
 }
-
-
-
