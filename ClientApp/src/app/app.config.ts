@@ -17,9 +17,6 @@ import {
   apiErrorInterceptor,
 } from './core/interceptors/api-error.interceptor';
 
-import {
-  loadingInterceptor,
-} from './core/interceptors/loading.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -28,7 +25,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withFetch(),
       withInterceptors([
-        loadingInterceptor,
+
         apiErrorInterceptor,
       ]),
     ),

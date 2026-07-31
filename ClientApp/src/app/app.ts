@@ -30,9 +30,6 @@ import {
   AuthApiService,
 } from './core/services/auth-api.service';
 
-import {
-  LoadingService,
-} from './core/services/loading.service';
 
 import {
   ToastService,
@@ -57,8 +54,6 @@ import {
 export class App {
   private readonly router = inject(Router);
   private readonly authApi = inject(AuthApiService);
-  private readonly loadingService =
-    inject(LoadingService);
 
   private readonly toastService =
     inject(ToastService);
@@ -66,8 +61,6 @@ export class App {
   readonly currentUser =
     this.authApi.currentUser;
 
-  readonly isLoading =
-    this.loadingService.isLoading;
 
   readonly isLoggingOut = signal(false);
 

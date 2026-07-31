@@ -1,23 +1,5 @@
 <app-toast-container />
 
-@if (isLoading()) {
-  <div
-    class="global-loader"
-    role="status"
-    aria-live="polite"
-    aria-label="Loading"
-  >
-    <div class="global-loader__card">
-      <div
-        class="global-loader__spinner"
-        aria-hidden="true"
-      ></div>
-
-      <strong>Loading</strong>
-      <span>Please wait...</span>
-    </div>
-  </div>
-}
 
 @if (!isAuthenticationPage()) {
   <header class="app-header">
