@@ -9,7 +9,7 @@ namespace POTracker.Controllers.Api
     /// <summary>
     /// Read-only dashboard data used by the Angular application.
     /// This endpoint provides data for the Angular dashboard
-    /// during the gradual migration.
+    /// for the production operations workspace.
     /// </summary>
     [ApiController]
     [Route("api/dashboard")]

@@ -32,7 +32,7 @@ namespace POTracker.Controllers.Api
 
         /// <summary>
         /// Returns a filtered, SQL-paginated Purchase Order page for Angular.
-        /// The calculations match the existing MVC Purchase Order screen.
+        /// The calculations follow the Purchase Order workspace rules.
         /// </summary>
         [HttpGet]
         [ProducesResponseType(

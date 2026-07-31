@@ -214,7 +214,6 @@ nav a.active {
     font-size: 0.76rem;
   }
 
-  .nav-mvc,
   .user-avatar {
     display: none;
   }
@@ -403,9 +402,5 @@ nav a.active {
 
   .header-actions .logout-button {
     margin-left: auto;
-  }
-
-  .header-actions .nav-mvc {
-    display: flex;
   }
 }
