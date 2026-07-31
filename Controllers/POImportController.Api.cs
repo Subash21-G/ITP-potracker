@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using POTracker.ViewModels;
 
 namespace POTracker.Controllers
@@ -10,7 +10,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpPost("~/api/po-import/preview")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [RequestSizeLimit(20L * 1024L * 1024L)]
         [RequestFormLimits(
             ValueCountLimit = 10000,
@@ -43,7 +43,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpPost("~/api/po-import/preview-batch")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [RequestSizeLimit(200L * 1024L * 1024L)]
         [RequestFormLimits(
             ValueCountLimit = 10000,
@@ -149,7 +149,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpPost("~/api/po-import/save")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<IActionResult> SaveApi(
             [FromBody]
             POImportPreviewViewModel model)
@@ -199,7 +199,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpPost("~/api/po-import/save-batch")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<IActionResult> SaveBatchApi(
             [FromBody]
             POBatchImportPreviewViewModel model)

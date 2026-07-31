@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
@@ -164,7 +164,7 @@ namespace POTracker.Controllers.Api
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<
             ActionResult<PurchaserSaveResponseDto>>
             Create(
@@ -245,7 +245,7 @@ namespace POTracker.Controllers.Api
         }
 
         [HttpPut("{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<
             ActionResult<PurchaserSaveResponseDto>>
             Update(
@@ -338,7 +338,7 @@ namespace POTracker.Controllers.Api
         }
 
         [HttpDelete("{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<
             ActionResult<PurchaserDeleteResponseDto>>
             Delete(

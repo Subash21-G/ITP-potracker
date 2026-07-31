@@ -202,7 +202,7 @@ namespace POTracker.Controllers.Api
         /// Orders with linked materials are safely skipped.
         /// </summary>
         [HttpPost("bulk-delete")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(PurchaseOrderBulkDeleteResponseDto),
             StatusCodes.Status200OK)]

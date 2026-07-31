@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
@@ -310,7 +310,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [RequestSizeLimit(1024L * 1024L * 100L)]
         public async Task<ActionResult<DispatchMutationResponseDto>>
             Create(
@@ -493,7 +493,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpDelete("{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<ActionResult<DispatchMutationResponseDto>>
             Delete(
                 int id)
@@ -612,7 +612,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost("bulk-delete")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<ActionResult<DispatchMutationResponseDto>>
             BulkDelete(
                 [FromBody]

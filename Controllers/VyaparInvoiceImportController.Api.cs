@@ -34,7 +34,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpPost("~/api/invoice-import/preview")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [RequestSizeLimit(20L * 1024L * 1024L)]
         [RequestFormLimits(
             ValueCountLimit = 10000,
@@ -84,7 +84,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpPost("~/api/invoice-import/preview-batch")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [RequestSizeLimit(200L * 1024L * 1024L)]
         [RequestFormLimits(
             ValueCountLimit = 50000,
@@ -117,7 +117,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpPost("~/api/invoice-import/save")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<IActionResult> SaveApi(
             [FromBody]
             InvoiceImportPreviewViewModel model)
@@ -161,7 +161,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpPost("~/api/invoice-import/save-batch")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<IActionResult> SaveBatchApi(
             [FromBody]
             InvoiceBatchImportPreviewViewModel model)

@@ -109,7 +109,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPut("users/{id:int}/role")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(AdminUserMutationResponseDto),
             StatusCodes.Status200OK)]

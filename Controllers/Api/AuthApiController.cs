@@ -134,7 +134,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost("login")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(AuthenticationResponseDto),
             StatusCodes.Status200OK)]
@@ -276,7 +276,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost("register")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(RegistrationResponseDto),
             StatusCodes.Status200OK)]
@@ -451,7 +451,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost("logout")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(AuthenticationResponseDto),
             StatusCodes.Status200OK)]

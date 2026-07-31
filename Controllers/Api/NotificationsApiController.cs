@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
@@ -99,7 +99,7 @@ namespace POTracker.Controllers.Api
         }
 
         [HttpPost("{id:int}/read")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<
             ActionResult<
                 MarkNotificationReadResponseDto>>

@@ -17,7 +17,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost("import-history/bulk-delete")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<ActionResult<
             InvoiceImportHistoryBulkDeleteResponseDto>>
             BulkDeleteImportHistory(

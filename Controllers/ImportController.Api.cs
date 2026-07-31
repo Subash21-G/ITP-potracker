@@ -45,7 +45,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpPost("~/api/material-import/preview")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [RequestSizeLimit(MaximumExcelFileSize)]
         public async Task<IActionResult> PreviewApi(
             [FromForm]
@@ -343,7 +343,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpPost("~/api/material-import/commit")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<IActionResult> CommitApi(
             [FromBody]
             MaterialImportCommitRequest request)
@@ -559,7 +559,7 @@ namespace POTracker.Controllers
         // ============================================================
 
         [HttpDelete("~/api/material-import/{batchId}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public IActionResult CancelApi(
             string batchId)
         {

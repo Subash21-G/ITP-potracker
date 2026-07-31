@@ -103,7 +103,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(PurchaseOrderSaveResponseDto),
             StatusCodes.Status201Created)]
@@ -217,7 +217,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPut("{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(PurchaseOrderSaveResponseDto),
             StatusCodes.Status200OK)]
@@ -332,7 +332,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost("{id:int}/pdf")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(60L * 1024L * 1024L)]
         [ProducesResponseType(
@@ -434,7 +434,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpDelete("{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(PurchaseOrderDeleteResponseDto),
             StatusCodes.Status200OK)]

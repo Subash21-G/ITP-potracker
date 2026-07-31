@@ -197,7 +197,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(LocalStockSaveResponseDto),
             StatusCodes.Status200OK)]
@@ -274,7 +274,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPut("{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(LocalStockSaveResponseDto),
             StatusCodes.Status200OK)]
@@ -364,7 +364,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpDelete("{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(LocalStockDeleteResponseDto),
             StatusCodes.Status200OK)]

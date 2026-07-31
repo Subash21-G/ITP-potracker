@@ -566,7 +566,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost("pending/{id:int}/match")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<ActionResult<
             PendingInvoiceManualMatchResponseDto>>
             MatchPendingManually(
@@ -871,7 +871,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost("pending/retry")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<ActionResult<PendingInvoiceRetryResponseDto>>
             RetryPending()
         {
@@ -974,7 +974,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpDelete("{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<ActionResult<InvoiceDeleteResponseDto>> Delete(
             int id)
         {
@@ -1120,7 +1120,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpPost("bulk-delete")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<ActionResult<InvoiceBulkDeleteResponseDto>>
             BulkDelete(
                 [FromBody]
@@ -1385,7 +1385,7 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpDelete("import-history/{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<ActionResult<
             InvoiceImportBatchDeleteResponseDto>> DeleteImportBatch(
                 int id)

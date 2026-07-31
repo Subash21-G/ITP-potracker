@@ -654,7 +654,7 @@ namespace POTracker.Controllers.Api
         /// InvoiceQty and DispatchQty always start at zero.
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(MaterialSaveResponseDto),
             StatusCodes.Status201Created)]
@@ -770,7 +770,7 @@ namespace POTracker.Controllers.Api
         /// controlled by Invoice and Dispatch modules.
         /// </summary>
         [HttpPut("{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(MaterialSaveResponseDto),
             StatusCodes.Status200OK)]
@@ -888,7 +888,7 @@ namespace POTracker.Controllers.Api
         /// Uploads or replaces a material PDF and/or drawing file.
         /// </summary>
         [HttpPost("{id:int}/files")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(200L * 1024L * 1024L)]
         [ProducesResponseType(
@@ -1024,7 +1024,7 @@ namespace POTracker.Controllers.Api
         /// records are linked.
         /// </summary>
         [HttpDelete("{id:int}")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         [ProducesResponseType(
             typeof(MaterialDeleteResponseDto),
             StatusCodes.Status200OK)]
@@ -1220,7 +1220,7 @@ namespace POTracker.Controllers.Api
         /// or dispatch records. Linked materials are safely skipped.
         /// </summary>
         [HttpPost("bulk-delete")]
-        [ValidateAntiForgeryToken]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
         public async Task<
             ActionResult<MaterialBulkDeleteResponseDto>>
             BulkDelete(
