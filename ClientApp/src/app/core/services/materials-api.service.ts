@@ -123,6 +123,34 @@ export class MaterialsApiService {
     params =
       this.setOptional(
         params,
+        'poDateFrom',
+        query.poDateFrom,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'poDateTo',
+        query.poDateTo,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'poReceivedDateFrom',
+        query.poReceivedDateFrom,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'poReceivedDateTo',
+        query.poReceivedDateTo,
+      );
+
+    params =
+      this.setOptional(
+        params,
         'invoiceStatus',
         query.invoiceStatus,
       );
@@ -132,6 +160,13 @@ export class MaterialsApiService {
         params,
         'dispatchStatus',
         query.dispatchStatus,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'stockStatus',
+        query.stockStatus,
       );
 
     params =
@@ -150,7 +185,6 @@ export class MaterialsApiService {
 
     return params;
   }
-
   private setOptional(
     params: HttpParams,
     name: string,

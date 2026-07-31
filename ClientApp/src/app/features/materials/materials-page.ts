@@ -43,8 +43,13 @@ export class MaterialsPage {
     search: new FormControl('', { nonNullable: true }),
     poNumber: new FormControl('', { nonNullable: true }),
     handler: new FormControl('', { nonNullable: true }),
+    poDateFrom: new FormControl('', { nonNullable: true }),
+    poDateTo: new FormControl('', { nonNullable: true }),
+    poReceivedDateFrom: new FormControl('', { nonNullable: true }),
+    poReceivedDateTo: new FormControl('', { nonNullable: true }),
     invoiceStatus: new FormControl('', { nonNullable: true }),
     dispatchStatus: new FormControl('', { nonNullable: true }),
+    stockStatus: new FormControl('', { nonNullable: true }),
     deliveryDateFrom: new FormControl('', { nonNullable: true }),
     deliveryDateTo: new FormControl('', { nonNullable: true }),
   });

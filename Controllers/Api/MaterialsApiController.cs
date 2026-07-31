@@ -385,7 +385,9 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         /// <summary>
-        /// Returns one SQL-paginated page of materials for Angular.
+        /// Returns a filtered material page for Angular.
+        /// Database filters remain SQL-paginated. Live-stock status
+        /// is calculated before pagination when that filter is active.
         /// </summary>
         [HttpGet]
         [ProducesResponseType(
@@ -401,271 +403,152 @@ namespace POTracker.Controllers.Api
                 string? search,
                 string? poNumber,
                 string? handler,
+                DateTime? poDateFrom,
+                DateTime? poDateTo,
+                DateTime? poReceivedDateFrom,
+                DateTime? poReceivedDateTo,
                 string? invoiceStatus,
                 string? dispatchStatus,
+                string? stockStatus,
                 DateTime? deliveryDateFrom,
                 DateTime? deliveryDateTo,
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
         {
-            page = Math.Max(page, 1);
-            pageSize = NormalizePageSize(pageSize);
+            page = Math.Max(
+                page,
+                1);
 
-            var query = ApplyFilters(
-                _context.Materials.AsNoTracking(),
-                search,
-                poNumber,
-                handler,
-                invoiceStatus,
-                dispatchStatus,
-                deliveryDateFrom,
-                deliveryDateTo);
+            pageSize =
+                NormalizePageSize(
+                    pageSize);
 
-            var totalRecords =
-                await query.CountAsync(
+            var query =
+                ApplyFilters(
+                    _context.Materials
+                        .AsNoTracking(),
+                    search,
+                    poNumber,
+                    handler,
+                    poDateFrom,
+                    poDateTo,
+                    poReceivedDateFrom,
+                    poReceivedDateTo,
+                    invoiceStatus,
+                    dispatchStatus,
+                    deliveryDateFrom,
+                    deliveryDateTo);
+
+            List<MaterialListItemDto> items;
+            int totalRecords;
+
+            if (
+                string.IsNullOrWhiteSpace(
+                    stockStatus))
+            {
+                totalRecords =
+                    await query.CountAsync(
+                        cancellationToken);
+
+                var totalPages =
+                    Math.Max(
+                        1,
+                        (int)Math.Ceiling(
+                            totalRecords /
+                            (double)pageSize));
+
+                if (page > totalPages)
+                {
+                    page = totalPages;
+                }
+
+                items =
+                    await query
+                        .OrderByDescending(
+                            material =>
+                                material.Id)
+                        .Skip(
+                            (page - 1) *
+                            pageSize)
+                        .Take(pageSize)
+                        .Select(
+                            MaterialListProjection)
+                        .ToListAsync(
+                            cancellationToken);
+
+                await PopulateExportStockAsync(
+                    items,
+                    cancellationToken);
+            }
+            else
+            {
+                var allItems =
+                    await query
+                        .OrderByDescending(
+                            material =>
+                                material.Id)
+                        .Select(
+                            MaterialListProjection)
+                        .ToListAsync(
+                            cancellationToken);
+
+                await PopulateExportStockAsync(
+                    allItems,
                     cancellationToken);
 
-            var totalPages = Math.Max(
-                1,
-                (int)Math.Ceiling(
-                    totalRecords /
-                    (double)pageSize));
+                var requestedStockStatus =
+                    stockStatus.Trim();
 
-            if (page > totalPages)
-            {
-                page = totalPages;
-            }
-
-            var items =
-                await query
-                    .OrderByDescending(material =>
-                        material.Id)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(MaterialListProjection)
-                    .ToListAsync(cancellationToken);
-            var stockLoad =
-                await _externalStockService
-                    .GetAllAsync(
-                        false,
-                        cancellationToken);
-
-            var pageMaterialKeys =
-                items
-                    .Select(item =>
-                        ExternalStockService
-                            .Normalize(
-                                item.MaterialNo))
-                    .Where(key =>
-                        !string.IsNullOrWhiteSpace(
-                            key))
-                    .Distinct(
-                        StringComparer.OrdinalIgnoreCase)
-                    .ToHashSet(
-                        StringComparer.OrdinalIgnoreCase);
-
-            var allocationCandidates =
-                await _context.Materials
-                    .AsNoTracking()
-                    .Where(material =>
-                        material.MaterialNo != null &&
-                        material.MaterialNo !=
-                            string.Empty)
-                    .Select(material =>
-                        new
-                        {
-                            material.Id,
-                            material.MaterialNo,
-                            material.PendingQty,
-                            material.DeliveryDate
-                        })
-                    .ToListAsync(
-                        cancellationToken);
-
-            var allocations =
-                new Dictionary<
-                    int,
-                    (
-                        decimal Allocated,
-                        decimal Shortage,
-                        string Status
-                    )>();
-
-            foreach (var materialKey in
-                     pageMaterialKeys)
-            {
-                var pageMaterial =
-                    items.First(item =>
-                        ExternalStockService
-                            .Normalize(
-                                item.MaterialNo) ==
-                        materialKey);
-
-                var stockSnapshot =
-                    ExternalStockService
-                        .BuildSnapshot(
-                            stockLoad.Items,
-                            pageMaterial.MaterialNo,
-                            0);
-
-                var remainingStock =
-                    stockSnapshot.LiveStock;
-
-                var matchingRows =
-                    allocationCandidates
-                        .Where(material =>
-                            ExternalStockService
-                                .Normalize(
-                                    material.MaterialNo) ==
-                            materialKey)
-                        .OrderBy(material =>
-                            material.DeliveryDate ??
-                            DateTime.MaxValue)
-                        .ThenBy(material =>
-                            material.Id)
+                var filteredItems =
+                    allItems
+                        .Where(item =>
+                            MatchesStockStatus(
+                                item.StockStatus,
+                                requestedStockStatus))
                         .ToList();
 
-                foreach (var material in
-                         matchingRows)
+                totalRecords =
+                    filteredItems.Count;
+
+                var totalPages =
+                    Math.Max(
+                        1,
+                        (int)Math.Ceiling(
+                            totalRecords /
+                            (double)pageSize));
+
+                if (page > totalPages)
                 {
-                    var requiredQuantity =
-                        Math.Max(
-                            0,
-                            material.PendingQty);
-
-                    var allocatedQuantity =
-                        Math.Min(
-                            remainingStock,
-                            requiredQuantity);
-
-                    var shortageQuantity =
-                        Math.Max(
-                            0,
-                            requiredQuantity -
-                            allocatedQuantity);
-
-                    remainingStock =
-                        Math.Max(
-                            0,
-                            remainingStock -
-                            allocatedQuantity);
-
-                    string allocationStatus;
-
-                    if (stockSnapshot.RecordCount == 0)
-                    {
-                        allocationStatus =
-                            "Not Found";
-                    }
-                    else if (requiredQuantity <= 0)
-                    {
-                        allocationStatus =
-                            "No Pending";
-                    }
-                    else if (
-                        allocatedQuantity >=
-                        requiredQuantity)
-                    {
-                        allocationStatus =
-                            "Available";
-                    }
-                    else if (
-                        allocatedQuantity > 0)
-                    {
-                        allocationStatus =
-                            "Partial Stock";
-                    }
-                    else if (
-                        stockSnapshot.LiveStock <= 0)
-                    {
-                        allocationStatus =
-                            "Out of Stock";
-                    }
-                    else
-                    {
-                        allocationStatus =
-                            "Shortage";
-                    }
-
-                    allocations[material.Id] =
-                        (
-                            allocatedQuantity,
-                            shortageQuantity,
-                            allocationStatus
-                        );
+                    page = totalPages;
                 }
+
+                items =
+                    filteredItems
+                        .Skip(
+                            (page - 1) *
+                            pageSize)
+                        .Take(pageSize)
+                        .ToList();
             }
 
-            foreach (var item in items)
-            {
-                var stockSnapshot =
-                    ExternalStockService
-                        .BuildSnapshot(
-                            stockLoad.Items,
-                            item.MaterialNo,
-                            item.PendingQuantity);
-
-                item.LiveStockQuantity =
-                    stockSnapshot.LiveStock;
-
-                item.StockMinimumQuantity =
-                    stockSnapshot.MinimumStock;
-
-                item.StockRecordCount =
-                    stockSnapshot.RecordCount;
-
-                item.StockDataLive =
-                    stockLoad.IsOnline;
-
-                if (
-                    allocations.TryGetValue(
-                        item.Id,
-                        out var allocation))
-                {
-                    item.AllocatedStockQuantity =
-                        allocation.Allocated;
-
-                    item.StockShortageQuantity =
-                        allocation.Shortage;
-
-                    item.StockStatus =
-                        allocation.Status;
-                }
-                else
-                {
-                    item.AllocatedStockQuantity =
-                        0;
-
-                    item.StockShortageQuantity =
-                        Math.Max(
-                            0,
-                            item.PendingQuantity);
-
-                    item.StockStatus =
-                        stockSnapshot.RecordCount == 0
-                            ? "Not Found"
-                            : "Shortage";
-                }
-
-                if (
-                    !stockLoad.IsOnline &&
-                    stockLoad.Items.Count == 0)
-                {
-                    item.StockStatus =
-                        "Stock API Offline";
-                }
-            }
             return Ok(
-                new PagedResult<MaterialListItemDto>
+                new PagedResult<
+                    MaterialListItemDto>
                 {
-                    Items = items,
-                    Page = page,
-                    PageSize = pageSize,
-                    TotalRecords = totalRecords
+                    Items =
+                        items,
+
+                    Page =
+                        page,
+
+                    PageSize =
+                        pageSize,
+
+                    TotalRecords =
+                        totalRecords
                 });
         }
-
         // ============================================================
         // DETAILS
         // ============================================================
@@ -1246,36 +1129,66 @@ namespace POTracker.Controllers.Api
 
         /// <summary>
         /// Exports every material matching the Angular list filters.
+        /// Live-stock status is populated before applying its filter.
         /// </summary>
         [HttpGet("export-excel")]
         public async Task<IActionResult> ExportExcel(
             string? search,
             string? poNumber,
             string? handler,
+            DateTime? poDateFrom,
+            DateTime? poDateTo,
+            DateTime? poReceivedDateFrom,
+            DateTime? poReceivedDateTo,
             string? invoiceStatus,
             string? dispatchStatus,
+            string? stockStatus,
             DateTime? deliveryDateFrom,
             DateTime? deliveryDateTo,
             CancellationToken cancellationToken = default)
         {
             var items =
                 await ApplyFilters(
-                        _context.Materials.AsNoTracking(),
+                        _context.Materials
+                            .AsNoTracking(),
                         search,
                         poNumber,
                         handler,
+                        poDateFrom,
+                        poDateTo,
+                        poReceivedDateFrom,
+                        poReceivedDateTo,
                         invoiceStatus,
                         dispatchStatus,
                         deliveryDateFrom,
                         deliveryDateTo)
-                    .OrderByDescending(material =>
-                        material.Id)
-                    .Select(MaterialListProjection)
-                    .ToListAsync(cancellationToken);
+                    .OrderByDescending(
+                        material =>
+                            material.Id)
+                    .Select(
+                        MaterialListProjection)
+                    .ToListAsync(
+                        cancellationToken);
 
             await PopulateExportStockAsync(
                 items,
                 cancellationToken);
+
+            if (
+                !string.IsNullOrWhiteSpace(
+                    stockStatus))
+            {
+                var requestedStockStatus =
+                    stockStatus.Trim();
+
+                items =
+                    items
+                        .Where(item =>
+                            MatchesStockStatus(
+                                item.StockStatus,
+                                requestedStockStatus))
+                        .ToList();
+            }
 
             using var workbook =
                 new XLWorkbook();
@@ -1298,7 +1211,6 @@ namespace POTracker.Controllers.Api
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"Materials_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
         }
-
         // ============================================================
         // BULK DELETE
         // ============================================================
@@ -2193,115 +2105,331 @@ namespace POTracker.Controllers.Api
                 string? search,
                 string? poNumber,
                 string? handler,
+                DateTime? poDateFrom,
+                DateTime? poDateTo,
+                DateTime? poReceivedDateFrom,
+                DateTime? poReceivedDateTo,
                 string? invoiceStatus,
                 string? dispatchStatus,
                 DateTime? deliveryDateFrom,
                 DateTime? deliveryDateTo)
         {
-            if (!string.IsNullOrWhiteSpace(
+            if (
+                !string.IsNullOrWhiteSpace(
                     search))
             {
-                var value = search.Trim();
+                var value =
+                    search.Trim();
 
-                query = query.Where(
-                    material =>
-                        (material.MaterialNo != null &&
-                         material.MaterialNo
-                             .Contains(value)) ||
-                        (material.LineItem != null &&
-                         material.LineItem
-                             .Contains(value)) ||
-                        (material.HsnSacCode != null &&
-                         material.HsnSacCode
-                             .Contains(value)) ||
-                        (material.ShortDescription != null &&
-                         material.ShortDescription
-                             .Contains(value)) ||
-                        (material.BriefDescription != null &&
-                         material.BriefDescription
-                             .Contains(value)) ||
-                        (material.DrawingNo != null &&
-                         material.DrawingNo
-                             .Contains(value)) ||
-                        (material.PurchaseOrder != null &&
-                         material.PurchaseOrder.PONumber
-                             .Contains(value)));
+                query =
+                    query.Where(
+                        material =>
+                            (material.MaterialNo != null &&
+                             material.MaterialNo
+                                 .Contains(value)) ||
+                            (material.LineItem != null &&
+                             material.LineItem
+                                 .Contains(value)) ||
+                            (material.HsnSacCode != null &&
+                             material.HsnSacCode
+                                 .Contains(value)) ||
+                            (material.ShortDescription != null &&
+                             material.ShortDescription
+                                 .Contains(value)) ||
+                            (material.BriefDescription != null &&
+                             material.BriefDescription
+                                 .Contains(value)) ||
+                            (material.DrawingNo != null &&
+                             material.DrawingNo
+                                 .Contains(value)) ||
+                            (material.PurchaseOrder != null &&
+                             material.PurchaseOrder
+                                 .PONumber
+                                 .Contains(value)));
             }
 
-            if (!string.IsNullOrWhiteSpace(
+            if (
+                !string.IsNullOrWhiteSpace(
                     poNumber))
             {
-                var value = poNumber.Trim();
+                var value =
+                    poNumber.Trim();
 
-                query = query.Where(
-                    material =>
-                        material.PurchaseOrder != null &&
-                        material.PurchaseOrder.PONumber
-                            .Contains(value));
+                query =
+                    query.Where(
+                        material =>
+                            material.PurchaseOrder != null &&
+                            material.PurchaseOrder
+                                .PONumber
+                                .Contains(value));
             }
 
-            if (!string.IsNullOrWhiteSpace(
+            if (
+                !string.IsNullOrWhiteSpace(
                     handler))
             {
-                var value = handler.Trim();
+                var value =
+                    handler.Trim();
 
-                query = query.Where(
-                    material =>
-                        material.PurchaseOrder != null &&
-                        material.PurchaseOrder
-                            .BuyerContactPerson != null &&
-                        material.PurchaseOrder
-                            .BuyerContactPerson
-                            .Contains(value));
+                query =
+                    query.Where(
+                        material =>
+                            material.PurchaseOrder != null &&
+                            material.PurchaseOrder
+                                .BuyerContactPerson != null &&
+                            material.PurchaseOrder
+                                .BuyerContactPerson
+                                .Contains(value));
             }
 
-            if (!string.IsNullOrWhiteSpace(
+            if (poDateFrom.HasValue)
+            {
+                var startDate =
+                    poDateFrom.Value.Date;
+
+                query =
+                    query.Where(
+                        material =>
+                            (
+                                material.PurchaseOrder != null &&
+                                material.PurchaseOrder
+                                    .PODate
+                                    .HasValue &&
+                                material.PurchaseOrder
+                                    .PODate
+                                    .Value >=
+                                startDate
+                            ) ||
+                            (
+                                (
+                                    material.PurchaseOrder == null ||
+                                    !material.PurchaseOrder
+                                        .PODate
+                                        .HasValue
+                                ) &&
+                                material.PODate.HasValue &&
+                                material.PODate.Value >=
+                                startDate
+                            ));
+            }
+
+            if (poDateTo.HasValue)
+            {
+                var endDateExclusive =
+                    poDateTo.Value
+                        .Date
+                        .AddDays(1);
+
+                query =
+                    query.Where(
+                        material =>
+                            (
+                                material.PurchaseOrder != null &&
+                                material.PurchaseOrder
+                                    .PODate
+                                    .HasValue &&
+                                material.PurchaseOrder
+                                    .PODate
+                                    .Value <
+                                endDateExclusive
+                            ) ||
+                            (
+                                (
+                                    material.PurchaseOrder == null ||
+                                    !material.PurchaseOrder
+                                        .PODate
+                                        .HasValue
+                                ) &&
+                                material.PODate.HasValue &&
+                                material.PODate.Value <
+                                endDateExclusive
+                            ));
+            }
+
+            if (
+                poReceivedDateFrom.HasValue)
+            {
+                var startDate =
+                    poReceivedDateFrom
+                        .Value
+                        .Date;
+
+                query =
+                    query.Where(
+                        material =>
+                            (
+                                material.PurchaseOrder != null &&
+                                material.PurchaseOrder
+                                    .ReceivedDate
+                                    .HasValue &&
+                                material.PurchaseOrder
+                                    .ReceivedDate
+                                    .Value >=
+                                startDate
+                            ) ||
+                            (
+                                (
+                                    material.PurchaseOrder == null ||
+                                    !material.PurchaseOrder
+                                        .ReceivedDate
+                                        .HasValue
+                                ) &&
+                                material.ReceivingDate
+                                    .HasValue &&
+                                material.ReceivingDate
+                                    .Value >=
+                                startDate
+                            ));
+            }
+
+            if (
+                poReceivedDateTo.HasValue)
+            {
+                var endDateExclusive =
+                    poReceivedDateTo
+                        .Value
+                        .Date
+                        .AddDays(1);
+
+                query =
+                    query.Where(
+                        material =>
+                            (
+                                material.PurchaseOrder != null &&
+                                material.PurchaseOrder
+                                    .ReceivedDate
+                                    .HasValue &&
+                                material.PurchaseOrder
+                                    .ReceivedDate
+                                    .Value <
+                                endDateExclusive
+                            ) ||
+                            (
+                                (
+                                    material.PurchaseOrder == null ||
+                                    !material.PurchaseOrder
+                                        .ReceivedDate
+                                        .HasValue
+                                ) &&
+                                material.ReceivingDate
+                                    .HasValue &&
+                                material.ReceivingDate
+                                    .Value <
+                                endDateExclusive
+                            ));
+            }
+
+            if (
+                !string.IsNullOrWhiteSpace(
                     invoiceStatus))
             {
-                query = query.Where(
-                    material =>
-                        material.InvoiceStatus ==
-                        invoiceStatus);
+                query =
+                    query.Where(
+                        material =>
+                            material.InvoiceStatus ==
+                            invoiceStatus);
             }
 
-            if (!string.IsNullOrWhiteSpace(
+            if (
+                !string.IsNullOrWhiteSpace(
                     dispatchStatus))
             {
-                query = query.Where(
-                    material =>
-                        material.DispatchStatus ==
-                        dispatchStatus);
+                query =
+                    query.Where(
+                        material =>
+                            material.DispatchStatus ==
+                            dispatchStatus);
             }
 
             if (deliveryDateFrom.HasValue)
             {
                 var startDate =
-                    deliveryDateFrom.Value.Date;
+                    deliveryDateFrom
+                        .Value
+                        .Date;
 
-                query = query.Where(
-                    material =>
-                        material.DeliveryDate.HasValue &&
-                        material.DeliveryDate.Value >=
-                        startDate);
+                query =
+                    query.Where(
+                        material =>
+                            material.DeliveryDate
+                                .HasValue &&
+                            material.DeliveryDate
+                                .Value >=
+                            startDate);
             }
 
             if (deliveryDateTo.HasValue)
             {
                 var endDateExclusive =
-                    deliveryDateTo.Value
+                    deliveryDateTo
+                        .Value
                         .Date
                         .AddDays(1);
 
-                query = query.Where(
-                    material =>
-                        material.DeliveryDate.HasValue &&
-                        material.DeliveryDate.Value <
-                        endDateExclusive);
+                query =
+                    query.Where(
+                        material =>
+                            material.DeliveryDate
+                                .HasValue &&
+                            material.DeliveryDate
+                                .Value <
+                            endDateExclusive);
             }
 
             return query;
         }
 
+        private static bool MatchesStockStatus(
+            string actualStatus,
+            string requestedStatus)
+        {
+            if (
+                requestedStatus.Equals(
+                    "Available",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return
+                    actualStatus.Equals(
+                        "Available",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    actualStatus.Equals(
+                        "No Pending",
+                        StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (
+                requestedStatus.Equals(
+                    "Shortage",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return
+                    actualStatus.Equals(
+                        "Shortage",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    actualStatus.Equals(
+                        "Partial Stock",
+                        StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (
+                requestedStatus.Equals(
+                    "Not Found",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return
+                    actualStatus.Equals(
+                        "Not Found",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    actualStatus.Equals(
+                        "Stock API Offline",
+                        StringComparison.OrdinalIgnoreCase);
+            }
+
+            return
+                actualStatus.Equals(
+                    requestedStatus,
+                    StringComparison.OrdinalIgnoreCase);
+        }
         private static int NormalizePageSize(
             int pageSize)
         {

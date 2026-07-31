@@ -1,4 +1,4 @@
-﻿export interface MaterialListItem {
+export interface MaterialListItem {
   readonly id: number;
   readonly purchaseOrderId: number;
   readonly poNumber: string;
@@ -48,8 +48,13 @@ export interface MaterialQuery {
   readonly search?: string;
   readonly poNumber?: string;
   readonly handler?: string;
+  readonly poDateFrom?: string;
+  readonly poDateTo?: string;
+  readonly poReceivedDateFrom?: string;
+  readonly poReceivedDateTo?: string;
   readonly invoiceStatus?: string;
   readonly dispatchStatus?: string;
+  readonly stockStatus?: string;
   readonly deliveryDateFrom?: string;
   readonly deliveryDateTo?: string;
 }

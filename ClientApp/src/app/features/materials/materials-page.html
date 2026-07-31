@@ -105,26 +105,85 @@
     </label>
 
     <label class="field">
+      <span>PO date from</span>
+      <input
+        formControlName="poDateFrom"
+        type="date"
+      />
+    </label>
+
+    <label class="field">
+      <span>PO date to</span>
+      <input
+        formControlName="poDateTo"
+        type="date"
+      />
+    </label>
+
+    <label class="field">
+      <span>PO received from</span>
+      <input
+        formControlName="poReceivedDateFrom"
+        type="date"
+      />
+    </label>
+
+    <label class="field">
+      <span>PO received to</span>
+      <input
+        formControlName="poReceivedDateTo"
+        type="date"
+      />
+    </label>
+
+    <label class="field">
       <span>Invoice status</span>
       <select formControlName="invoiceStatus">
-        <option value="">All statuses</option>
-        <option value="Not Invoiced">Not Invoiced</option>
+        <option value="">All invoice statuses</option>
+        <option value="Not Invoiced">
+          Not Invoiced
+        </option>
         <option value="Partially Invoiced">
           Partially Invoiced
         </option>
-        <option value="Fully Invoiced">Fully Invoiced</option>
+        <option value="Fully Invoiced">
+          Fully Invoiced
+        </option>
       </select>
     </label>
 
     <label class="field">
       <span>Dispatch status</span>
       <select formControlName="dispatchStatus">
-        <option value="">All statuses</option>
-        <option value="Pending">Pending</option>
+        <option value="">All dispatch statuses</option>
+        <option value="Pending">
+          Pending
+        </option>
         <option value="Partially Dispatched">
           Partially Dispatched
         </option>
-        <option value="Dispatched">Dispatched</option>
+        <option value="Dispatched">
+          Dispatched
+        </option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Stock status</span>
+      <select formControlName="stockStatus">
+        <option value="">All stock statuses</option>
+        <option value="Available">
+          Available
+        </option>
+        <option value="Shortage">
+          Shortage
+        </option>
+        <option value="Out of Stock">
+          Out of Stock
+        </option>
+        <option value="Not Found">
+          Not Found
+        </option>
       </select>
     </label>
 
