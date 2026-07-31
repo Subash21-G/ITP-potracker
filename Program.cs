@@ -192,7 +192,7 @@ app.UseHttpsRedirection();
 // ============================================================
 // STATIC FILE CACHING
 //
-// CSS, JavaScript and libraries are cached.
+// Shared images and the favicon are cached.
 // Uploaded business documents are never browser-cached.
 // Angular index.html is not cached.
 // Hashed Angular assets are cached for one year.
@@ -238,9 +238,6 @@ app.UseStaticFiles(new StaticFileOptions
         }
 
         var isCacheableAsset =
-            requestPath.StartsWithSegments("/css") ||
-            requestPath.StartsWithSegments("/js") ||
-            requestPath.StartsWithSegments("/lib") ||
             requestPath.StartsWithSegments("/images") ||
             requestPath.Value?.EndsWith(
                 "favicon.ico",
