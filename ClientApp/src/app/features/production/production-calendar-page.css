@@ -1,4 +1,4 @@
-﻿.calendar-legend {
+.calendar-legend {
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem;
@@ -52,22 +52,6 @@
     rgba(15, 23, 42, 0.07);
 }
 
-.calendar-panel--loading {
-  opacity: 0.82;
-}
-
-.calendar-loading {
-  position: absolute;
-  z-index: 5;
-  top: 1rem;
-  right: 1rem;
-  padding: 0.55rem 0.8rem;
-  border-radius: 999px;
-  background: #101828;
-  color: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 800;
-}
 
 .calendar-error {
   margin-bottom: 1rem;
@@ -108,4 +92,29 @@
     flex-direction: column;
     gap: 0.6rem;
   }
+}
+/* ============================================================
+   STABLE FULLCALENDAR LAYOUT
+   ============================================================ */
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.calendar-panel {
+  width: 100%;
+  min-width: 0;
+  contain: layout paint;
+}
+
+full-calendar {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+:host ::ng-deep .fc {
+  width: 100%;
+  min-width: 0;
 }

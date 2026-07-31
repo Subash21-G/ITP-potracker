@@ -1,4 +1,4 @@
-﻿<section class="page-heading">
+<section class="page-heading">
   <div>
     <p class="eyebrow">
       PRODUCTION MANAGEMENT
@@ -54,17 +54,7 @@
 </section>
 }
 
-<section
-  class="calendar-panel"
-  [class.calendar-panel--loading]="
-    loading()
-  ">
-
-  @if (loading()) {
-  <div class="calendar-loading">
-    Loading calendar events...
-  </div>
-  }
+<section class="calendar-panel">
 
   <full-calendar
     [options]="calendarOptions">

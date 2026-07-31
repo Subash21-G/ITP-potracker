@@ -1,4 +1,4 @@
-﻿import {
+import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
@@ -22,7 +22,6 @@ import interactionPlugin
   from '@fullcalendar/angular/interaction';
 import themePlugin
   from '@fullcalendar/angular/themes/classic';
-import { finalize } from 'rxjs';
 
 import {
   ProductionApiService,
@@ -51,7 +50,7 @@ export class ProductionCalendarPage {
   private readonly destroyRef =
     inject(DestroyRef);
 
-  readonly loading = signal(false);
+
   readonly errorMessage = signal('');
 
   readonly calendarOptions:
@@ -64,7 +63,8 @@ export class ProductionCalendarPage {
 
       initialView: 'dayGridMonth',
       firstDay: 1,
-      height: 'auto',
+      height: 750,
+      expandRows: true,
       fixedWeekCount: false,
 
       headerToolbar: {
@@ -90,7 +90,6 @@ export class ProductionCalendarPage {
         successCallback,
         failureCallback,
       ) => {
-        this.loading.set(true);
         this.errorMessage.set('');
 
         this.productionApi
@@ -102,9 +101,6 @@ export class ProductionCalendarPage {
             takeUntilDestroyed(
               this.destroyRef,
             ),
-
-            finalize(() =>
-              this.loading.set(false)),
           )
           .subscribe({
             next: (events) => {
