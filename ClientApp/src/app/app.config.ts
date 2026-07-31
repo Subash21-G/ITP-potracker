@@ -9,27 +9,47 @@ import {
   withInterceptors,
 } from '@angular/common/http';
 
-import { provideRouter } from '@angular/router';
+import {
+  PreloadAllModules,
+  provideRouter,
+  withInMemoryScrolling,
+  withPreloading,
+} from '@angular/router';
 
-import { routes } from './app.routes';
+import {
+  routes,
+} from './app.routes';
 
 import {
   apiErrorInterceptor,
 } from './core/interceptors/api-error.interceptor';
 
+export const appConfig:
+  ApplicationConfig = {
+    providers: [
+      provideBrowserGlobalErrorListeners(),
 
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideBrowserGlobalErrorListeners(),
+      provideHttpClient(
+        withFetch(),
+        withInterceptors([
+          apiErrorInterceptor,
+        ]),
+      ),
 
-    provideHttpClient(
-      withFetch(),
-      withInterceptors([
+      provideRouter(
+        routes,
 
-        apiErrorInterceptor,
-      ]),
-    ),
+        withInMemoryScrolling({
+          anchorScrolling:
+            'enabled',
 
-    provideRouter(routes),
-  ],
-};
+          scrollPositionRestoration:
+            'top',
+        }),
+
+        withPreloading(
+          PreloadAllModules,
+        ),
+      ),
+    ],
+  };

@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 
 import {
   ChangeDetectionStrategy,
@@ -20,16 +21,16 @@ import {
 } from '@angular/core/rxjs-interop';
 
 import {
-  finalize,
   filter,
+  finalize,
   map,
   switchMap,
+  tap,
 } from 'rxjs';
 
 import {
   AuthApiService,
 } from './core/services/auth-api.service';
-
 
 import {
   ToastService,
@@ -49,11 +50,18 @@ import {
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection:
+    ChangeDetectionStrategy.OnPush,
 })
 export class App {
-  private readonly router = inject(Router);
-  private readonly authApi = inject(AuthApiService);
+  private readonly router =
+    inject(Router);
+
+  private readonly document =
+    inject(DOCUMENT);
+
+  private readonly authApi =
+    inject(AuthApiService);
 
   private readonly toastService =
     inject(ToastService);
@@ -61,63 +69,124 @@ export class App {
   readonly currentUser =
     this.authApi.currentUser;
 
+  readonly isLoggingOut =
+    signal(false);
 
-  readonly isLoggingOut = signal(false);
+  readonly isMobileMenuOpen =
+    signal(false);
 
-  readonly isMobileMenuOpen = signal(false);
-
-  private readonly currentUrl = toSignal(
-    this.router.events.pipe(
-      filter(
-        (event): event is NavigationEnd =>
-          event instanceof NavigationEnd,
+  private readonly currentUrl =
+    toSignal(
+      this.router.events.pipe(
+        filter(
+          (event): event is NavigationEnd =>
+            event instanceof NavigationEnd,
+        ),
+        tap(() =>
+          this.closeNavigation()),
+        map(
+          (event) =>
+            event.urlAfterRedirects,
+        ),
       ),
-      map(
-        (event) =>
-          event.urlAfterRedirects,
+      {
+        initialValue: this.router.url,
+      },
+    );
+
+  readonly isAuthenticationPage =
+    computed(() =>
+      this.currentUrl().startsWith(
+        '/login',
+      ) ||
+      this.currentUrl().startsWith(
+        '/register',
       ),
-    ),
-    {
-      initialValue: this.router.url,
-    },
-  );
+    );
 
-  readonly isAuthenticationPage = computed(() =>
-    this.currentUrl().startsWith('/login') ||
-    this.currentUrl().startsWith('/register'),
-  );
+  readonly userInitials =
+    computed(() => {
+      const user =
+        this.currentUser();
 
-  readonly userInitials = computed(() => {
-    const user = this.currentUser();
+      const displayName =
+        user?.fullName?.trim() ||
+        user?.userName?.trim() ||
+        'User';
 
-    const displayName =
-      user?.fullName?.trim() ||
-      user?.userName?.trim() ||
-      'User';
-
-    const words = displayName
-      .split(/\s+/)
-      .filter(
-        (word) => word.length > 0,
-      )
-      .slice(0, 2);
-
-    return words
-      .map(
-        (word) =>
-          word.charAt(0).toUpperCase(),
-      )
-      .join('');
-  });
+      return displayName
+        .split(/\s+/)
+        .filter(
+          (word) =>
+            word.length > 0,
+        )
+        .slice(0, 2)
+        .map(
+          (word) =>
+            word
+              .charAt(0)
+              .toUpperCase(),
+        )
+        .join('');
+    });
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen.update(
-      (isOpen) => !isOpen,
+      (isOpen) =>
+        !isOpen,
     );
   }
 
-  closeMobileMenu(): void {
-    this.isMobileMenuOpen.set(false);
+  prepareNavigationGroup(
+    event: Event,
+  ): void {
+    const eventTarget =
+      event.currentTarget;
+
+    const currentDetails =
+      eventTarget instanceof HTMLElement
+        ? eventTarget.closest(
+            'details',
+          )
+        : null;
+
+    this.document
+      .querySelectorAll<
+        HTMLDetailsElement
+      >(
+        '.nav-group[open], .user-menu[open]',
+      )
+      .forEach(
+        (details) => {
+          if (
+            details !==
+            currentDetails
+          ) {
+            details.removeAttribute(
+              'open',
+            );
+          }
+        },
+      );
+  }
+
+  closeNavigation(): void {
+    this.isMobileMenuOpen.set(
+      false,
+    );
+
+    this.document
+      .querySelectorAll<
+        HTMLDetailsElement
+      >(
+        '.nav-group[open], .user-menu[open]',
+      )
+      .forEach(
+        (details) =>
+          details.removeAttribute(
+            'open',
+          ),
+      );
   }
 
   logout(): void {
@@ -131,10 +200,13 @@ export class App {
       .getXsrfToken()
       .pipe(
         switchMap(
-          () => this.authApi.logout(),
+          () =>
+            this.authApi.logout(),
         ),
         finalize(() => {
-          this.isLoggingOut.set(false);
+          this.isLoggingOut.set(
+            false,
+          );
         }),
       )
       .subscribe({
@@ -164,7 +236,3 @@ export class App {
       });
   }
 }
-
-
-
-

@@ -272,3 +272,156 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   PO TRACKER SHELL SAFETY AND PREMIUM CONSISTENCY
+   ============================================================ */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+body {
+  position: relative;
+}
+
+app-root {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+app-root
+  .app-main:not(.app-main--login)
+  > router-outlet
+  + * {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.app-main:not(.app-main--login)
+  .page-heading {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 1.45rem 1.55rem;
+  color: #eef2ff;
+  background:
+    radial-gradient(
+      circle at 92% 8%,
+      rgba(34, 211, 238, 0.32),
+      transparent 18rem
+    ),
+    radial-gradient(
+      circle at 10% 100%,
+      rgba(168, 85, 247, 0.24),
+      transparent 20rem
+    ),
+    linear-gradient(
+      118deg,
+      #172554 0%,
+      #3730a3 48%,
+      #0e7490 100%
+    );
+  border:
+    1px solid rgba(165, 243, 252, 0.24);
+  border-radius: 22px;
+  box-shadow:
+    0 22px 58px rgba(30, 41, 59, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.1) inset;
+}
+
+.app-main:not(.app-main--login)
+  .page-heading::after {
+  position: absolute;
+  right: -70px;
+  bottom: -110px;
+  z-index: -1;
+  width: 260px;
+  height: 260px;
+  pointer-events: none;
+  background:
+    conic-gradient(
+      from 210deg,
+      rgba(255, 255, 255, 0.04),
+      rgba(165, 243, 252, 0.2),
+      rgba(196, 181, 253, 0.18),
+      rgba(255, 255, 255, 0.04)
+    );
+  border-radius: 50%;
+  content: "";
+}
+
+.app-main:not(.app-main--login)
+  .page-heading
+  :is(h1, h2) {
+  color: #ffffff;
+  text-shadow:
+    0 3px 18px
+    rgba(15, 23, 42, 0.22);
+}
+
+.app-main:not(.app-main--login)
+  .page-heading
+  :is(
+    .eyebrow,
+    .page-heading__description,
+    p
+  ) {
+  color: #dbeafe;
+}
+
+.app-main:not(.app-main--login)
+  :is(
+    .table-wrap,
+    .table-shell,
+    .table-container,
+    .data-table-wrap
+  ) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline:
+    contain;
+}
+
+.app-main:not(.app-main--login)
+  :is(table, .data-table)
+  thead
+  th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.app-main:not(.app-main--login)
+  :is(
+    button,
+    .button,
+    a.button,
+    .primary-button,
+    .quiet-button
+  ) {
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    filter 140ms ease,
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+@media (max-width: 700px) {
+  .app-main:not(.app-main--login)
+    .page-heading {
+    padding: 1.2rem;
+    border-radius: 18px;
+  }
+}

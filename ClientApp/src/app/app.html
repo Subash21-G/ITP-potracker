@@ -1,21 +1,29 @@
 <app-toast-container />
 
-
 @if (!isAuthenticationPage()) {
   <header class="app-header">
+    <span
+      class="app-header__glow app-header__glow--left"
+      aria-hidden="true">
+    </span>
+
+    <span
+      class="app-header__glow app-header__glow--right"
+      aria-hidden="true">
+    </span>
+
     <a
       class="brand"
       routerLink="/dashboard"
       aria-label="PO Tracker dashboard"
-    >
+      (click)="closeNavigation()">
       <span
         class="brand__mark"
-        aria-hidden="true"
-      >
+        aria-hidden="true">
         PO
       </span>
 
-      <span>
+      <span class="brand__copy">
         <strong>PO Tracker</strong>
         <small>Operations workspace</small>
       </span>
@@ -27,308 +35,515 @@
       aria-label="Toggle navigation menu"
       aria-controls="primary-navigation"
       [attr.aria-expanded]="isMobileMenuOpen()"
-      (click)="toggleMobileMenu()"
-    >
+      (click)="toggleMobileMenu()">
       <span aria-hidden="true"></span>
       <span aria-hidden="true"></span>
       <span aria-hidden="true"></span>
     </button>
+
     <div
       class="header-actions"
-      [class.header-actions--open]="isMobileMenuOpen()"
-    >
+      [class.header-actions--open]="
+        isMobileMenuOpen()
+      ">
       <nav
         id="primary-navigation"
-        aria-label="Primary navigation"
-      >
+        class="primary-nav"
+        aria-label="Primary navigation">
         <a
+          class="nav-link nav-link--primary"
           routerLink="/dashboard"
-          (click)="closeMobileMenu()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{
             exact: true
           }"
-        >
+          (click)="closeNavigation()">
           Dashboard
         </a>
 
         <a
+          class="nav-link nav-link--primary"
           routerLink="/materials"
-          (click)="closeMobileMenu()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{
             exact: true
           }"
-        >
+          (click)="closeNavigation()">
           Materials
         </a>
 
         <a
+          class="nav-link nav-link--primary"
           routerLink="/purchase-orders"
-          (click)="closeMobileMenu()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{
             exact: false
           }"
-        >
+          (click)="closeNavigation()">
           Purchase Orders
         </a>
 
         <a
-          routerLink="/purchasers"
-          (click)="closeMobileMenu()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: false
-          }"
-        >
-          Purchasers
-        </a>
-        <a
+          class="nav-link nav-link--primary"
           routerLink="/stocks"
-          (click)="closeMobileMenu()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{
             exact: false
           }"
-        >
+          (click)="closeNavigation()">
           Live Stock
         </a>
+
         <a
-          routerLink="/local-stocks"
-          (click)="closeMobileMenu()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: true
-          }"
-        >
-          Local Stock
-        </a>
-        <a
-          routerLink="/drawings"
-          (click)="closeMobileMenu()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: true
-          }"
-        >
-          Drawings
-        </a>
-        <a
+          class="nav-link nav-link--primary"
           routerLink="/invoices"
-          (click)="closeMobileMenu()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{
             exact: false
           }"
-        >
+          (click)="closeNavigation()">
           Invoices
         </a>
-        <a
-          routerLink="/pending-materials"
-          (click)="closeMobileMenu()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: true
-          }"
-        >
-          Pending Materials
-        </a>
-        <a
-          routerLink="/notifications"
-          (click)="closeMobileMenu()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: true
-          }"
-        >
-          Notifications
-        </a>
-        <a
-          routerLink="/alerts"
-          (click)="closeMobileMenu()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: true
-          }"
-        >
-          Smart Alerts
-        </a>
-        <a
-          routerLink="/process-queue"
-          (click)="closeMobileMenu()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: true
-          }"
-        >
-          Process Queue
-        </a>
 
-        <a
-          routerLink="/production-calendar"
-          (click)="closeMobileMenu()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: true
-          }"
-        >
-          Calendar
-        </a>
-        <a
-          routerLink="/dispatches"
-          (click)="closeMobileMenu()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: false
-          }"
-        >
-          Dispatch
-        </a>
+        <details
+          class="nav-group"
+          routerLinkActive="nav-group--active">
+          <summary
+            (click)="prepareNavigationGroup($event)">
+            <span>Operations</span>
+            <span
+              class="nav-chevron"
+              aria-hidden="true">
+              &#8964;
+            </span>
+          </summary>
+
+          <div class="nav-dropdown">
+            <a
+              class="nav-dropdown__link"
+              routerLink="/purchasers"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon"
+                aria-hidden="true">
+                PU
+              </span>
+              <span>
+                <strong>Purchasers</strong>
+                <small>Buyer directory</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/local-stocks"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon"
+                aria-hidden="true">
+                LS
+              </span>
+              <span>
+                <strong>Local Stock</strong>
+                <small>Manual stock register</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/drawings"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon"
+                aria-hidden="true">
+                DR
+              </span>
+              <span>
+                <strong>Drawings</strong>
+                <small>Drawing control</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/pending-materials"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon"
+                aria-hidden="true">
+                PM
+              </span>
+              <span>
+                <strong>Pending Materials</strong>
+                <small>Pending work overview</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/process-queue"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon"
+                aria-hidden="true">
+                PQ
+              </span>
+              <span>
+                <strong>Process Queue</strong>
+                <small>Production priorities</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/production-calendar"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon"
+                aria-hidden="true">
+                CA
+              </span>
+              <span>
+                <strong>Calendar</strong>
+                <small>Schedule overview</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/dispatches"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon"
+                aria-hidden="true">
+                DI
+              </span>
+              <span>
+                <strong>Dispatch</strong>
+                <small>Dispatch tracking</small>
+              </span>
+            </a>
+          </div>
+        </details>
+
+        <details
+          class="nav-group nav-group--right"
+          routerLinkActive="nav-group--active">
+          <summary
+            (click)="prepareNavigationGroup($event)">
+            <span>Monitoring</span>
+            <span
+              class="nav-chevron"
+              aria-hidden="true">
+              &#8964;
+            </span>
+          </summary>
+
+          <div class="nav-dropdown">
+            <a
+              class="nav-dropdown__link"
+              routerLink="/notifications"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon"
+                aria-hidden="true">
+                NO
+              </span>
+              <span>
+                <strong>Notifications</strong>
+                <small>Updates and reminders</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/alerts"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon"
+                aria-hidden="true">
+                AL
+              </span>
+              <span>
+                <strong>Smart Alerts</strong>
+                <small>Items needing attention</small>
+              </span>
+            </a>
+
+            @if (currentUser()?.isAdmin) {
+              <div class="nav-dropdown__divider"></div>
+
+              <a
+                class="nav-dropdown__link"
+                routerLink="/reports"
+                routerLinkActive="active"
+                (click)="closeNavigation()">
+                <span
+                  class="nav-dropdown__icon"
+                  aria-hidden="true">
+                  RE
+                </span>
+                <span>
+                  <strong>Reports</strong>
+                  <small>Operational reporting</small>
+                </span>
+              </a>
+
+              <a
+                class="nav-dropdown__link"
+                routerLink="/analytics"
+                routerLinkActive="active"
+                (click)="closeNavigation()">
+                <span
+                  class="nav-dropdown__icon"
+                  aria-hidden="true">
+                  AN
+                </span>
+                <span>
+                  <strong>Analytics</strong>
+                  <small>Performance insights</small>
+                </span>
+              </a>
+
+              <a
+                class="nav-dropdown__link"
+                routerLink="/audit"
+                routerLinkActive="active"
+                (click)="closeNavigation()">
+                <span
+                  class="nav-dropdown__icon"
+                  aria-hidden="true">
+                  AU
+                </span>
+                <span>
+                  <strong>Audit Log</strong>
+                  <small>System activity</small>
+                </span>
+              </a>
+            }
+          </div>
+        </details>
+
+        @if (currentUser()?.canOperate) {
+          <details
+            class="nav-group nav-group--right"
+            routerLinkActive="nav-group--active">
+            <summary
+              (click)="prepareNavigationGroup($event)">
+              <span>Imports</span>
+              <span
+                class="nav-chevron"
+                aria-hidden="true">
+                &#8964;
+              </span>
+            </summary>
+
+            <div class="nav-dropdown">
+              <a
+                class="nav-dropdown__link"
+                routerLink="/material-import"
+                routerLinkActive="active"
+                (click)="closeNavigation()">
+                <span
+                  class="nav-dropdown__icon"
+                  aria-hidden="true">
+                  MI
+                </span>
+                <span>
+                  <strong>Import Materials</strong>
+                  <small>Excel and PDF intake</small>
+                </span>
+              </a>
+
+              <a
+                class="nav-dropdown__link"
+                routerLink="/po-import"
+                routerLinkActive="active"
+                (click)="closeNavigation()">
+                <span
+                  class="nav-dropdown__icon"
+                  aria-hidden="true">
+                  PO
+                </span>
+                <span>
+                  <strong>Import PO PDFs</strong>
+                  <small>Purchase order intake</small>
+                </span>
+              </a>
+
+              <a
+                class="nav-dropdown__link"
+                routerLink="/invoice-import"
+                routerLinkActive="active"
+                (click)="closeNavigation()">
+                <span
+                  class="nav-dropdown__icon"
+                  aria-hidden="true">
+                  IN
+                </span>
+                <span>
+                  <strong>Import Invoices</strong>
+                  <small>Invoice processing</small>
+                </span>
+              </a>
+
+              <a
+                class="nav-dropdown__link"
+                routerLink="/invoice-import/history"
+                routerLinkActive="active"
+                (click)="closeNavigation()">
+                <span
+                  class="nav-dropdown__icon"
+                  aria-hidden="true">
+                  IH
+                </span>
+                <span>
+                  <strong>Import History</strong>
+                  <small>Previous import batches</small>
+                </span>
+              </a>
+
+              <a
+                class="nav-dropdown__link"
+                routerLink="/invoices/pending"
+                routerLinkActive="active"
+                (click)="closeNavigation()">
+                <span
+                  class="nav-dropdown__icon"
+                  aria-hidden="true">
+                  PI
+                </span>
+                <span>
+                  <strong>Pending Invoices</strong>
+                  <small>Unmatched invoice rows</small>
+                </span>
+              </a>
+            </div>
+          </details>
+        }
 
         @if (currentUser()?.isAdmin) {
-          <a
-            routerLink="/reports"
-            (click)="closeMobileMenu()"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{
-              exact: true
-            }"
-          >
-            Reports
-          </a>
-          <a
-            routerLink="/analytics"
-            (click)="closeMobileMenu()"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{
-              exact: true
-            }"
-          >
-            Analytics
-          </a>
+          <details
+            class="nav-group nav-group--right"
+            routerLinkActive="nav-group--active">
+            <summary
+              (click)="prepareNavigationGroup($event)">
+              <span>Admin</span>
+              <span
+                class="nav-chevron"
+                aria-hidden="true">
+                &#8964;
+              </span>
+            </summary>
 
-          <a
-            routerLink="/audit"
-            (click)="closeMobileMenu()"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{
-              exact: true
-            }"
-          >
-            Audit Log
-          </a>
-          <a
-            routerLink="/admin/users"
-            (click)="closeMobileMenu()"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{
-              exact: true
-            }"
-          >
-            Users
-          </a>
+            <div class="nav-dropdown">
+              <a
+                class="nav-dropdown__link"
+                routerLink="/admin/users"
+                routerLinkActive="active"
+                (click)="closeNavigation()">
+                <span
+                  class="nav-dropdown__icon"
+                  aria-hidden="true">
+                  US
+                </span>
+                <span>
+                  <strong>Users</strong>
+                  <small>Accounts and roles</small>
+                </span>
+              </a>
 
-          <a
-            routerLink="/admin/settings"
-            (click)="closeMobileMenu()"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{
-              exact: true
-            }"
-          >
-            Settings
-          </a>
-        }
-        @if (currentUser()?.canOperate) {
-          <a
-            routerLink="/material-import"
-            (click)="closeMobileMenu()"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{
-              exact: true
-            }"
-          >
-            Import Materials
-          </a>
-          <a
-            routerLink="/po-import"
-            (click)="closeMobileMenu()"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{
-              exact: true
-            }"
-          >
-            Import PO PDFs
-          </a>
-          <a
-            routerLink="/invoice-import"
-            (click)="closeMobileMenu()"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{
-              exact: true
-            }"
-          >
-            Import Invoices
-          </a>
-          <a
-            routerLink="/invoice-import/history"
-            (click)="closeMobileMenu()"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{
-              exact: true
-            }"
-          >
-            Import History
-          </a>
-          <a
-            routerLink="/invoices/pending"
-            (click)="closeMobileMenu()"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{
-              exact: true
-            }"
-          >
-            Pending Invoices
-          </a>
+              <a
+                class="nav-dropdown__link"
+                routerLink="/admin/settings"
+                routerLinkActive="active"
+                (click)="closeNavigation()">
+                <span
+                  class="nav-dropdown__icon"
+                  aria-hidden="true">
+                  SE
+                </span>
+                <span>
+                  <strong>Settings</strong>
+                  <small>System configuration</small>
+                </span>
+              </a>
+            </div>
+          </details>
         }
       </nav>
 
       @if (currentUser()?.isAuthenticated) {
-        <div class="user-area">
-          <div
-            class="user-avatar"
-            aria-hidden="true"
-          >
-            {{ userInitials() }}
-          </div>
+        <details class="user-menu">
+          <summary
+            aria-label="Open account menu"
+            (click)="prepareNavigationGroup($event)">
+            <span
+              class="user-avatar"
+              aria-hidden="true">
+              {{ userInitials() }}
+            </span>
 
-          <div class="user-details">
-            <strong>
+            <span class="user-details">
+              <strong>
+                {{
+                  currentUser()?.fullName ||
+                    currentUser()?.userName
+                }}
+              </strong>
+              <small>{{ currentUser()?.role }}</small>
+            </span>
+
+            <span
+              class="nav-chevron"
+              aria-hidden="true">
+              &#8964;
+            </span>
+          </summary>
+
+          <div class="user-menu__dropdown">
+            <div class="user-menu__identity">
+              <span
+                class="user-avatar user-avatar--large"
+                aria-hidden="true">
+                {{ userInitials() }}
+              </span>
+
+              <span>
+                <strong>
+                  {{
+                    currentUser()?.fullName ||
+                      currentUser()?.userName
+                  }}
+                </strong>
+                <small>
+                  {{ currentUser()?.role }} access
+                </small>
+              </span>
+            </div>
+
+            <button
+              class="logout-button"
+              type="button"
+              (click)="logout()"
+              [disabled]="isLoggingOut()">
               {{
-                currentUser()?.fullName ||
-                  currentUser()?.userName
+                isLoggingOut()
+                  ? 'Signing out...'
+                  : 'Sign out'
               }}
-            </strong>
-
-            <small>
-              {{ currentUser()?.role }}
-            </small>
+            </button>
           </div>
-
-          <button
-            class="logout-button"
-            type="button"
-            (click)="logout()"
-            [disabled]="isLoggingOut()"
-          >
-            {{
-              isLoggingOut()
-                ? 'Signing out...'
-                : 'Logout'
-            }}
-          </button>
-        </div>
+        </details>
       }
     </div>
   </header>
@@ -336,19 +551,13 @@
 
 <main
   class="app-main"
-  [class.app-main--login]="isAuthenticationPage()"
->
+  [class.app-main--login]="isAuthenticationPage()">
   <router-outlet />
 </main>
 
 @if (!isAuthenticationPage()) {
   <footer class="app-footer">
-    Angular workspace · ASP.NET Core API
+    <span>PO Tracker</span>
+    <span>Angular workspace · ASP.NET Core API</span>
   </footer>
 }
-
-
-
-
-
-
