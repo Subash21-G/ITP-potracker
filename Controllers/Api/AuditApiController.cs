@@ -15,6 +15,8 @@ namespace POTracker.Controllers.Api
     public sealed class AuditApiController :
         ControllerBase
     {
+        private const int DefaultPageSize = 25;
+
         private readonly ApplicationDbContext _context;
 
         public AuditApiController(
@@ -25,25 +27,142 @@ namespace POTracker.Controllers.Api
 
         [HttpGet]
         [ProducesResponseType(
-            typeof(AuditResponseDto),
+            typeof(AuditPagedResponseDto),
             StatusCodes.Status200OK)]
-        public async Task<ActionResult<AuditResponseDto>>
+        public async Task<
+            ActionResult<AuditPagedResponseDto>>
             Index(
-                int limit = 25,
+                string? search,
+                string? owner,
+                string? processStatus,
+                string? dispatchStatus,
+                DateTime? dateFrom,
+                DateTime? dateTo,
+                int page = 1,
+                int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
         {
-            limit =
-                Math.Clamp(
-                    limit,
+            page =
+                Math.Max(
+                    page,
+                    1);
+
+            pageSize =
+                NormalizePageSize(
+                    pageSize);
+
+            var query =
+                _context.Materials
+                    .AsNoTracking();
+
+            var normalizedSearch =
+                Clean(
+                    search);
+
+            var normalizedOwner =
+                Clean(
+                    owner);
+
+            var normalizedProcessStatus =
+                Clean(
+                    processStatus);
+
+            var normalizedDispatchStatus =
+                Clean(
+                    dispatchStatus);
+
+            if (normalizedSearch != null)
+            {
+                query =
+                    query.Where(material =>
+                        (
+                            material.MaterialNo != null &&
+                            material.MaterialNo.Contains(
+                                normalizedSearch)
+                        ) ||
+                        (
+                            material.PurchaseOrder != null &&
+                            material.PurchaseOrder.PONumber.Contains(
+                                normalizedSearch)
+                        ));
+            }
+
+            if (normalizedOwner != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.AssignedDashboard != null &&
+                        material.AssignedDashboard.Contains(
+                            normalizedOwner));
+            }
+
+            if (normalizedProcessStatus != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.ProcessStatus ==
+                        normalizedProcessStatus);
+            }
+
+            if (normalizedDispatchStatus != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.DispatchStatus ==
+                        normalizedDispatchStatus);
+            }
+
+            if (dateFrom.HasValue)
+            {
+                var startDate =
+                    dateFrom.Value.Date;
+
+                query =
+                    query.Where(material =>
+                        material.CreatedDate >=
+                        startDate);
+            }
+
+            if (dateTo.HasValue)
+            {
+                var endDateExclusive =
+                    dateTo.Value.Date.AddDays(
+                        1);
+
+                query =
+                    query.Where(material =>
+                        material.CreatedDate <
+                        endDateExclusive);
+            }
+
+            var totalCount =
+                await query.CountAsync(
+                    cancellationToken);
+
+            var totalPages =
+                Math.Max(
                     1,
-                    100);
+                    (int)Math.Ceiling(
+                        totalCount /
+                        (double)pageSize));
+
+            if (page > totalPages)
+            {
+                page =
+                    totalPages;
+            }
 
             var items =
-                await _context.Materials
-                    .AsNoTracking()
+                await query
                     .OrderByDescending(material =>
+                        material.CreatedDate)
+                    .ThenByDescending(material =>
                         material.Id)
-                    .Take(limit)
+                    .Skip(
+                        (page - 1) *
+                        pageSize)
+                    .Take(
+                        pageSize)
                     .Select(material =>
                         new AuditItemDto
                         {
@@ -81,12 +200,47 @@ namespace POTracker.Controllers.Api
                         cancellationToken);
 
             return Ok(
-                new AuditResponseDto
+                new AuditPagedResponseDto
                 {
-                    Items = items,
-                    RecordCount = items.Count,
-                    GeneratedAt = DateTime.Now
+                    Items =
+                        items,
+
+                    Page =
+                        page,
+
+                    PageSize =
+                        pageSize,
+
+                    TotalCount =
+                        totalCount,
+
+                    TotalPages =
+                        totalPages,
+
+                    GeneratedAt =
+                        DateTime.Now
                 });
+        }
+
+        private static int NormalizePageSize(
+            int pageSize)
+        {
+            return pageSize is
+                25 or 50 or 100
+                    ? pageSize
+                    : DefaultPageSize;
+        }
+
+        private static string? Clean(
+            string? value)
+        {
+            var cleaned =
+                value?.Trim();
+
+            return string.IsNullOrWhiteSpace(
+                cleaned)
+                    ? null
+                    : cleaned;
         }
     }
 }

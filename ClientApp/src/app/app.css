@@ -42,32 +42,6 @@
   backdrop-filter: blur(18px);
 }
 
-.app-header__glow {
-  position: absolute;
-  z-index: -1;
-  pointer-events: none;
-  border-radius: 999px;
-  filter: blur(2px);
-}
-
-.app-header__glow--left {
-  top: -78px;
-  left: 2%;
-  width: 260px;
-  height: 170px;
-  background:
-    rgba(20, 184, 166, 0.22);
-}
-
-.app-header__glow--right {
-  top: -90px;
-  right: 4%;
-  width: 330px;
-  height: 190px;
-  background:
-    rgba(168, 85, 247, 0.22);
-}
-
 .brand {
   display: inline-flex;
   align-items: center;
@@ -557,30 +531,6 @@
   margin: 0;
   padding: 0;
   animation: none;
-}
-
-.app-footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 17px 24px;
-  gap: 7px;
-  color: #64748b;
-  font-size: 0.73rem;
-  text-align: center;
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(99, 102, 241, 0.07),
-      rgba(20, 184, 166, 0.07),
-      transparent
-    );
-}
-
-.app-footer span:first-child {
-  color: #4338ca;
-  font-weight: 900;
 }
 
 .mobile-menu-button {
