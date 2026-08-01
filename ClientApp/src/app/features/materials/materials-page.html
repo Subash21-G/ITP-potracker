@@ -183,22 +183,6 @@
     </label>
 
     <label class="field">
-      <span>Invoice status</span>
-      <select formControlName="invoiceStatus">
-        <option value="">All invoice statuses</option>
-        <option value="Not Invoiced">
-          Not Invoiced
-        </option>
-        <option value="Partially Invoiced">
-          Partially Invoiced
-        </option>
-        <option value="Fully Invoiced">
-          Fully Invoiced
-        </option>
-      </select>
-    </label>
-
-    <label class="field">
       <span>Dispatch status</span>
       <select formControlName="dispatchStatus">
         <option value="">All dispatch statuses</option>
@@ -350,7 +334,6 @@
           <th class="number-cell">Ordered</th>
           <th class="number-cell">Unit Price</th>
           <th class="number-cell">Material Value</th>
-          <th class="number-cell">Invoiced</th>
           <th class="number-cell">Dispatched</th>
           <th class="number-cell">Pending</th>
           <th class="number-cell">Allocated / Live</th>
@@ -451,10 +434,6 @@
             </td>
 
             <td class="number-cell">
-              {{ material.invoiceQuantity | number: '1.0-2' }}
-            </td>
-
-            <td class="number-cell">
               {{ material.dispatchQuantity | number: '1.0-2' }}
             </td>
 
@@ -542,7 +521,7 @@
           </tr>
         } @empty {
           <tr>
-            <td class="empty-state" colspan="18">
+            <td class="empty-state" colspan="17">
               @if (loading()) {
                 Loading materials…
               } @else {

@@ -1662,17 +1662,17 @@ namespace POTracker.Controllers.Api
             worksheet.Cell("A1").Value =
                 "PO TRACKER - MATERIAL LIST";
 
-            worksheet.Range("A1:V1").Merge();
+            worksheet.Range("A1:T1").Merge();
 
             worksheet.Cell("A2").Value =
                 $"Generated: {DateTime.Now:dd-MM-yyyy hh:mm tt}";
 
-            worksheet.Range("A2:V2").Merge();
+            worksheet.Range("A2:T2").Merge();
 
             worksheet.Cell("A3").Value =
                 $"Total materials: {items.Count}";
 
-            worksheet.Range("A3:V3").Merge();
+            worksheet.Range("A3:T3").Merge();
 
             var headers = new[]
             {
@@ -1688,11 +1688,9 @@ namespace POTracker.Controllers.Api
                 "PO Qty",
                 "Unit Price",
                 "Price Unit",
-                "Invoice Qty",
-                "Balance Qty",
+                "Material Value",
                 "Dispatch Qty",
                 "Pending Dispatch Qty",
-                "Invoice Status",
                 "Dispatch Status",
                 "Live Stock",
                 "Shortage",
@@ -1769,36 +1767,27 @@ namespace POTracker.Controllers.Api
                     item.PriceUnit;
 
                 worksheet.Cell(row, 13).Value =
-                    item.InvoiceQuantity;
+                    item.TotalValue;
 
                 worksheet.Cell(row, 14).Value =
-                    Math.Max(
-                        0,
-                        item.Quantity -
-                        item.InvoiceQuantity);
-
-                worksheet.Cell(row, 15).Value =
                     item.DispatchQuantity;
 
-                worksheet.Cell(row, 16).Value =
+                worksheet.Cell(row, 15).Value =
                     item.PendingQuantity;
 
-                worksheet.Cell(row, 17).Value =
-                    item.InvoiceStatus;
-
-                worksheet.Cell(row, 18).Value =
+                worksheet.Cell(row, 16).Value =
                     item.DispatchStatus;
 
-                worksheet.Cell(row, 19).Value =
+                worksheet.Cell(row, 17).Value =
                     item.LiveStockQuantity;
 
-                worksheet.Cell(row, 20).Value =
+                worksheet.Cell(row, 18).Value =
                     item.StockShortageQuantity;
 
-                worksheet.Cell(row, 21).Value =
+                worksheet.Cell(row, 19).Value =
                     item.StockStatus;
 
-                worksheet.Cell(row, 22).Value =
+                worksheet.Cell(row, 20).Value =
                     item.DrawingNo;
 
                 StyleMaterialExcelStatus(
@@ -1808,10 +1797,10 @@ namespace POTracker.Controllers.Api
             }
 
             var title =
-                worksheet.Range("A1:V1");
+                worksheet.Range("A1:T1");
 
             title.Style.Fill.BackgroundColor =
-                XLColor.FromHtml("#4C2FD4");
+                XLColor.FromHtml("#31587A");
 
             title.Style.Font.FontColor =
                 XLColor.White;
@@ -1822,18 +1811,18 @@ namespace POTracker.Controllers.Api
             title.Style.Alignment.Horizontal =
                 XLAlignmentHorizontalValues.Center;
 
-            worksheet.Range("A2:V3")
+            worksheet.Range("A2:T3")
                 .Style.Alignment.Horizontal =
                 XLAlignmentHorizontalValues.Center;
 
             var header =
-                worksheet.Range("A5:V5");
+                worksheet.Range("A5:T5");
 
             header.Style.Fill.BackgroundColor =
-                XLColor.FromHtml("#EDE9FE");
+                XLColor.FromHtml("#E8F0FA");
 
             header.Style.Font.FontColor =
-                XLColor.FromHtml("#2D1B69");
+                XLColor.FromHtml("#263E66");
 
             header.Style.Font.Bold = true;
 
@@ -1854,7 +1843,23 @@ namespace POTracker.Controllers.Api
                         6,
                         10,
                         5 + items.Count,
-                        20)
+                        11)
+                    .Style.NumberFormat.Format =
+                    "0.00";
+
+                worksheet.Range(
+                        6,
+                        13,
+                        5 + items.Count,
+                        15)
+                    .Style.NumberFormat.Format =
+                    "0.00";
+
+                worksheet.Range(
+                        6,
+                        17,
+                        5 + items.Count,
+                        18)
                     .Style.NumberFormat.Format =
                     "0.00";
 
@@ -1862,7 +1867,7 @@ namespace POTracker.Controllers.Api
                         6,
                         1,
                         5 + items.Count,
-                        22)
+                        20)
                     .Style.Border.BottomBorder =
                     XLBorderStyleValues.Hair;
             }
@@ -1875,10 +1880,10 @@ namespace POTracker.Controllers.Api
                     Math.Max(
                         5,
                         5 + items.Count),
-                    22)
+                    20)
                 .SetAutoFilter();
 
-            worksheet.Columns(1, 22)
+            worksheet.Columns(1, 20)
                 .AdjustToContents();
 
             worksheet.Column(3).Width = 22;
@@ -1887,10 +1892,11 @@ namespace POTracker.Controllers.Api
             worksheet.Column(9)
                 .Style.Alignment.WrapText = true;
 
-            worksheet.Column(17).Width = 20;
-            worksheet.Column(18).Width = 18;
-            worksheet.Column(21).Width = 18;
-            worksheet.Column(22).Width = 24;
+            worksheet.Column(12).Width = 14;
+            worksheet.Column(13).Width = 18;
+            worksheet.Column(16).Width = 18;
+            worksheet.Column(19).Width = 18;
+            worksheet.Column(20).Width = 24;
         }
 
         private static void StyleMaterialExcelStatus(
@@ -1901,7 +1907,7 @@ namespace POTracker.Controllers.Api
             var cell =
                 worksheet.Cell(
                     row,
-                    21);
+                    19);
 
             if (
                 string.Equals(
