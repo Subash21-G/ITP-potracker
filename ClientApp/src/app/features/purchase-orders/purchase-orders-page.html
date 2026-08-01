@@ -44,56 +44,103 @@
   </div>
 </section>
 
-<section class="summary-grid" aria-label="Purchase Order summary">
-  <article class="summary-card summary-card--violet">
-    <span>Total Purchase Orders</span>
-    <strong>{{ summary().totalPurchaseOrders | number }}</strong>
-    <small>Orders in the current result</small>
+<section
+  class="summary-grid po-summary-grid"
+  aria-label="Purchase Order summary">
+  <article class="summary-card po-summary-card po-summary-card--violet">
+    <span class="po-summary-card__icon">PO</span>
+    <div>
+      <small>Total Purchase Orders</small>
+      <strong>{{ summary().totalPurchaseOrders | number }}</strong>
+      <span>Orders in the filtered result</span>
+    </div>
   </article>
 
-  <article class="summary-card summary-card--amber">
-    <span>Open Orders</span>
-    <strong>{{ summary().openPurchaseOrders | number }}</strong>
-    <small>Open and in-progress orders</small>
+  <article class="summary-card po-summary-card po-summary-card--amber">
+    <span class="po-summary-card__icon">OP</span>
+    <div>
+      <small>Open Orders</small>
+      <strong>{{ summary().openPurchaseOrders | number }}</strong>
+      <span>Open and in-progress orders</span>
+    </div>
   </article>
 
-  <article class="summary-card summary-card--green">
-    <span>Completed Orders</span>
-    <strong>{{ summary().completedPurchaseOrders | number }}</strong>
-    <small>All linked materials completed</small>
+  <article class="summary-card po-summary-card po-summary-card--green">
+    <span class="po-summary-card__icon">CP</span>
+    <div>
+      <small>Completed Orders</small>
+      <strong>{{ summary().completedPurchaseOrders | number }}</strong>
+      <span>All linked materials completed</span>
+    </div>
   </article>
 
-  <article class="summary-card summary-card--blue">
-    <span>Pending Materials</span>
-    <strong>{{ summary().purchaseOrdersWithPendingMaterials | number }}</strong>
-    <small>Orders with pending materials</small>
+  <article class="summary-card po-summary-card po-summary-card--blue">
+    <span class="po-summary-card__icon">PM</span>
+    <div>
+      <small>Pending Materials</small>
+      <strong>{{ summary().purchaseOrdersWithPendingMaterials | number }}</strong>
+      <span>Orders with pending materials</span>
+    </div>
   </article>
 
-  <article class="summary-card summary-card--red">
-    <span>Overdue Materials</span>
-    <strong>{{ summary().purchaseOrdersWithOverdueMaterials | number }}</strong>
-    <small>Orders requiring attention</small>
+  <article class="summary-card po-summary-card po-summary-card--red">
+    <span class="po-summary-card__icon">OD</span>
+    <div>
+      <small>Overdue Materials</small>
+      <strong>{{ summary().purchaseOrdersWithOverdueMaterials | number }}</strong>
+      <span>Orders requiring attention</span>
+    </div>
   </article>
 
-  <article class="summary-card summary-card--slate">
-    <span>Without Handler</span>
-    <strong>{{ summary().purchaseOrdersWithoutHandler | number }}</strong>
-    <small>Orders not assigned to a handler</small>
+  <article class="summary-card po-summary-card po-summary-card--slate">
+    <span class="po-summary-card__icon">UH</span>
+    <div>
+      <small>Without Handler</small>
+      <strong>{{ summary().purchaseOrdersWithoutHandler | number }}</strong>
+      <span>Orders not assigned to a handler</span>
+    </div>
   </article>
 </section>
 
-<section class="quantity-grid" aria-label="Quantity summary">
-  <article>
-    <span>Total PO quantity</span>
-    <strong>{{ summary().totalPOQuantity | number: '1.0-2' }}</strong>
+<section
+  class="quantity-grid po-quantity-grid"
+  aria-label="Purchase Order quantity and value summary">
+  <article class="po-quantity-card po-quantity-card--blue">
+    <span class="po-quantity-card__icon">QT</span>
+    <div>
+      <small>Total PO Quantity</small>
+      <strong>{{ summary().totalPOQuantity | number: '1.0-2' }}</strong>
+      <span>Ordered quantity across filtered POs</span>
+    </div>
   </article>
-  <article>
-    <span>Invoice balance</span>
-    <strong>{{ summary().totalInvoiceBalanceQuantity | number: '1.0-2' }}</strong>
+
+  <article class="po-quantity-card po-quantity-card--violet">
+    <span class="po-quantity-card__icon">₹</span>
+    <div>
+      <small>Total Material Value</small>
+      <strong>
+        ₹{{ (summary().totalMaterialValue ?? 0) | number: '1.2-2' }}
+      </strong>
+      <span>Basic value of filtered PO materials</span>
+    </div>
   </article>
-  <article>
-    <span>Dispatch balance</span>
-    <strong>{{ summary().totalPendingDispatchQuantity | number: '1.0-2' }}</strong>
+
+  <article class="po-quantity-card po-quantity-card--amber">
+    <span class="po-quantity-card__icon">IB</span>
+    <div>
+      <small>Invoice Balance</small>
+      <strong>{{ summary().totalInvoiceBalanceQuantity | number: '1.0-2' }}</strong>
+      <span>Quantity waiting for invoicing</span>
+    </div>
+  </article>
+
+  <article class="po-quantity-card po-quantity-card--red">
+    <span class="po-quantity-card__icon">DB</span>
+    <div>
+      <small>Dispatch Balance</small>
+      <strong>{{ summary().totalPendingDispatchQuantity | number: '1.0-2' }}</strong>
+      <span>Quantity waiting for dispatch</span>
+    </div>
   </article>
 </section>
 
@@ -218,7 +265,6 @@
     <label class="page-size">
       <span>Rows</span>
       <select [value]="pageSize()" [disabled]="loading()" (change)="changePageSize($event)">
-        <option value="10">10</option>
         <option value="25">25</option>
         <option value="50">50</option>
         <option value="100">100</option>
@@ -250,6 +296,7 @@
           <th>Material progress</th>
           <th>Materials</th>
           <th class="number-cell">PO quantity</th>
+          <th class="number-cell">PO value</th>
           <th class="number-cell">Invoice balance</th>
           <th class="number-cell">Dispatch balance</th>
           <th>Delivery range</th>
@@ -353,6 +400,11 @@
             <td class="number-cell number-cell--strong">
               {{ purchaseOrder.totalPOQuantity | number: '1.0-2' }}
             </td>
+            <td class="number-cell number-cell--value">
+              <strong>
+                ₹{{ (purchaseOrder.totalMaterialValue ?? 0) | number: '1.2-2' }}
+              </strong>
+            </td>
             <td class="number-cell">
               <strong class="quantity--warning">
                 {{ purchaseOrder.totalInvoiceBalanceQuantity | number: '1.0-2' }}
@@ -429,7 +481,7 @@
           </tr>
         } @empty {
           <tr>
-            <td class="empty-state" colspan="13">
+            <td class="empty-state" colspan="14">
               @if (loading()) {
                 Loading Purchase Orders…
               } @else {
@@ -442,28 +494,66 @@
     </table>
   </div>
 
-  <div class="pagination" aria-label="Purchase Order result pages">
-    <span>Page {{ page() | number }} of {{ totalPages() | number }}</span>
-    <div>
-      <button
-        class="button button--quiet"
-        type="button"
-        [disabled]="!hasPreviousPage() || loading()"
-        (click)="previousPage()"
-      >
-        Previous
-      </button>
-      <button
-        class="button button--quiet"
-        type="button"
-        [disabled]="!hasNextPage() || loading()"
-        (click)="nextPage()"
-      >
-        Next
-      </button>
-    </div>
-  </div>
+  @if (totalRecords() > 0) {
+    <footer
+      class="premium-pagination"
+      aria-label="Purchase Order result pages">
+      <div class="premium-pagination__range">
+        <strong>
+          {{ showingFrom() | number }}–{{ showingTo() | number }}
+        </strong>
+        <span>
+          of {{ totalRecords() | number }} Purchase Orders
+        </span>
+      </div>
+
+      <nav aria-label="Purchase Order pagination">
+        <button
+          type="button"
+          [disabled]="!hasPreviousPage() || loading()"
+          (click)="goToPage(1)">
+          First
+        </button>
+
+        <button
+          type="button"
+          [disabled]="!hasPreviousPage() || loading()"
+          (click)="previousPage()">
+          Previous
+        </button>
+
+        @for (
+          pageNumber of visiblePages();
+          track pageNumber
+        ) {
+          <button
+            type="button"
+            [class.active]="pageNumber === page()"
+            [attr.aria-current]="
+              pageNumber === page()
+                ? 'page'
+                : null
+            "
+            [disabled]="loading()"
+            (click)="goToPage(pageNumber)">
+            {{ pageNumber }}
+          </button>
+        }
+
+        <button
+          type="button"
+          [disabled]="!hasNextPage() || loading()"
+          (click)="nextPage()">
+          Next
+        </button>
+
+        <button
+          type="button"
+          [disabled]="!hasNextPage() || loading()"
+          (click)="goToPage(totalPages())">
+          Last
+        </button>
+      </nav>
+    </footer>
+  }
 </section>
-
-
-

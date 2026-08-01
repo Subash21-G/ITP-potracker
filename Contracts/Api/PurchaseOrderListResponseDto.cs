@@ -61,6 +61,8 @@ namespace POTracker.Contracts.Api
 
         public decimal TotalPOQuantity { get; init; }
 
+        public decimal TotalMaterialValue { get; init; }
+
         public decimal TotalInvoiceQuantity { get; init; }
 
         public decimal TotalInvoiceBalanceQuantity { get; init; }
@@ -91,6 +93,8 @@ namespace POTracker.Contracts.Api
         public int PurchaseOrdersWithoutHandler { get; init; }
 
         public decimal TotalPOQuantity { get; init; }
+
+        public decimal TotalMaterialValue { get; init; }
 
         public decimal TotalInvoiceBalanceQuantity { get; init; }
 

@@ -58,6 +58,7 @@ export class MaterialsPage {
   readonly page = signal(1);
   readonly pageSize = signal(25);
   readonly totalRecords = signal(0);
+  readonly totalMaterialValue = signal(0);
   readonly totalPages = signal(1);
   readonly loading = signal(false);
   readonly errorMessage = signal('');
@@ -78,6 +79,48 @@ export class MaterialsPage {
         this.page() <
         this.totalPages(),
     );
+
+  readonly visiblePages =
+    computed(() => {
+      const current =
+        this.page();
+
+      const total =
+        this.totalPages();
+
+      const first =
+        Math.max(
+          1,
+          current - 2,
+        );
+
+      const last =
+        Math.min(
+          total,
+          first + 4,
+        );
+
+      const adjustedFirst =
+        Math.max(
+          1,
+          last - 4,
+        );
+
+      return Array.from(
+        {
+          length:
+            last -
+            adjustedFirst +
+            1,
+        },
+        (
+          _,
+          index,
+        ) =>
+          adjustedFirst +
+          index,
+      );
+    });
 
   readonly selectedCount =
     computed(
@@ -143,7 +186,7 @@ export class MaterialsPage {
   changePageSize(event: Event): void {
     const value = Number((event.target as HTMLSelectElement).value);
 
-    if (![10, 25, 50, 100].includes(value)) {
+    if (![25, 50, 100].includes(value)) {
       return;
     }
 
@@ -153,32 +196,55 @@ export class MaterialsPage {
     this.loadMaterials();
   }
 
-  previousPage(): void {
-    if (!this.hasPreviousPage() || this.loading()) {
+  goToPage(
+    page: number,
+  ): void {
+    if (this.loading()) {
       return;
     }
 
-    this.page.update(
-      (currentPage) =>
-        currentPage - 1,
+    const normalizedPage =
+      Math.min(
+        Math.max(
+          page,
+          1,
+        ),
+        this.totalPages(),
+      );
+
+    if (
+      normalizedPage ===
+      this.page()
+    ) {
+      return;
+    }
+
+    this.page.set(
+      normalizedPage,
     );
 
     this.clearSelection();
     this.loadMaterials();
   }
 
-  nextPage(): void {
-    if (!this.hasNextPage() || this.loading()) {
+  previousPage(): void {
+    if (!this.hasPreviousPage()) {
       return;
     }
 
-    this.page.update(
-      (currentPage) =>
-        currentPage + 1,
+    this.goToPage(
+      this.page() - 1,
     );
+  }
 
-    this.clearSelection();
-    this.loadMaterials();
+  nextPage(): void {
+    if (!this.hasNextPage()) {
+      return;
+    }
+
+    this.goToPage(
+      this.page() + 1,
+    );
   }
 
   toggleMaterial(
@@ -556,6 +622,9 @@ export class MaterialsPage {
           this.page.set(response.page);
           this.pageSize.set(response.pageSize);
           this.totalRecords.set(response.totalRecords);
+          this.totalMaterialValue.set(
+            response.totalValue ?? 0,
+          );
           this.totalPages.set(
             response.totalPages,
           );
@@ -584,6 +653,7 @@ export class MaterialsPage {
         error: (error: HttpErrorResponse) => {
           this.items.set([]);
           this.totalRecords.set(0);
+          this.totalMaterialValue.set(0);
           this.totalPages.set(1);
           this.clearSelection();
           this.errorStatus.set(error.status);
@@ -641,6 +711,3 @@ export class MaterialsPage {
       : 'Materials could not be loaded. Please try again.';
   }
 }
-
-
-

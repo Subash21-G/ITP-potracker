@@ -1,39 +1,64 @@
-﻿import {
+import {
   DatePipe,
+  DecimalPipe,
+  Location,
 } from '@angular/common';
+
 import {
   HttpErrorResponse,
 } from '@angular/common/http';
+
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   signal,
 } from '@angular/core';
+
 import {
   takeUntilDestroyed,
 } from '@angular/core/rxjs-interop';
+
 import {
-  FormsModule,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
 } from '@angular/forms';
+
 import {
+  ActivatedRoute,
+  Router,
   RouterLink,
 } from '@angular/router';
+
 import {
+  EMPTY,
+  Subject,
+  catchError,
+  debounceTime,
+  defer,
+  distinctUntilChanged,
   finalize,
+  switchMap,
+  tap,
 } from 'rxjs';
 
 import {
   NotificationItem,
-  NotificationsResponse,
+  NotificationsPagedResponse,
+  NotificationsQuery,
 } from '../../core/models/notification-api.model';
+
 import {
   AuthApiService,
 } from '../../core/services/auth-api.service';
+
 import {
   NotificationApiService,
 } from '../../core/services/notification-api.service';
+
 import {
   ToastService,
 } from '../../core/services/toast.service';
@@ -43,21 +68,30 @@ type NotificationStatusFilter =
   | 'unread'
   | 'read';
 
-const EMPTY_RESPONSE: NotificationsResponse = {
-  summary: {
-    totalAlerts: 0,
-    unreadCount: 0,
-    mobileQueue: 0,
-    dueToday: 0,
-  },
-  items: [],
-};
+const EMPTY_RESPONSE:
+  NotificationsPagedResponse = {
+    generatedAt: '',
+    summary: {
+      totalAlerts: 0,
+      unreadCount: 0,
+      mobileQueue: 0,
+      dueToday: 0,
+    },
+    items: [],
+    page: 1,
+    pageSize: 25,
+    totalCount: 0,
+    totalPages: 1,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  };
 
 @Component({
   selector: 'app-notifications-page',
   imports: [
     DatePipe,
-    FormsModule,
+    DecimalPipe,
+    ReactiveFormsModule,
     RouterLink,
   ],
   templateUrl:
@@ -80,9 +114,71 @@ export class NotificationsPage {
   private readonly destroyRef =
     inject(DestroyRef);
 
+  private readonly route =
+    inject(ActivatedRoute);
+
+  private readonly router =
+    inject(Router);
+
+  private readonly location =
+    inject(Location);
+
+  private readonly requestNotifications =
+    new Subject<void>();
+
+  private readonly initialParams =
+    this.route.snapshot
+      .queryParamMap;
+
+  readonly filters =
+    new FormGroup({
+      search:
+        new FormControl(
+          this.initialParams.get(
+            'search',
+          ) ?? '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      status:
+        new FormControl<
+          NotificationStatusFilter
+        >(
+          this.parseStatus(
+            this.initialParams.get(
+              'status',
+            ),
+          ),
+          {
+            nonNullable: true,
+          },
+        ),
+    });
+
   readonly data =
-    signal<NotificationsResponse>(
+    signal<NotificationsPagedResponse>(
       EMPTY_RESPONSE,
+    );
+
+  readonly page =
+    signal(
+      this.parsePositiveInteger(
+        this.initialParams.get(
+          'page',
+        ),
+        1,
+      ),
+    );
+
+  readonly pageSize =
+    signal(
+      this.parsePageSize(
+        this.initialParams.get(
+          'pageSize',
+        ),
+      ),
     );
 
   readonly loading =
@@ -99,89 +195,226 @@ export class NotificationsPage {
   readonly canOperate =
     this.authApi.canOperate;
 
-  searchText = '';
+  readonly startRecord =
+    computed(() =>
+      this.data().totalCount === 0
+        ? 0
+        : (
+            this.data().page - 1
+          ) *
+            this.data().pageSize +
+          1,
+    );
 
-  statusFilter:
-    NotificationStatusFilter =
-      'all';
+  readonly endRecord =
+    computed(() =>
+      Math.min(
+        this.data().page *
+          this.data().pageSize,
+        this.data().totalCount,
+      ),
+    );
 
-  filteredItems():
-    NotificationItem[] {
-    const search =
-      this.searchText
-        .trim()
-        .toLowerCase();
+  readonly visiblePages =
+    computed(() => {
+      const current =
+        this.data().page;
 
-    const status =
-      this.statusFilter;
+      const total =
+        this.data().totalPages;
 
-    return this.data()
-      .items
-      .filter(item => {
-        if (
-          status === 'unread' &&
-          item.isRead
-        ) {
-          return false;
-        }
-
-        if (
-          status === 'read' &&
-          !item.isRead
-        ) {
-          return false;
-        }
-
-        if (!search) {
-          return true;
-        }
-
-        return (
-          item.materialNo
-            .toLowerCase()
-            .includes(search) ||
-
-          item.alertType
-            .toLowerCase()
-            .includes(search) ||
-
-          item.message
-            .toLowerCase()
-            .includes(search)
+      const first =
+        Math.max(
+          1,
+          current - 2,
         );
-      });
-  }
+
+      const last =
+        Math.min(
+          total,
+          first + 4,
+        );
+
+      const adjustedFirst =
+        Math.max(
+          1,
+          last - 4,
+        );
+
+      return Array.from(
+        {
+          length:
+            last -
+            adjustedFirst +
+            1,
+        },
+        (
+          _,
+          index,
+        ) =>
+          adjustedFirst +
+          index,
+      );
+    });
 
   constructor() {
+    this.requestNotifications
+      .pipe(
+        switchMap(() =>
+          defer(() => {
+            this.loading.set(
+              true,
+            );
+
+            this.errorMessage.set(
+              '',
+            );
+
+            this.replaceUrlState();
+
+            return this.api
+              .getNotifications(
+                this.buildQuery(),
+              )
+              .pipe(
+                tap(
+                  response => {
+                    this.data.set(
+                      response,
+                    );
+
+                    this.page.set(
+                      response.page,
+                    );
+
+                    this.pageSize.set(
+                      response.pageSize,
+                    );
+                  },
+                ),
+
+                catchError(
+                  (
+                    error:
+                      HttpErrorResponse,
+                  ) => {
+                    this.errorMessage.set(
+                      this.describeError(
+                        error,
+                      ),
+                    );
+
+                    return EMPTY;
+                  },
+                ),
+
+                finalize(() =>
+                  this.loading.set(
+                    false,
+                  ),
+                ),
+              );
+          }),
+        ),
+
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+      )
+      .subscribe();
+
+    this.filters.valueChanges
+      .pipe(
+        debounceTime(320),
+
+        distinctUntilChanged(
+          (
+            previous,
+            current,
+          ) =>
+            JSON.stringify(
+              previous,
+            ) ===
+            JSON.stringify(
+              current,
+            ),
+        ),
+
+        tap(() =>
+          this.page.set(1),
+        ),
+
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+      )
+      .subscribe(() =>
+        this.load(),
+      );
+
     this.load();
   }
 
   load(): void {
-    this.loading.set(true);
-    this.errorMessage.set('');
+    this.requestNotifications.next();
+  }
 
-    this.api
-      .getNotifications()
-      .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
+  clearFilters(): void {
+    this.filters.setValue({
+      search: '',
+      status: 'all',
+    });
+
+    this.page.set(1);
+  }
+
+  changePageSize(
+    value: string,
+  ): void {
+    const pageSize =
+      this.parsePageSize(
+        value,
+      );
+
+    if (
+      pageSize ===
+      this.pageSize()
+    ) {
+      return;
+    }
+
+    this.pageSize.set(
+      pageSize,
+    );
+
+    this.page.set(1);
+    this.load();
+  }
+
+  goToPage(
+    page: number,
+  ): void {
+    const normalizedPage =
+      Math.min(
+        Math.max(
+          page,
+          1,
         ),
+        this.data().totalPages,
+      );
 
-        finalize(() =>
-          this.loading.set(false)),
-      )
-      .subscribe({
-        next: response =>
-          this.data.set(response),
+    if (
+      normalizedPage ===
+      this.page()
+    ) {
+      return;
+    }
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
-          this.errorMessage.set(
-            this.describeError(error),
-          );
-        },
-      });
+    this.page.set(
+      normalizedPage,
+    );
+
+    this.load();
   }
 
   markRead(
@@ -209,7 +442,8 @@ export class NotificationsPage {
         finalize(() =>
           this.removeMarkingReadId(
             item.id,
-          )),
+          ),
+        ),
       )
       .subscribe({
         next: response => {
@@ -217,38 +451,12 @@ export class NotificationsPage {
             return;
           }
 
-          this.data.update(current => {
-            const items =
-              current.items.map(
-                notification =>
-                  notification.id ===
-                  item.id
-                    ? {
-                        ...notification,
-                        isRead: true,
-                      }
-                    : notification,
-              );
-
-            return {
-              ...current,
-              items,
-              summary: {
-                ...current.summary,
-                unreadCount:
-                  Math.max(
-                    0,
-                    current.summary
-                      .unreadCount - 1,
-                  ),
-              },
-            };
-          });
-
           this.toastService.success(
             'Notification updated',
             response.message,
           );
+
+          this.load();
         },
 
         error: (
@@ -271,11 +479,6 @@ export class NotificationsPage {
       });
   }
 
-  clearFilters(): void {
-    this.searchText = '';
-    this.statusFilter = 'all';
-  }
-
   isMarkingRead(
     notificationId: number,
   ): boolean {
@@ -290,31 +493,102 @@ export class NotificationsPage {
       alertType.toLowerCase();
 
     if (
-      normalized.includes('overdue') ||
-      normalized.includes('critical')
+      normalized.includes(
+        'overdue',
+      ) ||
+      normalized.includes(
+        'critical',
+      )
     ) {
       return 'type-badge type-badge--danger';
     }
 
     if (
-      normalized.includes('dispatch')
+      normalized.includes(
+        'dispatch',
+      )
     ) {
       return 'type-badge type-badge--orange';
     }
 
     if (
-      normalized.includes('delivery')
+      normalized.includes(
+        'delivery',
+      )
     ) {
       return 'type-badge type-badge--warning';
     }
 
     if (
-      normalized.includes('stock')
+      normalized.includes(
+        'stock',
+      )
     ) {
       return 'type-badge type-badge--purple';
     }
 
     return 'type-badge type-badge--info';
+  }
+
+  private buildQuery():
+    NotificationsQuery {
+    const filters =
+      this.filters.getRawValue();
+
+    return {
+      search:
+        filters.search,
+
+      status:
+        filters.status,
+
+      page:
+        this.page(),
+
+      pageSize:
+        this.pageSize(),
+    };
+  }
+
+  private replaceUrlState(): void {
+    const query =
+      this.buildQuery();
+
+    const urlTree =
+      this.router.createUrlTree(
+        [],
+        {
+          relativeTo:
+            this.route,
+
+          queryParams: {
+            search:
+              query.search?.trim() ||
+              null,
+
+            status:
+              query.status !== 'all'
+                ? query.status
+                : null,
+
+            page:
+              query.page > 1
+                ? query.page
+                : null,
+
+            pageSize:
+              query.pageSize !== 25
+                ? query.pageSize
+                : null,
+          },
+        },
+      );
+
+    this.location.replaceState(
+      this.router.serializeUrl(
+        urlTree,
+      ),
+    );
   }
 
   private addMarkingReadId(
@@ -351,6 +625,48 @@ export class NotificationsPage {
     );
   }
 
+  private parseStatus(
+    value:
+      | string
+      | null,
+  ): NotificationStatusFilter {
+    return value === 'read' ||
+      value === 'unread'
+      ? value
+      : 'all';
+  }
+
+  private parsePositiveInteger(
+    value:
+      | string
+      | null,
+    fallback: number,
+  ): number {
+    const parsed =
+      Number(value);
+
+    return Number.isInteger(
+      parsed,
+    ) &&
+      parsed > 0
+      ? parsed
+      : fallback;
+  }
+
+  private parsePageSize(
+    value:
+      | string
+      | null,
+  ): number {
+    const parsed =
+      Number(value);
+
+    return parsed === 50 ||
+      parsed === 100
+      ? parsed
+      : 25;
+  }
+
   private describeError(
     error: HttpErrorResponse,
   ): string {
@@ -370,7 +686,8 @@ export class NotificationsPage {
       error.error?.message ??
       error.error?.error;
 
-    return typeof message === 'string'
+    return typeof message ===
+      'string'
       ? message
       : 'Notifications could not be loaded.';
   }
@@ -394,9 +711,9 @@ export class NotificationsPage {
       error.error?.message ??
       error.error?.error;
 
-    return typeof message === 'string'
+    return typeof message ===
+      'string'
       ? message
       : 'The notification could not be marked as read.';
   }
 }
-

@@ -1657,3 +1657,1247 @@ app-alerts-page .alerts-pagination button{
     transition: none;
   }
 }
+
+/* ============================================================
+   CORE LIST VALUE CARDS AND PAGINATION PARITY
+   Dashboard selectors are intentionally excluded.
+   ============================================================ */
+
+.premium-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 1rem 1.15rem;
+  gap: 1rem;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(239, 246, 255, 0.96),
+      rgba(238, 242, 255, 0.96) 52%,
+      rgba(236, 254, 255, 0.94)
+    );
+  border-top: 1px solid rgba(99, 102, 241, 0.16);
+}
+
+.premium-pagination__range {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: 0.35rem;
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.premium-pagination__range strong {
+  color: #1e3a8a;
+  font-size: 0.84rem;
+  font-weight: 950;
+}
+
+.premium-pagination nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.34rem;
+}
+
+.premium-pagination button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 0.68rem;
+  color: #1e3a8a;
+  font-size: 0.68rem;
+  font-weight: 850;
+  background: #ffffff;
+  border: 1px solid rgba(59, 130, 246, 0.24);
+  border-radius: 9px;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.premium-pagination button:hover:not(:disabled),
+.premium-pagination button.active {
+  color: #ffffff;
+  background:
+    linear-gradient(
+      135deg,
+      #1d4ed8,
+      #4338ca 52%,
+      #0e7490
+    );
+  border-color: transparent;
+  box-shadow:
+    0 8px 20px rgba(30, 64, 175, 0.22);
+  transform: translateY(-1px);
+}
+
+.premium-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+/* AUDIT LOG CARD UPGRADE */
+
+app-audit-page .audit-metrics {
+  gap: 0.9rem;
+}
+
+app-audit-page .audit-metric {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 122px;
+  padding: 1rem;
+  overflow: hidden;
+  gap: 0.85rem;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 19px;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.09);
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+app-audit-page .audit-metric::after {
+  position: absolute;
+  top: -48px;
+  right: -48px;
+  width: 125px;
+  height: 125px;
+  pointer-events: none;
+  background: #2563eb;
+  border-radius: 50%;
+  content: "";
+  opacity: 0.1;
+}
+
+app-audit-page .audit-metric:hover {
+  border-color: rgba(59, 130, 246, 0.38);
+  box-shadow: 0 22px 54px rgba(30, 64, 175, 0.15);
+  transform: translateY(-3px);
+}
+
+app-audit-page .audit-metric__icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  color: #ffffff;
+  font-size: 0.67rem;
+  font-weight: 950;
+  letter-spacing: 0.055em;
+  background: linear-gradient(145deg, #2563eb, #4338ca);
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.24);
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+app-audit-page .audit-metric > div {
+  min-width: 0;
+}
+
+app-audit-page .audit-metric small,
+app-audit-page .audit-metric strong,
+app-audit-page .audit-metric div > span {
+  display: block;
+}
+
+app-audit-page .audit-metric small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+app-audit-page .audit-metric strong {
+  margin-top: 0.2rem;
+  color: #0f2a5f;
+  font-size: 1.65rem;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+app-audit-page .audit-metric div > span {
+  margin-top: 0.25rem;
+  color: #94a3b8;
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+app-audit-page .audit-metric--cyan .audit-metric__icon {
+  background: linear-gradient(145deg, #0891b2, #2563eb);
+}
+
+app-audit-page .audit-metric--cyan::after {
+  background: #0891b2;
+}
+
+app-audit-page .audit-metric--violet .audit-metric__icon {
+  background: linear-gradient(145deg, #7c3aed, #a855f7);
+}
+
+app-audit-page .audit-metric--violet::after {
+  background: #7c3aed;
+}
+
+app-audit-page .audit-metric--emerald .audit-metric__icon {
+  background: linear-gradient(145deg, #059669, #0d9488);
+}
+
+app-audit-page .audit-metric--emerald::after {
+  background: #059669;
+}
+
+/* PURCHASE ORDERS */
+
+app-purchase-orders-page {
+  display: grid;
+  min-width: 0;
+  gap: 1.1rem;
+}
+
+app-purchase-orders-page > section {
+  min-width: 0;
+  margin: 0;
+}
+
+app-purchase-orders-page .po-summary-grid {
+  display: grid;
+  gap: 0.88rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+app-purchase-orders-page .po-summary-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 118px;
+  padding: 1rem;
+  overflow: hidden;
+  gap: 0.85rem;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 19px;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.09);
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+app-purchase-orders-page .po-summary-card::after {
+  position: absolute;
+  top: -48px;
+  right: -48px;
+  width: 125px;
+  height: 125px;
+  pointer-events: none;
+  background: #2563eb;
+  border-radius: 50%;
+  content: "";
+  opacity: 0.1;
+}
+
+app-purchase-orders-page .po-summary-card:hover,
+app-purchase-orders-page .po-quantity-card:hover {
+  border-color: rgba(59, 130, 246, 0.38);
+  box-shadow: 0 22px 54px rgba(30, 64, 175, 0.15);
+  transform: translateY(-3px);
+}
+
+app-purchase-orders-page .po-summary-card__icon,
+app-purchase-orders-page .po-quantity-card__icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  color: #ffffff;
+  font-size: 0.67rem;
+  font-weight: 950;
+  letter-spacing: 0.055em;
+  background: linear-gradient(145deg, #2563eb, #4338ca);
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.24);
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+app-purchase-orders-page .po-summary-card > div,
+app-purchase-orders-page .po-quantity-card > div {
+  min-width: 0;
+}
+
+app-purchase-orders-page .po-summary-card small,
+app-purchase-orders-page .po-summary-card strong,
+app-purchase-orders-page .po-summary-card div > span,
+app-purchase-orders-page .po-quantity-card small,
+app-purchase-orders-page .po-quantity-card strong,
+app-purchase-orders-page .po-quantity-card div > span {
+  display: block;
+}
+
+app-purchase-orders-page .po-summary-card small,
+app-purchase-orders-page .po-quantity-card small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+app-purchase-orders-page .po-summary-card strong,
+app-purchase-orders-page .po-quantity-card strong {
+  margin-top: 0.2rem;
+  color: #0f2a5f;
+  font-size: 1.65rem;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+app-purchase-orders-page .po-summary-card div > span,
+app-purchase-orders-page .po-quantity-card div > span {
+  margin-top: 0.25rem;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+app-purchase-orders-page .po-summary-card--amber .po-summary-card__icon,
+app-purchase-orders-page .po-quantity-card--amber .po-quantity-card__icon {
+  background: linear-gradient(145deg, #d97706, #f59e0b);
+}
+
+app-purchase-orders-page .po-summary-card--amber::after {
+  background: #d97706;
+}
+
+app-purchase-orders-page .po-summary-card--green .po-summary-card__icon {
+  background: linear-gradient(145deg, #059669, #0d9488);
+}
+
+app-purchase-orders-page .po-summary-card--green::after {
+  background: #059669;
+}
+
+app-purchase-orders-page .po-summary-card--red .po-summary-card__icon,
+app-purchase-orders-page .po-quantity-card--red .po-quantity-card__icon {
+  background: linear-gradient(145deg, #e11d48, #dc2626);
+}
+
+app-purchase-orders-page .po-summary-card--red::after {
+  background: #e11d48;
+}
+
+app-purchase-orders-page .po-summary-card--violet .po-summary-card__icon,
+app-purchase-orders-page .po-quantity-card--violet .po-quantity-card__icon {
+  background: linear-gradient(145deg, #7c3aed, #a855f7);
+}
+
+app-purchase-orders-page .po-summary-card--violet::after {
+  background: #7c3aed;
+}
+
+app-purchase-orders-page .po-summary-card--slate .po-summary-card__icon {
+  background: linear-gradient(145deg, #0f172a, #1e3a8a, #0e7490);
+}
+
+app-purchase-orders-page .po-summary-card--slate::after {
+  background: #0f172a;
+}
+
+app-purchase-orders-page .po-quantity-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+app-purchase-orders-page .po-quantity-card {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 108px;
+  padding: 0.95rem;
+  gap: 0.78rem;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.98),
+      rgba(239, 246, 255, 0.95)
+    );
+  border: 1px solid rgba(59, 130, 246, 0.16);
+  border-radius: 17px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+app-purchase-orders-page .panel,
+app-materials-page .panel {
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.09);
+}
+
+app-purchase-orders-page .table-wrap,
+app-materials-page .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+app-purchase-orders-page table th,
+app-materials-page table th {
+  color: #e0f2fe;
+  background:
+    linear-gradient(
+      100deg,
+      #0f2a5f,
+      #1e3a8a 48%,
+      #155e75
+    );
+}
+
+app-purchase-orders-page .number-cell--value strong,
+app-materials-page .number-cell--value strong {
+  color: #5b21b6;
+  font-weight: 950;
+}
+
+/* MATERIALS */
+
+app-materials-page {
+  display: grid;
+  min-width: 0;
+  gap: 1.1rem;
+}
+
+app-materials-page > section {
+  min-width: 0;
+  margin: 0;
+}
+
+app-materials-page .materials-overview-grid {
+  display: grid;
+  gap: 0.88rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+app-materials-page .materials-overview-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 120px;
+  padding: 1rem;
+  overflow: hidden;
+  gap: 0.85rem;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 19px;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.09);
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+app-materials-page .materials-overview-card::after {
+  position: absolute;
+  top: -48px;
+  right: -48px;
+  width: 125px;
+  height: 125px;
+  pointer-events: none;
+  background: #2563eb;
+  border-radius: 50%;
+  content: "";
+  opacity: 0.1;
+}
+
+app-materials-page .materials-overview-card:hover {
+  border-color: rgba(59, 130, 246, 0.38);
+  box-shadow: 0 22px 54px rgba(30, 64, 175, 0.15);
+  transform: translateY(-3px);
+}
+
+app-materials-page .materials-overview-card__icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  color: #ffffff;
+  font-size: 0.67rem;
+  font-weight: 950;
+  letter-spacing: 0.055em;
+  background: linear-gradient(145deg, #2563eb, #4338ca);
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.24);
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+app-materials-page .materials-overview-card > div {
+  min-width: 0;
+}
+
+app-materials-page .materials-overview-card small,
+app-materials-page .materials-overview-card strong,
+app-materials-page .materials-overview-card div > span {
+  display: block;
+}
+
+app-materials-page .materials-overview-card small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+app-materials-page .materials-overview-card strong {
+  margin-top: 0.2rem;
+  color: #0f2a5f;
+  font-size: 1.55rem;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+app-materials-page .materials-overview-card div > span {
+  margin-top: 0.25rem;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+app-materials-page .materials-overview-card--violet .materials-overview-card__icon {
+  background: linear-gradient(145deg, #7c3aed, #a855f7);
+}
+
+app-materials-page .materials-overview-card--violet::after {
+  background: #7c3aed;
+}
+
+app-materials-page .materials-overview-card--cyan .materials-overview-card__icon {
+  background: linear-gradient(145deg, #0891b2, #2563eb);
+}
+
+app-materials-page .materials-overview-card--cyan::after {
+  background: #0891b2;
+}
+
+app-materials-page .materials-overview-card--emerald .materials-overview-card__icon {
+  background: linear-gradient(145deg, #059669, #0d9488);
+}
+
+app-materials-page .materials-overview-card--emerald::after {
+  background: #059669;
+}
+
+/* NOTIFICATIONS */
+
+app-notifications-page {
+  display: block;
+  min-width: 0;
+}
+
+app-notifications-page .notifications-page {
+  display: grid;
+  min-width: 0;
+  gap: 1.15rem;
+}
+
+app-notifications-page .notifications-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 1.55rem;
+  overflow: hidden;
+  gap: 1.35rem;
+  color: #e0f2fe;
+  background:
+    radial-gradient(
+      circle at 84% 8%,
+      rgba(34, 211, 238, 0.3),
+      transparent 18rem
+    ),
+    radial-gradient(
+      circle at 12% 100%,
+      rgba(139, 92, 246, 0.27),
+      transparent 23rem
+    ),
+    linear-gradient(
+      118deg,
+      #07162f 0%,
+      #12366f 48%,
+      #164e63 100%
+    );
+  border: 1px solid rgba(125, 211, 252, 0.26);
+  border-radius: 24px;
+  box-shadow:
+    0 24px 65px rgba(7, 22, 47, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.1) inset;
+}
+
+app-notifications-page .notifications-hero::after {
+  position: absolute;
+  right: -75px;
+  bottom: -125px;
+  z-index: -1;
+  width: 300px;
+  height: 300px;
+  pointer-events: none;
+  background:
+    conic-gradient(
+      from 215deg,
+      rgba(255, 255, 255, 0.04),
+      rgba(34, 211, 238, 0.24),
+      rgba(167, 139, 250, 0.2),
+      rgba(255, 255, 255, 0.04)
+    );
+  border-radius: 50%;
+  content: "";
+}
+
+app-notifications-page .eyebrow {
+  display: block;
+  margin-bottom: 0.42rem;
+  color: #0891b2;
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+app-notifications-page .notifications-hero .eyebrow {
+  color: #67e8f9;
+}
+
+app-notifications-page .notifications-hero h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2rem, 4vw, 3.15rem);
+  letter-spacing: -0.045em;
+}
+
+app-notifications-page .notifications-hero p {
+  max-width: 680px;
+  margin: 0.7rem 0 0;
+  color: #dbeafe;
+  line-height: 1.65;
+}
+
+app-notifications-page .notifications-hero__meta,
+app-notifications-page .notifications-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+app-notifications-page .notifications-hero__meta {
+  margin-top: 1rem;
+}
+
+app-notifications-page .notifications-hero__meta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 0.75rem;
+  color: #dbeafe;
+  font-size: 0.68rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(186, 230, 253, 0.2);
+  border-radius: 999px;
+}
+
+app-notifications-page .notifications-hero__actions {
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
+app-notifications-page .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 41px;
+  padding: 0 0.95rem;
+  color: #ffffff;
+  font-size: 0.73rem;
+  font-weight: 850;
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  cursor: pointer;
+}
+
+app-notifications-page .button--light {
+  color: #172554;
+  background: #ffffff;
+  border-color: #ffffff;
+}
+
+app-notifications-page .button--accent {
+  background:
+    linear-gradient(
+      135deg,
+      #06b6d4,
+      #2563eb 58%,
+      #7c3aed
+    );
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.24);
+}
+
+app-notifications-page .notifications-summary-grid {
+  display: grid;
+  gap: 0.88rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+app-notifications-page .notifications-summary-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 120px;
+  padding: 1rem;
+  overflow: hidden;
+  gap: 0.85rem;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 19px;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.09);
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+app-notifications-page .notifications-summary-card::after {
+  position: absolute;
+  top: -48px;
+  right: -48px;
+  width: 125px;
+  height: 125px;
+  pointer-events: none;
+  background: #2563eb;
+  border-radius: 50%;
+  content: "";
+  opacity: 0.1;
+}
+
+app-notifications-page .notifications-summary-card:hover {
+  border-color: rgba(59, 130, 246, 0.38);
+  box-shadow: 0 22px 54px rgba(30, 64, 175, 0.15);
+  transform: translateY(-3px);
+}
+
+app-notifications-page .notifications-summary-card__icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  color: #ffffff;
+  font-size: 0.67rem;
+  font-weight: 950;
+  letter-spacing: 0.055em;
+  background: linear-gradient(145deg, #2563eb, #4338ca);
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.24);
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+app-notifications-page .notifications-summary-card > div {
+  min-width: 0;
+}
+
+app-notifications-page .notifications-summary-card small,
+app-notifications-page .notifications-summary-card strong,
+app-notifications-page .notifications-summary-card div > span {
+  display: block;
+}
+
+app-notifications-page .notifications-summary-card small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+app-notifications-page .notifications-summary-card strong {
+  margin-top: 0.2rem;
+  color: #0f2a5f;
+  font-size: 1.65rem;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+app-notifications-page .notifications-summary-card div > span {
+  margin-top: 0.25rem;
+  color: #94a3b8;
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+app-notifications-page .notifications-summary-card--amber .notifications-summary-card__icon {
+  background: linear-gradient(145deg, #d97706, #f59e0b);
+}
+
+app-notifications-page .notifications-summary-card--amber::after {
+  background: #d97706;
+}
+
+app-notifications-page .notifications-summary-card--violet .notifications-summary-card__icon {
+  background: linear-gradient(145deg, #7c3aed, #a855f7);
+}
+
+app-notifications-page .notifications-summary-card--violet::after {
+  background: #7c3aed;
+}
+
+app-notifications-page .notifications-summary-card--red .notifications-summary-card__icon {
+  background: linear-gradient(145deg, #e11d48, #dc2626);
+}
+
+app-notifications-page .notifications-summary-card--red::after {
+  background: #e11d48;
+}
+
+app-notifications-page .notifications-filter-card,
+app-notifications-page .notifications-table-card {
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 20px;
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.09);
+}
+
+app-notifications-page .notifications-filter-card {
+  padding: 1.2rem;
+}
+
+app-notifications-page .notifications-filter-card__heading,
+app-notifications-page .notifications-table-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+app-notifications-page .notifications-filter-card__heading h2,
+app-notifications-page .notifications-table-card__header h2 {
+  margin: 0.16rem 0 0;
+  color: #0f2a5f;
+  font-size: 1.12rem;
+}
+
+app-notifications-page .notifications-filter-card__heading p,
+app-notifications-page .notifications-table-card__header p {
+  margin: 0.38rem 0 0;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+app-notifications-page .notifications-filter-card__heading button {
+  min-height: 36px;
+  padding: 0 0.72rem;
+  color: #1d4ed8;
+  font-size: 0.68rem;
+  font-weight: 850;
+  background: #eff6ff;
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+app-notifications-page .notifications-filter-grid {
+  display: grid;
+  margin-top: 1rem;
+  gap: 0.85rem;
+  grid-template-columns:
+    minmax(0, 2fr)
+    minmax(170px, 0.8fr)
+    minmax(150px, 0.65fr);
+}
+
+app-notifications-page .notifications-filter-grid label {
+  display: grid;
+  min-width: 0;
+  gap: 0.38rem;
+}
+
+app-notifications-page .notifications-filter-grid label > span {
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+app-notifications-page .notifications-filter-grid input,
+app-notifications-page .notifications-filter-grid select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 0.72rem;
+  color: #172033;
+  background: #ffffff;
+  border: 1px solid #d8dee9;
+  border-radius: 11px;
+}
+
+app-notifications-page .notifications-table-card {
+  overflow: hidden;
+}
+
+app-notifications-page .notifications-table-card__header {
+  padding: 1.2rem;
+}
+
+app-notifications-page .notifications-read-only {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 0.8rem;
+  color: #6b21a8;
+  font-size: 0.68rem;
+  font-weight: 900;
+  background: #f3e8ff;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+app-notifications-page .notifications-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  transition: opacity 140ms ease;
+}
+
+app-notifications-page .notifications-table-wrap--refreshing {
+  opacity: 0.72;
+}
+
+app-notifications-page table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+}
+
+app-notifications-page th,
+app-notifications-page td {
+  padding: 0.82rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.92);
+  white-space: nowrap;
+}
+
+app-notifications-page th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  color: #e0f2fe;
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  background:
+    linear-gradient(
+      100deg,
+      #0f2a5f,
+      #1e3a8a 48%,
+      #155e75
+    );
+  text-transform: uppercase;
+}
+
+app-notifications-page td {
+  color: #334155;
+  font-size: 0.76rem;
+}
+
+app-notifications-page tbody tr:nth-child(even) {
+  background: rgba(248, 250, 252, 0.72);
+}
+
+app-notifications-page tbody tr:hover {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(219, 234, 254, 0.72),
+      rgba(238, 242, 255, 0.58),
+      rgba(236, 254, 255, 0.5)
+    );
+}
+
+app-notifications-page .unread-row {
+  background: rgba(254, 249, 195, 0.38);
+}
+
+app-notifications-page .row-number {
+  color: #64748b;
+  font-weight: 850;
+}
+
+app-notifications-page .message-cell {
+  min-width: 280px;
+  max-width: 430px;
+  white-space: normal;
+}
+
+app-notifications-page .primary-link {
+  color: #1d4ed8;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+app-notifications-page .type-badge,
+app-notifications-page .mobile-status,
+app-notifications-page .read-status,
+app-notifications-page .complete-label,
+app-notifications-page .restricted-label {
+  display: inline-flex;
+  padding: 0.3rem 0.58rem;
+  font-size: 0.65rem;
+  font-weight: 900;
+  border-radius: 999px;
+}
+
+app-notifications-page .type-badge--info,
+app-notifications-page .read-status--read,
+app-notifications-page .mobile-status--sent,
+app-notifications-page .complete-label {
+  color: #047857;
+  background: #d1fae5;
+}
+
+app-notifications-page .type-badge--danger,
+app-notifications-page .read-status {
+  color: #be123c;
+  background: #ffe4e6;
+}
+
+app-notifications-page .type-badge--warning,
+app-notifications-page .mobile-status {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+app-notifications-page .type-badge--orange {
+  color: #c2410c;
+  background: #ffedd5;
+}
+
+app-notifications-page .type-badge--purple,
+app-notifications-page .restricted-label {
+  color: #6b21a8;
+  background: #f3e8ff;
+}
+
+app-notifications-page .mark-read-button {
+  min-height: 34px;
+  padding: 0 0.68rem;
+  color: #ffffff;
+  font-size: 0.67rem;
+  font-weight: 850;
+  background:
+    linear-gradient(
+      135deg,
+      #1d4ed8,
+      #4338ca,
+      #0e7490
+    );
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+app-notifications-page .notifications-skeleton {
+  display: grid;
+  padding: 1rem 1.2rem;
+  gap: 0.65rem;
+}
+
+app-notifications-page .notifications-skeleton span {
+  height: 48px;
+  background:
+    linear-gradient(
+      100deg,
+      #eef2f7 18%,
+      #ffffff 36%,
+      #eef2f7 54%
+    );
+  background-size: 220% 100%;
+  border-radius: 12px;
+  animation: notification-shimmer 1.15s linear infinite;
+}
+
+app-notifications-page .notifications-empty {
+  display: grid;
+  min-height: 240px;
+  padding: 2rem;
+  text-align: center;
+  place-items: center;
+  align-content: center;
+}
+
+app-notifications-page .notifications-empty > span {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 0.8rem;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 950;
+  background:
+    linear-gradient(
+      145deg,
+      #059669,
+      #0d9488,
+      #2563eb
+    );
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(13, 148, 136, 0.24);
+  place-items: center;
+}
+
+app-notifications-page .notifications-empty strong {
+  color: #0f2a5f;
+}
+
+app-notifications-page .notifications-empty p {
+  max-width: 460px;
+  margin: 0.45rem 0 0;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+app-notifications-page .notifications-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  gap: 1rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 15px;
+}
+
+app-notifications-page .notifications-message p {
+  margin: 0.3rem 0 0;
+  font-size: 0.76rem;
+}
+
+app-notifications-page .notifications-message button {
+  min-height: 38px;
+  padding: 0 0.8rem;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 850;
+  background: #be123c;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+@keyframes notification-shimmer {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+@media (max-width: 1180px) {
+  app-purchase-orders-page .po-summary-grid,
+  app-materials-page .materials-overview-grid,
+  app-notifications-page .notifications-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  app-purchase-orders-page .po-quantity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .premium-pagination,
+  app-notifications-page .notifications-hero,
+  app-notifications-page .notifications-filter-card__heading,
+  app-notifications-page .notifications-table-card__header,
+  app-notifications-page .notifications-message {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .premium-pagination nav,
+  app-notifications-page .notifications-hero__actions {
+    justify-content: flex-start;
+  }
+
+  app-notifications-page .notifications-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  app-purchase-orders-page .po-summary-grid,
+  app-purchase-orders-page .po-quantity-grid,
+  app-materials-page .materials-overview-grid,
+  app-notifications-page .notifications-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  app-notifications-page .notifications-hero,
+  app-notifications-page .notifications-filter-card,
+  app-notifications-page .notifications-table-card__header {
+    padding: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium-pagination button,
+  app-audit-page .audit-metric,
+  app-purchase-orders-page .po-summary-card,
+  app-purchase-orders-page .po-quantity-card,
+  app-materials-page .materials-overview-card,
+  app-notifications-page .notifications-summary-card,
+  app-notifications-page .notifications-table-wrap {
+    transition: none;
+  }
+
+  app-notifications-page .notifications-skeleton span {
+    animation: none;
+  }
+}

@@ -1,279 +1,495 @@
-﻿<section class="page-heading">
-  <div>
-    <p class="eyebrow">
-      ALERT MANAGEMENT
-    </p>
-
-    <h1>Notification Center</h1>
-
-    <p class="page-heading__description">
-      Review process, delivery, dispatch,
-      overdue and stock notifications.
-    </p>
-  </div>
-
-  <div class="heading-actions">
-    <button
-      class="button button--quiet"
-      type="button"
-      [disabled]="loading()"
-      (click)="load()">
-      {{
-        loading()
-          ? 'Refreshing...'
-          : 'Refresh'
-      }}
-    </button>
-
-    <a
-      class="button button--primary"
-      routerLink="/alerts">
-      Smart Alerts
-    </a>
-  </div>
-</section>
-
-@if (errorMessage()) {
-<section
-  class="message message--error"
-  role="alert">
-  <strong>
-    Notification Center error
-  </strong>
-
-  <p>{{ errorMessage() }}</p>
-</section>
-}
-
-<section class="summary-grid">
-  <article class="summary-card">
-    <span>Total Alerts</span>
-
-    <strong>
-      {{
-        data().summary
-          .totalAlerts
-      }}
-    </strong>
-  </article>
-
-  <article class="summary-card summary-card--warning">
-    <span>Unread</span>
-
-    <strong>
-      {{
-        data().summary
-          .unreadCount
-      }}
-    </strong>
-  </article>
-
-  <article class="summary-card summary-card--info">
-    <span>Mobile Queue</span>
-
-    <strong>
-      {{
-        data().summary
-          .mobileQueue
-      }}
-    </strong>
-  </article>
-
-  <article class="summary-card summary-card--danger">
-    <span>Due Today</span>
-
-    <strong>
-      {{
-        data().summary
-          .dueToday
-      }}
-    </strong>
-  </article>
-</section>
-
-<section class="filter-panel">
-  <label class="search-field">
-    <span>Search notifications</span>
-
-    <input
-      type="search"
-      [(ngModel)]="searchText"
-      placeholder="Material, type or message" />
-  </label>
-
-  <label>
-    <span>Status</span>
-
-    <select
-      [(ngModel)]="statusFilter">
-      <option value="all">
-        All notifications
-      </option>
-
-      <option value="unread">
-        Unread only
-      </option>
-
-      <option value="read">
-        Read only
-      </option>
-    </select>
-  </label>
-
-  <button
-    class="button button--quiet"
-    type="button"
-    (click)="clearFilters()">
-    Clear Filters
-  </button>
-</section>
-
-<section class="table-panel">
-  <div class="table-heading">
+<section class="notifications-page">
+  <header class="notifications-hero">
     <div>
-      <h2>Latest Notifications</h2>
+      <span class="eyebrow">
+        Alert management
+      </span>
+
+      <h1>Notification Center</h1>
 
       <p>
-        Showing
-        {{ filteredItems().length }}
-        of
-        {{ data().items.length }}
-        notification records.
+        Review process, delivery, dispatch, overdue and
+        stock notifications with fast server-side paging.
       </p>
+
+      <div class="notifications-hero__meta">
+        <span>
+          {{ data().summary.totalAlerts | number }}
+          total notifications
+        </span>
+
+        @if (data().generatedAt) {
+          <span>
+            Updated
+            {{
+              data().generatedAt |
+                date:'dd MMM yyyy, hh:mm a'
+            }}
+          </span>
+        }
+      </div>
     </div>
 
-    @if (!canOperate()) {
-    <span class="read-only-badge">
-      Read-only access
-    </span>
-    }
-  </div>
+    <div class="notifications-hero__actions">
+      <button
+        class="button button--light"
+        type="button"
+        [disabled]="loading()"
+        (click)="load()">
+        {{
+          loading()
+            ? 'Refreshing…'
+            : 'Refresh'
+        }}
+      </button>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Material</th>
-          <th>Message</th>
-          <th>Alert Date</th>
-          <th>Mobile</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
+      <a
+        class="button button--accent"
+        routerLink="/alerts">
+        Smart Alerts
+      </a>
+    </div>
+  </header>
 
-      <tbody>
-        @for (
-          item of filteredItems();
-          track item.id
-        ) {
-        <tr
-          [class.unread-row]="
-            !item.isRead
+  @if (errorMessage()) {
+    <section
+      class="notifications-message"
+      role="alert">
+      <div>
+        <strong>
+          Notification Center error
+        </strong>
+
+        <p>{{ errorMessage() }}</p>
+      </div>
+
+      <button
+        type="button"
+        (click)="load()">
+        Try again
+      </button>
+    </section>
+  }
+
+  <section
+    class="notifications-summary-grid"
+    aria-label="Notification summary">
+    <article class="notifications-summary-card notifications-summary-card--blue">
+      <span class="notifications-summary-card__icon">
+        NT
+      </span>
+
+      <div>
+        <small>Total Alerts</small>
+
+        <strong>
+          {{ data().summary.totalAlerts | number }}
+        </strong>
+
+        <span>All notification records</span>
+      </div>
+    </article>
+
+    <article class="notifications-summary-card notifications-summary-card--amber">
+      <span class="notifications-summary-card__icon">
+        UR
+      </span>
+
+      <div>
+        <small>Unread</small>
+
+        <strong>
+          {{ data().summary.unreadCount | number }}
+        </strong>
+
+        <span>Awaiting review</span>
+      </div>
+    </article>
+
+    <article class="notifications-summary-card notifications-summary-card--violet">
+      <span class="notifications-summary-card__icon">
+        MQ
+      </span>
+
+      <div>
+        <small>Mobile Queue</small>
+
+        <strong>
+          {{ data().summary.mobileQueue | number }}
+        </strong>
+
+        <span>Not sent to mobile</span>
+      </div>
+    </article>
+
+    <article class="notifications-summary-card notifications-summary-card--red">
+      <span class="notifications-summary-card__icon">
+        DT
+      </span>
+
+      <div>
+        <small>Due Today</small>
+
+        <strong>
+          {{ data().summary.dueToday | number }}
+        </strong>
+
+        <span>Due now or earlier</span>
+      </div>
+    </article>
+  </section>
+
+  <form
+    class="notifications-filter-card"
+    [formGroup]="filters">
+    <div class="notifications-filter-card__heading">
+      <div>
+        <span class="eyebrow">
+          Focused review
+        </span>
+
+        <h2>Find notifications quickly</h2>
+
+        <p>
+          Search and status changes update the server-paged
+          result automatically.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        (click)="clearFilters()">
+        Clear filters
+      </button>
+    </div>
+
+    <div class="notifications-filter-grid">
+      <label>
+        <span>Search notifications</span>
+
+        <input
+          type="search"
+          formControlName="search"
+          placeholder="Material, type or message">
+      </label>
+
+      <label>
+        <span>Status</span>
+
+        <select formControlName="status">
+          <option value="all">
+            All notifications
+          </option>
+
+          <option value="unread">
+            Unread only
+          </option>
+
+          <option value="read">
+            Read only
+          </option>
+        </select>
+      </label>
+
+      <label>
+        <span>Rows per page</span>
+
+        <select
+          [value]="pageSize()"
+          (change)="
+            changePageSize(
+              $any($event.target).value
+            )
           ">
-          <td>
-            <span
-              [class]="
-                alertTypeClass(
-                  item.alertType
-                )
-              ">
-              {{ item.alertType }}
-            </span>
-          </td>
+          <option value="25">25 rows</option>
+          <option value="50">50 rows</option>
+          <option value="100">100 rows</option>
+        </select>
+      </label>
+    </div>
+  </form>
 
-          <td>
-            <a
-              class="primary-link"
-              [routerLink]="[
-                '/materials',
-                item.materialId
-              ]">
-              {{ item.materialNo || '—' }}
-            </a>
-          </td>
+  <section class="notifications-table-card">
+    <header class="notifications-table-card__header">
+      <div>
+        <span class="eyebrow">
+          Notification records
+        </span>
 
-          <td class="message-cell">
-            {{ item.message || '—' }}
-          </td>
+        <h2>Latest Notifications</h2>
 
-          <td>
-            {{
-              item.alertDate |
-                date:
-                  'dd MMM yyyy, hh:mm a'
-            }}
-          </td>
+        <p>
+          Showing
+          {{ startRecord() | number }}–{{ endRecord() | number }}
+          of
+          {{ data().totalCount | number }}
+          matching notifications.
+        </p>
+      </div>
 
-          <td>
-            <span
-              class="mobile-status"
-              [class.mobile-status--sent]="
-                item.isSentToMobile
-              ">
-              {{
-                item.isSentToMobile
-                  ? 'Sent'
-                  : 'Queued'
-              }}
-            </span>
-          </td>
+      @if (!canOperate()) {
+        <span class="notifications-read-only">
+          Read-only access
+        </span>
+      }
+    </header>
 
-          <td>
-            <span
-              class="read-status"
-              [class.read-status--read]="
-                item.isRead
-              ">
-              {{
-                item.isRead
-                  ? 'Read'
-                  : 'Unread'
-              }}
-            </span>
-          </td>
-
-          <td>
-            @if (
-              !item.isRead &&
-              canOperate()
-            ) {
-            <button
-              class="mark-read-button"
-              type="button"
-              [disabled]="
-                isMarkingRead(item.id)
-              "
-              (click)="markRead(item)">
-              {{
-                isMarkingRead(item.id)
-                  ? 'Updating...'
-                  : 'Mark Read'
-              }}
-            </button>
-            } @else if (item.isRead) {
-            <span class="complete-label">
-              Completed
-            </span>
-            } @else {
-            <span class="restricted-label">
-              View only
-            </span>
-            }
-          </td>
-        </tr>
-        } @empty {
-        <tr>
-          <td
-            class="empty-cell"
-            colspan="7">
-            No notifications matched
-            the selected filters.
-          </td>
-        </tr>
+    @if (
+      loading() &&
+      data().items.length === 0
+    ) {
+      <div
+        class="notifications-skeleton"
+        aria-label="Preparing notifications">
+        @for (
+          row of [1, 2, 3, 4, 5, 6];
+          track row
+        ) {
+          <span></span>
         }
-      </tbody>
-    </table>
-  </div>
+      </div>
+    } @else if (
+      !errorMessage() &&
+      data().items.length === 0
+    ) {
+      <div class="notifications-empty">
+        <span aria-hidden="true">OK</span>
+        <strong>No matching notifications</strong>
+        <p>
+          Clear the current search or change the status filter
+          to review more notification records.
+        </p>
+      </div>
+    } @else if (
+      data().items.length > 0
+    ) {
+      <div
+        class="notifications-table-wrap"
+        [class.notifications-table-wrap--refreshing]="
+          loading()
+        ">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Material</th>
+              <th>Message</th>
+              <th>Alert Date</th>
+              <th>Mobile</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (
+              item of data().items;
+              track item.id;
+              let rowNumber = $index
+            ) {
+              <tr
+                [class.unread-row]="
+                  !item.isRead
+                ">
+                <td class="row-number">
+                  {{
+                    startRecord() +
+                    rowNumber
+                  }}
+                </td>
+
+                <td>
+                  <span
+                    [class]="
+                      alertTypeClass(
+                        item.alertType
+                      )
+                    ">
+                    {{ item.alertType }}
+                  </span>
+                </td>
+
+                <td>
+                  <a
+                    class="primary-link"
+                    [routerLink]="[
+                      '/materials',
+                      item.materialId
+                    ]">
+                    {{ item.materialNo || '—' }}
+                  </a>
+                </td>
+
+                <td class="message-cell">
+                  {{ item.message || '—' }}
+                </td>
+
+                <td>
+                  {{
+                    item.alertDate |
+                      date:
+                        'dd MMM yyyy, hh:mm a'
+                  }}
+                </td>
+
+                <td>
+                  <span
+                    class="mobile-status"
+                    [class.mobile-status--sent]="
+                      item.isSentToMobile
+                    ">
+                    {{
+                      item.isSentToMobile
+                        ? 'Sent'
+                        : 'Queued'
+                    }}
+                  </span>
+                </td>
+
+                <td>
+                  <span
+                    class="read-status"
+                    [class.read-status--read]="
+                      item.isRead
+                    ">
+                    {{
+                      item.isRead
+                        ? 'Read'
+                        : 'Unread'
+                    }}
+                  </span>
+                </td>
+
+                <td>
+                  @if (
+                    !item.isRead &&
+                    canOperate()
+                  ) {
+                    <button
+                      class="mark-read-button"
+                      type="button"
+                      [disabled]="
+                        isMarkingRead(item.id)
+                      "
+                      (click)="markRead(item)">
+                      {{
+                        isMarkingRead(item.id)
+                          ? 'Updating…'
+                          : 'Mark Read'
+                      }}
+                    </button>
+                  } @else if (item.isRead) {
+                    <span class="complete-label">
+                      Completed
+                    </span>
+                  } @else {
+                    <span class="restricted-label">
+                      View only
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (data().totalCount > 0) {
+      <footer
+        class="premium-pagination"
+        aria-label="Notification result pages">
+        <div class="premium-pagination__range">
+          <strong>
+            {{ startRecord() | number }}–{{ endRecord() | number }}
+          </strong>
+
+          <span>
+            of
+            {{ data().totalCount | number }}
+            notifications
+          </span>
+        </div>
+
+        <nav aria-label="Notification pagination">
+          <button
+            type="button"
+            [disabled]="
+              !data().hasPreviousPage ||
+              loading()
+            "
+            (click)="goToPage(1)">
+            First
+          </button>
+
+          <button
+            type="button"
+            [disabled]="
+              !data().hasPreviousPage ||
+              loading()
+            "
+            (click)="
+              goToPage(
+                data().page - 1
+              )
+            ">
+            Previous
+          </button>
+
+          @for (
+            pageNumber of visiblePages();
+            track pageNumber
+          ) {
+            <button
+              type="button"
+              [class.active]="
+                pageNumber ===
+                data().page
+              "
+              [attr.aria-current]="
+                pageNumber ===
+                data().page
+                  ? 'page'
+                  : null
+              "
+              [disabled]="loading()"
+              (click)="
+                goToPage(pageNumber)
+              ">
+              {{ pageNumber }}
+            </button>
+          }
+
+          <button
+            type="button"
+            [disabled]="
+              !data().hasNextPage ||
+              loading()
+            "
+            (click)="
+              goToPage(
+                data().page + 1
+              )
+            ">
+            Next
+          </button>
+
+          <button
+            type="button"
+            [disabled]="
+              !data().hasNextPage ||
+              loading()
+            "
+            (click)="
+              goToPage(
+                data().totalPages
+              )
+            ">
+            Last
+          </button>
+        </nav>
+      </footer>
+    }
+  </section>
 </section>

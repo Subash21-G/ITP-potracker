@@ -1,31 +1,51 @@
-﻿export interface NotificationItem {
-  id: number;
-  materialId: number;
-  materialNo: string;
+export interface NotificationItem {
+  readonly id: number;
+  readonly materialId: number;
+  readonly materialNo: string;
 
-  alertType: string;
-  message: string;
-  alertDate: string;
+  readonly alertType: string;
+  readonly message: string;
+  readonly alertDate: string;
 
-  isRead: boolean;
-  isSentToMobile: boolean;
+  readonly isRead: boolean;
+  readonly isSentToMobile: boolean;
 }
 
 export interface NotificationSummary {
-  totalAlerts: number;
-  unreadCount: number;
-  mobileQueue: number;
-  dueToday: number;
+  readonly totalAlerts: number;
+  readonly unreadCount: number;
+  readonly mobileQueue: number;
+  readonly dueToday: number;
 }
 
-export interface NotificationsResponse {
-  summary: NotificationSummary;
-  items: NotificationItem[];
+export interface NotificationsQuery {
+  readonly search?: string;
+  readonly status?:
+    | 'all'
+    | 'unread'
+    | 'read';
+
+  readonly page: number;
+  readonly pageSize: number;
+}
+
+export interface NotificationsPagedResponse {
+  readonly generatedAt: string;
+  readonly summary: NotificationSummary;
+  readonly items:
+    readonly NotificationItem[];
+
+  readonly page: number;
+  readonly pageSize: number;
+  readonly totalCount: number;
+  readonly totalPages: number;
+  readonly hasPreviousPage: boolean;
+  readonly hasNextPage: boolean;
 }
 
 export interface MarkNotificationReadResponse {
-  success: boolean;
-  message: string;
-  notificationId: number;
-  isRead: boolean;
+  readonly success: boolean;
+  readonly message: string;
+  readonly notificationId: number;
+  readonly isRead: boolean;
 }

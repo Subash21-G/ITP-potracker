@@ -7,9 +7,16 @@ namespace POTracker.Controllers.Api
 {
     [ApiController]
     [Route("api/notifications")]
+    [Produces("application/json")]
+    [ResponseCache(
+        Duration = 0,
+        Location = ResponseCacheLocation.None,
+        NoStore = true)]
     public sealed class NotificationsApiController :
         ControllerBase
     {
+        private const int DefaultPageSize = 25;
+
         private readonly ApplicationDbContext _context;
 
         public NotificationsApiController(
@@ -19,83 +26,195 @@ namespace POTracker.Controllers.Api
         }
 
         [HttpGet]
+        [ProducesResponseType(
+            typeof(NotificationsPagedResponseDto),
+            StatusCodes.Status200OK)]
         public async Task<
-            ActionResult<NotificationsResponseDto>>
+            ActionResult<NotificationsPagedResponseDto>>
             Index(
-                CancellationToken cancellationToken)
+                string? search,
+                string? status,
+                int page = 1,
+                int pageSize = DefaultPageSize,
+                CancellationToken cancellationToken = default)
         {
             var today =
                 DateTime.Today;
 
+            page =
+                Math.Max(
+                    page,
+                    1);
+
+            pageSize =
+                NormalizePageSize(
+                    pageSize);
+
+            var allAlerts =
+                _context.Alerts
+                    .AsNoTracking();
+
+            var summary =
+                new NotificationSummaryDto
+                {
+                    TotalAlerts =
+                        await allAlerts.CountAsync(
+                            cancellationToken),
+
+                    UnreadCount =
+                        await allAlerts.CountAsync(
+                            alert =>
+                                !alert.IsRead,
+                            cancellationToken),
+
+                    MobileQueue =
+                        await allAlerts.CountAsync(
+                            alert =>
+                                !alert.IsSentToMobile,
+                            cancellationToken),
+
+                    DueToday =
+                        await allAlerts.CountAsync(
+                            alert =>
+                                alert.AlertDate.Date <=
+                                today,
+                            cancellationToken)
+                };
+
+            var query =
+                allAlerts;
+
+            var normalizedStatus =
+                Clean(status)?
+                    .ToLowerInvariant();
+
+            query =
+                normalizedStatus switch
+                {
+                    "unread" =>
+                        query.Where(
+                            alert =>
+                                !alert.IsRead),
+
+                    "read" =>
+                        query.Where(
+                            alert =>
+                                alert.IsRead),
+
+                    _ =>
+                        query
+                };
+
+            var normalizedSearch =
+                Clean(search);
+
+            if (normalizedSearch != null)
+            {
+                query =
+                    query.Where(
+                        alert =>
+                            (
+                                alert.Material != null &&
+                                (
+                                    alert.Material.MaterialNo ??
+                                    string.Empty
+                                ).Contains(
+                                    normalizedSearch)
+                            ) ||
+                            alert.AlertType.Contains(
+                                normalizedSearch) ||
+                            alert.Message.Contains(
+                                normalizedSearch));
+            }
+
+            var totalCount =
+                await query.CountAsync(
+                    cancellationToken);
+
+            var totalPages =
+                Math.Max(
+                    1,
+                    (int)Math.Ceiling(
+                        totalCount /
+                        (double)pageSize));
+
+            if (page > totalPages)
+            {
+                page =
+                    totalPages;
+            }
+
             var items =
-                await _context.Alerts
-                    .AsNoTracking()
-                    .Include(alert =>
-                        alert.Material)
-                    .OrderByDescending(alert =>
-                        alert.AlertDate)
-                    .Take(100)
-                    .Select(alert =>
-                        new NotificationItemDto
-                        {
-                            Id =
-                                alert.Id,
+                await query
+                    .OrderByDescending(
+                        alert =>
+                            alert.AlertDate)
+                    .ThenByDescending(
+                        alert =>
+                            alert.Id)
+                    .Skip(
+                        (page - 1) *
+                        pageSize)
+                    .Take(
+                        pageSize)
+                    .Select(
+                        alert =>
+                            new NotificationItemDto
+                            {
+                                Id =
+                                    alert.Id,
 
-                            MaterialId =
-                                alert.MaterialId,
+                                MaterialId =
+                                    alert.MaterialId,
 
-                            MaterialNo =
-                                alert.Material != null
-                                    ? alert.Material.MaterialNo ??
-                                      string.Empty
-                                    : string.Empty,
+                                MaterialNo =
+                                    alert.Material != null
+                                        ? alert.Material.MaterialNo ??
+                                          string.Empty
+                                        : string.Empty,
 
-                            AlertType =
-                                alert.AlertType,
+                                AlertType =
+                                    alert.AlertType,
 
-                            Message =
-                                alert.Message,
+                                Message =
+                                    alert.Message,
 
-                            AlertDate =
-                                alert.AlertDate,
+                                AlertDate =
+                                    alert.AlertDate,
 
-                            IsRead =
-                                alert.IsRead,
+                                IsRead =
+                                    alert.IsRead,
 
-                            IsSentToMobile =
-                                alert.IsSentToMobile,
-                        })
+                                IsSentToMobile =
+                                    alert.IsSentToMobile
+                            })
                     .ToListAsync(
                         cancellationToken);
 
-            var response =
-                new NotificationsResponseDto
+            return Ok(
+                new NotificationsPagedResponseDto
                 {
+                    GeneratedAt =
+                        DateTime.Now,
+
+                    Summary =
+                        summary,
+
                     Items =
                         items,
 
-                    Summary =
-                        new NotificationSummaryDto
-                        {
-                            TotalAlerts =
-                                items.Count,
+                    Page =
+                        page,
 
-                            UnreadCount =
-                                items.Count(item =>
-                                    !item.IsRead),
+                    PageSize =
+                        pageSize,
 
-                            MobileQueue =
-                                items.Count(item =>
-                                    !item.IsSentToMobile),
+                    TotalCount =
+                        totalCount,
 
-                            DueToday =
-                                items.Count(item =>
-                                    item.AlertDate.Date <=
-                                    today),
-                        },
-                };
-
-            return Ok(response);
+                    TotalPages =
+                        totalPages
+                });
         }
 
         [HttpPost("{id:int}/read")]
@@ -145,8 +264,29 @@ namespace POTracker.Controllers.Api
                         alert.Id,
 
                     IsRead =
-                        alert.IsRead,
+                        alert.IsRead
                 });
+        }
+
+        private static int NormalizePageSize(
+            int pageSize)
+        {
+            return pageSize is
+                25 or 50 or 100
+                    ? pageSize
+                    : DefaultPageSize;
+        }
+
+        private static string? Clean(
+            string? value)
+        {
+            var cleaned =
+                value?.Trim();
+
+            return string.IsNullOrWhiteSpace(
+                cleaned)
+                    ? null
+                    : cleaned;
         }
     }
 }

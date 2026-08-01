@@ -724,6 +724,10 @@ namespace POTracker.Controllers.Api
                         purchaseOrder.Materials
                             .Sum(material =>
                                 (decimal?)material.Qty) ?? 0m,
+                    TotalMaterialValue =
+                        purchaseOrder.Materials
+                            .Sum(material =>
+                                (decimal?)material.TotalValue) ?? 0m,
                     TotalInvoiceQuantity =
                         purchaseOrder.Materials
                             .Sum(material =>
@@ -841,6 +845,7 @@ namespace POTracker.Controllers.Api
                     source.PendingDispatchMaterials,
                 OverdueMaterials = source.OverdueMaterials,
                 TotalPOQuantity = source.TotalPOQuantity,
+                TotalMaterialValue = source.TotalMaterialValue,
                 TotalInvoiceQuantity = source.TotalInvoiceQuantity,
                 TotalInvoiceBalanceQuantity =
                     source.TotalInvoiceBalanceQuantity,
@@ -871,6 +876,8 @@ namespace POTracker.Controllers.Api
                     string.IsNullOrWhiteSpace(row.Handler)),
                 TotalPOQuantity = rows.Sum(row =>
                     row.TotalPOQuantity),
+                TotalMaterialValue = rows.Sum(row =>
+                    row.TotalMaterialValue),
                 TotalInvoiceBalanceQuantity = rows.Sum(row =>
                     row.TotalInvoiceBalanceQuantity),
                 TotalPendingDispatchQuantity = rows.Sum(row =>
@@ -1237,6 +1244,8 @@ namespace POTracker.Controllers.Api
 
             public decimal TotalPOQuantity { get; init; }
 
+            public decimal TotalMaterialValue { get; init; }
+
             public decimal TotalInvoiceQuantity { get; init; }
 
             public decimal TotalInvoiceBalanceQuantity { get; init; }
@@ -1251,4 +1260,3 @@ namespace POTracker.Controllers.Api
         }
     }
 }
-

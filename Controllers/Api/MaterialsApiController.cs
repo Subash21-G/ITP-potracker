@@ -115,6 +115,9 @@ namespace POTracker.Controllers.Api
                             material.PriceUnit ??
                             string.Empty,
 
+                        TotalValue =
+                            material.TotalValue,
+
                         InvoiceQuantity =
                             material.InvoiceQty,
 
@@ -442,6 +445,7 @@ namespace POTracker.Controllers.Api
 
             List<MaterialListItemDto> items;
             int totalRecords;
+            decimal totalValue;
 
             if (
                 string.IsNullOrWhiteSpace(
@@ -450,6 +454,12 @@ namespace POTracker.Controllers.Api
                 totalRecords =
                     await query.CountAsync(
                         cancellationToken);
+
+                totalValue =
+                    await query.SumAsync(
+                        material =>
+                            (decimal?)material.TotalValue,
+                        cancellationToken) ?? 0m;
 
                 var totalPages =
                     Math.Max(
@@ -511,6 +521,11 @@ namespace POTracker.Controllers.Api
                 totalRecords =
                     filteredItems.Count;
 
+                totalValue =
+                    filteredItems.Sum(
+                        item =>
+                            item.TotalValue);
+
                 var totalPages =
                     Math.Max(
                         1,
@@ -546,7 +561,10 @@ namespace POTracker.Controllers.Api
                         pageSize,
 
                     TotalRecords =
-                        totalRecords
+                        totalRecords,
+
+                    TotalValue =
+                        totalValue
                 });
         }
         // ============================================================
@@ -2808,11 +2826,3 @@ namespace POTracker.Controllers.Api
         }
     }
 }
-
-
-
-
-
-
-
-

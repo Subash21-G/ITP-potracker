@@ -13,6 +13,7 @@ export interface MaterialListItem {
   readonly unit: string;
   readonly unitPrice: number;
   readonly priceUnit: string;
+  readonly totalValue?: number;
   readonly invoiceQuantity: number;
   readonly dispatchQuantity: number;
   readonly pendingQuantity: number;
@@ -37,6 +38,7 @@ export interface PagedResult<T> {
   readonly page: number;
   readonly pageSize: number;
   readonly totalRecords: number;
+  readonly totalValue?: number;
   readonly totalPages: number;
   readonly hasPreviousPage: boolean;
   readonly hasNextPage: boolean;

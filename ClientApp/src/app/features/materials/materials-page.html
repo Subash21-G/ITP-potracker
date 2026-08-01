@@ -55,6 +55,52 @@
   </div>
 </section>
 
+<section
+  class="materials-overview-grid"
+  aria-label="Material result summary">
+  <article class="materials-overview-card materials-overview-card--blue">
+    <span class="materials-overview-card__icon">MT</span>
+    <div>
+      <small>Matching Materials</small>
+      <strong>{{ totalRecords() | number }}</strong>
+      <span>Records in the filtered result</span>
+    </div>
+  </article>
+
+  <article class="materials-overview-card materials-overview-card--violet">
+    <span class="materials-overview-card__icon">₹</span>
+    <div>
+      <small>Total Material Value</small>
+      <strong>
+        ₹{{ totalMaterialValue() | number: '1.2-2' }}
+      </strong>
+      <span>Sum of filtered material values</span>
+    </div>
+  </article>
+
+  <article class="materials-overview-card materials-overview-card--cyan">
+    <span class="materials-overview-card__icon">PG</span>
+    <div>
+      <small>Current Page</small>
+      <strong>
+        {{ page() | number }} / {{ totalPages() | number }}
+      </strong>
+      <span>Server-paginated result</span>
+    </div>
+  </article>
+
+  <article class="materials-overview-card materials-overview-card--emerald">
+    <span class="materials-overview-card__icon">RW</span>
+    <div>
+      <small>Visible Range</small>
+      <strong>
+        {{ showingFrom() | number }}–{{ showingTo() | number }}
+      </strong>
+      <span>{{ pageSize() }} rows per page</span>
+    </div>
+  </article>
+</section>
+
 <section class="panel filter-panel" aria-labelledby="filter-title">
   <div class="panel__heading">
     <div>
@@ -273,7 +319,6 @@
         [disabled]="loading()"
         (change)="changePageSize($event)"
       >
-        <option value="10">10</option>
         <option value="25">25</option>
         <option value="50">50</option>
         <option value="100">100</option>
@@ -304,6 +349,7 @@
           <th>Description</th>
           <th class="number-cell">Ordered</th>
           <th class="number-cell">Unit Price</th>
+          <th class="number-cell">Material Value</th>
           <th class="number-cell">Invoiced</th>
           <th class="number-cell">Dispatched</th>
           <th class="number-cell">Pending</th>
@@ -398,6 +444,12 @@
               </span>
             </td>
 
+            <td class="number-cell number-cell--value">
+              <strong>
+                &#8377;{{ (material.totalValue ?? 0) | number: '1.2-2' }}
+              </strong>
+            </td>
+
             <td class="number-cell">
               {{ material.invoiceQuantity | number: '1.0-2' }}
             </td>
@@ -490,7 +542,7 @@
           </tr>
         } @empty {
           <tr>
-            <td class="empty-state" colspan="17">
+            <td class="empty-state" colspan="18">
               @if (loading()) {
                 Loading materials…
               } @else {
@@ -503,37 +555,66 @@
     </table>
   </div>
 
-  <div
-    class="pagination"
-    aria-label="Material result pages"
-  >
-    <span>
-      Page {{ page() | number }} of {{ totalPages() | number }}
-    </span>
+  @if (totalRecords() > 0) {
+    <footer
+      class="premium-pagination"
+      aria-label="Material result pages">
+      <div class="premium-pagination__range">
+        <strong>
+          {{ showingFrom() | number }}–{{ showingTo() | number }}
+        </strong>
+        <span>
+          of {{ totalRecords() | number }} materials
+        </span>
+      </div>
 
-    <div>
-      <button
-        class="button button--quiet"
-        type="button"
-        [disabled]="!hasPreviousPage() || loading()"
-        (click)="previousPage()"
-      >
-        Previous
-      </button>
+      <nav aria-label="Material pagination">
+        <button
+          type="button"
+          [disabled]="!hasPreviousPage() || loading()"
+          (click)="goToPage(1)">
+          First
+        </button>
 
-      <button
-        class="button button--quiet"
-        type="button"
-        [disabled]="!hasNextPage() || loading()"
-        (click)="nextPage()"
-      >
-        Next
-      </button>
-    </div>
-  </div>
+        <button
+          type="button"
+          [disabled]="!hasPreviousPage() || loading()"
+          (click)="previousPage()">
+          Previous
+        </button>
+
+        @for (
+          pageNumber of visiblePages();
+          track pageNumber
+        ) {
+          <button
+            type="button"
+            [class.active]="pageNumber === page()"
+            [attr.aria-current]="
+              pageNumber === page()
+                ? 'page'
+                : null
+            "
+            [disabled]="loading()"
+            (click)="goToPage(pageNumber)">
+            {{ pageNumber }}
+          </button>
+        }
+
+        <button
+          type="button"
+          [disabled]="!hasNextPage() || loading()"
+          (click)="nextPage()">
+          Next
+        </button>
+
+        <button
+          type="button"
+          [disabled]="!hasNextPage() || loading()"
+          (click)="goToPage(totalPages())">
+          Last
+        </button>
+      </nav>
+    </footer>
+  }
 </section>
-
-
-
-
-

@@ -1,4 +1,4 @@
-﻿namespace POTracker.Contracts.Api
+namespace POTracker.Contracts.Api
 {
     public sealed class MaterialListItemDto
     {
@@ -29,6 +29,8 @@
         public decimal UnitPrice { get; init; }
 
         public string PriceUnit { get; init; } = string.Empty;
+
+        public decimal TotalValue { get; init; }
 
         public decimal InvoiceQuantity { get; init; }
 
@@ -63,8 +65,3 @@
         public bool StockDataLive { get; set; }
     }
 }
-
-
-
-
-

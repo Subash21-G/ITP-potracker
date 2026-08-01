@@ -28,6 +28,7 @@ const EMPTY_SUMMARY: PurchaseOrderListSummary = {
   purchaseOrdersWithOverdueMaterials: 0,
   purchaseOrdersWithoutHandler: 0,
   totalPOQuantity: 0,
+  totalMaterialValue: 0,
   totalInvoiceBalanceQuantity: 0,
   totalPendingDispatchQuantity: 0,
 };
@@ -85,6 +86,48 @@ export class PurchaseOrdersPage {
         this.totalPages(),
     );
 
+  readonly visiblePages =
+    computed(() => {
+      const current =
+        this.page();
+
+      const total =
+        this.totalPages();
+
+      const first =
+        Math.max(
+          1,
+          current - 2,
+        );
+
+      const last =
+        Math.min(
+          total,
+          first + 4,
+        );
+
+      const adjustedFirst =
+        Math.max(
+          1,
+          last - 4,
+        );
+
+      return Array.from(
+        {
+          length:
+            last -
+            adjustedFirst +
+            1,
+        },
+        (
+          _,
+          index,
+        ) =>
+          adjustedFirst +
+          index,
+      );
+    });
+
   readonly selectedCount =
     computed(
       () =>
@@ -136,7 +179,7 @@ export class PurchaseOrdersPage {
   changePageSize(event: Event): void {
     const value = Number((event.target as HTMLSelectElement).value);
 
-    if (![10, 25, 50, 100].includes(value)) {
+    if (![25, 50, 100].includes(value)) {
       return;
     }
 
@@ -147,14 +190,31 @@ export class PurchaseOrdersPage {
     this.loadPurchaseOrders();
   }
 
-  previousPage(): void {
-    if (!this.hasPreviousPage() || this.loading()) {
+  goToPage(
+    page: number,
+  ): void {
+    if (this.loading()) {
       return;
     }
 
-    this.page.update(
-      (currentPage) =>
-        currentPage - 1,
+    const normalizedPage =
+      Math.min(
+        Math.max(
+          page,
+          1,
+        ),
+        this.totalPages(),
+      );
+
+    if (
+      normalizedPage ===
+      this.page()
+    ) {
+      return;
+    }
+
+    this.page.set(
+      normalizedPage,
     );
 
     this.clearSelection();
@@ -162,19 +222,24 @@ export class PurchaseOrdersPage {
     this.loadPurchaseOrders();
   }
 
-  nextPage(): void {
-    if (!this.hasNextPage() || this.loading()) {
+  previousPage(): void {
+    if (!this.hasPreviousPage()) {
       return;
     }
 
-    this.page.update(
-      (currentPage) =>
-        currentPage + 1,
+    this.goToPage(
+      this.page() - 1,
     );
+  }
 
-    this.clearSelection();
-    this.successMessage.set('');
-    this.loadPurchaseOrders();
+  nextPage(): void {
+    if (!this.hasNextPage()) {
+      return;
+    }
+
+    this.goToPage(
+      this.page() + 1,
+    );
   }
 
   togglePurchaseOrder(
@@ -482,4 +547,3 @@ export class PurchaseOrdersPage {
     }
   }
 }
-

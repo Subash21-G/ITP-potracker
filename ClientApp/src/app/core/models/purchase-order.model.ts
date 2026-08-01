@@ -15,6 +15,7 @@ export interface PurchaseOrderListItem {
   readonly pendingDispatchMaterials: number;
   readonly overdueMaterials: number;
   readonly totalPOQuantity: number;
+  readonly totalMaterialValue?: number;
   readonly totalInvoiceQuantity: number;
   readonly totalInvoiceBalanceQuantity: number;
   readonly totalDispatchQuantity: number;
@@ -32,6 +33,7 @@ export interface PurchaseOrderListSummary {
   readonly purchaseOrdersWithOverdueMaterials: number;
   readonly purchaseOrdersWithoutHandler: number;
   readonly totalPOQuantity: number;
+  readonly totalMaterialValue?: number;
   readonly totalInvoiceBalanceQuantity: number;
   readonly totalPendingDispatchQuantity: number;
 }
