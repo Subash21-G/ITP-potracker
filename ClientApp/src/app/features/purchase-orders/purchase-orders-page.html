@@ -3,7 +3,7 @@
     <p class="eyebrow">PURCHASE ORDER MANAGEMENT</p>
     <h1>Purchase Orders</h1>
     <p class="page-heading__description">
-      Review order progress, material completion, invoice balance and dispatch balance.
+      Review order progress, material completion, order value and dispatch balance.
     </p>
   </div>
 
@@ -122,15 +122,6 @@
         ₹{{ (summary().totalMaterialValue ?? 0) | number: '1.2-2' }}
       </strong>
       <span>Basic value of filtered PO materials</span>
-    </div>
-  </article>
-
-  <article class="po-quantity-card po-quantity-card--amber">
-    <span class="po-quantity-card__icon">IB</span>
-    <div>
-      <small>Invoice Balance</small>
-      <strong>{{ summary().totalInvoiceBalanceQuantity | number: '1.0-2' }}</strong>
-      <span>Quantity waiting for invoicing</span>
     </div>
   </article>
 
@@ -297,7 +288,6 @@
           <th>Materials</th>
           <th class="number-cell">PO quantity</th>
           <th class="number-cell">PO value</th>
-          <th class="number-cell">Invoice balance</th>
           <th class="number-cell">Dispatch balance</th>
           <th>Delivery range</th>
           <th>PDF</th>
@@ -406,14 +396,6 @@
               </strong>
             </td>
             <td class="number-cell">
-              <strong class="quantity--warning">
-                {{ purchaseOrder.totalInvoiceBalanceQuantity | number: '1.0-2' }}
-              </strong>
-              <span class="secondary-value">
-                {{ purchaseOrder.notInvoicedMaterials | number }} not invoiced
-              </span>
-            </td>
-            <td class="number-cell">
               <strong class="quantity--danger">
                 {{ purchaseOrder.totalPendingDispatchQuantity | number: '1.0-2' }}
               </strong>
@@ -481,7 +463,7 @@
           </tr>
         } @empty {
           <tr>
-            <td class="empty-state" colspan="14">
+            <td class="empty-state" colspan="13">
               @if (loading()) {
                 Loading Purchase Orders…
               } @else {

@@ -925,20 +925,25 @@ namespace POTracker.Controllers.Api
             IXLWorksheet worksheet,
             IReadOnlyList<PurchaseOrderListItemDto> rows)
         {
+            var totalMaterialValue =
+                rows.Sum(row =>
+                    row.TotalMaterialValue);
+
             worksheet.Cell("A1").Value =
                 "PO TRACKER - PURCHASE ORDERS";
 
-            worksheet.Range("A1:U1").Merge();
+            worksheet.Range("A1:S1").Merge();
 
             worksheet.Cell("A2").Value =
                 $"Generated: {DateTime.Now:dd-MM-yyyy hh:mm tt}";
 
-            worksheet.Range("A2:U2").Merge();
+            worksheet.Range("A2:S2").Merge();
 
             worksheet.Cell("A3").Value =
-                $"Total purchase orders: {rows.Count}";
+                $"Purchase orders: {rows.Count} | " +
+                $"Total material value: ₹{totalMaterialValue:N2}";
 
-            worksheet.Range("A3:U3").Merge();
+            worksheet.Range("A3:S3").Merge();
 
             var headers = new[]
             {
@@ -952,12 +957,10 @@ namespace POTracker.Controllers.Api
                 "Total Materials",
                 "Pending Materials",
                 "Completed Materials",
-                "Not Invoiced Materials",
                 "Pending Dispatch Materials",
                 "Overdue Materials",
                 "Total PO Qty",
-                "Invoice Qty",
-                "Invoice Balance",
+                "PO Material Value",
                 "Dispatch Qty",
                 "Dispatch Balance",
                 "Earliest Delivery",
@@ -1032,34 +1035,28 @@ namespace POTracker.Controllers.Api
                     item.CompletedMaterials;
 
                 worksheet.Cell(rowNumber, 11).Value =
-                    item.NotInvoicedMaterials;
-
-                worksheet.Cell(rowNumber, 12).Value =
                     item.PendingDispatchMaterials;
 
-                worksheet.Cell(rowNumber, 13).Value =
+                worksheet.Cell(rowNumber, 12).Value =
                     item.OverdueMaterials;
 
-                worksheet.Cell(rowNumber, 14).Value =
+                worksheet.Cell(rowNumber, 13).Value =
                     item.TotalPOQuantity;
 
+                worksheet.Cell(rowNumber, 14).Value =
+                    item.TotalMaterialValue;
+
                 worksheet.Cell(rowNumber, 15).Value =
-                    item.TotalInvoiceQuantity;
-
-                worksheet.Cell(rowNumber, 16).Value =
-                    item.TotalInvoiceBalanceQuantity;
-
-                worksheet.Cell(rowNumber, 17).Value =
                     item.TotalDispatchQuantity;
 
-                worksheet.Cell(rowNumber, 18).Value =
+                worksheet.Cell(rowNumber, 16).Value =
                     item.TotalPendingDispatchQuantity;
 
                 if (item.EarliestDeliveryDate.HasValue)
                 {
                     worksheet.Cell(
                         rowNumber,
-                        19).Value =
+                        17).Value =
                         item.EarliestDeliveryDate.Value;
                 }
 
@@ -1067,11 +1064,11 @@ namespace POTracker.Controllers.Api
                 {
                     worksheet.Cell(
                         rowNumber,
-                        20).Value =
+                        18).Value =
                         item.LatestDeliveryDate.Value;
                 }
 
-                worksheet.Cell(rowNumber, 21).Value =
+                worksheet.Cell(rowNumber, 19).Value =
                     string.IsNullOrWhiteSpace(
                         item.PdfFilePath)
                         ? "No"
@@ -1086,7 +1083,7 @@ namespace POTracker.Controllers.Api
             }
 
             var title =
-                worksheet.Range("A1:U1");
+                worksheet.Range("A1:S1");
 
             title.Style.Fill.BackgroundColor =
                 XLColor.FromHtml("#4C2FD4");
@@ -1100,12 +1097,12 @@ namespace POTracker.Controllers.Api
             title.Style.Alignment.Horizontal =
                 XLAlignmentHorizontalValues.Center;
 
-            worksheet.Range("A2:U3")
+            worksheet.Range("A2:S3")
                 .Style.Alignment.Horizontal =
                 XLAlignmentHorizontalValues.Center;
 
             var header =
-                worksheet.Range("A5:U5");
+                worksheet.Range("A5:S5");
 
             header.Style.Fill.BackgroundColor =
                 XLColor.FromHtml("#EDE9FE");
@@ -1127,17 +1124,33 @@ namespace POTracker.Controllers.Api
 
                 worksheet.Range(
                         6,
-                        19,
+                        17,
                         5 + rows.Count,
-                        20)
+                        18)
                     .Style.DateFormat.Format =
                     "dd-mmm-yyyy";
 
                 worksheet.Range(
                         6,
+                        13,
+                        5 + rows.Count,
+                        13)
+                    .Style.NumberFormat.Format =
+                    "0.00";
+
+                worksheet.Range(
+                        6,
                         14,
                         5 + rows.Count,
-                        18)
+                        14)
+                    .Style.NumberFormat.Format =
+                    "₹#,##0.00";
+
+                worksheet.Range(
+                        6,
+                        15,
+                        5 + rows.Count,
+                        16)
                     .Style.NumberFormat.Format =
                     "0.00";
             }
@@ -1147,12 +1160,13 @@ namespace POTracker.Controllers.Api
             worksheet.RangeUsed()?
                 .SetAutoFilter();
 
-            worksheet.Columns(1, 21)
+            worksheet.Columns(1, 19)
                 .AdjustToContents();
 
             worksheet.Column(3).Width = 22;
             worksheet.Column(6).Width = 16;
             worksheet.Column(7).Width = 20;
+            worksheet.Column(14).Width = 18;
         }
 
         private static void StyleExcelStatus(
@@ -1197,7 +1211,7 @@ namespace POTracker.Controllers.Api
                 var overdueCell =
                     worksheet.Cell(
                         rowNumber,
-                        13);
+                        12);
 
                 overdueCell.Style.Fill.BackgroundColor =
                     XLColor.FromHtml("#FFE4E6");
