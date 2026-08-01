@@ -1,62 +1,85 @@
-﻿import {
+import {
   DatePipe,
   DecimalPipe,
+  Location,
 } from '@angular/common';
+
 import {
   HttpErrorResponse,
 } from '@angular/common/http';
+
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   signal,
 } from '@angular/core';
+
 import {
   takeUntilDestroyed,
 } from '@angular/core/rxjs-interop';
+
 import {
-  FormsModule,
+  FormControl,
+  ReactiveFormsModule,
 } from '@angular/forms';
+
 import {
+  ActivatedRoute,
+  Router,
   RouterLink,
 } from '@angular/router';
+
 import {
+  EMPTY,
+  Subject,
+  catchError,
+  debounceTime,
+  defer,
+  distinctUntilChanged,
   finalize,
+  switchMap,
+  tap,
 } from 'rxjs';
 
 import {
+  AlertCategory,
   AlertMaterial,
-  AlertsResponse,
+  AlertsPagedResponse,
+  AlertsQuery,
+  AlertsSummary,
 } from '../../core/models/alert-api.model';
+
 import {
   AlertApiService,
 } from '../../core/services/alert-api.service';
 
-interface AlertGroup {
-  key: string;
-  title: string;
-  description: string;
-  dateLabel: string;
-  dateField:
+interface AlertCategoryOption {
+  readonly value:
+    AlertCategory;
+
+  readonly label: string;
+  readonly description: string;
+  readonly shortLabel: string;
+  readonly tone:
+    | 'blue'
+    | 'red'
+    | 'amber'
+    | 'violet'
+    | 'orange'
+    | 'green'
+    | 'navy';
+
+  readonly dateField:
     | 'alertDate'
     | 'deliveryDate'
     | 'dispatchDate';
-  tone:
-    | 'blue'
-    | 'red'
-    | 'yellow'
-    | 'purple'
-    | 'orange'
-    | 'green'
-    | 'dark';
-  items: AlertMaterial[];
 }
 
-const EMPTY_RESPONSE: AlertsResponse = {
-  generatedAt: '',
-
-  summary: {
+const EMPTY_SUMMARY:
+  AlertsSummary = {
     processStartAlerts: 0,
     overdueMaterials: 0,
     deliveryWithinSevenDays: 0,
@@ -65,23 +88,30 @@ const EMPTY_RESPONSE: AlertsResponse = {
     dispatchDateAlerts: 0,
     lowStock: 0,
     totalAlerts: 0,
-  },
+  };
 
-  processStartAlerts: [],
-  overdueMaterials: [],
-  deliveryWithinSevenDays: [],
-  pendingProcess: [],
-  dispatchPending: [],
-  dispatchDateAlerts: [],
-  lowStock: [],
-};
+const EMPTY_RESPONSE:
+  AlertsPagedResponse = {
+    generatedAt: '',
+    summary:
+      EMPTY_SUMMARY,
+    category:
+      'process-start',
+    items: [],
+    page: 1,
+    pageSize: 25,
+    totalCount: 0,
+    totalPages: 1,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  };
 
 @Component({
   selector: 'app-alerts-page',
   imports: [
     DatePipe,
     DecimalPipe,
-    FormsModule,
+    ReactiveFormsModule,
     RouterLink,
   ],
   templateUrl:
@@ -98,9 +128,165 @@ export class AlertsPage {
   private readonly destroyRef =
     inject(DestroyRef);
 
+  private readonly route =
+    inject(ActivatedRoute);
+
+  private readonly router =
+    inject(Router);
+
+  private readonly location =
+    inject(Location);
+
+  private readonly requestAlerts =
+    new Subject<void>();
+
+  private readonly initialParams =
+    this.route.snapshot
+      .queryParamMap;
+
+  readonly categoryOptions:
+    readonly AlertCategoryOption[] = [
+      {
+        value:
+          'process-start',
+        label:
+          'Process Start Alerts',
+        shortLabel:
+          'Process Start',
+        description:
+          'Process alert date has been reached and work is not completed.',
+        tone:
+          'blue',
+        dateField:
+          'alertDate',
+      },
+      {
+        value:
+          'overdue',
+        label:
+          'Overdue Materials',
+        shortLabel:
+          'Overdue',
+        description:
+          'Delivery date has passed while processing remains incomplete.',
+        tone:
+          'red',
+        dateField:
+          'deliveryDate',
+      },
+      {
+        value:
+          'delivery-seven-days',
+        label:
+          'Delivery Within 7 Days',
+        shortLabel:
+          'Due Soon',
+        description:
+          'Committed delivery date falls within the next seven days.',
+        tone:
+          'amber',
+        dateField:
+          'deliveryDate',
+      },
+      {
+        value:
+          'pending-process',
+        label:
+          'Pending Process Materials',
+        shortLabel:
+          'Pending Process',
+        description:
+          'Material is pending, in process or currently on hold.',
+        tone:
+          'violet',
+        dateField:
+          'deliveryDate',
+      },
+      {
+        value:
+          'dispatch-pending',
+        label:
+          'Dispatch Pending Materials',
+        shortLabel:
+          'Dispatch Pending',
+        description:
+          'Dispatch status is pending or only partially completed.',
+        tone:
+          'orange',
+        dateField:
+          'deliveryDate',
+      },
+      {
+        value:
+          'dispatch-date',
+        label:
+          'Dispatch Date Alerts',
+        shortLabel:
+          'Dispatch Date',
+        description:
+          'Dispatch date is due within seven days and dispatch is incomplete.',
+        tone:
+          'green',
+        dateField:
+          'dispatchDate',
+      },
+      {
+        value:
+          'low-stock',
+        label:
+          'Stock Shortage Materials',
+        shortLabel:
+          'Stock Shortage',
+        description:
+          'Priority-allocated live stock cannot cover the pending requirement.',
+        tone:
+          'navy',
+        dateField:
+          'deliveryDate',
+      },
+    ];
+
   readonly data =
-    signal<AlertsResponse>(
+    signal<AlertsPagedResponse>(
       EMPTY_RESPONSE,
+    );
+
+  readonly category =
+    signal<AlertCategory>(
+      this.parseCategory(
+        this.initialParams.get(
+          'category',
+        ),
+      ),
+    );
+
+  readonly searchControl =
+    new FormControl(
+      this.initialParams.get(
+        'search',
+      ) ?? '',
+      {
+        nonNullable: true,
+      },
+    );
+
+  readonly page =
+    signal(
+      this.parsePositiveInteger(
+        this.initialParams.get(
+          'page',
+        ),
+        1,
+      ),
+    );
+
+  readonly pageSize =
+    signal(
+      this.parsePageSize(
+        this.initialParams.get(
+          'pageSize',
+        ),
+      ),
     );
 
   readonly loading =
@@ -109,262 +295,496 @@ export class AlertsPage {
   readonly errorMessage =
     signal('');
 
-  searchText = '';
+  readonly selectedCategory =
+    computed(() =>
+      this.categoryOptions.find(
+        option =>
+          option.value ===
+          this.category(),
+      ) ??
+      this.categoryOptions[0],
+    );
+
+  readonly startRecord =
+    computed(() =>
+      this.data().totalCount === 0
+        ? 0
+        : (
+            this.data().page - 1
+          ) *
+            this.data().pageSize +
+          1,
+    );
+
+  readonly endRecord =
+    computed(() =>
+      Math.min(
+        this.data().page *
+          this.data().pageSize,
+        this.data().totalCount,
+      ),
+    );
+
+  readonly visiblePages =
+    computed(() => {
+      const current =
+        this.data().page;
+
+      const total =
+        this.data().totalPages;
+
+      const first =
+        Math.max(
+          1,
+          current - 2,
+        );
+
+      const last =
+        Math.min(
+          total,
+          first + 4,
+        );
+
+      const adjustedFirst =
+        Math.max(
+          1,
+          last - 4,
+        );
+
+      return Array.from(
+        {
+          length:
+            last -
+            adjustedFirst +
+            1,
+        },
+        (
+          _,
+          index,
+        ) =>
+          adjustedFirst +
+          index,
+      );
+    });
 
   constructor() {
+    this.requestAlerts
+      .pipe(
+        switchMap(() =>
+          defer(() => {
+            this.loading.set(
+              true,
+            );
+
+            this.errorMessage.set(
+              '',
+            );
+
+            this.replaceUrlState();
+
+            return this.api
+              .getAlerts(
+                this.buildQuery(),
+              )
+              .pipe(
+                tap(
+                  response => {
+                    this.data.set(
+                      response,
+                    );
+
+                    this.category.set(
+                      response.category,
+                    );
+
+                    this.page.set(
+                      response.page,
+                    );
+
+                    this.pageSize.set(
+                      response.pageSize,
+                    );
+                  },
+                ),
+
+                catchError(
+                  (
+                    error:
+                      HttpErrorResponse,
+                  ) => {
+                    this.errorMessage.set(
+                      this.describeError(
+                        error,
+                      ),
+                    );
+
+                    return EMPTY;
+                  },
+                ),
+
+                finalize(() =>
+                  this.loading.set(
+                    false,
+                  ),
+                ),
+              );
+          }),
+        ),
+
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+      )
+      .subscribe();
+
+    this.searchControl
+      .valueChanges
+      .pipe(
+        debounceTime(320),
+
+        distinctUntilChanged(),
+
+        tap(() =>
+          this.page.set(1),
+        ),
+
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+      )
+      .subscribe(() =>
+        this.load(),
+      );
+
     this.load();
   }
 
   load(): void {
-    this.loading.set(true);
-    this.errorMessage.set('');
-
-    this.api
-      .getAlerts()
-      .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-
-        finalize(() =>
-          this.loading.set(false)),
-      )
-      .subscribe({
-        next: response =>
-          this.data.set(response),
-
-        error: (
-          error: HttpErrorResponse,
-        ) => {
-          this.errorMessage.set(
-            this.describeError(error),
-          );
-        },
-      });
+    this.requestAlerts.next();
   }
 
-  getGroups(): AlertGroup[] {
-    const response =
-      this.data();
-
-    return [
-      {
-        key: 'process-start',
-        title:
-          'Process Start Alerts',
-        description:
-          'Materials whose process alert date has been reached.',
-        dateLabel:
-          'Alert Date',
-        dateField:
-          'alertDate',
-        tone:
-          'blue',
-        items:
-          response.processStartAlerts,
-      },
-      {
-        key: 'overdue',
-        title:
-          'Overdue Materials',
-        description:
-          'Delivery date has passed and processing is incomplete.',
-        dateLabel:
-          'Delivery Date',
-        dateField:
-          'deliveryDate',
-        tone:
-          'red',
-        items:
-          response.overdueMaterials,
-      },
-      {
-        key: 'delivery-seven-days',
-        title:
-          'Delivery Within 7 Days',
-        description:
-          'Materials approaching their committed delivery date.',
-        dateLabel:
-          'Delivery Date',
-        dateField:
-          'deliveryDate',
-        tone:
-          'yellow',
-        items:
-          response.deliveryWithinSevenDays,
-      },
-      {
-        key: 'pending-process',
-        title:
-          'Pending Process Materials',
-        description:
-          'Materials currently pending, in process or on hold.',
-        dateLabel:
-          'Delivery Date',
-        dateField:
-          'deliveryDate',
-        tone:
-          'purple',
-        items:
-          response.pendingProcess,
-      },
-      {
-        key: 'dispatch-pending',
-        title:
-          'Dispatch Pending Materials',
-        description:
-          'Materials with pending or partial dispatch status.',
-        dateLabel:
-          'Delivery Date',
-        dateField:
-          'deliveryDate',
-        tone:
-          'orange',
-        items:
-          response.dispatchPending,
-      },
-      {
-        key: 'dispatch-date',
-        title:
-          'Dispatch Date Alerts',
-        description:
-          'Dispatch date is due within the next seven days.',
-        dateLabel:
-          'Dispatch Date',
-        dateField:
-          'dispatchDate',
-        tone:
-          'green',
-        items:
-          response.dispatchDateAlerts,
-      },
-      {
-        key: 'low-stock',
-        title:
-          'Stock Shortage Materials',
-        description:
-          'Materials whose pending requirement exceeds their priority-allocated live stock.',
-        dateLabel:
-          'Delivery Date',
-        dateField:
-          'deliveryDate',
-        tone:
-          'dark',
-        items:
-          response.lowStock,
-      },
-    ];
-  }
-
-  filterItems(
-    items: AlertMaterial[],
-  ): AlertMaterial[] {
-    const search =
-      this.searchText
-        .trim()
-        .toLowerCase();
-
-    if (!search) {
-      return items;
+  setCategory(
+    category: AlertCategory,
+  ): void {
+    if (
+      category ===
+      this.category()
+    ) {
+      return;
     }
 
-    return items.filter(item =>
-      item.materialNo
-        .toLowerCase()
-        .includes(search) ||
-
-      item.lineItem
-        .toLowerCase()
-        .includes(search) ||
-
-      item.description
-        .toLowerCase()
-        .includes(search) ||
-
-      item.processStatus
-        .toLowerCase()
-        .includes(search) ||
-
-      item.dispatchStatus
-        .toLowerCase()
-        .includes(search) ||
-
-      item.stockStatus
-        .toLowerCase()
-        .includes(search),
+    this.category.set(
+      category,
     );
+
+    this.page.set(1);
+    this.load();
+  }
+
+  changeCategory(
+    value: string,
+  ): void {
+    this.setCategory(
+      this.parseCategory(
+        value,
+      ),
+    );
+  }
+
+  changePageSize(
+    value: string,
+  ): void {
+    const pageSize =
+      this.parsePageSize(
+        value,
+      );
+
+    if (
+      pageSize ===
+      this.pageSize()
+    ) {
+      return;
+    }
+
+    this.pageSize.set(
+      pageSize,
+    );
+
+    this.page.set(1);
+    this.load();
+  }
+
+  goToPage(
+    page: number,
+  ): void {
+    const normalizedPage =
+      Math.min(
+        Math.max(
+          page,
+          1,
+        ),
+        this.data().totalPages,
+      );
+
+    if (
+      normalizedPage ===
+      this.page()
+    ) {
+      return;
+    }
+
+    this.page.set(
+      normalizedPage,
+    );
+
+    this.load();
+  }
+
+  clearSearch(): void {
+    this.searchControl.setValue(
+      '',
+    );
+  }
+
+  countFor(
+    category: AlertCategory,
+  ): number {
+    const summary =
+      this.data().summary;
+
+    switch (category) {
+      case 'overdue':
+        return summary
+          .overdueMaterials;
+
+      case 'delivery-seven-days':
+        return summary
+          .deliveryWithinSevenDays;
+
+      case 'pending-process':
+        return summary
+          .pendingProcess;
+
+      case 'dispatch-pending':
+        return summary
+          .dispatchPending;
+
+      case 'dispatch-date':
+        return summary
+          .dispatchDateAlerts;
+
+      case 'low-stock':
+        return summary
+          .lowStock;
+
+      default:
+        return summary
+          .processStartAlerts;
+    }
   }
 
   getDate(
     item: AlertMaterial,
-    field:
-      | 'alertDate'
-      | 'deliveryDate'
-      | 'dispatchDate',
   ): string | null {
-    return item[field];
+    return item[
+      this.selectedCategory()
+        .dateField
+    ];
   }
 
   statusClass(
     status: string,
   ): string {
     const normalized =
-      status.toLowerCase();
+      status
+        .trim()
+        .toLowerCase();
 
     if (
-      normalized.includes('completed') ||
-      normalized.includes('dispatched')
+      normalized.includes(
+        'completed',
+      ) ||
+      normalized.includes(
+        'dispatched',
+      )
     ) {
       return 'status status--success';
     }
 
     if (
-      normalized.includes('partial') ||
-      normalized.includes('process')
+      normalized.includes(
+        'partial',
+      ) ||
+      normalized.includes(
+        'process',
+      )
     ) {
       return 'status status--info';
     }
 
     if (
-      normalized.includes('hold') ||
-      normalized.includes('overdue')
+      normalized.includes(
+        'hold',
+      ) ||
+      normalized.includes(
+        'overdue',
+      )
     ) {
       return 'status status--danger';
     }
 
     return 'status status--warning';
   }
-
 
   stockStatusClass(
     status: string,
   ): string {
     const normalized =
-      status.toLowerCase();
+      status
+        .trim()
+        .toLowerCase();
 
     if (
-      normalized.includes('available') ||
-      normalized.includes('no pending')
+      normalized.includes(
+        'available',
+      ) ||
+      normalized.includes(
+        'no pending',
+      )
     ) {
       return 'status status--success';
     }
 
     if (
-      normalized.includes('partial')
+      normalized.includes(
+        'partial',
+      )
     ) {
       return 'status status--info';
     }
 
     if (
-      normalized.includes('shortage') ||
-      normalized.includes('out of stock') ||
-      normalized.includes('offline')
+      normalized.includes(
+        'shortage',
+      ) ||
+      normalized.includes(
+        'out of stock',
+      ) ||
+      normalized.includes(
+        'offline',
+      )
     ) {
       return 'status status--danger';
     }
 
     return 'status status--warning';
   }
+
+  private buildQuery():
+    AlertsQuery {
+    return {
+      category:
+        this.category(),
+
+      search:
+        this.searchControl.value,
+
+      page:
+        this.page(),
+
+      pageSize:
+        this.pageSize(),
+    };
+  }
+
+  private replaceUrlState(): void {
+    const query =
+      this.buildQuery();
+
+    const urlTree =
+      this.router.createUrlTree(
+        [],
+        {
+          relativeTo:
+            this.route,
+
+          queryParams: {
+            category:
+              query.category !==
+              'process-start'
+                ? query.category
+                : null,
+
+            search:
+              query.search?.trim() ||
+              null,
+
+            page:
+              query.page > 1
+                ? query.page
+                : null,
+
+            pageSize:
+              query.pageSize !== 25
+                ? query.pageSize
+                : null,
+          },
+        },
+      );
+
+    this.location.replaceState(
+      this.router.serializeUrl(
+        urlTree,
+      ),
+    );
+  }
+
+  private parseCategory(
+    value:
+      | string
+      | null,
+  ): AlertCategory {
+    return this.categoryOptions
+      .some(
+        option =>
+          option.value ===
+          value,
+      )
+        ? value as AlertCategory
+        : 'process-start';
+  }
+
+  private parsePositiveInteger(
+    value:
+      | string
+      | null,
+    fallback: number,
+  ): number {
+    const parsed =
+      Number(value);
+
+    return Number.isInteger(
+      parsed,
+    ) &&
+      parsed > 0
+      ? parsed
+      : fallback;
+  }
+
+  private parsePageSize(
+    value:
+      | string
+      | null,
+  ): number {
+    const parsed =
+      Number(value);
+
+    return parsed === 50 ||
+      parsed === 100
+      ? parsed
+      : 25;
+  }
+
   private describeError(
     error: HttpErrorResponse,
   ): string {
@@ -380,9 +800,9 @@ export class AlertsPage {
       error.error?.message ??
       error.error?.error;
 
-    return typeof message === 'string'
+    return typeof message ===
+      'string'
       ? message
       : 'Smart Alerts could not be loaded.';
   }
 }
-

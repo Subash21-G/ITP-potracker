@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
@@ -8,9 +8,19 @@ namespace POTracker.Controllers.Api
 {
     [ApiController]
     [Route("api/alerts")]
+    [Produces("application/json")]
+    [ResponseCache(
+        Duration = 0,
+        Location = ResponseCacheLocation.None,
+        NoStore = true)]
     public sealed class AlertsApiController :
         ControllerBase
     {
+        private const int DefaultPageSize = 25;
+
+        private const string DefaultCategory =
+            "process-start";
+
         private readonly ApplicationDbContext
             _context;
 
@@ -23,14 +33,22 @@ namespace POTracker.Controllers.Api
                 externalStockService)
         {
             _context = context;
+
             _externalStockService =
                 externalStockService;
         }
 
         [HttpGet]
+        [ProducesResponseType(
+            typeof(AlertsPagedResponseDto),
+            StatusCodes.Status200OK)]
         public async Task<
-            ActionResult<AlertsResponseDto>>
+            ActionResult<AlertsPagedResponseDto>>
             GetAlerts(
+                string? category,
+                string? search,
+                int page = 1,
+                int pageSize = DefaultPageSize,
                 CancellationToken
                     cancellationToken = default)
         {
@@ -39,6 +57,19 @@ namespace POTracker.Controllers.Api
 
             var nextWeek =
                 today.AddDays(7);
+
+            var normalizedCategory =
+                NormalizeCategory(
+                    category);
+
+            page =
+                Math.Max(
+                    page,
+                    1);
+
+            pageSize =
+                NormalizePageSize(
+                    pageSize);
 
             var materials =
                 await _context.Materials
@@ -212,35 +243,7 @@ namespace POTracker.Controllers.Api
                         material.MaterialId)
                     .ToList();
 
-            var response =
-                new AlertsResponseDto
-                {
-                    GeneratedAt =
-                        DateTime.Now,
-
-                    ProcessStartAlerts =
-                        processStartAlerts,
-
-                    OverdueMaterials =
-                        overdueMaterials,
-
-                    DeliveryWithinSevenDays =
-                        deliveryWithinSevenDays,
-
-                    PendingProcess =
-                        pendingProcess,
-
-                    DispatchPending =
-                        dispatchPending,
-
-                    DispatchDateAlerts =
-                        dispatchDateAlerts,
-
-                    LowStock =
-                        lowStock
-                };
-
-            response.Summary =
+            var summary =
                 new AlertsSummaryDto
                 {
                     ProcessStartAlerts =
@@ -274,7 +277,208 @@ namespace POTracker.Controllers.Api
                         lowStock.Count
                 };
 
-            return Ok(response);
+            var categoryItems =
+                SelectCategory(
+                    normalizedCategory,
+                    processStartAlerts,
+                    overdueMaterials,
+                    deliveryWithinSevenDays,
+                    pendingProcess,
+                    dispatchPending,
+                    dispatchDateAlerts,
+                    lowStock);
+
+            var normalizedSearch =
+                Clean(
+                    search);
+
+            if (normalizedSearch != null)
+            {
+                categoryItems =
+                    categoryItems
+                        .Where(material =>
+                            Contains(
+                                material.MaterialNo,
+                                normalizedSearch) ||
+                            Contains(
+                                material.LineItem,
+                                normalizedSearch) ||
+                            Contains(
+                                material.Description,
+                                normalizedSearch) ||
+                            Contains(
+                                material.ProcessStatus,
+                                normalizedSearch) ||
+                            Contains(
+                                material.DispatchStatus,
+                                normalizedSearch) ||
+                            Contains(
+                                material.StockStatus,
+                                normalizedSearch))
+                        .ToList();
+            }
+
+            var totalCount =
+                categoryItems.Count;
+
+            var totalPages =
+                Math.Max(
+                    1,
+                    (int)Math.Ceiling(
+                        totalCount /
+                        (double)pageSize));
+
+            if (page > totalPages)
+            {
+                page =
+                    totalPages;
+            }
+
+            var items =
+                categoryItems
+                    .Skip(
+                        (page - 1) *
+                        pageSize)
+                    .Take(
+                        pageSize)
+                    .ToList();
+
+            return Ok(
+                new AlertsPagedResponseDto
+                {
+                    GeneratedAt =
+                        DateTime.Now,
+
+                    Summary =
+                        summary,
+
+                    Category =
+                        normalizedCategory,
+
+                    Items =
+                        items,
+
+                    Page =
+                        page,
+
+                    PageSize =
+                        pageSize,
+
+                    TotalCount =
+                        totalCount,
+
+                    TotalPages =
+                        totalPages
+                });
+        }
+
+        private static List<AlertMaterialDto>
+            SelectCategory(
+                string category,
+                List<AlertMaterialDto>
+                    processStartAlerts,
+                List<AlertMaterialDto>
+                    overdueMaterials,
+                List<AlertMaterialDto>
+                    deliveryWithinSevenDays,
+                List<AlertMaterialDto>
+                    pendingProcess,
+                List<AlertMaterialDto>
+                    dispatchPending,
+                List<AlertMaterialDto>
+                    dispatchDateAlerts,
+                List<AlertMaterialDto>
+                    lowStock)
+        {
+            return category switch
+            {
+                "overdue" =>
+                    overdueMaterials,
+
+                "delivery-seven-days" =>
+                    deliveryWithinSevenDays,
+
+                "pending-process" =>
+                    pendingProcess,
+
+                "dispatch-pending" =>
+                    dispatchPending,
+
+                "dispatch-date" =>
+                    dispatchDateAlerts,
+
+                "low-stock" =>
+                    lowStock,
+
+                _ =>
+                    processStartAlerts
+            };
+        }
+
+        private static string NormalizeCategory(
+            string? category)
+        {
+            var normalized =
+                Clean(
+                    category)?
+                    .ToLowerInvariant();
+
+            return normalized switch
+            {
+                "process-start" =>
+                    "process-start",
+
+                "overdue" =>
+                    "overdue",
+
+                "delivery-seven-days" =>
+                    "delivery-seven-days",
+
+                "pending-process" =>
+                    "pending-process",
+
+                "dispatch-pending" =>
+                    "dispatch-pending",
+
+                "dispatch-date" =>
+                    "dispatch-date",
+
+                "low-stock" =>
+                    "low-stock",
+
+                _ =>
+                    DefaultCategory
+            };
+        }
+
+        private static int NormalizePageSize(
+            int pageSize)
+        {
+            return pageSize is
+                25 or 50 or 100
+                    ? pageSize
+                    : DefaultPageSize;
+        }
+
+        private static string? Clean(
+            string? value)
+        {
+            var cleaned =
+                value?.Trim();
+
+            return string.IsNullOrWhiteSpace(
+                cleaned)
+                    ? null
+                    : cleaned;
+        }
+
+        private static bool Contains(
+            string value,
+            string search)
+        {
+            return value.Contains(
+                search,
+                StringComparison.OrdinalIgnoreCase);
         }
 
         private static void ApplyStockAllocation(

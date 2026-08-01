@@ -1,343 +1,545 @@
-﻿<section class="page-heading">
-  <div>
-    <p class="eyebrow">
-      OPERATIONS MONITORING
-    </p>
+<section class="alerts-page">
+  <header class="alerts-hero">
+    <div class="alerts-hero__copy">
+      <span class="eyebrow">
+        Operations monitoring
+      </span>
 
-    <h1>Smart Alerts</h1>
+      <h1>Smart Alerts</h1>
 
-    <p class="page-heading__description">
-      Monitor process, delivery, dispatch and
-      stock conditions requiring attention.
-    </p>
-  </div>
+      <p>
+        Prioritize process, delivery, dispatch and
+        live-stock risks from one focused workspace.
+      </p>
 
-  <div class="heading-actions">
-    <button
-      class="button button--quiet"
-      type="button"
-      [disabled]="loading()"
-      (click)="load()">
-      {{
-        loading()
-          ? 'Refreshing...'
-          : 'Refresh Alerts'
-      }}
-    </button>
+      <div class="alerts-hero__meta">
+        <span>
+          {{ data().summary.totalAlerts | number }}
+          active alert records
+        </span>
 
-    <a
-      class="button button--quiet"
-      routerLink="/process-queue">
-      Process Queue
-    </a>
-
-    <a
-      class="button button--primary"
-      routerLink="/pending-materials">
-      Pending Materials
-    </a>
-  </div>
-</section>
-
-@if (errorMessage()) {
-<section
-  class="message message--error"
-  role="alert">
-  <strong>
-    Unable to load Smart Alerts
-  </strong>
-
-  <p>{{ errorMessage() }}</p>
-</section>
-}
-
-<section class="summary-grid">
-  <article class="summary-card summary-card--blue">
-    <span>Process Start</span>
-
-    <strong>
-      {{
-        data().summary
-          .processStartAlerts
-      }}
-    </strong>
-  </article>
-
-  <article class="summary-card summary-card--red">
-    <span>Overdue</span>
-
-    <strong>
-      {{
-        data().summary
-          .overdueMaterials
-      }}
-    </strong>
-  </article>
-
-  <article class="summary-card summary-card--yellow">
-    <span>Due Within 7 Days</span>
-
-    <strong>
-      {{
-        data().summary
-          .deliveryWithinSevenDays
-      }}
-    </strong>
-  </article>
-
-  <article class="summary-card summary-card--purple">
-    <span>Pending Process</span>
-
-    <strong>
-      {{
-        data().summary
-          .pendingProcess
-      }}
-    </strong>
-  </article>
-
-  <article class="summary-card summary-card--orange">
-    <span>Dispatch Pending</span>
-
-    <strong>
-      {{
-        data().summary
-          .dispatchPending
-      }}
-    </strong>
-  </article>
-
-  <article class="summary-card summary-card--green">
-    <span>Dispatch Date Alerts</span>
-
-    <strong>
-      {{
-        data().summary
-          .dispatchDateAlerts
-      }}
-    </strong>
-  </article>
-
-  <article class="summary-card summary-card--dark">
-    <span>Stock Shortage</span>
-
-    <strong>
-      {{
-        data().summary
-          .lowStock
-      }}
-    </strong>
-  </article>
-
-  <article class="summary-card">
-    <span>Total Alert Records</span>
-
-    <strong>
-      {{
-        data().summary
-          .totalAlerts
-      }}
-    </strong>
-  </article>
-</section>
-
-<section class="toolbar">
-  <label>
-    <span>Search alert records</span>
-
-    <input
-      type="search"
-      [(ngModel)]="searchText"
-      placeholder="Material, description or status" />
-  </label>
-
-  @if (data().generatedAt) {
-  <p>
-    Last generated:
-    {{
-      data().generatedAt |
-        date: 'dd MMM yyyy, hh:mm a'
-    }}
-  </p>
-  }
-</section>
-
-@for (
-  group of getGroups();
-  track group.key
-) {
-<section
-  class="alert-section"
-  [class]="'alert-section alert-section--' + group.tone">
-  <div class="section-heading">
-    <div>
-      <h2>{{ group.title }}</h2>
-
-      <p>{{ group.description }}</p>
+        @if (data().generatedAt) {
+          <span>
+            Updated
+            {{
+              data().generatedAt |
+                date:'dd MMM yyyy, hh:mm a'
+            }}
+          </span>
+        }
+      </div>
     </div>
 
-    <span class="count-badge">
-      {{
-        filterItems(group.items).length
-      }}
-    </span>
-  </div>
+    <div class="alerts-hero__actions">
+      <button
+        class="button button--light"
+        type="button"
+        [disabled]="loading()"
+        (click)="load()">
+        {{
+          loading()
+            ? 'Refreshing…'
+            : 'Refresh alerts'
+        }}
+      </button>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Material</th>
-          <th>Description</th>
-          <th>{{ group.dateLabel }}</th>
-          <th>Delivery Date</th>
-          <th>Process</th>
-          <th>Dispatch</th>
-          <th>Allocated / Live Stock</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
+      <a
+        class="button button--glass"
+        routerLink="/process-queue">
+        Process Queue
+      </a>
 
-      <tbody>
+      <a
+        class="button button--accent"
+        routerLink="/pending-materials">
+        Pending Materials
+      </a>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <section
+      class="message message--error"
+      role="alert">
+      <div>
+        <strong>
+          Unable to load Smart Alerts
+        </strong>
+
+        <p>{{ errorMessage() }}</p>
+      </div>
+
+      <button
+        type="button"
+        (click)="load()">
+        Try again
+      </button>
+    </section>
+  }
+
+  <section
+    class="summary-grid"
+    aria-label="Alert categories">
+    @for (
+      option of categoryOptions;
+      track option.value
+    ) {
+      <button
+        type="button"
+        [class]="
+          'summary-card summary-card--' +
+          option.tone +
+          (
+            option.value === category()
+              ? ' summary-card--active'
+              : ''
+          )
+        "
+        (click)="setCategory(option.value)">
+        <span class="summary-card__icon">
+          {{
+            option.shortLabel
+              .slice(0, 2)
+              .toUpperCase()
+          }}
+        </span>
+
+        <span class="summary-card__copy">
+          <small>
+            {{ option.shortLabel }}
+          </small>
+
+          <strong>
+            {{
+              countFor(option.value)
+                | number
+            }}
+          </strong>
+
+          <span>
+            View category
+          </span>
+        </span>
+      </button>
+    }
+
+    <article class="summary-card summary-card--total">
+      <span class="summary-card__icon">
+        TA
+      </span>
+
+      <span class="summary-card__copy">
+        <small>Total Alerts</small>
+
+        <strong>
+          {{
+            data().summary.totalAlerts
+              | number
+          }}
+        </strong>
+
+        <span>
+          Across all categories
+        </span>
+      </span>
+    </article>
+  </section>
+
+  <section class="alerts-filter-card">
+    <div class="alerts-filter-card__heading">
+      <div>
+        <span class="eyebrow">
+          Focused review
+        </span>
+
+        <h2>
+          {{ selectedCategory().label }}
+        </h2>
+
+        <p>
+          {{ selectedCategory().description }}
+        </p>
+      </div>
+
+      <div class="alerts-filter-card__count">
+        <strong>
+          {{ data().totalCount | number }}
+        </strong>
+        <span>matching records</span>
+      </div>
+    </div>
+
+    <div class="alerts-filter-grid">
+      <label class="alerts-search">
+        <span>Search this category</span>
+
+        <div class="search-control">
+          <input
+            type="search"
+            [formControl]="searchControl"
+            placeholder="Material, description or status">
+
+          @if (searchControl.value) {
+            <button
+              type="button"
+              aria-label="Clear alert search"
+              (click)="clearSearch()">
+              Clear
+            </button>
+          }
+        </div>
+      </label>
+
+      <label>
+        <span>Alert category</span>
+
+        <select
+          [value]="category()"
+          (change)="
+            changeCategory(
+              $any($event.target).value
+            )
+          ">
+          @for (
+            option of categoryOptions;
+            track option.value
+          ) {
+            <option [value]="option.value">
+              {{ option.label }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Rows per page</span>
+
+        <select
+          [value]="pageSize()"
+          (change)="
+            changePageSize(
+              $any($event.target).value
+            )
+          ">
+          <option value="25">25 rows</option>
+          <option value="50">50 rows</option>
+          <option value="100">100 rows</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="alerts-table-card">
+    <header class="alerts-table-card__header">
+      <div>
+        <span class="eyebrow">
+          Priority list
+        </span>
+
+        <h2>
+          {{ selectedCategory().label }}
+        </h2>
+
+        <p>
+          Showing
+          {{ startRecord() | number }}
+          –
+          {{ endRecord() | number }}
+          of
+          {{ data().totalCount | number }}
+          records.
+        </p>
+      </div>
+
+      <span
+        [class]="
+          'category-pill category-pill--' +
+          selectedCategory().tone
+        ">
+        {{ selectedCategory().shortLabel }}
+      </span>
+    </header>
+
+    @if (
+      loading() &&
+      data().items.length === 0
+    ) {
+      <div
+        class="alerts-skeleton"
+        aria-label="Preparing alert records">
         @for (
-          item of filterItems(group.items);
-          track item.materialId;
-          let rowNumber = $index
+          row of [1, 2, 3, 4, 5, 6];
+          track row
         ) {
-        <tr>
-          <td>
-            {{ rowNumber + 1 }}
-          </td>
-
-          <td>
-            <a
-              class="primary-link"
-              [routerLink]="[
-                '/materials',
-                item.materialId
-              ]">
-              {{ item.materialNo || '—' }}
-            </a>
-
-            <small>
-              Line:
-              {{ item.lineItem || '—' }}
-            </small>
-          </td>
-
-          <td class="description-cell">
-            {{ item.description || '—' }}
-          </td>
-
-          <td>
-            {{
-              (getDate(
-                item,
-                group.dateField
-              ) | date: 'dd MMM yyyy') ||
-              '—'
-            }}
-          </td>
-
-          <td>
-            {{
-              (item.deliveryDate |
-                date: 'dd MMM yyyy') ||
-              '—'
-            }}
-          </td>
-
-          <td>
-            <span
-              [class]="
-                statusClass(
-                  item.processStatus
-                )
-              ">
-              {{ item.processStatus }}
-            </span>
-          </td>
-
-          <td>
-            <span
-              [class]="
-                statusClass(
-                  item.dispatchStatus
-                )
-              ">
-              {{ item.dispatchStatus }}
-            </span>
-          </td>
-
-          <td>
-            <strong>
-              {{
-                item.allocatedStockQuantity |
-                  number: '1.0-2'
-              }}
-              /
-              {{
-                item.liveStockQuantity |
-                  number: '1.0-2'
-              }}
-            </strong>
-
-            <small>
-              Pending:
-              {{
-                item.pendingQuantity |
-                  number: '1.0-2'
-              }}
-              · Shortage:
-              {{
-                item.stockShortageQuantity |
-                  number: '1.0-2'
-              }}
-            </small>
-
-            <span
-              [class]="
-                stockStatusClass(
-                  item.stockStatus
-                )
-              ">
-              {{ item.stockStatus }}
-            </span>
-          </td>
-
-          <td>
-            <div class="row-actions">
-              <a
-                [routerLink]="[
-                  '/materials',
-                  item.materialId
-                ]">
-                Material
-              </a>
-
-              <a
-                [routerLink]="[
-                  '/purchase-orders',
-                  item.purchaseOrderId
-                ]">
-                PO
-              </a>
-            </div>
-          </td>
-        </tr>
-        } @empty {
-        <tr>
-          <td
-            class="empty-cell"
-            colspan="9">
-            No matching alert records found.
-          </td>
-        </tr>
+          <span></span>
         }
-      </tbody>
-    </table>
-  </div>
-</section>
-}
+      </div>
+    } @else if (
+      !errorMessage() &&
+      data().items.length === 0
+    ) {
+      <div class="alerts-empty">
+        <span aria-hidden="true">OK</span>
+        <strong>No matching alert records</strong>
+        <p>
+          This category currently has no records matching
+          the selected search.
+        </p>
+      </div>
+    } @else if (
+      data().items.length > 0
+    ) {
+      <div
+        class="table-wrap"
+        [class.table-wrap--refreshing]="
+          loading()
+        ">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Material</th>
+              <th>Description</th>
+              <th>Priority Date</th>
+              <th>Delivery</th>
+              <th>Process</th>
+              <th>Dispatch</th>
+              <th>Allocated / Live Stock</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
 
+          <tbody>
+            @for (
+              item of data().items;
+              track item.materialId;
+              let rowNumber = $index
+            ) {
+              <tr>
+                <td class="row-number">
+                  {{
+                    startRecord() +
+                    rowNumber
+                  }}
+                </td>
+
+                <td>
+                  <a
+                    class="primary-link"
+                    [routerLink]="[
+                      '/materials',
+                      item.materialId
+                    ]">
+                    {{ item.materialNo || '—' }}
+                  </a>
+
+                  <small>
+                    Line
+                    {{ item.lineItem || '—' }}
+                  </small>
+                </td>
+
+                <td class="description-cell">
+                  {{ item.description || '—' }}
+                </td>
+
+                <td>
+                  {{
+                    (getDate(item) |
+                      date:'dd MMM yyyy') ||
+                    '—'
+                  }}
+                </td>
+
+                <td>
+                  {{
+                    (item.deliveryDate |
+                      date:'dd MMM yyyy') ||
+                    '—'
+                  }}
+                </td>
+
+                <td>
+                  <span
+                    [class]="
+                      statusClass(
+                        item.processStatus
+                      )
+                    ">
+                    {{
+                      item.processStatus ||
+                      'Pending'
+                    }}
+                  </span>
+                </td>
+
+                <td>
+                  <span
+                    [class]="
+                      statusClass(
+                        item.dispatchStatus
+                      )
+                    ">
+                    {{
+                      item.dispatchStatus ||
+                      'Pending'
+                    }}
+                  </span>
+                </td>
+
+                <td>
+                  <strong class="stock-values">
+                    {{
+                      item.allocatedStockQuantity |
+                        number:'1.0-2'
+                    }}
+                    /
+                    {{
+                      item.liveStockQuantity |
+                        number:'1.0-2'
+                    }}
+                  </strong>
+
+                  <small>
+                    Pending
+                    {{
+                      item.pendingQuantity |
+                        number:'1.0-2'
+                    }}
+                    · Shortage
+                    {{
+                      item.stockShortageQuantity |
+                        number:'1.0-2'
+                    }}
+                  </small>
+
+                  <span
+                    [class]="
+                      stockStatusClass(
+                        item.stockStatus
+                      )
+                    ">
+                    {{
+                      item.stockStatus ||
+                      'Unknown'
+                    }}
+                  </span>
+                </td>
+
+                <td>
+                  <div class="row-actions">
+                    <a
+                      [routerLink]="[
+                        '/materials',
+                        item.materialId
+                      ]">
+                      Material
+                    </a>
+
+                    <a
+                      [routerLink]="[
+                        '/purchase-orders',
+                        item.purchaseOrderId
+                      ]">
+                      PO
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (data().totalCount > 0) {
+      <footer class="alerts-pagination">
+        <div>
+          <strong>
+            {{ startRecord() | number }}
+            –
+            {{ endRecord() | number }}
+          </strong>
+
+          <span>
+            of
+            {{ data().totalCount | number }}
+          </span>
+        </div>
+
+        <nav aria-label="Smart Alerts pagination">
+          <button
+            type="button"
+            [disabled]="
+              !data().hasPreviousPage
+            "
+            (click)="goToPage(1)">
+            First
+          </button>
+
+          <button
+            type="button"
+            [disabled]="
+              !data().hasPreviousPage
+            "
+            (click)="
+              goToPage(
+                data().page - 1
+              )
+            ">
+            Previous
+          </button>
+
+          @for (
+            pageNumber of visiblePages();
+            track pageNumber
+          ) {
+            <button
+              type="button"
+              [class.active]="
+                pageNumber ===
+                data().page
+              "
+              [attr.aria-current]="
+                pageNumber ===
+                data().page
+                  ? 'page'
+                  : null
+              "
+              (click)="
+                goToPage(pageNumber)
+              ">
+              {{ pageNumber }}
+            </button>
+          }
+
+          <button
+            type="button"
+            [disabled]="
+              !data().hasNextPage
+            "
+            (click)="
+              goToPage(
+                data().page + 1
+              )
+            ">
+            Next
+          </button>
+
+          <button
+            type="button"
+            [disabled]="
+              !data().hasNextPage
+            "
+            (click)="
+              goToPage(
+                data().totalPages
+              )
+            ">
+            Last
+          </button>
+        </nav>
+      </footer>
+    }
+  </section>
+</section>

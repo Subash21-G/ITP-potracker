@@ -1,17 +1,41 @@
 import {
+  CommonModule,
+} from '@angular/common';
+
+import {
+  HttpErrorResponse,
+} from '@angular/common/http';
+
+import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
+  DestroyRef,
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
-import { finalize } from 'rxjs';
+
+import {
+  takeUntilDestroyed,
+} from '@angular/core/rxjs-interop';
+
+import {
+  RouterLink,
+} from '@angular/router';
+
+import {
+  EMPTY,
+  Subject,
+  catchError,
+  defer,
+  finalize,
+  switchMap,
+  tap,
+} from 'rxjs';
+
 import {
   DashboardResponse,
 } from '../../core/models/dashboard.model';
+
 import {
   DashboardApiService,
 } from '../../core/services/dashboard-api.service';
@@ -22,59 +46,92 @@ import {
     CommonModule,
     RouterLink,
   ],
-  templateUrl: './dashboard-page.html',
-  styleUrl: './dashboard-page.css',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl:
+    './dashboard-page.html',
+  styleUrl:
+    './dashboard-page.css',
+  changeDetection:
+    ChangeDetectionStrategy.OnPush,
 })
-export class DashboardPage implements OnInit {
+export class DashboardPage {
   private readonly dashboardApi =
     inject(DashboardApiService);
 
+  private readonly destroyRef =
+    inject(DestroyRef);
+
+  private readonly requestDashboard =
+    new Subject<void>();
+
   readonly dashboard =
-    signal<DashboardResponse | null>(null);
+    signal<DashboardResponse | null>(
+      null,
+    );
 
-  readonly isLoading = signal(true);
-  readonly errorMessage = signal('');
+  readonly isLoading =
+    signal(false);
 
-  ngOnInit(): void {
+  readonly errorMessage =
+    signal('');
+
+  constructor() {
+    this.requestDashboard
+      .pipe(
+        switchMap(() =>
+          defer(() => {
+            this.isLoading.set(
+              true,
+            );
+
+            this.errorMessage.set(
+              '',
+            );
+
+            return this.dashboardApi
+              .getDashboard()
+              .pipe(
+                tap(
+                  response =>
+                    this.dashboard.set(
+                      response,
+                    ),
+                ),
+
+                catchError(
+                  (
+                    error:
+                      HttpErrorResponse,
+                  ) => {
+                    this.errorMessage.set(
+                      this.describeError(
+                        error,
+                      ),
+                    );
+
+                    return EMPTY;
+                  },
+                ),
+
+                finalize(() =>
+                  this.isLoading.set(
+                    false,
+                  ),
+                ),
+              );
+          }),
+        ),
+
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+      )
+      .subscribe();
+
     this.loadDashboard();
   }
 
   loadDashboard(): void {
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-
-    this.dashboardApi
-      .getDashboard()
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-        }),
-      )
-      .subscribe({
-        next: (response) => {
-          this.dashboard.set(response);
-        },
-        error: (error: HttpErrorResponse) => {
-          if (error.status === 401) {
-            this.errorMessage.set(
-              'Your session has expired. Please sign in again.',
-            );
-            return;
-          }
-
-          if (error.status === 403) {
-            this.errorMessage.set(
-              'You do not have permission to view the dashboard.',
-            );
-            return;
-          }
-
-          this.errorMessage.set(
-            'Dashboard data could not be loaded. Please try again.',
-          );
-        },
-      });
+    this.requestDashboard.next();
   }
 
   percentage(
@@ -89,7 +146,13 @@ export class DashboardPage implements OnInit {
       100,
       Math.max(
         0,
-        Math.round((value / total) * 100),
+        Math.round(
+          (
+            value /
+            total
+          ) *
+          100,
+        ),
       ),
     );
   }
@@ -124,10 +187,33 @@ export class DashboardPage implements OnInit {
     );
   }
 
-  statusClass(status: string): string {
+  statusClass(
+    status: string,
+  ): string {
     return status
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-');
+      .replace(
+        /[^a-z0-9]+/g,
+        '-',
+      );
+  }
+
+  private describeError(
+    error: HttpErrorResponse,
+  ): string {
+    if (error.status === 0) {
+      return 'The PO Tracker API is unavailable.';
+    }
+
+    if (error.status === 401) {
+      return 'Your session has expired. Please sign in again.';
+    }
+
+    if (error.status === 403) {
+      return 'You do not have permission to view the dashboard.';
+    }
+
+    return 'Dashboard data could not be loaded. Please try again.';
   }
 }

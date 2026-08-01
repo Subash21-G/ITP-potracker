@@ -30,7 +30,8 @@
               "@fullcalendar/angular/themes/classic/palette.css",
               "@fullcalendar/angular/themes/classic/theme.css",
               "@fullcalendar/angular/skeleton.css",
-              "src/styles.css"
+              "src/styles.css",
+              "src/premium-ui.css"
             ]
           },
           "configurations": {

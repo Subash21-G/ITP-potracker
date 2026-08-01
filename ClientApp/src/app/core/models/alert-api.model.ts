@@ -1,4 +1,13 @@
-﻿export interface AlertMaterial {
+export type AlertCategory =
+  | 'process-start'
+  | 'overdue'
+  | 'delivery-seven-days'
+  | 'pending-process'
+  | 'dispatch-pending'
+  | 'dispatch-date'
+  | 'low-stock';
+
+export interface AlertMaterial {
   materialId: number;
   purchaseOrderId: number;
 
@@ -34,16 +43,25 @@ export interface AlertsSummary {
   totalAlerts: number;
 }
 
-export interface AlertsResponse {
-  generatedAt: string;
+export interface AlertsQuery {
+  readonly category:
+    AlertCategory;
 
-  summary: AlertsSummary;
+  readonly search?: string;
+  readonly page: number;
+  readonly pageSize: number;
+}
 
-  processStartAlerts: AlertMaterial[];
-  overdueMaterials: AlertMaterial[];
-  deliveryWithinSevenDays: AlertMaterial[];
-  pendingProcess: AlertMaterial[];
-  dispatchPending: AlertMaterial[];
-  dispatchDateAlerts: AlertMaterial[];
-  lowStock: AlertMaterial[];
+export interface AlertsPagedResponse {
+  readonly generatedAt: string;
+  readonly summary: AlertsSummary;
+  readonly category: AlertCategory;
+  readonly items:
+    readonly AlertMaterial[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly totalCount: number;
+  readonly totalPages: number;
+  readonly hasPreviousPage: boolean;
+  readonly hasNextPage: boolean;
 }
