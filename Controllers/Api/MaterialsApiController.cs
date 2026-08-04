@@ -48,6 +48,9 @@ namespace POTracker.Controllers.Api
         private readonly ExternalStockService
             _externalStockService;
 
+        private readonly PrivateDocumentReferenceService
+            _documentReferences;
+
         private static readonly Expression<
             Func<Material, MaterialListItemDto>>
                 MaterialListProjection =
@@ -373,7 +376,9 @@ namespace POTracker.Controllers.Api
             ApplicationDbContext context,
             IWebHostEnvironment environment,
             PendingInvoiceMatcher pendingInvoiceMatcher,
-            ExternalStockService externalStockService)
+            ExternalStockService externalStockService,
+            PrivateDocumentReferenceService
+                documentReferences)
         {
             _context = context;
             _environment = environment;
@@ -381,6 +386,8 @@ namespace POTracker.Controllers.Api
                 pendingInvoiceMatcher;
             _externalStockService =
                 externalStockService;
+            _documentReferences =
+                documentReferences;
         }
 
         // ============================================================
@@ -1968,6 +1975,18 @@ namespace POTracker.Controllers.Api
             {
                 return null;
             }
+
+            details.DrawingFilePath =
+                _documentReferences.ToDownloadUrl(
+                    details.DrawingFilePath,
+                    "drawings") ??
+                string.Empty;
+
+            details.PdfFilePath =
+                _documentReferences.ToDownloadUrl(
+                    details.PdfFilePath,
+                    "pdfs") ??
+                string.Empty;
 
             var stockLoad =
                 await _externalStockService

@@ -146,9 +146,9 @@ namespace POTracker.Contracts.Api
 
         public string DrawingVersion { get; init; } = string.Empty;
 
-        public string DrawingFilePath { get; init; } = string.Empty;
+        public string DrawingFilePath { get; set; } = string.Empty;
 
-        public string PdfFilePath { get; init; } = string.Empty;
+        public string PdfFilePath { get; set; } = string.Empty;
 
         // STATUS
         public string ProcessStatus { get; init; } = string.Empty;
