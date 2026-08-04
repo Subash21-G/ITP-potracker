@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
 using POTracker.Models;
+using POTracker.Services;
 
 namespace POTracker.Controllers.Api
 {
@@ -21,12 +22,17 @@ namespace POTracker.Controllers.Api
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
 
+        private readonly PrivateDocumentReferenceService _documentReferences;
+
         public PurchaseOrderCrudApiController(
             ApplicationDbContext context,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            PrivateDocumentReferenceService documentReferences)
         {
             _context = context;
             _environment = environment;
+            _documentReferences =
+                documentReferences;
         }
 
         // ============================================================
@@ -598,7 +604,10 @@ namespace POTracker.Controllers.Api
                 BuyerContactPerson =
                     header.BuyerContactPerson,
                 PdfFilePath =
-                    header.PdfFilePath,
+                    _documentReferences.ToDownloadUrl(
+                        header.PdfFilePath,
+                        "po") ??
+                    string.Empty,
                 CreatedDate =
                     header.CreatedDate,
                 MaterialCount =

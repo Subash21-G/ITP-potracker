@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
 using POTracker.Models;
+using POTracker.Services;
 
 namespace POTracker.Controllers.Api
 {
@@ -24,10 +25,15 @@ namespace POTracker.Controllers.Api
 
         private readonly ApplicationDbContext _context;
 
+        private readonly PrivateDocumentReferenceService _documentReferences;
+
         public PurchaseOrdersApiController(
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            PrivateDocumentReferenceService documentReferences)
         {
             _context = context;
+            _documentReferences =
+                documentReferences;
         }
 
         /// <summary>
@@ -598,7 +604,10 @@ namespace POTracker.Controllers.Api
                 TaxValue = header.TaxValue,
                 GrandTotal = header.GrandTotal,
                 ImportFormat = header.ImportFormat,
-                PdfFilePath = header.PdfFilePath,
+                PdfFilePath =
+                    _documentReferences.ToDownloadUrl(
+                        header.PdfFilePath,
+                        "po"),
                 Status = header.Status,
                 CreatedDate = header.CreatedDate,
                 UpdatedDate = header.UpdatedDate,
@@ -811,7 +820,7 @@ namespace POTracker.Controllers.Api
             return query;
         }
 
-        private static PurchaseOrderListItemDto MapListItem(
+        private PurchaseOrderListItemDto MapListItem(
             PurchaseOrderAggregateRow source)
         {
             var pendingMaterials = Math.Max(
@@ -835,7 +844,10 @@ namespace POTracker.Controllers.Api
                 POReceivedDate = source.POReceivedDate,
                 Status = GetPurchaseOrderStatus(source),
                 MaterialStatus = GetMaterialStatus(source),
-                PdfFilePath = source.PdfFilePath,
+                PdfFilePath =
+                    _documentReferences.ToDownloadUrl(
+                        source.PdfFilePath,
+                        "po"),
                 CreatedDate = source.CreatedDate,
                 TotalMaterials = source.TotalMaterials,
                 PendingMaterials = pendingMaterials,
