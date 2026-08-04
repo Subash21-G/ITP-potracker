@@ -15,12 +15,18 @@ namespace POTracker.Controllers.Api
         private readonly ApplicationDbContext _context;
         private readonly PendingInvoiceMatcher _pendingInvoiceMatcher;
 
+        private readonly PrivateDocumentReferenceService _documentReferences;
+
         public InvoicesApiController(
             ApplicationDbContext context,
-            PendingInvoiceMatcher pendingInvoiceMatcher)
+            PendingInvoiceMatcher pendingInvoiceMatcher,
+            PrivateDocumentReferenceService
+                documentReferences)
         {
             _context = context;
             _pendingInvoiceMatcher = pendingInvoiceMatcher;
+            _documentReferences =
+                documentReferences;
         }
 
         // ============================================================
@@ -216,7 +222,10 @@ namespace POTracker.Controllers.Api
                 UploadedFileName =
                     invoice.UploadedFileName ?? string.Empty,
                 UploadedFilePath =
-                    invoice.UploadedFilePath ?? string.Empty,
+                    _documentReferences.ToDownloadUrl(
+                        invoice.UploadedFilePath,
+                        "invoices") ??
+                    string.Empty,
                 CreatedDate = invoice.CreatedDate,
                 TotalQuantity = invoiceItems.Sum(item => item.Qty),
                 TotalGstAmount = invoiceItems.Sum(item => item.GstAmount),
