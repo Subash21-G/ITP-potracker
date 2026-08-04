@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http.Features;
+﻿using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
@@ -50,6 +50,13 @@ builder.Services.AddAntiforgery(options =>
 // ============================================================
 
 builder.Services.AddScoped<PendingInvoiceMatcher>();
+
+builder.Services.Configure<PrivateDocumentStorageOptions>(
+    builder.Configuration.GetSection(
+        PrivateDocumentStorageOptions.SectionName));
+
+builder.Services.AddSingleton<
+    PrivateDocumentStorageService>();
 
 // ============================================================
 // LARGE PO / INVOICE IMPORT SUPPORT

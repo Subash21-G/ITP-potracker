@@ -52,4 +52,5 @@ Thumbs.db
 
 # IDE files
 .idea/
-*.DotSettings.user
+*.DotSettings.userApp_Data/private-uploads/
+.security-backups/
