@@ -296,7 +296,7 @@ namespace POTracker.Controllers
                 $"Pending_Materials_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
         }
 
-        private static PendingMaterialItemDto
+        private PendingMaterialItemDto
             MapPendingMaterialApiItem(
                 PendingMaterialRowViewModel row)
         {
@@ -333,8 +333,14 @@ namespace POTracker.Controllers
                 DispatchStatus = row.DispatchStatus,
                 AssignedDashboard = row.AssignedDashboard,
                 Remarks = row.Remarks,
-                PdfFilePath = row.PdfFilePath,
-                DrawingFilePath = row.DrawingFilePath,
+                PdfFilePath =
+                    _documentReferences.ToDownloadUrl(
+                        row.PdfFilePath,
+                        "pdfs"),
+                DrawingFilePath =
+                    _documentReferences.ToDownloadUrl(
+                        row.DrawingFilePath,
+                        "drawings"),
                 CompletionPercentage = row.CompletionPercentage,
                 OverdueDays = row.OverdueDays,
                 IsOverdue = row.IsOverdue,

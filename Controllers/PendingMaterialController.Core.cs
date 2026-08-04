@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
 using POTracker.Models;
+using POTracker.Services;
 using POTracker.ViewModels;
 
 namespace POTracker.Controllers
@@ -11,10 +12,17 @@ namespace POTracker.Controllers
     {
         private readonly ApplicationDbContext _context;
 
+        private readonly PrivateDocumentReferenceService
+            _documentReferences;
+
         public PendingMaterialController(
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            PrivateDocumentReferenceService
+                documentReferences)
         {
             _context = context;
+            _documentReferences =
+                documentReferences;
         }
 
         private bool IsLoggedIn()
