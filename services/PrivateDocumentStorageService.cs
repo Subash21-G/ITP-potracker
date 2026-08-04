@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 
@@ -169,6 +169,175 @@ public sealed class PrivateDocumentStorageService
             if (File.Exists(fullPath))
             {
                 File.Delete(fullPath);
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Saves a document using a caller-provided stored filename.
+    /// This is intended for safely mirroring an already generated
+    /// public upload filename into private storage.
+    /// </summary>
+    public async Task<StoredPrivateDocument>
+        SaveWithStoredFileNameAsync(
+            Stream source,
+            string category,
+            string storedFileName,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        if (!source.CanRead)
+        {
+            throw new ArgumentException(
+                "The supplied document stream is not readable.",
+                nameof(source));
+        }
+
+        var safeCategory =
+            NormalizeSinglePathSegment(
+                category,
+                nameof(category));
+
+        var requestedStoredFileName =
+            storedFileName?.Trim();
+
+        if (string.IsNullOrWhiteSpace(
+                requestedStoredFileName))
+        {
+            throw new ArgumentException(
+                "A stored document filename is required.",
+                nameof(storedFileName));
+        }
+
+        var safeStoredFileName =
+            NormalizeFileName(
+                requestedStoredFileName);
+
+        if (!string.Equals(
+                requestedStoredFileName,
+                safeStoredFileName,
+                StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                "The stored document filename must be " +
+                "one safe filename without a folder path.",
+                nameof(storedFileName));
+        }
+
+        var extension =
+            Path.GetExtension(
+                safeStoredFileName);
+
+        if (extension.Length > 20)
+        {
+            throw new InvalidOperationException(
+                "The document extension is too long.");
+        }
+
+        var categoryFolder =
+            ResolveCategoryFolder(
+                safeCategory);
+
+        Directory.CreateDirectory(
+            categoryFolder);
+
+        var fullPath =
+            Path.GetFullPath(
+                Path.Combine(
+                    categoryFolder,
+                    safeStoredFileName));
+
+        EnsureInsideStorageRoot(
+            fullPath);
+
+        var createdFile =
+            false;
+
+        try
+        {
+            await using (
+                var destination =
+                    new FileStream(
+                        fullPath,
+                        FileMode.CreateNew,
+                        FileAccess.Write,
+                        FileShare.None,
+                        bufferSize: 81920,
+                        options:
+                            FileOptions.Asynchronous |
+                            FileOptions.SequentialScan))
+            {
+                createdFile =
+                    true;
+
+                await source.CopyToAsync(
+                    destination,
+                    cancellationToken);
+
+                await destination.FlushAsync(
+                    cancellationToken);
+            }
+
+            string sha256;
+
+            await using (
+                var hashStream =
+                    new FileStream(
+                        fullPath,
+                        FileMode.Open,
+                        FileAccess.Read,
+                        FileShare.Read,
+                        bufferSize: 81920,
+                        options:
+                            FileOptions.Asynchronous |
+                            FileOptions.SequentialScan))
+            {
+                var hash =
+                    await SHA256.HashDataAsync(
+                        hashStream,
+                        cancellationToken);
+
+                sha256 =
+                    Convert.ToHexString(
+                        hash);
+            }
+
+            var fileInfo =
+                new FileInfo(
+                    fullPath);
+
+            var relativePath =
+                Path.GetRelativePath(
+                        _rootPath,
+                        fullPath)
+                    .Replace(
+                        Path.DirectorySeparatorChar,
+                        '/');
+
+            return new StoredPrivateDocument(
+                OriginalFileName:
+                    safeStoredFileName,
+                StoredFileName:
+                    safeStoredFileName,
+                RelativePath:
+                    relativePath,
+                Size:
+                    fileInfo.Length,
+                Sha256:
+                    sha256);
+        }
+        catch
+        {
+            if (
+                createdFile &&
+                File.Exists(fullPath)
+            )
+            {
+                File.Delete(
+                    fullPath);
             }
 
             throw;
