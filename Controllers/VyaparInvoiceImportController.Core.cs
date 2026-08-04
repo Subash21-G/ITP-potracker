@@ -84,6 +84,9 @@ namespace POTracker.Controllers
                     uploadFolder,
                     storedFileName);
 
+            string? privateRelativePath =
+                null;
+
             try
             {
                 await using (
@@ -106,9 +109,6 @@ namespace POTracker.Controllers
                 invoiceModel.UploadedFileName =
                     safeFileName;
 
-                invoiceModel.UploadedFilePath =
-                    "/uploads/invoices/" +
-                    storedFileName;
 
                 if (IsInvalidInvoiceNumber(
                         invoiceModel.InvoiceNumber))
@@ -144,6 +144,18 @@ namespace POTracker.Controllers
                     return result;
                 }
 
+                privateRelativePath =
+                    await MirrorInvoiceToPrivateStorageAsync(
+                        physicalPath,
+                        storedFileName);
+
+                invoiceModel.UploadedFilePath =
+                    _documentReferences.ToDownloadUrl(
+                        privateRelativePath,
+                        "invoices") ??
+                    throw new InvalidOperationException(
+                        "Unable to create the secure invoice URL.");
+
                 var invoiceNumber =
                     invoiceModel.InvoiceNumber
                         .Trim();
@@ -168,6 +180,13 @@ namespace POTracker.Controllers
             }
             catch (Exception ex)
             {
+                if (!string.IsNullOrWhiteSpace(
+                        privateRelativePath))
+                {
+                    _privateDocumentStorage.DeleteIfExists(
+                        privateRelativePath);
+                }
+
                 if (System.IO.File.Exists(
                         physicalPath))
                 {
@@ -181,6 +200,31 @@ namespace POTracker.Controllers
 
                 return result;
             }
+        }
+        private async Task<string>
+            MirrorInvoiceToPrivateStorageAsync(
+                string publicPhysicalPath,
+                string storedFileName)
+        {
+            await using var source =
+                new FileStream(
+                    publicPhysicalPath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read,
+                    bufferSize: 81920,
+                    options:
+                        FileOptions.Asynchronous |
+                        FileOptions.SequentialScan);
+
+            var privateDocument =
+                await _privateDocumentStorage
+                    .SaveWithStoredFileNameAsync(
+                        source,
+                        "invoices",
+                        storedFileName);
+
+            return privateDocument.RelativePath;
         }
         // ============================================================
         // SHARED MULTIPLE INVOICE FILE PREVIEW
@@ -299,6 +343,9 @@ namespace POTracker.Controllers
                         uploadFolder,
                         storedFileName);
 
+                string? privateRelativePath =
+                    null;
+
                 try
                 {
                     await using (
@@ -321,9 +368,6 @@ namespace POTracker.Controllers
                     invoiceModel.UploadedFileName =
                         safeFileName;
 
-                    invoiceModel.UploadedFilePath =
-                        "/uploads/invoices/" +
-                        storedFileName;
 
                     if (IsInvalidInvoiceNumber(
                             invoiceModel.InvoiceNumber))
@@ -359,6 +403,18 @@ namespace POTracker.Controllers
                         continue;
                     }
 
+                    privateRelativePath =
+                        await MirrorInvoiceToPrivateStorageAsync(
+                            physicalPath,
+                            storedFileName);
+
+                    invoiceModel.UploadedFilePath =
+                        _documentReferences.ToDownloadUrl(
+                            privateRelativePath,
+                            "invoices") ??
+                        throw new InvalidOperationException(
+                            "Unable to create the secure invoice URL.");
+
                     fileResult.Invoice =
                         invoiceModel;
 
@@ -370,6 +426,13 @@ namespace POTracker.Controllers
                 }
                 catch (Exception ex)
                 {
+                    if (!string.IsNullOrWhiteSpace(
+                            privateRelativePath))
+                    {
+                        _privateDocumentStorage.DeleteIfExists(
+                            privateRelativePath);
+                    }
+
                     if (System.IO.File.Exists(
                             physicalPath))
                     {

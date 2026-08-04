@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
 using POTracker.Models;
+using POTracker.Services;
 using POTracker.ViewModels;
 using System.Data;
 using System.Globalization;
@@ -26,12 +27,26 @@ namespace POTracker.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
 
+        private readonly PrivateDocumentStorageService
+            _privateDocumentStorage;
+
+        private readonly PrivateDocumentReferenceService
+            _documentReferences;
+
         public VyaparInvoiceImportController(
             ApplicationDbContext context,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            PrivateDocumentStorageService
+                privateDocumentStorage,
+            PrivateDocumentReferenceService
+                documentReferences)
         {
             _context = context;
             _environment = environment;
+            _privateDocumentStorage =
+                privateDocumentStorage;
+            _documentReferences =
+                documentReferences;
         }
 
 
