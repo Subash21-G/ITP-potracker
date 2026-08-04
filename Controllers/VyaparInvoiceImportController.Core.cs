@@ -224,6 +224,9 @@ namespace POTracker.Controllers
                         "invoices",
                         storedFileName);
 
+            RegisterTemporaryInvoicePreview(
+                privateDocument.RelativePath);
+
             return privateDocument.RelativePath;
         }
         // ============================================================

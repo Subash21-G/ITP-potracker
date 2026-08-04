@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Services;
 using POTracker.ViewModels;
+using System.Text.Json;
 
 namespace POTracker.Controllers
 {
@@ -112,6 +113,311 @@ namespace POTracker.Controllers
 
             return Ok(preview);
         }
+        // ============================================================
+        // ANGULAR API - DISCARD TEMPORARY INVOICE PREVIEWS
+        // ============================================================
+
+        [HttpPost("~/api/invoice-import/discard-previews")]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
+        public async Task<IActionResult> DiscardPreviewsApi(
+            [FromBody]
+            InvoicePreviewDiscardRequest? request)
+        {
+            var submittedPaths =
+                request?.UploadedFilePaths ??
+                new List<string?>();
+
+            if (submittedPaths.Count > 200)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "A maximum of 200 temporary preview paths " +
+                        "can be discarded at one time."
+                });
+            }
+
+            var registeredPaths =
+                ReadTemporaryInvoicePreviewPaths();
+
+            var requestedRelativePaths =
+                new HashSet<string>(
+                    StringComparer.OrdinalIgnoreCase);
+
+            var invalidPathCount =
+                0;
+
+            var unregisteredPathCount =
+                0;
+
+            foreach (var submittedPath in submittedPaths)
+            {
+                if (
+                    !_documentReferences
+                        .TryNormalizeRelativePath(
+                            submittedPath,
+                            "invoices",
+                            out var relativePath) ||
+                    !relativePath.StartsWith(
+                        "invoices/",
+                        StringComparison.OrdinalIgnoreCase)
+                )
+                {
+                    invalidPathCount++;
+
+                    continue;
+                }
+
+                if (!registeredPaths.Contains(relativePath))
+                {
+                    unregisteredPathCount++;
+
+                    continue;
+                }
+
+                requestedRelativePaths.Add(
+                    relativePath);
+            }
+
+            var databasePathValues =
+                await _context.Invoices
+                    .AsNoTracking()
+                    .Where(invoice =>
+                        invoice.UploadedFilePath != null &&
+                        invoice.UploadedFilePath != string.Empty)
+                    .Select(invoice =>
+                        invoice.UploadedFilePath)
+                    .ToListAsync();
+
+            var protectedRelativePaths =
+                new HashSet<string>(
+                    StringComparer.OrdinalIgnoreCase);
+
+            foreach (
+                var databasePathValue
+                in databasePathValues)
+            {
+                if (
+                    _documentReferences
+                        .TryNormalizeRelativePath(
+                            databasePathValue,
+                            "invoices",
+                            out var protectedRelativePath)
+                )
+                {
+                    protectedRelativePaths.Add(
+                        protectedRelativePath);
+                }
+            }
+
+            var publicInvoiceRoot =
+                Path.GetFullPath(
+                    Path.Combine(
+                        _environment.WebRootPath,
+                        "uploads",
+                        "invoices"));
+
+            var publicRootWithSeparator =
+                publicInvoiceRoot.EndsWith(
+                    Path.DirectorySeparatorChar.ToString(),
+                    StringComparison.Ordinal)
+                    ? publicInvoiceRoot
+                    : publicInvoiceRoot +
+                      Path.DirectorySeparatorChar;
+
+            var deletedPreviewCount =
+                0;
+
+            var protectedPreviewCount =
+                0;
+
+            var missingPreviewCount =
+                0;
+
+            foreach (
+                var relativePath
+                in requestedRelativePaths)
+            {
+                registeredPaths.Remove(
+                    relativePath);
+
+                if (
+                    protectedRelativePaths.Contains(
+                        relativePath)
+                )
+                {
+                    protectedPreviewCount++;
+
+                    continue;
+                }
+
+                var deletedAnyFile =
+                    false;
+
+                if (
+                    _privateDocumentStorage.Exists(
+                        relativePath)
+                )
+                {
+                    _privateDocumentStorage.DeleteIfExists(
+                        relativePath);
+
+                    deletedAnyFile =
+                        true;
+                }
+
+                var storedFileName =
+                    relativePath[
+                        "invoices/".Length..];
+
+                var publicFilePath =
+                    Path.GetFullPath(
+                        Path.Combine(
+                            publicInvoiceRoot,
+                            storedFileName));
+
+                if (
+                    !publicFilePath.StartsWith(
+                        publicRootWithSeparator,
+                        StringComparison.OrdinalIgnoreCase)
+                )
+                {
+                    invalidPathCount++;
+
+                    continue;
+                }
+
+                if (
+                    System.IO.File.Exists(
+                        publicFilePath)
+                )
+                {
+                    System.IO.File.Delete(
+                        publicFilePath);
+
+                    deletedAnyFile =
+                        true;
+                }
+
+                if (deletedAnyFile)
+                {
+                    deletedPreviewCount++;
+                }
+                else
+                {
+                    missingPreviewCount++;
+                }
+            }
+
+            WriteTemporaryInvoicePreviewPaths(
+                registeredPaths);
+
+            return Ok(new
+            {
+                submittedPathCount =
+                    submittedPaths.Count,
+
+                uniqueRegisteredPathCount =
+                    requestedRelativePaths.Count,
+
+                deletedPreviewCount,
+
+                protectedPreviewCount,
+
+                missingPreviewCount,
+
+                invalidPathCount,
+
+                unregisteredPathCount
+            });
+        }
+
+        private const string
+            TemporaryInvoicePreviewSessionKey =
+                "POTracker.InvoicePreviewTemporaryPaths";
+
+        private void RegisterTemporaryInvoicePreview(
+            string storedValue)
+        {
+            if (
+                !_documentReferences
+                    .TryNormalizeRelativePath(
+                        storedValue,
+                        "invoices",
+                        out var relativePath) ||
+                !relativePath.StartsWith(
+                    "invoices/",
+                    StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                throw new InvalidOperationException(
+                    "The temporary invoice preview path is invalid.");
+            }
+
+            var paths =
+                ReadTemporaryInvoicePreviewPaths();
+
+            paths.Add(
+                relativePath);
+
+            WriteTemporaryInvoicePreviewPaths(
+                paths);
+        }
+
+        private HashSet<string>
+            ReadTemporaryInvoicePreviewPaths()
+        {
+            var serializedPaths =
+                HttpContext.Session.GetString(
+                    TemporaryInvoicePreviewSessionKey);
+
+            if (string.IsNullOrWhiteSpace(
+                    serializedPaths))
+            {
+                return new HashSet<string>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+
+            try
+            {
+                var storedPaths =
+                    JsonSerializer.Deserialize<List<string>>(
+                        serializedPaths) ??
+                    new List<string>();
+
+                return storedPaths
+                    .Where(path =>
+                        !string.IsNullOrWhiteSpace(path))
+                    .ToHashSet(
+                        StringComparer.OrdinalIgnoreCase);
+            }
+            catch (JsonException)
+            {
+                HttpContext.Session.Remove(
+                    TemporaryInvoicePreviewSessionKey);
+
+                return new HashSet<string>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private void WriteTemporaryInvoicePreviewPaths(
+            HashSet<string> paths)
+        {
+            if (paths.Count == 0)
+            {
+                HttpContext.Session.Remove(
+                    TemporaryInvoicePreviewSessionKey);
+
+                return;
+            }
+
+            HttpContext.Session.SetString(
+                TemporaryInvoicePreviewSessionKey,
+                JsonSerializer.Serialize(
+                    paths.OrderBy(path => path)));
+        }
+
         // ============================================================
         // ANGULAR API - SAVE SINGLE INVOICE
         // ============================================================
