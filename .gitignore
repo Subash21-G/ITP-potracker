@@ -1,4 +1,4 @@
-# Visual Studio
+﻿# Visual Studio
 .vs/
 *.suo
 *.user
@@ -52,5 +52,8 @@ Thumbs.db
 
 # IDE files
 .idea/
-*.DotSettings.userApp_Data/private-uploads/
+*.DotSettings.user
+App_Data/private-uploads/
 .security-backups/
+
+App_Data/private-uploads-staging-*/
