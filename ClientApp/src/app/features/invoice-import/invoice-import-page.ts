@@ -8,6 +8,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  OnDestroy,
   computed,
   inject,
   signal,
@@ -22,7 +23,12 @@ import {
   RouterLink,
 } from '@angular/router';
 import {
+  Observable,
+  catchError,
   finalize,
+  of,
+  switchMap,
+  tap,
 } from 'rxjs';
 
 import {
@@ -53,12 +59,21 @@ type ImportMode =
   changeDetection:
     ChangeDetectionStrategy.OnPush,
 })
-export class InvoiceImportPage {
+export class InvoiceImportPage implements OnDestroy {
   private readonly importApi =
     inject(InvoiceImportApiService);
 
   private readonly destroyRef =
     inject(DestroyRef);
+
+  private readonly pendingPreviewPaths =
+    new Set<string>();
+
+  private readonly releasedPreviewPaths =
+    new Set<string>();
+
+  private cleanupInFlight =
+    false;
 
   readonly mode =
     signal<ImportMode>('single');
@@ -117,6 +132,15 @@ export class InvoiceImportPage {
         .join(', '),
     );
 
+  ngOnDestroy(): void {
+    this.rememberCurrentPreviewPaths();
+
+    this.discardPendingPreviewFiles(
+      false,
+      false,
+    );
+  }
+
   changeMode(
     mode: ImportMode,
   ): void {
@@ -140,6 +164,8 @@ export class InvoiceImportPage {
     const files =
       Array.from(input.files ?? []);
 
+    this.rememberCurrentPreviewPaths();
+    this.discardPendingPreviewFiles();
     this.clearMessages();
     this.singlePreview.set(null);
     this.batchPreview.set(null);
@@ -263,6 +289,11 @@ export class InvoiceImportPage {
       return;
     }
 
+    this.rememberCurrentPreviewPaths();
+
+    const cleanupRequest =
+      this.cleanupPendingPreviewPathsForNextPreview();
+
     this.loading.set(true);
     this.clearMessages();
     this.singlePreview.set(null);
@@ -271,9 +302,13 @@ export class InvoiceImportPage {
     this.batchResult.set(null);
 
     if (this.mode() === 'single') {
-      this.importApi
-        .previewSingle(files[0])
+      cleanupRequest
         .pipe(
+          switchMap(() =>
+            this.importApi.previewSingle(
+              files[0],
+            ),
+          ),
           takeUntilDestroyed(
             this.destroyRef,
           ),
@@ -304,9 +339,13 @@ export class InvoiceImportPage {
       return;
     }
 
-    this.importApi
-      .previewBatch(files)
+    cleanupRequest
       .pipe(
+        switchMap(() =>
+          this.importApi.previewBatch(
+            files,
+          ),
+        ),
         takeUntilDestroyed(
           this.destroyRef,
         ),
@@ -392,6 +431,9 @@ export class InvoiceImportPage {
         next: (result) => {
           this.singleResult.set(result);
 
+          this.rememberCurrentPreviewPaths();
+          this.discardPendingPreviewFiles();
+
           this.successMessage.set(
             result.message,
           );
@@ -446,6 +488,9 @@ export class InvoiceImportPage {
       .subscribe({
         next: (result) => {
           this.batchResult.set(result);
+
+          this.rememberCurrentPreviewPaths();
+          this.discardPendingPreviewFiles();
 
           this.successMessage.set(
             `Batch completed. ${result.importedCount} invoice(s) imported.`,
@@ -569,6 +614,9 @@ export class InvoiceImportPage {
   }
 
   resetImport(): void {
+    this.rememberCurrentPreviewPaths();
+    this.discardPendingPreviewFiles(true);
+
     this.selectedFiles.set([]);
     this.singlePreview.set(null);
     this.batchPreview.set(null);
@@ -625,6 +673,152 @@ export class InvoiceImportPage {
         'REVIEW-',
       )
     );
+  }
+
+  private currentPreviewFilePaths(): string[] {
+    const paths =
+      new Set<string>();
+
+    const singlePath =
+      this.singlePreview()
+        ?.invoice
+        .uploadedFilePath
+        ?.trim();
+
+    if (singlePath) {
+      paths.add(singlePath);
+    }
+
+    for (
+      const file
+      of this.batchPreview()?.files ?? []
+    ) {
+      const batchPath =
+        file.invoice
+          ?.uploadedFilePath
+          ?.trim();
+
+      if (batchPath) {
+        paths.add(batchPath);
+      }
+    }
+
+    return Array.from(paths);
+  }
+
+  private rememberCurrentPreviewPaths(): void {
+    for (
+      const path
+      of this.currentPreviewFilePaths()
+    ) {
+      if (
+        !this.releasedPreviewPaths.has(
+          path,
+        )
+      ) {
+        this.pendingPreviewPaths.add(
+          path,
+        );
+      }
+    }
+  }
+
+  private cleanupPendingPreviewPathsForNextPreview(
+  ): Observable<unknown> {
+    const paths =
+      Array.from(
+        this.pendingPreviewPaths,
+      );
+
+    if (paths.length === 0) {
+      return of(null);
+    }
+
+    return this.importApi
+      .discardPreviews(paths)
+      .pipe(
+        tap(() => {
+          this.releasePreviewPaths(
+            paths,
+          );
+        }),
+
+        catchError(() =>
+          of(null)),
+      );
+  }
+
+  private discardPendingPreviewFiles(
+    reportFailure = false,
+    updateLoading = true,
+  ): void {
+    if (this.cleanupInFlight) {
+      return;
+    }
+
+    const paths =
+      Array.from(
+        this.pendingPreviewPaths,
+      );
+
+    if (paths.length === 0) {
+      return;
+    }
+
+    this.cleanupInFlight =
+      true;
+
+    if (updateLoading) {
+      this.loading.set(true);
+    }
+
+    this.importApi
+      .discardPreviews(paths)
+      .pipe(
+        finalize(() => {
+          this.cleanupInFlight =
+            false;
+
+          if (updateLoading) {
+            this.loading.set(false);
+          }
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.releasePreviewPaths(
+            paths,
+          );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          if (!reportFailure) {
+            return;
+          }
+
+          this.errorMessage.set(
+            'The preview was reset locally, but its ' +
+              'temporary files could not be removed. ' +
+              this.describeError(error),
+          );
+        },
+      });
+  }
+
+  private releasePreviewPaths(
+    paths: string[],
+  ): void {
+    for (const path of paths) {
+      this.pendingPreviewPaths.delete(
+        path,
+      );
+
+      this.releasedPreviewPaths.add(
+        path,
+      );
+    }
   }
 
   private clearMessages(): void {

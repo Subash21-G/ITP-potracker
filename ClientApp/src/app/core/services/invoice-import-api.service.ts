@@ -16,6 +16,7 @@ import {
   InvoiceImportFilePreview,
   InvoiceImportPreview,
   InvoiceImportSaveResponse,
+  InvoicePreviewDiscardResponse,
 } from '../models/invoice-import-api.model';
 import {
   AuthApiService,
@@ -79,6 +80,26 @@ export class InvoiceImportApiService {
           this.http.post<InvoiceBatchImportPreview>(
             '/api/invoice-import/preview-batch',
             formData,
+            {
+              withCredentials: true,
+            },
+          ),
+        ),
+      );
+  }
+
+  discardPreviews(
+    uploadedFilePaths: string[],
+  ): Observable<InvoicePreviewDiscardResponse> {
+    return this.authApi
+      .getXsrfToken()
+      .pipe(
+        switchMap(() =>
+          this.http.post<InvoicePreviewDiscardResponse>(
+            '/api/invoice-import/discard-previews',
+            {
+              uploadedFilePaths,
+            },
             {
               withCredentials: true,
             },

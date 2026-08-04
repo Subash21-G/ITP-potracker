@@ -61,6 +61,16 @@ export interface InvoiceImportSaveResponse {
   pendingRows: number;
 }
 
+export interface InvoicePreviewDiscardResponse {
+  submittedPathCount: number;
+  uniqueRegisteredPathCount: number;
+  deletedPreviewCount: number;
+  protectedPreviewCount: number;
+  missingPreviewCount: number;
+  invalidPathCount: number;
+  unregisteredPathCount: number;
+}
+
 export interface InvoiceBatchImportResultItem {
   originalFileName: string;
   invoiceNumber: string | null;
