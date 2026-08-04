@@ -1,62 +1,682 @@
-<section class="page-heading">
-  <div>
-    <p class="eyebrow">
-      PRODUCTION MANAGEMENT
-    </p>
-
-    <h1>Production Calendar</h1>
-
-    <p class="page-heading__description">
-      Process start, dispatch, delivery and overdue
-      dates in one calendar.
-    </p>
-  </div>
-
-  <div class="heading-actions">
-    <a
-      class="button button--quiet"
-      routerLink="/process-queue">
-      Process Queue
-    </a>
-  </div>
-</section>
-
 <section
-  class="calendar-legend"
-  aria-label="Calendar event colors">
+  #calendarWorkspace
+  class="premium-calendar-shell">
 
-  <span>
-    <i class="legend-dot legend-dot--blue"></i>
-    Process Start
-  </span>
+  <header class="calendar-page-header">
+    <div>
+      <p class="eyebrow">PRODUCTION MANAGEMENT</p>
+      <h1>Production Calendar</h1>
+      <p>
+        Plan, track and manage process starts, dispatches,
+        deliveries and overdue materials.
+      </p>
+    </div>
 
-  <span>
-    <i class="legend-dot legend-dot--orange"></i>
-    Dispatch
-  </span>
+    <div class="calendar-page-header__tools">
+      <label class="global-search">
+        <span class="inline-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m20 20-3.5-3.5"></path>
+          </svg>
+        </span>
+        <input
+          type="search"
+          placeholder="Search PO, material, handler, department..."
+          [value]="searchFilter()"
+          (input)="setSearch($event)"
+          (keyup.enter)="applyFilters()"
+        />
+        <kbd>Enter</kbd>
+      </label>
 
-  <span>
-    <i class="legend-dot legend-dot--green"></i>
-    Delivery
-  </span>
+      <div class="refresh-stamp">
+        <span class="inline-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M20 11a8 8 0 1 0-2.3 5.7"></path>
+            <path d="M20 4v7h-7"></path>
+          </svg>
+        </span>
+        <small>Last refreshed</small>
+        <strong>{{ lastRefreshed() }}</strong>
+      </div>
+    </div>
+  </header>
 
-  <span>
-    <i class="legend-dot legend-dot--red"></i>
-    Overdue
-  </span>
-</section>
+  @if (errorMessage()) {
+    <section
+      class="calendar-message calendar-message--error"
+      role="alert">
+      {{ errorMessage() }}
+      <button
+        type="button"
+        aria-label="Close error"
+        (click)="errorMessage.set('')">
+        &times;
+      </button>
+    </section>
+  }
 
-@if (errorMessage()) {
-<section
-  class="calendar-error"
-  role="alert">
-  {{ errorMessage() }}
-</section>
-}
+  @if (successMessage()) {
+    <section
+      class="calendar-message calendar-message--success"
+      role="status">
+      {{ successMessage() }}
+    </section>
+  }
 
-<section class="calendar-panel">
+  @if (dashboard(); as summary) {
+    <section
+      class="calendar-kpis"
+      aria-label="Production calendar summary">
 
-  <full-calendar
-    [options]="calendarOptions">
-  </full-calendar>
+      <button
+        type="button"
+        class="kpi-card kpi-card--danger"
+        (click)="showOverdue()">
+        <span class="kpi-card__icon">!</span>
+        <span class="kpi-card__copy">
+          <small>OVERDUE</small>
+          <strong>{{ summary.overdue }}</strong>
+          <em>Requires attention</em>
+        </span>
+        <span class="kpi-card__spark" aria-hidden="true">
+          <svg viewBox="0 0 48 24" focusable="false">
+            <polyline points="2,20 12,14 20,17 31,7 39,11 46,3"></polyline>
+          </svg>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="kpi-card kpi-card--warning"
+        (click)="showDueToday()">
+        <span class="kpi-card__icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+            <path d="M8 3v4M16 3v4M3 10h18"></path>
+            <circle cx="16" cy="16" r="3"></circle>
+            <path d="M16 14.5V16l1 1"></path>
+          </svg></span>
+        <span class="kpi-card__copy">
+          <small>DUE TODAY</small>
+          <strong>{{ summary.dueToday }}</strong>
+          <em>Delivery events today</em>
+        </span>
+        <span class="kpi-card__spark" aria-hidden="true">
+          <svg viewBox="0 0 48 24" focusable="false">
+            <polyline points="2,20 12,14 20,17 31,7 39,11 46,3"></polyline>
+          </svg>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="kpi-card kpi-card--success"
+        (click)="showNextSevenDays()">
+        <span class="kpi-card__icon">7</span>
+        <span class="kpi-card__copy">
+          <small>NEXT 7 DAYS</small>
+          <strong>{{ summary.nextSevenDays }}</strong>
+          <em>Upcoming deliveries</em>
+        </span>
+        <span class="kpi-card__spark" aria-hidden="true">
+          <svg viewBox="0 0 48 24" focusable="false">
+            <polyline points="2,20 12,14 20,17 31,7 39,11 46,3"></polyline>
+          </svg>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="kpi-card kpi-card--primary"
+        (click)="showCompleted()">
+        <span class="kpi-card__icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="m5 12 4 4L19 6"></path>
+          </svg></span>
+        <span class="kpi-card__copy">
+          <small>COMPLETED THIS MONTH</small>
+          <strong>{{ summary.completedThisMonth }}</strong>
+          <em>Completed materials</em>
+        </span>
+        <span class="kpi-card__spark" aria-hidden="true">
+          <svg viewBox="0 0 48 24" focusable="false">
+            <polyline points="2,20 12,14 20,17 31,7 39,11 46,3"></polyline>
+          </svg>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="kpi-card kpi-card--purple"
+        (click)="showAllMaterials()">
+        <span class="kpi-card__icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"></path>
+            <path d="m4 7.5 8 4.5 8-4.5M12 12v9"></path>
+          </svg></span>
+        <span class="kpi-card__copy">
+          <small>TOTAL MATERIALS</small>
+          <strong>{{ summary.totalMaterials }}</strong>
+          <em>All tracked materials</em>
+        </span>
+        <span class="kpi-card__spark" aria-hidden="true">
+          <svg viewBox="0 0 48 24" focusable="false">
+            <polyline points="2,20 12,14 20,17 31,7 39,11 46,3"></polyline>
+          </svg>
+        </span>
+      </button>
+    </section>
+  } @else {
+    <section class="calendar-kpis calendar-kpis--loading">
+      @for (item of [1, 2, 3, 4, 5]; track item) {
+        <div class="kpi-skeleton"></div>
+      }
+    </section>
+  }
+
+  <section class="calendar-command-bar">
+    <div class="calendar-legend">
+      <span><i class="legend-dot legend-dot--blue"></i>Process Start</span>
+      <span><i class="legend-dot legend-dot--orange"></i>Dispatch</span>
+      <span><i class="legend-dot legend-dot--green"></i>Delivery</span>
+      <span><i class="legend-dot legend-dot--red"></i>Overdue</span>
+      <span><i class="legend-dot legend-dot--gray"></i>Completed</span>
+    </div>
+
+    <div class="calendar-command-bar__actions">
+      <button
+        type="button"
+        class="toolbar-button"
+        (click)="saveCurrentFilter()">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 4h12v17l-6-4-6 4z"></path>
+        </svg>
+        Saved Filter
+      </button>
+
+      <button
+        type="button"
+        class="toolbar-button"
+        (click)="refresh()">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M20 11a8 8 0 1 0-2.3 5.7"></path>
+          <path d="M20 4v7h-7"></path>
+        </svg>
+        Refresh
+      </button>
+
+      <button
+        type="button"
+        class="toolbar-button"
+        (click)="exportCsv()">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 3v12"></path>
+          <path d="m8 11 4 4 4-4"></path>
+          <path d="M5 21h14"></path>
+        </svg>
+        Export
+      </button>
+
+      <a
+        class="toolbar-button toolbar-button--primary"
+        routerLink="/process-queue">
+        + Process Queue
+      </a>
+    </div>
+  </section>
+
+  <section class="calendar-workspace">
+    <aside class="calendar-filter-panel">
+      <header class="panel-heading">
+        <div>
+          <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 5h16l-6 7v6l-4 2v-8z"></path>
+          </svg>
+          <strong>FILTERS</strong>
+        </div>
+        <button
+          type="button"
+          (click)="clearFilters()">
+          Reset
+        </button>
+      </header>
+
+      <section class="filter-section">
+        <div class="filter-section__heading">
+          <strong>EVENT TYPE</strong>
+          <span>{{ selectedEventTypeCount() }}/{{ eventTypeOptions.length }}</span>
+        </div>
+
+        <button
+          type="button"
+          class="select-all-button"
+          (click)="selectAllEventTypes()">
+          Select all event types
+        </button>
+
+        @for (option of eventTypeOptions; track option.value) {
+          <label class="filter-check">
+            <input
+              type="checkbox"
+              [checked]="selectedEventTypes().includes(option.value)"
+              (change)="toggleEventType(option.value, $event)"
+            />
+            <i [class]="eventTypeClass(option.value)"></i>
+            <span>{{ option.label }}</span>
+          </label>
+        }
+      </section>
+
+      <section class="filter-section">
+        <div class="filter-section__heading">
+          <strong>STATUS</strong>
+          <span>{{ selectedStatusCount() }}/{{ statusOptions.length }}</span>
+        </div>
+
+        <button
+          type="button"
+          class="select-all-button"
+          (click)="selectAllStatuses()">
+          Select all statuses
+        </button>
+
+        @for (option of statusOptions; track option.value) {
+          <label class="filter-check">
+            <input
+              type="checkbox"
+              [checked]="selectedStatuses().includes(option.value)"
+              (change)="toggleStatus(option.value, $event)"
+            />
+            <span>{{ option.label }}</span>
+          </label>
+        }
+      </section>
+
+      <section class="filter-section filter-section--fields">
+        <label>
+          <span>HANDLER</span>
+          <select
+            [value]="handlerFilter()"
+            (change)="setHandler($event)">
+            <option value="">All handlers</option>
+            @for (handler of availableHandlers(); track handler) {
+              <option [value]="handler">{{ handler }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>DEPARTMENT</span>
+          <select
+            [value]="departmentFilter()"
+            (change)="setDepartment($event)">
+            <option value="">All departments</option>
+            @for (department of availableDepartments(); track department) {
+              <option [value]="department">{{ department }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>PO NUMBER</span>
+          <input
+            type="search"
+            placeholder="Enter PO number"
+            [value]="poNumberFilter()"
+            (input)="setPoNumber($event)"
+            (keyup.enter)="applyFilters()"
+          />
+        </label>
+      </section>
+
+      <div class="filter-actions">
+        <button
+          type="button"
+          class="button-secondary"
+          (click)="clearFilters()">
+          Clear All
+        </button>
+
+        <button
+          type="button"
+          class="button-primary"
+          (click)="applyFilters()">
+          Apply Filters
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="save-filter-button"
+        (click)="saveCurrentFilter()">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 4h12v17l-6-4-6 4z"></path>
+        </svg>
+        Save Current Filter
+      </button>
+    </aside>
+
+    <main class="calendar-main-panel">
+      <header class="calendar-navigation">
+        <div class="calendar-navigation__date">
+          <button
+            type="button"
+            (click)="today()">
+            Today
+          </button>
+
+          <div class="calendar-navigation__arrows">
+            <button
+              type="button"
+              aria-label="Previous period"
+              (click)="previous()">
+              &lt;
+            </button>
+            <button
+              type="button"
+              aria-label="Next period"
+              (click)="next()">
+              &gt;
+            </button>
+          </div>
+
+          <h2>{{ calendarTitle() }}</h2>
+        </div>
+
+        <div class="calendar-navigation__views">
+          <button
+            type="button"
+            [class.is-active]="activeView() === 'dayGridMonth'"
+            (click)="showMonth()">
+            Month
+          </button>
+          <button
+            type="button"
+            [class.is-active]="activeView() === 'dayGridWeek'"
+            (click)="showWeek()">
+            Week
+          </button>
+          <button
+            type="button"
+            [class.is-active]="activeView() === 'listWeek'"
+            (click)="showList()">
+            List
+          </button>
+          <button
+            type="button"
+            aria-label="Toggle fullscreen"
+            (click)="toggleFullscreen()">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="calendar-container">
+        @if (isLoading()) {
+          <div class="calendar-loading">
+            <span></span>
+            Loading production events...
+          </div>
+        }
+
+        <full-calendar
+          [options]="calendarOptions">
+        </full-calendar>
+      </div>
+
+      <footer class="calendar-total-strip">
+        @if (dashboard(); as summary) {
+          <span class="total-item total-item--blue"><i class="legend-dot legend-dot--blue"></i>Start <strong>{{ summary.processStartEvents }}</strong></span>
+          <span class="total-item total-item--orange"><i class="legend-dot legend-dot--orange"></i>Dispatch <strong>{{ summary.dispatchEvents }}</strong></span>
+          <span class="total-item total-item--green"><i class="legend-dot legend-dot--green"></i>Delivery <strong>{{ summary.deliveryEvents }}</strong></span>
+          <span class="total-item total-item--red">! Overdue <strong>{{ summary.overdueEvents }}</strong></span>
+          <span class="total-item total-item--gray"><i class="legend-dot legend-dot--gray"></i>Completed <strong>{{ summary.completedEvents }}</strong></span>
+          <span class="total-events">Visible <strong>{{ loadedEvents().length }}</strong></span>
+        }
+      </footer>
+    </main>
+
+    <aside class="calendar-detail-panel">
+      @if (selectedEvent(); as event) {
+        <header class="detail-heading">
+          <div>
+            <span [class]="eventTypeClass(event.eventType)"></span>
+            <strong>{{ event.eventType }}</strong>
+          </div>
+          <button
+            type="button"
+            aria-label="Close details"
+            (click)="closeDetails()">
+            &times;
+          </button>
+        </header>
+
+        <section class="detail-title">
+          <div>
+            <h2>{{ event.poNumber ? 'PO ' + event.poNumber : 'Material Event' }}</h2>
+            <p>
+              Material: {{ event.materialNo || '-' }}
+              @if (event.description) {
+                &middot; {{ event.description }}
+              }
+            </p>
+          </div>
+          <span class="status-pill">
+            {{ event.status || 'Pending' }}
+          </span>
+        </section>
+
+        <dl class="detail-list">
+          <div>
+            <dt>Delivery Date</dt>
+            <dd class="detail-value--success">{{ formatDate(event.deliveryDate) }}</dd>
+          </div>
+          <div>
+            <dt>Ordered Quantity</dt>
+            <dd>{{ event.orderedQty }} {{ event.unit }}</dd>
+          </div>
+          <div>
+            <dt>Dispatched Quantity</dt>
+            <dd>{{ event.dispatchQty }} {{ event.unit }}</dd>
+          </div>
+          <div>
+            <dt>Pending Quantity</dt>
+            <dd class="detail-value--danger">{{ event.pendingQty }} {{ event.unit }}</dd>
+          </div>
+          <div>
+            <dt>Process Start Date</dt>
+            <dd>{{ formatDate(event.processStartDate) }}</dd>
+          </div>
+          <div>
+            <dt>Dispatch Date</dt>
+            <dd>{{ formatDate(event.dispatchDate) }}</dd>
+          </div>
+          <div>
+            <dt>Handler</dt>
+            <dd>{{ event.handler || 'Unassigned' }}</dd>
+          </div>
+          <div>
+            <dt>Department</dt>
+            <dd>{{ event.department || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Remarks</dt>
+            <dd>{{ event.remarks || 'No remarks added.' }}</dd>
+          </div>
+          @if (event.daysOverdue > 0) {
+            <div>
+              <dt>Overdue</dt>
+              <dd class="detail-value--danger">{{ event.daysOverdue }} day(s)</dd>
+            </div>
+          }
+        </dl>
+
+        <section class="detail-actions">
+          <button
+            type="button"
+            (click)="viewMaterial(event)">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"></path>
+            <path d="m4 7.5 8 4.5 8-4.5M12 12v9"></path>
+          </svg>
+            View Material
+          </button>
+          <button
+            type="button"
+            (click)="viewPurchaseOrder(event)">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M6 3h8l4 4v14H6z"></path>
+              <path d="M14 3v5h5M9 13h6M9 17h6"></path>
+            </svg>
+            View PO
+          </button>
+          <button
+            type="button"
+            class="detail-action--orange"
+            (click)="addDispatch(event)">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M3 6h11v10H3zM14 10h4l3 3v3h-7z"></path>
+              <circle cx="7" cy="18" r="2"></circle>
+              <circle cx="18" cy="18" r="2"></circle>
+            </svg>
+            Add Dispatch
+          </button>
+          <button
+            type="button"
+            class="detail-action--purple"
+            (click)="uploadDrawing(event)">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m8 12 6.5-6.5a3.5 3.5 0 0 1 5 5L11 19a5 5 0 0 1-7-7l8-8"></path>
+            </svg>
+            Upload Drawing
+          </button>
+          <button
+            type="button"
+            class="detail-action--success"
+            (click)="editMaterial(event)">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="m5 12 4 4L19 6"></path>
+          </svg>
+            Update Material Status
+          </button>
+        </section>
+      } @else {
+        <section class="empty-detail-state">
+          <span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+            <path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2M14 18h2"></path>
+          </svg></span>
+          <h2>Select a calendar event</h2>
+          <p>
+            Click an event to view PO, material, quantity,
+            dates, handler and available actions.
+          </p>
+        </section>
+      }
+    </aside>
+  </section>
+
+  @if (dashboard(); as summary) {
+    <section class="calendar-insights">
+      <article class="insight-card insight-card--events">
+        <header>
+          <strong>EVENTS BY TYPE</strong>
+          <span>This month</span>
+        </header>
+
+        <div class="event-breakdown">
+          <div
+            class="event-donut"
+            [style.background]="eventDonutBackground()">
+            <div>
+              <strong>{{ totalDashboardEvents() }}</strong>
+              <span>Total</span>
+            </div>
+          </div>
+
+          <ul>
+            <li><i class="legend-dot legend-dot--blue"></i><span>Process Start</span><strong>{{ summary.processStartEvents }}</strong></li>
+            <li><i class="legend-dot legend-dot--orange"></i><span>Dispatch</span><strong>{{ summary.dispatchEvents }}</strong></li>
+            <li><i class="legend-dot legend-dot--green"></i><span>Delivery</span><strong>{{ summary.deliveryEvents }}</strong></li>
+            <li><i class="legend-dot legend-dot--red"></i><span>Overdue</span><strong>{{ summary.overdueEvents }}</strong></li>
+            <li><i class="legend-dot legend-dot--gray"></i><span>Completed</span><strong>{{ summary.completedEvents }}</strong></li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="insight-card">
+        <header>
+          <strong>UPCOMING - NEXT 7 DAYS</strong>
+          <a routerLink="/process-queue">View all</a>
+        </header>
+
+        <div class="insight-list">
+          @for (item of summary.upcoming; track item.materialId) {
+            <button
+              type="button"
+              (click)="openUpcomingMaterial(item.materialId)">
+              <span class="insight-date">{{ formatDate(item.eventDate) }}</span>
+              <span class="insight-main">
+                <strong>{{ item.eventType }}</strong>
+                <small>PO {{ item.poNumber || '-' }} &middot; {{ item.materialNo || '-' }}</small>
+              </span>
+              <b>{{ item.pendingQty }} {{ item.unit }}</b>
+            </button>
+          } @empty {
+            <p class="empty-insight">No upcoming delivery events.</p>
+          }
+        </div>
+      </article>
+
+      <article class="insight-card">
+        <header>
+          <strong>OVERDUE SUMMARY</strong>
+          <button
+            type="button"
+            (click)="showOverdue()">
+            View all
+          </button>
+        </header>
+
+        <div class="insight-list">
+          @for (item of summary.overdueItems; track item.materialId) {
+            <button
+              type="button"
+              (click)="openUpcomingMaterial(item.materialId)">
+              <span class="insight-main">
+                <strong>PO {{ item.poNumber || '-' }}</strong>
+                <small>{{ item.materialNo || 'Material ' + item.materialId }}</small>
+              </span>
+              <b class="overdue-days">{{ item.daysOverdue }} days</b>
+            </button>
+          } @empty {
+            <p class="empty-insight">No overdue materials.</p>
+          }
+        </div>
+      </article>
+
+      <article class="insight-card">
+        <header>
+          <strong>HANDLER WORKLOAD</strong>
+          <span>Active materials</span>
+        </header>
+
+        <div class="workload-list">
+          @for (item of summary.handlerWorkload; track item.handler) {
+            <div>
+              <span class="handler-avatar">{{ item.handler.slice(0, 1).toUpperCase() }}</span>
+              <span>
+                <strong>{{ item.handler }}</strong>
+                <small>{{ item.activeMaterials }} active materials</small>
+              </span>
+              <b [class]="workloadClass(item.level)">{{ item.level }}</b>
+            </div>
+          } @empty {
+            <p class="empty-insight">No handler assignments found.</p>
+          }
+        </div>
+      </article>
+    </section>
+  }
 </section>

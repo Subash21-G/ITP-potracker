@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace POTracker.Controllers
 {
-    public partial class ImportController : Controller
+    public partial class ImportController : ControllerBase
     {
         private const int MaximumRowsPerImport = 2000;
         private const long MaximumExcelFileSize = 20L * 1024L * 1024L;

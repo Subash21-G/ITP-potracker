@@ -1,4 +1,4 @@
-﻿import {
+import {
   HttpClient,
   HttpParams,
 } from '@angular/common/http';
@@ -11,7 +11,9 @@ import { Observable } from 'rxjs';
 import {
   ProcessQueueQuery,
   ProcessQueueResponse,
+  ProductionCalendarDashboard,
   ProductionCalendarEvent,
+  ProductionCalendarQuery,
 } from '../models/production-api.model';
 
 @Injectable({
@@ -50,12 +52,49 @@ export class ProductionApiService {
   }
 
   getCalendarEvents(
-    start: string,
-    end: string,
+    query: ProductionCalendarQuery,
   ): Observable<ProductionCalendarEvent[]> {
-    const params = new HttpParams()
-      .set('start', start)
-      .set('end', end);
+    let params = new HttpParams()
+      .set('start', query.start)
+      .set('end', query.end);
+
+    params = this.setOptional(
+      params,
+      'search',
+      query.search,
+    );
+
+    params = this.setOptional(
+      params,
+      'handler',
+      query.handler,
+    );
+
+    params = this.setOptional(
+      params,
+      'department',
+      query.department,
+    );
+
+    params = this.setOptional(
+      params,
+      'poNumber',
+      query.poNumber,
+    );
+
+    if (query.eventTypes?.length) {
+      params = params.set(
+        'eventTypes',
+        query.eventTypes.join(','),
+      );
+    }
+
+    if (query.statuses?.length) {
+      params = params.set(
+        'statuses',
+        query.statuses.join(','),
+      );
+    }
 
     return this.http.get<ProductionCalendarEvent[]>(
       '/api/production/calendar-events',
@@ -64,5 +103,26 @@ export class ProductionApiService {
         withCredentials: true,
       },
     );
+  }
+
+  getCalendarDashboard(): Observable<ProductionCalendarDashboard> {
+    return this.http.get<ProductionCalendarDashboard>(
+      '/api/production/calendar-dashboard',
+      {
+        withCredentials: true,
+      },
+    );
+  }
+
+  private setOptional(
+    params: HttpParams,
+    key: string,
+    value: string | undefined,
+  ): HttpParams {
+    const normalized = value?.trim();
+
+    return normalized
+      ? params.set(key, normalized)
+      : params;
   }
 }

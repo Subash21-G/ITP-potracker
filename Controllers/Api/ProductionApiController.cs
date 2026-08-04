@@ -177,6 +177,12 @@ namespace POTracker.Controllers.Api
             CalendarEvents(
                 DateTime? start,
                 DateTime? end,
+                string? search,
+                string? eventTypes,
+                string? statuses,
+                string? handler,
+                string? department,
+                string? poNumber,
                 CancellationToken cancellationToken)
         {
             var today = DateTime.Today;
@@ -196,15 +202,20 @@ namespace POTracker.Controllers.Api
 
             if (rangeEnd <= rangeStart)
             {
-                rangeEnd =
-                    rangeStart.AddMonths(1);
+                rangeEnd = rangeStart.AddMonths(1);
             }
 
             var includeOverdue =
                 rangeStart <= today &&
                 today < rangeEnd;
 
-            var materials = await _context.Materials
+            var selectedStatuses =
+                ParseCsv(statuses);
+
+            var selectedEventTypes =
+                ParseCsv(eventTypes);
+
+            var query = _context.Materials
                 .AsNoTracking()
                 .Where(material =>
                     (material.ProcessStartDate != null &&
@@ -223,104 +234,500 @@ namespace POTracker.Controllers.Api
                      material.DeliveryDate != null &&
                      material.DeliveryDate < today &&
                      material.ProcessStatus != "Completed" &&
-                     material.DispatchStatus != "Dispatched"))
-                .Select(material => new
-                {
-                    material.Id,
-                    material.MaterialNo,
-                    material.ProcessStartDate,
-                    material.DispatchDate,
-                    material.DeliveryDate,
-                    material.ProcessStatus,
-                    material.DispatchStatus
-                })
+                     material.DispatchStatus != "Dispatched"));
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+
+                query = query.Where(material =>
+                    (material.MaterialNo != null &&
+                     material.MaterialNo.Contains(term)) ||
+                    (material.ShortDescription != null &&
+                     material.ShortDescription.Contains(term)) ||
+                    (material.BriefDescription != null &&
+                     material.BriefDescription.Contains(term)) ||
+                    (material.AssignedDashboard != null &&
+                     material.AssignedDashboard.Contains(term)) ||
+                    (material.Dep != null &&
+                     material.Dep.Contains(term)) ||
+                    (material.PurchaseOrder != null &&
+                     material.PurchaseOrder.PONumber.Contains(term)));
+            }
+
+            if (selectedStatuses.Length > 0)
+            {
+                query = query.Where(material =>
+                    selectedStatuses.Contains(
+                        material.ProcessStatus) ||
+                    selectedStatuses.Contains(
+                        material.DispatchStatus));
+            }
+
+            if (!string.IsNullOrWhiteSpace(handler))
+            {
+                var selectedHandler = handler.Trim();
+
+                query = query.Where(material =>
+                    material.AssignedDashboard != null &&
+                    material.AssignedDashboard == selectedHandler);
+            }
+
+            if (!string.IsNullOrWhiteSpace(department))
+            {
+                var selectedDepartment = department.Trim();
+
+                query = query.Where(material =>
+                    material.Dep != null &&
+                    material.Dep == selectedDepartment);
+            }
+
+            if (!string.IsNullOrWhiteSpace(poNumber))
+            {
+                var selectedPoNumber = poNumber.Trim();
+
+                query = query.Where(material =>
+                    material.PurchaseOrder != null &&
+                    material.PurchaseOrder.PONumber.Contains(
+                        selectedPoNumber));
+            }
+
+            var materials = await query
+                .Select(material =>
+                    new CalendarMaterialRow
+                    {
+                        MaterialId = material.Id,
+                        PurchaseOrderId = material.PurchaseOrderId,
+                        PONumber =
+                            material.PurchaseOrder != null
+                                ? material.PurchaseOrder.PONumber
+                                : string.Empty,
+                        MaterialNo = material.MaterialNo ?? string.Empty,
+                        Description =
+                            material.ShortDescription ??
+                            material.BriefDescription ??
+                            string.Empty,
+                        Unit = material.Unit ?? string.Empty,
+                        OrderedQty = material.Qty,
+                        DispatchQty = material.DispatchQty,
+                        PendingQty = material.PendingQty,
+                        ProcessStartDate = material.ProcessStartDate,
+                        DispatchDate = material.DispatchDate,
+                        DeliveryDate = material.DeliveryDate,
+                        ProcessStatus = material.ProcessStatus,
+                        DispatchStatus = material.DispatchStatus,
+                        Handler = material.AssignedDashboard ?? string.Empty,
+                        Department = material.Dep ?? string.Empty,
+                        Remarks = material.Remark ?? string.Empty
+                    })
                 .ToListAsync(cancellationToken);
 
             var events =
                 new List<ProductionCalendarEventDto>(
-                    materials.Count * 2);
+                    materials.Count * 3);
 
             foreach (var material in materials)
             {
-                var materialNumber =
-                    string.IsNullOrWhiteSpace(
-                        material.MaterialNo)
-                        ? $"Material #{material.Id}"
-                        : material.MaterialNo;
-
                 if (material.ProcessStartDate.HasValue &&
                     material.ProcessStartDate.Value >= rangeStart &&
                     material.ProcessStartDate.Value < rangeEnd)
                 {
-                    events.Add(new ProductionCalendarEventDto
-                    {
-                        Id = material.Id,
-                        MaterialId = material.Id,
-                        Title = "Start: " + materialNumber,
-                        Start = material.ProcessStartDate.Value
-                            .ToString("yyyy-MM-dd"),
-                        Color = "#2563eb",
-                        EventType = "Process Start"
-                    });
+                    events.Add(
+                        CreateCalendarEvent(
+                            material,
+                            "Process Start",
+                            material.ProcessStartDate.Value,
+                            "#2563eb",
+                            today));
                 }
 
                 if (material.DispatchDate.HasValue &&
                     material.DispatchDate.Value >= rangeStart &&
                     material.DispatchDate.Value < rangeEnd)
                 {
-                    events.Add(new ProductionCalendarEventDto
-                    {
-                        Id = material.Id,
-                        MaterialId = material.Id,
-                        Title = "Dispatch: " + materialNumber,
-                        Start = material.DispatchDate.Value
-                            .ToString("yyyy-MM-dd"),
-                        Color = "#f59e0b",
-                        EventType = "Dispatch"
-                    });
+                    events.Add(
+                        CreateCalendarEvent(
+                            material,
+                            "Dispatch",
+                            material.DispatchDate.Value,
+                            "#f97316",
+                            today));
                 }
 
                 if (material.DeliveryDate.HasValue &&
                     material.DeliveryDate.Value >= rangeStart &&
                     material.DeliveryDate.Value < rangeEnd)
                 {
-                    events.Add(new ProductionCalendarEventDto
-                    {
-                        Id = material.Id,
-                        MaterialId = material.Id,
-                        Title = "Delivery: " + materialNumber,
-                        Start = material.DeliveryDate.Value
-                            .ToString("yyyy-MM-dd"),
-                        Color =
-                            material.ProcessStatus == "Completed"
-                                ? "#16a34a"
-                                : "#22c55e",
-                        EventType = "Delivery"
-                    });
+                    var completed = IsCompleted(material);
+
+                    events.Add(
+                        CreateCalendarEvent(
+                            material,
+                            completed
+                                ? "Completed"
+                                : "Delivery",
+                            material.DeliveryDate.Value,
+                            completed
+                                ? "#64748b"
+                                : "#16a34a",
+                            today));
                 }
 
                 if (includeOverdue &&
                     material.DeliveryDate.HasValue &&
                     material.DeliveryDate.Value.Date < today &&
-                    material.ProcessStatus != "Completed" &&
-                    material.DispatchStatus != "Dispatched")
+                    !IsCompleted(material))
                 {
-                    events.Add(new ProductionCalendarEventDto
-                    {
-                        Id = material.Id,
-                        MaterialId = material.Id,
-                        Title = "Overdue: " + materialNumber,
-                        Start = today.ToString("yyyy-MM-dd"),
-                        Color = "#dc2626",
-                        EventType = "Overdue"
-                    });
+                    events.Add(
+                        CreateCalendarEvent(
+                            material,
+                            "Overdue",
+                            today,
+                            "#dc2626",
+                            today));
                 }
             }
 
-            return Ok(events);
+            if (selectedEventTypes.Length > 0)
+            {
+                events = events
+                    .Where(calendarEvent =>
+                        selectedEventTypes.Contains(
+                            calendarEvent.EventType,
+                            StringComparer.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            return Ok(
+                events
+                    .OrderBy(calendarEvent =>
+                        calendarEvent.Start)
+                    .ThenBy(calendarEvent =>
+                        calendarEvent.PONumber)
+                    .ThenBy(calendarEvent =>
+                        calendarEvent.MaterialNo)
+                    .ToList());
         }
 
-        // ============================================================
+        [HttpGet("calendar-dashboard")]
+        public async Task<ActionResult<
+            ProductionCalendarDashboardDto>>
+            CalendarDashboard(
+                CancellationToken cancellationToken)
+        {
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+            var nextSevenDays = today.AddDays(8);
+            var monthStart =
+                new DateTime(
+                    today.Year,
+                    today.Month,
+                    1);
+            var nextMonth = monthStart.AddMonths(1);
+
+            var materials = await _context.Materials
+                .AsNoTracking()
+                .Select(material =>
+                    new CalendarMaterialRow
+                    {
+                        MaterialId = material.Id,
+                        PurchaseOrderId = material.PurchaseOrderId,
+                        PONumber =
+                            material.PurchaseOrder != null
+                                ? material.PurchaseOrder.PONumber
+                                : string.Empty,
+                        MaterialNo = material.MaterialNo ?? string.Empty,
+                        Description =
+                            material.ShortDescription ??
+                            material.BriefDescription ??
+                            string.Empty,
+                        Unit = material.Unit ?? string.Empty,
+                        OrderedQty = material.Qty,
+                        DispatchQty = material.DispatchQty,
+                        PendingQty = material.PendingQty,
+                        ProcessStartDate = material.ProcessStartDate,
+                        DispatchDate = material.DispatchDate,
+                        DeliveryDate = material.DeliveryDate,
+                        ProcessStatus = material.ProcessStatus,
+                        DispatchStatus = material.DispatchStatus,
+                        Handler = material.AssignedDashboard ?? string.Empty,
+                        Department = material.Dep ?? string.Empty,
+                        Remarks = material.Remark ?? string.Empty
+                    })
+                .ToListAsync(cancellationToken);
+
+            var activeMaterials = materials
+                .Where(material => !IsCompleted(material))
+                .ToList();
+
+            var overdueItems = activeMaterials
+                .Where(material =>
+                    material.DeliveryDate.HasValue &&
+                    material.DeliveryDate.Value.Date < today)
+                .OrderBy(material =>
+                    material.DeliveryDate)
+                .ToList();
+
+            var upcomingItems = activeMaterials
+                .Where(material =>
+                    material.DeliveryDate.HasValue &&
+                    material.DeliveryDate.Value.Date >= today &&
+                    material.DeliveryDate.Value.Date < nextSevenDays)
+                .OrderBy(material =>
+                    material.DeliveryDate)
+                .ThenBy(material =>
+                    material.PONumber)
+                .Take(6)
+                .Select(material =>
+                    new ProductionCalendarUpcomingItemDto
+                    {
+                        MaterialId = material.MaterialId,
+                        PurchaseOrderId = material.PurchaseOrderId,
+                        PONumber = material.PONumber,
+                        MaterialNo = material.MaterialNo,
+                        EventType = "Delivery",
+                        EventDate =
+                            material.DeliveryDate!.Value.Date,
+                        PendingQty =
+                            GetPendingQuantity(material),
+                        Unit = material.Unit
+                    })
+                .ToList();
+
+            var handlerWorkload = activeMaterials
+                .GroupBy(material =>
+                    string.IsNullOrWhiteSpace(
+                        material.Handler)
+                        ? "Unassigned"
+                        : material.Handler.Trim())
+                .Select(group =>
+                    new ProductionCalendarHandlerWorkloadDto
+                    {
+                        Handler = group.Key,
+                        ActiveMaterials = group.Count(),
+                        Level =
+                            group.Count() >= 10
+                                ? "High"
+                                : group.Count() >= 5
+                                    ? "Medium"
+                                    : "Low"
+                    })
+                .OrderByDescending(item =>
+                    item.ActiveMaterials)
+                .ThenBy(item => item.Handler)
+                .Take(6)
+                .ToList();
+
+            var completedThisMonth = materials.Count(material =>
+                IsCompleted(material) &&
+                material.DeliveryDate.HasValue &&
+                material.DeliveryDate.Value >= monthStart &&
+                material.DeliveryDate.Value < nextMonth);
+
+            var dashboard =
+                new ProductionCalendarDashboardDto
+                {
+                    Overdue = overdueItems.Count,
+
+                    DueToday = activeMaterials.Count(material =>
+                        material.DeliveryDate.HasValue &&
+                        material.DeliveryDate.Value.Date == today),
+
+                    NextSevenDays = activeMaterials.Count(material =>
+                        material.DeliveryDate.HasValue &&
+                        material.DeliveryDate.Value.Date >= tomorrow &&
+                        material.DeliveryDate.Value.Date < nextSevenDays),
+
+                    CompletedThisMonth = completedThisMonth,
+
+                    TotalMaterials = materials.Count,
+
+                    ProcessStartEvents = materials.Count(material =>
+                        material.ProcessStartDate.HasValue &&
+                        material.ProcessStartDate.Value >= monthStart &&
+                        material.ProcessStartDate.Value < nextMonth),
+
+                    DispatchEvents = materials.Count(material =>
+                        material.DispatchDate.HasValue &&
+                        material.DispatchDate.Value >= monthStart &&
+                        material.DispatchDate.Value < nextMonth),
+
+                    DeliveryEvents = materials.Count(material =>
+                        !IsCompleted(material) &&
+                        material.DeliveryDate.HasValue &&
+                        material.DeliveryDate.Value >= monthStart &&
+                        material.DeliveryDate.Value < nextMonth),
+
+                    OverdueEvents = overdueItems.Count,
+                    RevisedEvents = 0,
+                    CompletedEvents = completedThisMonth,
+                    Upcoming = upcomingItems,
+
+                    OverdueItems = overdueItems
+                        .Take(6)
+                        .Select(material =>
+                            new ProductionCalendarOverdueItemDto
+                            {
+                                MaterialId = material.MaterialId,
+                                PurchaseOrderId =
+                                    material.PurchaseOrderId,
+                                PONumber = material.PONumber,
+                                MaterialNo = material.MaterialNo,
+                                DeliveryDate =
+                                    material.DeliveryDate!.Value.Date,
+                                DaysOverdue =
+                                    (today -
+                                     material.DeliveryDate.Value.Date)
+                                    .Days
+                            })
+                        .ToList(),
+
+                    HandlerWorkload = handlerWorkload
+                };
+
+            return Ok(dashboard);
+        }
+
+        private static ProductionCalendarEventDto
+            CreateCalendarEvent(
+                CalendarMaterialRow material,
+                string eventType,
+                DateTime eventDate,
+                string color,
+                DateTime today)
+        {
+            var poLabel =
+                string.IsNullOrWhiteSpace(
+                    material.PONumber)
+                    ? $"Material {material.MaterialId}"
+                    : $"PO {material.PONumber}";
+
+            var status =
+                IsCompleted(material)
+                    ? "Completed"
+                    : material.DispatchStatus.Equals(
+                        "Partial",
+                        StringComparison.OrdinalIgnoreCase)
+                        ? "Partially Dispatched"
+                        : material.ProcessStatus;
+
+            var daysOverdue =
+                material.DeliveryDate.HasValue &&
+                material.DeliveryDate.Value.Date < today &&
+                !IsCompleted(material)
+                    ? (today -
+                       material.DeliveryDate.Value.Date)
+                      .Days
+                    : 0;
+
+            return new ProductionCalendarEventDto
+            {
+                Id =
+                    $"material-{material.MaterialId}-" +
+                    eventType
+                        .ToLowerInvariant()
+                        .Replace(" ", "-"),
+                MaterialId = material.MaterialId,
+                PurchaseOrderId = material.PurchaseOrderId,
+                PONumber = material.PONumber,
+                MaterialNo = material.MaterialNo,
+                Description = material.Description,
+                Unit = material.Unit,
+                Title = $"{eventType}: {poLabel}",
+                Start = eventDate.ToString("yyyy-MM-dd"),
+                Color = color,
+                EventType = eventType,
+                Status = status,
+                OrderedQty = material.OrderedQty,
+                DispatchQty = material.DispatchQty,
+                PendingQty = GetPendingQuantity(material),
+                ProcessStartDate = material.ProcessStartDate,
+                DispatchDate = material.DispatchDate,
+                DeliveryDate = material.DeliveryDate,
+                Handler = material.Handler,
+                Department = material.Department,
+                Remarks = material.Remarks,
+                DaysOverdue = daysOverdue
+            };
+        }
+
+        private static decimal GetPendingQuantity(
+            CalendarMaterialRow material)
+        {
+            if (material.PendingQty > 0)
+            {
+                return material.PendingQty;
+            }
+
+            return Math.Max(
+                0,
+                material.OrderedQty -
+                material.DispatchQty);
+        }
+
+        private static bool IsCompleted(
+            CalendarMaterialRow material)
+        {
+            return
+                material.ProcessStatus.Equals(
+                    "Completed",
+                    StringComparison.OrdinalIgnoreCase) ||
+                material.DispatchStatus.Equals(
+                    "Dispatched",
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string[] ParseCsv(
+            string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? Array.Empty<string>()
+                : value
+                    .Split(
+                        ',',
+                        StringSplitOptions.RemoveEmptyEntries |
+                        StringSplitOptions.TrimEntries)
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+        }
+
+        private sealed class CalendarMaterialRow
+        {
+            public int MaterialId { get; init; }
+
+            public int PurchaseOrderId { get; init; }
+
+            public string PONumber { get; init; } = string.Empty;
+
+            public string MaterialNo { get; init; } = string.Empty;
+
+            public string Description { get; init; } = string.Empty;
+
+            public string Unit { get; init; } = string.Empty;
+
+            public decimal OrderedQty { get; init; }
+
+            public decimal DispatchQty { get; init; }
+
+            public decimal PendingQty { get; init; }
+
+            public DateTime? ProcessStartDate { get; init; }
+
+            public DateTime? DispatchDate { get; init; }
+
+            public DateTime? DeliveryDate { get; init; }
+
+            public string ProcessStatus { get; init; } = string.Empty;
+
+            public string DispatchStatus { get; init; } = string.Empty;
+
+            public string Handler { get; init; } = string.Empty;
+
+            public string Department { get; init; } = string.Empty;
+
+            public string Remarks { get; init; } = string.Empty;
+        }        // ============================================================
         // MAPPING
         // ============================================================
 

@@ -1,4 +1,4 @@
-﻿namespace POTracker.Contracts.Api
+namespace POTracker.Contracts.Api
 {
     public sealed class ProcessQueueResponseDto
     {
@@ -65,9 +65,19 @@
 
     public sealed class ProductionCalendarEventDto
     {
-        public int Id { get; set; }
+        public string Id { get; set; } = string.Empty;
 
         public int MaterialId { get; set; }
+
+        public int PurchaseOrderId { get; set; }
+
+        public string PONumber { get; set; } = string.Empty;
+
+        public string MaterialNo { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        public string Unit { get; set; } = string.Empty;
 
         public string Title { get; set; } = string.Empty;
 
@@ -77,6 +87,105 @@
 
         public string EventType { get; set; } = string.Empty;
 
+        public string Status { get; set; } = string.Empty;
+
+        public decimal OrderedQty { get; set; }
+
+        public decimal DispatchQty { get; set; }
+
+        public decimal PendingQty { get; set; }
+
+        public DateTime? ProcessStartDate { get; set; }
+
+        public DateTime? DispatchDate { get; set; }
+
+        public DateTime? DeliveryDate { get; set; }
+
+        public string Handler { get; set; } = string.Empty;
+
+        public string Department { get; set; } = string.Empty;
+
+        public string Remarks { get; set; } = string.Empty;
+
+        public int DaysOverdue { get; set; }
+
         public bool AllDay { get; set; } = true;
+    }
+
+    public sealed class ProductionCalendarDashboardDto
+    {
+        public int Overdue { get; set; }
+
+        public int DueToday { get; set; }
+
+        public int NextSevenDays { get; set; }
+
+        public int CompletedThisMonth { get; set; }
+
+        public int TotalMaterials { get; set; }
+
+        public int ProcessStartEvents { get; set; }
+
+        public int DispatchEvents { get; set; }
+
+        public int DeliveryEvents { get; set; }
+
+        public int OverdueEvents { get; set; }
+
+        public int RevisedEvents { get; set; }
+
+        public int CompletedEvents { get; set; }
+
+        public List<ProductionCalendarUpcomingItemDto> Upcoming { get; set; }
+            = new();
+
+        public List<ProductionCalendarOverdueItemDto> OverdueItems { get; set; }
+            = new();
+
+        public List<ProductionCalendarHandlerWorkloadDto> HandlerWorkload { get; set; }
+            = new();
+    }
+
+    public sealed class ProductionCalendarUpcomingItemDto
+    {
+        public int MaterialId { get; set; }
+
+        public int PurchaseOrderId { get; set; }
+
+        public string PONumber { get; set; } = string.Empty;
+
+        public string MaterialNo { get; set; } = string.Empty;
+
+        public string EventType { get; set; } = string.Empty;
+
+        public DateTime EventDate { get; set; }
+
+        public decimal PendingQty { get; set; }
+
+        public string Unit { get; set; } = string.Empty;
+    }
+
+    public sealed class ProductionCalendarOverdueItemDto
+    {
+        public int MaterialId { get; set; }
+
+        public int PurchaseOrderId { get; set; }
+
+        public string PONumber { get; set; } = string.Empty;
+
+        public string MaterialNo { get; set; } = string.Empty;
+
+        public DateTime DeliveryDate { get; set; }
+
+        public int DaysOverdue { get; set; }
+    }
+
+    public sealed class ProductionCalendarHandlerWorkloadDto
+    {
+        public string Handler { get; set; } = string.Empty;
+
+        public int ActiveMaterials { get; set; }
+
+        public string Level { get; set; } = string.Empty;
     }
 }
