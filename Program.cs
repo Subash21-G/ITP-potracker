@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
@@ -57,6 +57,9 @@ builder.Services.Configure<PrivateDocumentStorageOptions>(
 
 builder.Services.AddSingleton<
     PrivateDocumentStorageService>();
+
+builder.Services.AddSingleton<
+    PrivateDocumentReferenceService>();
 
 // ============================================================
 // LARGE PO / INVOICE IMPORT SUPPORT
