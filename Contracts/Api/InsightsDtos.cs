@@ -28,9 +28,9 @@ namespace POTracker.Contracts.Api
 
         public DateTime? DrawingUpdatedDate { get; init; }
 
-        public string? DrawingFilePath { get; init; }
+        public string? DrawingFilePath { get; set; }
 
-        public string? PdfFilePath { get; init; }
+        public string? PdfFilePath { get; set; }
 
         public bool HasDrawing { get; init; }
     }

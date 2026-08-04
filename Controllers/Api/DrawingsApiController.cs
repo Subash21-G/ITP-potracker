@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
+using POTracker.Services;
 
 namespace POTracker.Controllers.Api
 {
@@ -17,10 +18,17 @@ namespace POTracker.Controllers.Api
     {
         private readonly ApplicationDbContext _context;
 
+        private readonly PrivateDocumentReferenceService
+            _documentReferences;
+
         public DrawingsApiController(
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            PrivateDocumentReferenceService
+                documentReferences)
         {
             _context = context;
+            _documentReferences =
+                documentReferences;
         }
 
         [HttpGet]
@@ -186,6 +194,19 @@ namespace POTracker.Controllers.Api
                         })
                     .ToListAsync(
                         cancellationToken);
+
+            foreach (var item in items)
+            {
+                item.DrawingFilePath =
+                    _documentReferences.ToDownloadUrl(
+                        item.DrawingFilePath,
+                        "drawings");
+
+                item.PdfFilePath =
+                    _documentReferences.ToDownloadUrl(
+                        item.PdfFilePath,
+                        "pdfs");
+            }
 
             return Ok(
                 new DrawingListResponseDto
