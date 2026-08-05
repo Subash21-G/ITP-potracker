@@ -200,6 +200,15 @@ app.UseResponseCompression();
 app.UseHttpsRedirection();
 
 // ============================================================
+// BLOCK DIRECT PUBLIC DOCUMENT ACCESS
+//
+// Business documents must be downloaded only through the
+// authenticated /api/private-documents endpoint.
+// ============================================================
+
+app.UseMiddleware<PublicUploadBlockingMiddleware>();
+
+// ============================================================
 // STATIC FILE CACHING
 //
 // Shared images and the favicon are cached.
