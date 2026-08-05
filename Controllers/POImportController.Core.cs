@@ -18,18 +18,35 @@ namespace POTracker.Controllers
 
         private const long MaxPdfFileSize =
             20L * 1024L * 1024L;
+
         private readonly IWebHostEnvironment _environment;
         private readonly ApplicationDbContext _context;
-        private readonly PendingInvoiceMatcher _pendingInvoiceMatcher;
+        private readonly PendingInvoiceMatcher
+            _pendingInvoiceMatcher;
+
+        private readonly PrivateDocumentStorageService
+            _privateDocumentStorage;
+
+        private readonly PrivateDocumentReferenceService
+            _documentReferences;
 
         public POImportController(
             IWebHostEnvironment environment,
             ApplicationDbContext context,
-            PendingInvoiceMatcher pendingInvoiceMatcher)
+            PendingInvoiceMatcher pendingInvoiceMatcher,
+            PrivateDocumentStorageService
+                privateDocumentStorage,
+            PrivateDocumentReferenceService
+                documentReferences)
         {
             _environment = environment;
             _context = context;
-            _pendingInvoiceMatcher = pendingInvoiceMatcher;
+            _pendingInvoiceMatcher =
+                pendingInvoiceMatcher;
+            _privateDocumentStorage =
+                privateDocumentStorage;
+            _documentReferences =
+                documentReferences;
         }
 
         // ============================================================
@@ -514,22 +531,35 @@ namespace POTracker.Controllers
             // CREATE PO UPLOAD FOLDER
             // --------------------------------------------------------
 
-            var uploadFolder = Path.Combine(
-                _environment.WebRootPath,
-                "uploads",
-                "po");
+            var webRootPath =
+                _environment.WebRootPath ??
+                Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot");
 
-            Directory.CreateDirectory(uploadFolder);
+            var uploadFolder =
+                Path.Combine(
+                    webRootPath,
+                    "uploads",
+                    "po");
+
+            Directory.CreateDirectory(
+                uploadFolder);
 
             var safeFileName =
-                Path.GetFileName(pdfFile.FileName);
+                Path.GetFileName(
+                    pdfFile.FileName);
 
             var storedFileName =
                 $"{Guid.NewGuid():N}_{safeFileName}";
 
-            var physicalFilePath = Path.Combine(
-                uploadFolder,
-                storedFileName);
+            var physicalFilePath =
+                Path.Combine(
+                    uploadFolder,
+                    storedFileName);
+
+            string? privateRelativePath =
+                null;
 
             try
             {
@@ -537,11 +567,18 @@ namespace POTracker.Controllers
                 // SAVE PDF INTO WWWROOT
                 // ----------------------------------------------------
 
-                await using (var stream = new FileStream(
-                                 physicalFilePath,
-                                 FileMode.Create))
+                await using (
+                    var publicStream =
+                        new FileStream(
+                            physicalFilePath,
+                            FileMode.CreateNew,
+                            FileAccess.Write,
+                            FileShare.None,
+                            bufferSize: 81920,
+                            useAsync: true))
                 {
-                    await pdfFile.CopyToAsync(stream);
+                    await pdfFile.CopyToAsync(
+                        publicStream);
                 }
 
                 // ----------------------------------------------------
@@ -569,8 +606,8 @@ namespace POTracker.Controllers
                 var purchaseOrderModel =
                     ExtractPOData(pdfText);
 
-                purchaseOrderModel.UploadedPdfPath =
-                    "/uploads/po/" + storedFileName;
+                // The authenticated private-document URL is assigned
+                // after the extracted PO passes validation.
 
                 // ----------------------------------------------------
                 // VALIDATE PO NUMBER
@@ -634,6 +671,47 @@ namespace POTracker.Controllers
                             purchaseOrderModel.PurchaseOrderNo);
 
                 // ----------------------------------------------------
+                // SAVE VERIFIED PDF INTO PRIVATE STORAGE
+                // ----------------------------------------------------
+
+                StoredPrivateDocument privateDocument;
+
+                await using (
+                    var privateSource =
+                        new FileStream(
+                            physicalFilePath,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.Read,
+                            bufferSize: 81920,
+                            useAsync: true))
+                {
+                    privateDocument =
+                        await _privateDocumentStorage
+                            .SaveWithStoredFileNameAsync(
+                                privateSource,
+                                "po",
+                                storedFileName);
+                }
+
+                privateRelativePath =
+                    privateDocument.RelativePath;
+
+                var securePdfPath =
+                    _documentReferences.ToDownloadUrl(
+                        privateRelativePath,
+                        "po");
+
+                if (securePdfPath == null)
+                {
+                    throw new InvalidOperationException(
+                        "Unable to create a secure PO import PDF URL.");
+                }
+
+                purchaseOrderModel.UploadedPdfPath =
+                    securePdfPath;
+
+                // ----------------------------------------------------
                 // SUCCESS RESULT
                 // ----------------------------------------------------
 
@@ -650,7 +728,12 @@ namespace POTracker.Controllers
             }
             catch (Exception ex)
             {
-                DeleteFileIfExists(physicalFilePath);
+                DeleteFileIfExists(
+                    physicalFilePath);
+
+                DeletePrivateFileIfExists(
+                    privateRelativePath,
+                    "po");
 
                 result.IsSuccessful = false;
 
@@ -824,37 +907,99 @@ namespace POTracker.Controllers
             IFormFile file,
             string folderName)
         {
-            var uploadFolder = Path.Combine(
-                _environment.WebRootPath,
-                "uploads",
-                folderName);
+            var webRootPath =
+                _environment.WebRootPath ??
+                Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot");
+
+            var uploadFolder =
+                Path.Combine(
+                    webRootPath,
+                    "uploads",
+                    folderName);
 
             Directory.CreateDirectory(
                 uploadFolder);
 
             var safeFileName =
-                Path.GetFileName(file.FileName);
+                Path.GetFileName(
+                    file.FileName);
 
             var fileName =
                 $"{Guid.NewGuid():N}_{safeFileName}";
 
-            var filePath = Path.Combine(
-                uploadFolder,
-                fileName);
+            var publicPhysicalPath =
+                Path.Combine(
+                    uploadFolder,
+                    fileName);
 
-            await using (var stream =
-                         new FileStream(
-                             filePath,
-                             FileMode.Create))
+            string? privateRelativePath =
+                null;
+
+            try
             {
-                await file.CopyToAsync(stream);
-            }
+                await using (
+                    var publicStream =
+                        new FileStream(
+                            publicPhysicalPath,
+                            FileMode.CreateNew,
+                            FileAccess.Write,
+                            FileShare.None,
+                            bufferSize: 81920,
+                            useAsync: true))
+                {
+                    await file.CopyToAsync(
+                        publicStream);
+                }
 
-            return
-                "/uploads/" +
-                folderName +
-                "/" +
-                fileName;
+                StoredPrivateDocument privateDocument;
+
+                await using (
+                    var privateSource =
+                        new FileStream(
+                            publicPhysicalPath,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.Read,
+                            bufferSize: 81920,
+                            useAsync: true))
+                {
+                    privateDocument =
+                        await _privateDocumentStorage
+                            .SaveWithStoredFileNameAsync(
+                                privateSource,
+                                folderName,
+                                fileName);
+                }
+
+                privateRelativePath =
+                    privateDocument.RelativePath;
+
+                var secureFilePath =
+                    _documentReferences.ToDownloadUrl(
+                        privateRelativePath,
+                        folderName);
+
+                if (secureFilePath == null)
+                {
+                    throw new InvalidOperationException(
+                        "Unable to create a secure imported drawing URL.");
+                }
+
+                return secureFilePath;
+            }
+            catch
+            {
+                DeleteFileIfExists(
+                    publicPhysicalPath);
+
+                DeletePrivateFileIfExists(
+                    privateRelativePath,
+                    folderName);
+
+                throw;
+            }
         }
 
         // ============================================================
@@ -866,15 +1011,48 @@ namespace POTracker.Controllers
         {
             try
             {
-                if (System.IO.File.Exists(filePath))
+                if (System.IO.File.Exists(
+                        filePath))
                 {
-                    System.IO.File.Delete(filePath);
+                    System.IO.File.Delete(
+                        filePath);
                 }
             }
             catch
             {
                 // Do not interrupt the user response
                 // if temporary-file cleanup fails.
+            }
+        }
+
+        private void DeletePrivateFileIfExists(
+            string? relativeOrSecurePath,
+            string defaultCategory)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    relativeOrSecurePath))
+            {
+                return;
+            }
+
+            try
+            {
+                if (!_documentReferences
+                        .TryNormalizeRelativePath(
+                            relativeOrSecurePath,
+                            defaultCategory,
+                            out var normalizedRelativePath))
+                {
+                    return;
+                }
+
+                _privateDocumentStorage.DeleteIfExists(
+                    normalizedRelativePath);
+            }
+            catch
+            {
+                // Do not replace the original import error
+                // when temporary private-file cleanup fails.
             }
         }
 

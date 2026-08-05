@@ -14,17 +14,24 @@ namespace POTracker.Controllers.Api
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
 
+        private readonly PrivateDocumentStorageService
+            _privateDocumentStorage;
+
         private readonly PrivateDocumentReferenceService
             _documentReferences;
 
         public DispatchesApiController(
             ApplicationDbContext context,
             IWebHostEnvironment environment,
+            PrivateDocumentStorageService
+                privateDocumentStorage,
             PrivateDocumentReferenceService
                 documentReferences)
         {
             _context = context;
             _environment = environment;
+            _privateDocumentStorage =
+                privateDocumentStorage;
             _documentReferences =
                 documentReferences;
         }
@@ -881,25 +888,96 @@ namespace POTracker.Controllers.Api
                 uploadFolder);
 
             var originalFileName =
-                Path.GetFileName(file.FileName);
+                Path.GetFileName(
+                    file.FileName);
 
             var storedFileName =
                 $"{Guid.NewGuid()}_{originalFileName}";
 
-            var physicalFilePath = Path.Combine(
-                uploadFolder,
-                storedFileName);
+            var physicalFilePath =
+                Path.Combine(
+                    uploadFolder,
+                    storedFileName);
 
-            await using var stream =
-                new FileStream(
-                    physicalFilePath,
-                    FileMode.Create);
+            await using (
+                var publicStream =
+                    new FileStream(
+                        physicalFilePath,
+                        FileMode.CreateNew,
+                        FileAccess.Write,
+                        FileShare.None,
+                        bufferSize: 81920,
+                        useAsync: true))
+            {
+                await file.CopyToAsync(
+                    publicStream);
+            }
 
-            await file.CopyToAsync(stream);
+            StoredPrivateDocument privateDocument;
+
+            try
+            {
+                await using (
+                    var privateSource =
+                        new FileStream(
+                            physicalFilePath,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.Read,
+                            bufferSize: 81920,
+                            useAsync: true))
+                {
+                    privateDocument =
+                        await _privateDocumentStorage
+                            .SaveWithStoredFileNameAsync(
+                                privateSource,
+                                folderName,
+                                storedFileName);
+                }
+            }
+            catch
+            {
+                if (System.IO.File.Exists(
+                        physicalFilePath))
+                {
+                    System.IO.File.Delete(
+                        physicalFilePath);
+                }
+
+                throw;
+            }
+
+            var secureFilePath =
+                _documentReferences.ToDownloadUrl(
+                    privateDocument.RelativePath,
+                    folderName);
+
+            if (secureFilePath == null)
+            {
+                try
+                {
+                    _privateDocumentStorage.DeleteIfExists(
+                        privateDocument.RelativePath);
+                }
+                catch
+                {
+                    // Preserve the original URL-generation failure.
+                }
+
+                if (System.IO.File.Exists(
+                        physicalFilePath))
+                {
+                    System.IO.File.Delete(
+                        physicalFilePath);
+                }
+
+                throw new InvalidOperationException(
+                    "Unable to create a secure dispatch document URL.");
+            }
 
             return (
                 originalFileName,
-                $"/uploads/{folderName}/{storedFileName}");
+                secureFilePath);
         }
 
         private void DeletePhysicalFile(
@@ -911,6 +989,34 @@ namespace POTracker.Controllers.Api
                 return;
             }
 
+            string normalizedRelativePath;
+
+            try
+            {
+                if (!_documentReferences
+                        .TryNormalizeRelativePath(
+                            relativeFilePath,
+                            "dispatch",
+                            out normalizedRelativePath))
+                {
+                    return;
+                }
+            }
+            catch
+            {
+                return;
+            }
+
+            try
+            {
+                _privateDocumentStorage.DeleteIfExists(
+                    normalizedRelativePath);
+            }
+            catch
+            {
+                // Continue and attempt to remove the public mirror.
+            }
+
             try
             {
                 var webRootPath =
@@ -919,23 +1025,22 @@ namespace POTracker.Controllers.Api
                         Directory.GetCurrentDirectory(),
                         "wwwroot");
 
-                var normalizedRelativePath =
-                    relativeFilePath
-                        .TrimStart('/')
-                        .Replace(
-                            '/',
-                            Path.DirectorySeparatorChar);
+                var normalizedPhysicalPath =
+                    normalizedRelativePath.Replace(
+                        '/',
+                        Path.DirectorySeparatorChar);
 
-                var physicalFilePath =
+                var publicPhysicalFilePath =
                     Path.Combine(
                         webRootPath,
-                        normalizedRelativePath);
+                        "uploads",
+                        normalizedPhysicalPath);
 
                 if (System.IO.File.Exists(
-                        physicalFilePath))
+                        publicPhysicalFilePath))
                 {
                     System.IO.File.Delete(
-                        physicalFilePath);
+                        publicPhysicalFilePath);
                 }
             }
             catch

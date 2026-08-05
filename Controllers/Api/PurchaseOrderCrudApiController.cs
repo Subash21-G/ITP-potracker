@@ -22,15 +22,24 @@ namespace POTracker.Controllers.Api
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
 
-        private readonly PrivateDocumentReferenceService _documentReferences;
+        private readonly PrivateDocumentStorageService
+            _privateDocumentStorage;
+
+        private readonly PrivateDocumentReferenceService
+            _documentReferences;
 
         public PurchaseOrderCrudApiController(
             ApplicationDbContext context,
             IWebHostEnvironment environment,
-            PrivateDocumentReferenceService documentReferences)
+            PrivateDocumentStorageService
+                privateDocumentStorage,
+            PrivateDocumentReferenceService
+                documentReferences)
         {
             _context = context;
             _environment = environment;
+            _privateDocumentStorage =
+                privateDocumentStorage;
             _documentReferences =
                 documentReferences;
         }
@@ -629,9 +638,15 @@ namespace POTracker.Controllers.Api
             IFormFile file,
             CancellationToken cancellationToken)
         {
+            var webRootPath =
+                _environment.WebRootPath ??
+                Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot");
+
             var uploadFolder =
                 Path.Combine(
-                    _environment.WebRootPath,
+                    webRootPath,
                     "uploads",
                     "po");
 
@@ -641,25 +656,90 @@ namespace POTracker.Controllers.Api
             var fileName =
                 $"{Guid.NewGuid():N}.pdf";
 
-            var physicalPath =
+            var publicPhysicalPath =
                 Path.Combine(
                     uploadFolder,
                     fileName);
 
-            await using var stream =
-                new FileStream(
-                    physicalPath,
-                    FileMode.CreateNew,
-                    FileAccess.Write,
-                    FileShare.None,
-                    81920,
-                    useAsync: true);
+            StoredPrivateDocument privateDocument;
 
-            await file.CopyToAsync(
-                stream,
-                cancellationToken);
+            try
+            {
+                await using (
+                    var publicStream =
+                        new FileStream(
+                            publicPhysicalPath,
+                            FileMode.CreateNew,
+                            FileAccess.Write,
+                            FileShare.None,
+                            bufferSize: 81920,
+                            useAsync: true))
+                {
+                    await file.CopyToAsync(
+                        publicStream,
+                        cancellationToken);
+                }
 
-            return $"/uploads/po/{fileName}";
+                await using (
+                    var privateSource =
+                        new FileStream(
+                            publicPhysicalPath,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.Read,
+                            bufferSize: 81920,
+                            useAsync: true))
+                {
+                    privateDocument =
+                        await _privateDocumentStorage
+                            .SaveWithStoredFileNameAsync(
+                                privateSource,
+                                "po",
+                                fileName,
+                                cancellationToken);
+                }
+            }
+            catch
+            {
+                if (System.IO.File.Exists(
+                        publicPhysicalPath))
+                {
+                    System.IO.File.Delete(
+                        publicPhysicalPath);
+                }
+
+                throw;
+            }
+
+            var secureFilePath =
+                _documentReferences.ToDownloadUrl(
+                    privateDocument.RelativePath,
+                    "po");
+
+            if (secureFilePath == null)
+            {
+                try
+                {
+                    _privateDocumentStorage.DeleteIfExists(
+                        privateDocument.RelativePath);
+                }
+                catch
+                {
+                    // Preserve the secure URL-generation failure.
+                }
+
+                if (System.IO.File.Exists(
+                        publicPhysicalPath))
+                {
+                    System.IO.File.Delete(
+                        publicPhysicalPath);
+                }
+
+                throw new InvalidOperationException(
+                    "Unable to create a secure purchase order PDF URL.");
+            }
+
+            return secureFilePath;
         }
 
         private static string? Clean(
