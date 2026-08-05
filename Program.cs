@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,11 @@ using POTracker.Services;
 using System.IO.Compression;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var secureCookiePolicy =
+    builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
 
 // ============================================================
 // API CONTROLLERS AND GLOBAL SESSION AUTHORIZATION
@@ -27,6 +33,13 @@ builder.Services.AddProblemDetails(options =>
 });
 
 // ============================================================
+// HEALTH CHECKS
+// Lightweight deployment monitoring without a database query.
+// ============================================================
+
+builder.Services.AddHealthChecks();
+
+// ============================================================
 // ANGULAR XSRF / CSRF PROTECTION
 // Angular sends the request token through the X-XSRF-TOKEN header.
 // The readable XSRF-TOKEN cookie will be issued by the authentication API.
@@ -42,7 +55,8 @@ builder.Services.AddAntiforgery(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy =
+        secureCookiePolicy;
 });
 
 // ============================================================
@@ -148,7 +162,7 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy =
-        CookieSecurePolicy.SameAsRequest;
+        secureCookiePolicy;
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -296,6 +310,12 @@ app.UseAuthorization();
 
 // Attribute-routed JSON APIs used by Angular.
 app.MapControllers();
+
+// Public lightweight health probe.
+// This verifies that the web process and request pipeline are running.
+// It intentionally does not expose database or document details.
+app.MapHealthChecks(
+    "/health");
 
 // ============================================================
 // ANGULAR ENTRY AND LEGACY URL REDIRECTS
