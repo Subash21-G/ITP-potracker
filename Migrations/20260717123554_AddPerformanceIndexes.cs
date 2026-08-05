@@ -89,6 +89,43 @@ namespace POTracker.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(max)");
 
+            // SQL Server cannot index nvarchar(max) columns.
+            migrationBuilder.AlterColumn<string>(
+                name: "InvoiceNumber",
+                table: "VyaparInvoiceImportRows",
+                type: "nvarchar(100)",
+                maxLength: 100,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(max)");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Status",
+                table: "VyaparInvoiceImportRows",
+                type: "nvarchar(50)",
+                maxLength: 50,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(max)");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "PONumber",
+                table: "VyaparInvoiceImportRows",
+                type: "nvarchar(100)",
+                maxLength: 100,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(max)");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "MaterialNumber",
+                table: "VyaparInvoiceImportRows",
+                type: "nvarchar(100)",
+                maxLength: 100,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(max)");
+
             migrationBuilder.CreateIndex(
                 name: "IX_VyaparInvoiceImportRows_InvoiceNumber_Status",
                 table: "VyaparInvoiceImportRows",
@@ -282,6 +319,42 @@ namespace POTracker.Migrations
             migrationBuilder.DropIndex(
                 name: "IX_AppUsers_UserName",
                 table: "AppUsers");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "InvoiceNumber",
+                table: "VyaparInvoiceImportRows",
+                type: "nvarchar(max)",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(100)",
+                oldMaxLength: 100);
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Status",
+                table: "VyaparInvoiceImportRows",
+                type: "nvarchar(max)",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(50)",
+                oldMaxLength: 50);
+
+            migrationBuilder.AlterColumn<string>(
+                name: "PONumber",
+                table: "VyaparInvoiceImportRows",
+                type: "nvarchar(max)",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(100)",
+                oldMaxLength: 100);
+
+            migrationBuilder.AlterColumn<string>(
+                name: "MaterialNumber",
+                table: "VyaparInvoiceImportRows",
+                type: "nvarchar(max)",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(100)",
+                oldMaxLength: 100);
 
             migrationBuilder.AlterColumn<string>(
                 name: "PONumber",
