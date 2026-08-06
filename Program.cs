@@ -9,6 +9,13 @@ using System.IO.Compression;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Enable native Windows Service lifetime when launched by the
+// Service Control Manager. Normal command-line execution is unchanged.
+builder.Services.AddWindowsService(options =>
+{
+    options.ServiceName = "POTracker";
+});
+
 var secureCookiePolicy =
     builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
