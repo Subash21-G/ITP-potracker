@@ -117,6 +117,43 @@ export class PendingMaterialsPage {
   overdueOnly = false;
   dueThisWeekOnly = false;
 
+  dueStatus = '';
+
+  columnPoNumber = '';
+  columnHandler = '';
+
+  columnMaterialNo = '';
+  columnLineItem = '';
+
+  columnDescription = '';
+
+  minPoQuantity = '';
+  maxPoQuantity = '';
+
+  minInvoiceQuantity = '';
+  maxInvoiceQuantity = '';
+
+  minInvoiceBalanceQuantity = '';
+  maxInvoiceBalanceQuantity = '';
+
+  minDispatchQuantity = '';
+  maxDispatchQuantity = '';
+
+  minPendingDispatchQuantity = '';
+  maxPendingDispatchQuantity = '';
+
+  minCompletionPercentage = '';
+  maxCompletionPercentage = '';
+
+  columnProcessStatus = '';
+  columnInvoiceStatus = '';
+  columnDispatchStatus = '';
+
+  columnDeliveryDateFrom = '';
+  columnDeliveryDateTo = '';
+
+  columnAssignedDashboard = '';
+
   page = 1;
   pageSize = 25;
 
@@ -196,6 +233,214 @@ export class PendingMaterialsPage {
     this.load(1);
   }
 
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.load(1);
+  }
+
+  clearColumnFilter(
+    column:
+      | 'due'
+      | 'po'
+      | 'material'
+      | 'description'
+      | 'poQty'
+      | 'invoice'
+      | 'invoiceBalance'
+      | 'dispatch'
+      | 'pendingDispatch'
+      | 'progress'
+      | 'process'
+      | 'invoiceStatus'
+      | 'dispatchStatus'
+      | 'delivery'
+      | 'assigned',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'due':
+        this.dueStatus = '';
+        break;
+
+      case 'po':
+        this.columnPoNumber = '';
+        this.columnHandler = '';
+        break;
+
+      case 'material':
+        this.columnMaterialNo = '';
+        this.columnLineItem = '';
+        break;
+
+      case 'description':
+        this.columnDescription = '';
+        break;
+
+      case 'poQty':
+        this.minPoQuantity = '';
+        this.maxPoQuantity = '';
+        break;
+
+      case 'invoice':
+        this.minInvoiceQuantity = '';
+        this.maxInvoiceQuantity = '';
+        break;
+
+      case 'invoiceBalance':
+        this.minInvoiceBalanceQuantity = '';
+        this.maxInvoiceBalanceQuantity = '';
+        break;
+
+      case 'dispatch':
+        this.minDispatchQuantity = '';
+        this.maxDispatchQuantity = '';
+        break;
+
+      case 'pendingDispatch':
+        this.minPendingDispatchQuantity = '';
+        this.maxPendingDispatchQuantity = '';
+        break;
+
+      case 'progress':
+        this.minCompletionPercentage = '';
+        this.maxCompletionPercentage = '';
+        break;
+
+      case 'process':
+        this.columnProcessStatus = '';
+        break;
+
+      case 'invoiceStatus':
+        this.columnInvoiceStatus = '';
+        break;
+
+      case 'dispatchStatus':
+        this.columnDispatchStatus = '';
+        break;
+
+      case 'delivery':
+        this.columnDeliveryDateFrom = '';
+        this.columnDeliveryDateTo = '';
+        break;
+
+      case 'assigned':
+        this.columnAssignedDashboard = '';
+        break;
+    }
+
+    filter.open = false;
+    this.load(1);
+  }
+
+  columnFilterActive(
+    column:
+      | 'due'
+      | 'po'
+      | 'material'
+      | 'description'
+      | 'poQty'
+      | 'invoice'
+      | 'invoiceBalance'
+      | 'dispatch'
+      | 'pendingDispatch'
+      | 'progress'
+      | 'process'
+      | 'invoiceStatus'
+      | 'dispatchStatus'
+      | 'delivery'
+      | 'assigned',
+  ): boolean {
+    switch (column) {
+      case 'due':
+        return Boolean(
+          this.dueStatus,
+        );
+
+      case 'po':
+        return Boolean(
+          this.columnPoNumber.trim() ||
+          this.columnHandler.trim(),
+        );
+
+      case 'material':
+        return Boolean(
+          this.columnMaterialNo.trim() ||
+          this.columnLineItem.trim(),
+        );
+
+      case 'description':
+        return Boolean(
+          this.columnDescription.trim(),
+        );
+
+      case 'poQty':
+        return Boolean(
+          this.minPoQuantity.trim() ||
+          this.maxPoQuantity.trim(),
+        );
+
+      case 'invoice':
+        return Boolean(
+          this.minInvoiceQuantity.trim() ||
+          this.maxInvoiceQuantity.trim(),
+        );
+
+      case 'invoiceBalance':
+        return Boolean(
+          this.minInvoiceBalanceQuantity.trim() ||
+          this.maxInvoiceBalanceQuantity.trim(),
+        );
+
+      case 'dispatch':
+        return Boolean(
+          this.minDispatchQuantity.trim() ||
+          this.maxDispatchQuantity.trim(),
+        );
+
+      case 'pendingDispatch':
+        return Boolean(
+          this.minPendingDispatchQuantity.trim() ||
+          this.maxPendingDispatchQuantity.trim(),
+        );
+
+      case 'progress':
+        return Boolean(
+          this.minCompletionPercentage.trim() ||
+          this.maxCompletionPercentage.trim(),
+        );
+
+      case 'process':
+        return Boolean(
+          this.columnProcessStatus,
+        );
+
+      case 'invoiceStatus':
+        return Boolean(
+          this.columnInvoiceStatus,
+        );
+
+      case 'dispatchStatus':
+        return Boolean(
+          this.columnDispatchStatus,
+        );
+
+      case 'delivery':
+        return Boolean(
+          this.columnDeliveryDateFrom ||
+          this.columnDeliveryDateTo,
+        );
+
+      case 'assigned':
+        return Boolean(
+          this.columnAssignedDashboard,
+        );
+    }
+
+    return false;
+  }
+
   clearFilters(): void {
     this.search = '';
     this.poNumber = '';
@@ -214,6 +459,31 @@ export class PendingMaterialsPage {
 
     this.overdueOnly = false;
     this.dueThisWeekOnly = false;
+
+    this.dueStatus = '';
+    this.columnPoNumber = '';
+    this.columnHandler = '';
+    this.columnMaterialNo = '';
+    this.columnLineItem = '';
+    this.columnDescription = '';
+    this.minPoQuantity = '';
+    this.maxPoQuantity = '';
+    this.minInvoiceQuantity = '';
+    this.maxInvoiceQuantity = '';
+    this.minInvoiceBalanceQuantity = '';
+    this.maxInvoiceBalanceQuantity = '';
+    this.minDispatchQuantity = '';
+    this.maxDispatchQuantity = '';
+    this.minPendingDispatchQuantity = '';
+    this.maxPendingDispatchQuantity = '';
+    this.minCompletionPercentage = '';
+    this.maxCompletionPercentage = '';
+    this.columnProcessStatus = '';
+    this.columnInvoiceStatus = '';
+    this.columnDispatchStatus = '';
+    this.columnDeliveryDateFrom = '';
+    this.columnDeliveryDateTo = '';
+    this.columnAssignedDashboard = '';
 
     this.load(1);
   }
@@ -343,6 +613,67 @@ export class PendingMaterialsPage {
         this.overdueOnly,
       dueThisWeekOnly:
         this.dueThisWeekOnly,
+
+      dueStatus:
+        this.dueStatus,
+
+      columnPoNumber:
+        this.columnPoNumber,
+      columnHandler:
+        this.columnHandler,
+
+      columnMaterialNo:
+        this.columnMaterialNo,
+      columnLineItem:
+        this.columnLineItem,
+
+      columnDescription:
+        this.columnDescription,
+
+      minPoQuantity:
+        this.minPoQuantity,
+      maxPoQuantity:
+        this.maxPoQuantity,
+
+      minInvoiceQuantity:
+        this.minInvoiceQuantity,
+      maxInvoiceQuantity:
+        this.maxInvoiceQuantity,
+
+      minInvoiceBalanceQuantity:
+        this.minInvoiceBalanceQuantity,
+      maxInvoiceBalanceQuantity:
+        this.maxInvoiceBalanceQuantity,
+
+      minDispatchQuantity:
+        this.minDispatchQuantity,
+      maxDispatchQuantity:
+        this.maxDispatchQuantity,
+
+      minPendingDispatchQuantity:
+        this.minPendingDispatchQuantity,
+      maxPendingDispatchQuantity:
+        this.maxPendingDispatchQuantity,
+
+      minCompletionPercentage:
+        this.minCompletionPercentage,
+      maxCompletionPercentage:
+        this.maxCompletionPercentage,
+
+      columnProcessStatus:
+        this.columnProcessStatus,
+      columnInvoiceStatus:
+        this.columnInvoiceStatus,
+      columnDispatchStatus:
+        this.columnDispatchStatus,
+
+      columnDeliveryDateFrom:
+        this.columnDeliveryDateFrom,
+      columnDeliveryDateTo:
+        this.columnDeliveryDateTo,
+
+      columnAssignedDashboard:
+        this.columnAssignedDashboard,
 
       page: this.page,
       pageSize: this.pageSize,

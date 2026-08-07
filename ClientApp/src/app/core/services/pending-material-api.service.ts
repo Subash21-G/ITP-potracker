@@ -28,100 +28,144 @@ export class PendingMaterialApiService {
     let params =
       new HttpParams();
 
-    params =
-      this.appendText(
-        params,
-        'search',
-        query.search,
-      );
+    const textValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['poNumber', query.poNumber],
+        ['handler', query.handler],
+        [
+          'assignedDashboard',
+          query.assignedDashboard,
+        ],
+        ['processStatus', query.processStatus],
+        ['invoiceStatus', query.invoiceStatus],
+        ['dispatchStatus', query.dispatchStatus],
+        ['poDateFrom', query.poDateFrom],
+        ['poDateTo', query.poDateTo],
+        [
+          'poReceivedDateFrom',
+          query.poReceivedDateFrom,
+        ],
+        [
+          'poReceivedDateTo',
+          query.poReceivedDateTo,
+        ],
+        [
+          'deliveryDateFrom',
+          query.deliveryDateFrom,
+        ],
+        [
+          'deliveryDateTo',
+          query.deliveryDateTo,
+        ],
 
-    params =
-      this.appendText(
-        params,
-        'poNumber',
-        query.poNumber,
-      );
+        ['dueStatus', query.dueStatus],
+        [
+          'columnPoNumber',
+          query.columnPoNumber,
+        ],
+        [
+          'columnHandler',
+          query.columnHandler,
+        ],
+        [
+          'columnMaterialNo',
+          query.columnMaterialNo,
+        ],
+        [
+          'columnLineItem',
+          query.columnLineItem,
+        ],
+        [
+          'columnDescription',
+          query.columnDescription,
+        ],
+        ['minPoQuantity', query.minPoQuantity],
+        ['maxPoQuantity', query.maxPoQuantity],
+        [
+          'minInvoiceQuantity',
+          query.minInvoiceQuantity,
+        ],
+        [
+          'maxInvoiceQuantity',
+          query.maxInvoiceQuantity,
+        ],
+        [
+          'minInvoiceBalanceQuantity',
+          query.minInvoiceBalanceQuantity,
+        ],
+        [
+          'maxInvoiceBalanceQuantity',
+          query.maxInvoiceBalanceQuantity,
+        ],
+        [
+          'minDispatchQuantity',
+          query.minDispatchQuantity,
+        ],
+        [
+          'maxDispatchQuantity',
+          query.maxDispatchQuantity,
+        ],
+        [
+          'minPendingDispatchQuantity',
+          query.minPendingDispatchQuantity,
+        ],
+        [
+          'maxPendingDispatchQuantity',
+          query.maxPendingDispatchQuantity,
+        ],
+        [
+          'minCompletionPercentage',
+          query.minCompletionPercentage,
+        ],
+        [
+          'maxCompletionPercentage',
+          query.maxCompletionPercentage,
+        ],
+        [
+          'columnProcessStatus',
+          query.columnProcessStatus,
+        ],
+        [
+          'columnInvoiceStatus',
+          query.columnInvoiceStatus,
+        ],
+        [
+          'columnDispatchStatus',
+          query.columnDispatchStatus,
+        ],
+        [
+          'columnDeliveryDateFrom',
+          query.columnDeliveryDateFrom,
+        ],
+        [
+          'columnDeliveryDateTo',
+          query.columnDeliveryDateTo,
+        ],
+        [
+          'columnAssignedDashboard',
+          query.columnAssignedDashboard,
+        ],
+      ];
 
-    params =
-      this.appendText(
-        params,
-        'handler',
-        query.handler,
-      );
-
-    params =
-      this.appendText(
-        params,
-        'assignedDashboard',
-        query.assignedDashboard,
-      );
-
-    params =
-      this.appendText(
-        params,
-        'processStatus',
-        query.processStatus,
-      );
-
-    params =
-      this.appendText(
-        params,
-        'invoiceStatus',
-        query.invoiceStatus,
-      );
-
-    params =
-      this.appendText(
-        params,
-        'dispatchStatus',
-        query.dispatchStatus,
-      );
-
-    params =
-      this.appendText(
-        params,
-        'poDateFrom',
-        query.poDateFrom,
-      );
-
-    params =
-      this.appendText(
-        params,
-        'poDateTo',
-        query.poDateTo,
-      );
-
-    params =
-      this.appendText(
-        params,
-        'poReceivedDateFrom',
-        query.poReceivedDateFrom,
-      );
-
-    params =
-      this.appendText(
-        params,
-        'poReceivedDateTo',
-        query.poReceivedDateTo,
-      );
-
-    params =
-      this.appendText(
-        params,
-        'deliveryDateFrom',
-        query.deliveryDateFrom,
-      );
-
-    params =
-      this.appendText(
-        params,
-        'deliveryDateTo',
-        query.deliveryDateTo,
-      );
-
-    if (
-      query.overdueOnly === true
+    for (
+      const [
+        name,
+        value,
+      ] of textValues
     ) {
+      params =
+        this.appendText(
+          params,
+          name,
+          value,
+        );
+    }
+
+    if (query.overdueOnly === true) {
       params =
         params.set(
           'overdueOnly',
@@ -129,9 +173,7 @@ export class PendingMaterialApiService {
         );
     }
 
-    if (
-      query.dueThisWeekOnly === true
-    ) {
+    if (query.dueThisWeekOnly === true) {
       params =
         params.set(
           'dueThisWeekOnly',
@@ -140,16 +182,15 @@ export class PendingMaterialApiService {
     }
 
     params =
-      params.set(
-        'page',
-        String(query.page ?? 1),
-      );
-
-    params =
-      params.set(
-        'pageSize',
-        String(query.pageSize ?? 25),
-      );
+      params
+        .set(
+          'page',
+          String(query.page ?? 1),
+        )
+        .set(
+          'pageSize',
+          String(query.pageSize ?? 25),
+        );
 
     return this.http.get<PendingMaterialsResponse>(
       '/api/pending-materials',
@@ -166,96 +207,150 @@ export class PendingMaterialApiService {
     const params =
       new URLSearchParams();
 
-    this.appendUrlText(
-      params,
-      'search',
-      query.search,
-    );
+    const textValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['poNumber', query.poNumber],
+        ['handler', query.handler],
+        [
+          'assignedDashboard',
+          query.assignedDashboard,
+        ],
+        ['processStatus', query.processStatus],
+        ['invoiceStatus', query.invoiceStatus],
+        ['dispatchStatus', query.dispatchStatus],
+        ['poDateFrom', query.poDateFrom],
+        ['poDateTo', query.poDateTo],
+        [
+          'poReceivedDateFrom',
+          query.poReceivedDateFrom,
+        ],
+        [
+          'poReceivedDateTo',
+          query.poReceivedDateTo,
+        ],
+        [
+          'deliveryDateFrom',
+          query.deliveryDateFrom,
+        ],
+        [
+          'deliveryDateTo',
+          query.deliveryDateTo,
+        ],
 
-    this.appendUrlText(
-      params,
-      'poNumber',
-      query.poNumber,
-    );
+        ['dueStatus', query.dueStatus],
+        [
+          'columnPoNumber',
+          query.columnPoNumber,
+        ],
+        [
+          'columnHandler',
+          query.columnHandler,
+        ],
+        [
+          'columnMaterialNo',
+          query.columnMaterialNo,
+        ],
+        [
+          'columnLineItem',
+          query.columnLineItem,
+        ],
+        [
+          'columnDescription',
+          query.columnDescription,
+        ],
+        ['minPoQuantity', query.minPoQuantity],
+        ['maxPoQuantity', query.maxPoQuantity],
+        [
+          'minInvoiceQuantity',
+          query.minInvoiceQuantity,
+        ],
+        [
+          'maxInvoiceQuantity',
+          query.maxInvoiceQuantity,
+        ],
+        [
+          'minInvoiceBalanceQuantity',
+          query.minInvoiceBalanceQuantity,
+        ],
+        [
+          'maxInvoiceBalanceQuantity',
+          query.maxInvoiceBalanceQuantity,
+        ],
+        [
+          'minDispatchQuantity',
+          query.minDispatchQuantity,
+        ],
+        [
+          'maxDispatchQuantity',
+          query.maxDispatchQuantity,
+        ],
+        [
+          'minPendingDispatchQuantity',
+          query.minPendingDispatchQuantity,
+        ],
+        [
+          'maxPendingDispatchQuantity',
+          query.maxPendingDispatchQuantity,
+        ],
+        [
+          'minCompletionPercentage',
+          query.minCompletionPercentage,
+        ],
+        [
+          'maxCompletionPercentage',
+          query.maxCompletionPercentage,
+        ],
+        [
+          'columnProcessStatus',
+          query.columnProcessStatus,
+        ],
+        [
+          'columnInvoiceStatus',
+          query.columnInvoiceStatus,
+        ],
+        [
+          'columnDispatchStatus',
+          query.columnDispatchStatus,
+        ],
+        [
+          'columnDeliveryDateFrom',
+          query.columnDeliveryDateFrom,
+        ],
+        [
+          'columnDeliveryDateTo',
+          query.columnDeliveryDateTo,
+        ],
+        [
+          'columnAssignedDashboard',
+          query.columnAssignedDashboard,
+        ],
+      ];
 
-    this.appendUrlText(
-      params,
-      'handler',
-      query.handler,
-    );
-
-    this.appendUrlText(
-      params,
-      'assignedDashboard',
-      query.assignedDashboard,
-    );
-
-    this.appendUrlText(
-      params,
-      'processStatus',
-      query.processStatus,
-    );
-
-    this.appendUrlText(
-      params,
-      'invoiceStatus',
-      query.invoiceStatus,
-    );
-
-    this.appendUrlText(
-      params,
-      'dispatchStatus',
-      query.dispatchStatus,
-    );
-
-    this.appendUrlText(
-      params,
-      'poDateFrom',
-      query.poDateFrom,
-    );
-
-    this.appendUrlText(
-      params,
-      'poDateTo',
-      query.poDateTo,
-    );
-
-    this.appendUrlText(
-      params,
-      'poReceivedDateFrom',
-      query.poReceivedDateFrom,
-    );
-
-    this.appendUrlText(
-      params,
-      'poReceivedDateTo',
-      query.poReceivedDateTo,
-    );
-
-    this.appendUrlText(
-      params,
-      'deliveryDateFrom',
-      query.deliveryDateFrom,
-    );
-
-    this.appendUrlText(
-      params,
-      'deliveryDateTo',
-      query.deliveryDateTo,
-    );
-
-    if (
-      query.overdueOnly === true
+    for (
+      const [
+        name,
+        value,
+      ] of textValues
     ) {
+      this.appendUrlText(
+        params,
+        name,
+        value,
+      );
+    }
+
+    if (query.overdueOnly === true) {
       params.set(
         'overdueOnly',
         'true',
       );
     }
 
-    if (
-      query.dueThisWeekOnly === true
-    ) {
+    if (query.dueThisWeekOnly === true) {
       params.set(
         'dueThisWeekOnly',
         'true',

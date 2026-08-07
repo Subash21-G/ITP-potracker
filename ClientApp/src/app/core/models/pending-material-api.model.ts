@@ -116,15 +116,50 @@ export interface PendingMaterialQuery {
 
   poDateFrom?: string;
   poDateTo?: string;
-
   poReceivedDateFrom?: string;
   poReceivedDateTo?: string;
-
   deliveryDateFrom?: string;
   deliveryDateTo?: string;
 
   overdueOnly?: boolean;
   dueThisWeekOnly?: boolean;
+
+  dueStatus?: string;
+
+  columnPoNumber?: string;
+  columnHandler?: string;
+
+  columnMaterialNo?: string;
+  columnLineItem?: string;
+
+  columnDescription?: string;
+
+  minPoQuantity?: string;
+  maxPoQuantity?: string;
+
+  minInvoiceQuantity?: string;
+  maxInvoiceQuantity?: string;
+
+  minInvoiceBalanceQuantity?: string;
+  maxInvoiceBalanceQuantity?: string;
+
+  minDispatchQuantity?: string;
+  maxDispatchQuantity?: string;
+
+  minPendingDispatchQuantity?: string;
+  maxPendingDispatchQuantity?: string;
+
+  minCompletionPercentage?: string;
+  maxCompletionPercentage?: string;
+
+  columnProcessStatus?: string;
+  columnInvoiceStatus?: string;
+  columnDispatchStatus?: string;
+
+  columnDeliveryDateFrom?: string;
+  columnDeliveryDateTo?: string;
+
+  columnAssignedDashboard?: string;
 
   page?: number;
   pageSize?: number;

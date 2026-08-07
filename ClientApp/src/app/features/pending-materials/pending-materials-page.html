@@ -443,23 +443,341 @@
 
   <div class="table-wrap">
     <table>
-      <thead>
+            <thead>
         <tr>
-          <th>Due Status</th>
-          <th>PO / Handler</th>
-          <th>Material</th>
-          <th>Description</th>
-          <th>PO Qty</th>
-          <th>Invoice</th>
-          <th>Invoice Balance</th>
-          <th>Dispatch</th>
-          <th>Pending Dispatch</th>
-          <th>Progress</th>
-          <th>Process</th>
-          <th>Invoice Status</th>
-          <th>Dispatch Status</th>
-          <th>Delivery Date</th>
-          <th>Assigned To</th>
+          <th>
+            <div class="server-table-heading">
+              <span>Due Status</span>
+              <details #pendingDueFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('due')">
+                <summary title="Filter Due Status">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>Due status</span>
+                    <select [(ngModel)]="dueStatus">
+                      <option value="">All</option>
+                      <option value="Overdue">Overdue</option>
+                      <option value="Due Today">Due Today</option>
+                      <option value="Due This Week">Due This Week</option>
+                      <option value="Upcoming">Upcoming</option>
+                      <option value="No Delivery Date">No Delivery Date</option>
+                    </select>
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('due', pendingDueFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(pendingDueFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>PO / Handler</span>
+              <details #pendingPoFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('po')">
+                <summary title="Filter PO / Handler">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label><span>PO contains</span>
+                    <input type="search" [(ngModel)]="columnPoNumber"></label>
+                  <label><span>Handler contains</span>
+                    <input type="search" [(ngModel)]="columnHandler"></label>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('po', pendingPoFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(pendingPoFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Material</span>
+              <details #pendingMaterialFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('material')">
+                <summary title="Filter Material">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label><span>Material contains</span>
+                    <input type="search" [(ngModel)]="columnMaterialNo"></label>
+                  <label><span>Line contains</span>
+                    <input type="search" [(ngModel)]="columnLineItem"></label>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('material', pendingMaterialFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(pendingMaterialFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Description</span>
+              <details #pendingDescriptionFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('description')">
+                <summary title="Filter Description">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label><span>Description / drawing</span>
+                    <input type="search" [(ngModel)]="columnDescription"></label>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('description', pendingDescriptionFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(pendingDescriptionFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>PO Qty</span>
+              <details #pendingPoQtyFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('poQty')">
+                <summary title="Filter PO Quantity">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.001" [(ngModel)]="minPoQuantity"></label>
+                    <label><span>Max</span><input type="number" step="0.001" [(ngModel)]="maxPoQuantity"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('poQty', pendingPoQtyFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingPoQtyFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Invoice</span>
+              <details #pendingInvoiceQtyFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('invoice')">
+                <summary title="Filter Invoice Quantity">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.001" [(ngModel)]="minInvoiceQuantity"></label>
+                    <label><span>Max</span><input type="number" step="0.001" [(ngModel)]="maxInvoiceQuantity"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('invoice', pendingInvoiceQtyFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingInvoiceQtyFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Invoice Balance</span>
+              <details #pendingInvoiceBalanceFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('invoiceBalance')">
+                <summary title="Filter Invoice Balance">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.001" [(ngModel)]="minInvoiceBalanceQuantity"></label>
+                    <label><span>Max</span><input type="number" step="0.001" [(ngModel)]="maxInvoiceBalanceQuantity"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('invoiceBalance', pendingInvoiceBalanceFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingInvoiceBalanceFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Dispatch</span>
+              <details #pendingDispatchQtyFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('dispatch')">
+                <summary title="Filter Dispatch Quantity">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.001" [(ngModel)]="minDispatchQuantity"></label>
+                    <label><span>Max</span><input type="number" step="0.001" [(ngModel)]="maxDispatchQuantity"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('dispatch', pendingDispatchQtyFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingDispatchQtyFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Pending Dispatch</span>
+              <details #pendingPendingQtyFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('pendingDispatch')">
+                <summary title="Filter Pending Dispatch">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.001" [(ngModel)]="minPendingDispatchQuantity"></label>
+                    <label><span>Max</span><input type="number" step="0.001" [(ngModel)]="maxPendingDispatchQuantity"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('pendingDispatch', pendingPendingQtyFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingPendingQtyFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Progress</span>
+              <details #pendingProgressFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('progress')">
+                <summary title="Filter Progress">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min %</span><input type="number" min="0" max="100" step="1" [(ngModel)]="minCompletionPercentage"></label>
+                    <label><span>Max %</span><input type="number" min="0" max="100" step="1" [(ngModel)]="maxCompletionPercentage"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('progress', pendingProgressFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingProgressFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Process</span>
+              <details #pendingProcessFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('process')">
+                <summary title="Filter Process">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label><span>Process status</span>
+                    <select [(ngModel)]="columnProcessStatus">
+                      <option value="">All</option>
+                      @for (option of data().filters.processStatuses; track option.value) {
+                        <option [value]="option.value">{{ option.text }}</option>
+                      }
+                    </select>
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('process', pendingProcessFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingProcessFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Invoice Status</span>
+              <details #pendingInvoiceStatusFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('invoiceStatus')">
+                <summary title="Filter Invoice Status">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label><span>Invoice status</span>
+                    <select [(ngModel)]="columnInvoiceStatus">
+                      <option value="">All</option>
+                      @for (option of data().filters.invoiceStatuses; track option.value) {
+                        <option [value]="option.value">{{ option.text }}</option>
+                      }
+                    </select>
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('invoiceStatus', pendingInvoiceStatusFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingInvoiceStatusFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Dispatch Status</span>
+              <details #pendingDispatchStatusFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('dispatchStatus')">
+                <summary title="Filter Dispatch Status">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label><span>Dispatch status</span>
+                    <select [(ngModel)]="columnDispatchStatus">
+                      <option value="">All</option>
+                      @for (option of data().filters.dispatchStatuses; track option.value) {
+                        <option [value]="option.value">{{ option.text }}</option>
+                      }
+                    </select>
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('dispatchStatus', pendingDispatchStatusFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingDispatchStatusFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Delivery Date</span>
+              <details #pendingDeliveryFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('delivery')">
+                <summary title="Filter Delivery Date">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>From</span><input type="date" [(ngModel)]="columnDeliveryDateFrom"></label>
+                    <label><span>To</span><input type="date" [(ngModel)]="columnDeliveryDateTo"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('delivery', pendingDeliveryFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingDeliveryFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Assigned To</span>
+              <details #pendingAssignedFilter class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('assigned')">
+                <summary title="Filter Assigned To">▾</summary>
+                <div class="server-column-filter__menu server-column-filter__menu--right">
+                  <label><span>Assigned dashboard</span>
+                    <select [(ngModel)]="columnAssignedDashboard">
+                      <option value="">All</option>
+                      @for (option of data().filters.assignedDashboards; track option.value) {
+                        <option [value]="option.value">{{ option.text }}</option>
+                      }
+                    </select>
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button" (click)="clearColumnFilter('assigned', pendingAssignedFilter)">Clear</button>
+                    <button type="button" (click)="applyColumnFilter(pendingAssignedFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
           <th>Actions</th>
         </tr>
       </thead>
