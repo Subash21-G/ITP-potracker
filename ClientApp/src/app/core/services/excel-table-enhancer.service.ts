@@ -805,6 +805,15 @@ export class ExcelTableEnhancerService
         },
       );
 
+    const headerCells =
+      Array.from(
+        table.querySelectorAll<
+          HTMLTableCellElement
+        >(
+          ':scope > thead > tr > th',
+        ),
+      );
+
     table
       .querySelectorAll<
         HTMLButtonElement
@@ -812,15 +821,33 @@ export class ExcelTableEnhancerService
         '.po-excel-filter-button',
       )
       .forEach(
-        (
-          filterButton,
-          columnIndex,
-        ) =>
+        filterButton => {
+          const headerCell =
+            filterButton.closest<
+              HTMLTableCellElement
+            >(
+              'th',
+            );
+
+          if (!headerCell) {
+            return;
+          }
+
+          const columnIndex =
+            headerCells.indexOf(
+              headerCell,
+            );
+
+          if (columnIndex < 0) {
+            return;
+          }
+
           this.refreshButtonState(
             table,
             columnIndex,
             filterButton,
-          ),
+          );
+        },
       );
   }
 
