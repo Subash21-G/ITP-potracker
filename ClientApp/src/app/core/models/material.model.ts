@@ -3,6 +3,7 @@ export interface MaterialListItem {
   readonly purchaseOrderId: number;
   readonly poNumber: string;
   readonly handler: string;
+  readonly purchaserName: string;
   readonly poDate: string | null;
   readonly poReceivedDate: string | null;
   readonly lineItem: string;

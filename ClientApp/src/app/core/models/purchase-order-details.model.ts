@@ -6,6 +6,7 @@ export interface PurchaseOrderDetails {
   readonly poDate: string | null;
   readonly poReceivedDate: string | null;
   readonly handler: string;
+  readonly purchaserName: string;
   readonly buyerEmail: string | null;
   readonly vendorCode: string | null;
   readonly vendorName: string | null;

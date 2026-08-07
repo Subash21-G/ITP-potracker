@@ -1,6 +1,17 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable, switchMap } from 'rxjs';
+import {
+  HttpClient,
+} from '@angular/common/http';
+
+import {
+  Injectable,
+  inject,
+} from '@angular/core';
+
+import {
+  Observable,
+  switchMap,
+} from 'rxjs';
+
 import {
   MaterialDeleteResponse,
   MaterialDetails,
@@ -9,73 +20,113 @@ import {
   MaterialSaveResponse,
   MaterialUpsertRequest,
 } from '../models/material-crud.model';
-import { AuthApiService } from './auth-api.service';
+
+import {
+  ApiResponseCacheService,
+} from './api-response-cache.service';
+
+import {
+  AuthApiService,
+} from './auth-api.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MaterialCrudApiService {
-  private readonly http = inject(HttpClient);
-  private readonly authApi = inject(AuthApiService);
+  private readonly http =
+    inject(HttpClient);
 
-  getDetails(id: number): Observable<MaterialDetails> {
-    return this.http.get<MaterialDetails>(
-      `/api/materials/${id}`,
-      {
-        withCredentials: true,
-      },
+  private readonly authApi =
+    inject(AuthApiService);
+
+  private readonly cache =
+    inject(
+      ApiResponseCacheService,
+    );
+
+  getDetails(
+    id: number,
+    forceRefresh = false,
+  ): Observable<MaterialDetails> {
+    return this.cache.get(
+      `materials:detail:${id}`,
+      () =>
+        this.http.get<MaterialDetails>(
+          `/api/materials/${id}`,
+          {
+            withCredentials: true,
+          },
+        ),
+      20_000,
+      forceRefresh,
     );
   }
 
   getPurchaseOrderOptions(): Observable<
     MaterialPurchaseOrderOption[]
   > {
-    return this.http.get<MaterialPurchaseOrderOption[]>(
-      '/api/materials/options/purchase-orders',
-      {
-        withCredentials: true,
-      },
+    return this.cache.get(
+      'materials:purchase-order-options',
+      () =>
+        this.http.get<
+          MaterialPurchaseOrderOption[]
+        >(
+          '/api/materials/options/purchase-orders',
+          {
+            withCredentials: true,
+          },
+        ),
+      20_000,
     );
   }
 
   create(
     request: MaterialUpsertRequest,
   ): Observable<MaterialSaveResponse> {
-    return this.authApi.getXsrfToken().pipe(
-      switchMap(() =>
-        this.http.post<MaterialSaveResponse>(
-          '/api/materials',
-          request,
-          {
-            withCredentials: true,
-          },
+    return this.authApi
+      .getXsrfToken()
+      .pipe(
+        switchMap(() =>
+          this.http.post<
+            MaterialSaveResponse
+          >(
+            '/api/materials',
+            request,
+            {
+              withCredentials: true,
+            },
+          ),
         ),
-      ),
-    );
+      );
   }
 
   update(
     id: number,
     request: MaterialUpsertRequest,
   ): Observable<MaterialSaveResponse> {
-    return this.authApi.getXsrfToken().pipe(
-      switchMap(() =>
-        this.http.put<MaterialSaveResponse>(
-          `/api/materials/${id}`,
-          request,
-          {
-            withCredentials: true,
-          },
+    return this.authApi
+      .getXsrfToken()
+      .pipe(
+        switchMap(() =>
+          this.http.put<
+            MaterialSaveResponse
+          >(
+            `/api/materials/${id}`,
+            request,
+            {
+              withCredentials: true,
+            },
+          ),
         ),
-      ),
-    );
+      );
   }
 
   uploadFiles(
     id: number,
     files: MaterialFileUpload,
   ): Observable<MaterialSaveResponse> {
-    const formData = new FormData();
+    const formData =
+      new FormData();
 
     if (files.pdfFile) {
       formData.append(
@@ -93,31 +144,39 @@ export class MaterialCrudApiService {
       );
     }
 
-    return this.authApi.getXsrfToken().pipe(
-      switchMap(() =>
-        this.http.post<MaterialSaveResponse>(
-          `/api/materials/${id}/files`,
-          formData,
-          {
-            withCredentials: true,
-          },
+    return this.authApi
+      .getXsrfToken()
+      .pipe(
+        switchMap(() =>
+          this.http.post<
+            MaterialSaveResponse
+          >(
+            `/api/materials/${id}/files`,
+            formData,
+            {
+              withCredentials: true,
+            },
+          ),
         ),
-      ),
-    );
+      );
   }
 
   delete(
     id: number,
   ): Observable<MaterialDeleteResponse> {
-    return this.authApi.getXsrfToken().pipe(
-      switchMap(() =>
-        this.http.delete<MaterialDeleteResponse>(
-          `/api/materials/${id}`,
-          {
-            withCredentials: true,
-          },
+    return this.authApi
+      .getXsrfToken()
+      .pipe(
+        switchMap(() =>
+          this.http.delete<
+            MaterialDeleteResponse
+          >(
+            `/api/materials/${id}`,
+            {
+              withCredentials: true,
+            },
+          ),
         ),
-      ),
-    );
+      );
   }
 }

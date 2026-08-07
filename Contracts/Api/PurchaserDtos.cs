@@ -22,6 +22,18 @@ namespace POTracker.Contracts.Api
             string.Empty;
 
         public int PurchaseOrderCount { get; set; }
+
+        public List<PurchaserPurchaseOrderPersonDto>
+            PurchaseOrderPersons
+        { get; set; } = new();
+    }
+
+    public sealed class PurchaserPurchaseOrderPersonDto
+    {
+        public string Name { get; set; } =
+            string.Empty;
+
+        public int PurchaseOrderCount { get; set; }
     }
 
     public sealed class PurchaserListResponseDto

@@ -52,7 +52,12 @@ namespace POTracker.Controllers.Api
 
                         (item.Email != null &&
                          item.Email
-                            .Contains(searchValue)));
+                            .Contains(searchValue)) ||
+
+                        item.PurchaseOrders.Any(order =>
+                            order.BuyerContactPerson != null &&
+                            order.BuyerContactPerson
+                                .Contains(searchValue)));
             }
 
             var items =
@@ -92,6 +97,88 @@ namespace POTracker.Controllers.Api
                         })
                     .ToListAsync(
                         cancellationToken);
+
+            var purchaserIds =
+                items
+                    .Select(item =>
+                        item.Id)
+                    .ToList();
+
+            if (purchaserIds.Count > 0)
+            {
+                var personRows =
+                    await _context.PurchaseOrders
+                        .AsNoTracking()
+                        .Where(order =>
+                            purchaserIds.Contains(
+                                order.PurchaserId) &&
+                            order.BuyerContactPerson != null &&
+                            order.BuyerContactPerson !=
+                                string.Empty)
+                        .Select(order =>
+                            new
+                            {
+                                order.PurchaserId,
+
+                                PersonName =
+                                    order.BuyerContactPerson!
+                            })
+                        .ToListAsync(
+                            cancellationToken);
+
+                var peopleByPurchaser =
+                    personRows
+                        .Select(row =>
+                            new
+                            {
+                                row.PurchaserId,
+
+                                PersonName =
+                                    row.PersonName.Trim()
+                            })
+                        .Where(row =>
+                            !string.IsNullOrWhiteSpace(
+                                row.PersonName))
+                        .GroupBy(row =>
+                            row.PurchaserId)
+                        .ToDictionary(
+                            group =>
+                                group.Key,
+
+                            group =>
+                                group
+                                    .GroupBy(
+                                        row =>
+                                            row.PersonName,
+                                        StringComparer
+                                            .OrdinalIgnoreCase)
+                                    .Select(personGroup =>
+                                        new
+                                            PurchaserPurchaseOrderPersonDto
+                                        {
+                                            Name =
+                                                personGroup.Key,
+
+                                            PurchaseOrderCount =
+                                                personGroup.Count()
+                                        })
+                                    .OrderByDescending(person =>
+                                        person.PurchaseOrderCount)
+                                    .ThenBy(person =>
+                                        person.Name)
+                                    .ToList());
+
+                foreach (var item in items)
+                {
+                    if (peopleByPurchaser.TryGetValue(
+                            item.Id,
+                            out var people))
+                    {
+                        item.PurchaseOrderPersons =
+                            people;
+                    }
+                }
+            }
 
             return Ok(
                 new PurchaserListResponseDto

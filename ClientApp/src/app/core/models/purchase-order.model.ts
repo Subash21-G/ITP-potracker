@@ -2,6 +2,7 @@ export interface PurchaseOrderListItem {
   readonly purchaseOrderId: number;
   readonly poNumber: string;
   readonly handler: string;
+  readonly purchaserName: string;
   readonly poDate: string | null;
   readonly poReceivedDate: string | null;
   readonly status: string;
@@ -61,6 +62,17 @@ export interface PurchaseOrderQuery {
   readonly poReceivedDateTo?: string;
   readonly status?: string;
   readonly materialStatus?: string;
+  readonly minMaterials?: string;
+  readonly maxMaterials?: string;
+  readonly minPoQuantity?: string;
+  readonly maxPoQuantity?: string;
+  readonly minPoValue?: string;
+  readonly maxPoValue?: string;
+  readonly minDispatchBalance?: string;
+  readonly maxDispatchBalance?: string;
+  readonly deliveryDateFrom?: string;
+  readonly deliveryDateTo?: string;
+  readonly pdfAvailability?: string;
 }
 
 export interface PurchaseOrderBulkDeleteRequest {

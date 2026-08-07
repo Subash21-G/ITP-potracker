@@ -56,6 +56,17 @@ namespace POTracker.Controllers.Api
                 DateTime? poReceivedDateTo,
                 string? status,
                 string? materialStatus,
+                int? minMaterials,
+                int? maxMaterials,
+                decimal? minPoQuantity,
+                decimal? maxPoQuantity,
+                decimal? minPoValue,
+                decimal? maxPoValue,
+                decimal? minDispatchBalance,
+                decimal? maxDispatchBalance,
+                DateTime? deliveryDateFrom,
+                DateTime? deliveryDateTo,
+                string? pdfAvailability,
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
@@ -88,7 +99,18 @@ namespace POTracker.Controllers.Api
             var aggregateQuery = ApplyAggregateFilters(
                 CreateAggregateQuery(filteredPurchaseOrders),
                 status,
-                materialStatus);
+                materialStatus,
+                minMaterials,
+                maxMaterials,
+                minPoQuantity,
+                maxPoQuantity,
+                minPoValue,
+                maxPoValue,
+                minDispatchBalance,
+                maxDispatchBalance,
+                deliveryDateFrom,
+                deliveryDateTo,
+                pdfAvailability);
 
             // Only compact aggregate rows are loaded for summary totals.
             // Linked Material entities are never loaded into application memory.
@@ -147,6 +169,17 @@ namespace POTracker.Controllers.Api
             DateTime? poReceivedDateTo,
             string? status,
             string? materialStatus,
+            int? minMaterials,
+            int? maxMaterials,
+            decimal? minPoQuantity,
+            decimal? maxPoQuantity,
+            decimal? minPoValue,
+            decimal? maxPoValue,
+            decimal? minDispatchBalance,
+            decimal? maxDispatchBalance,
+            DateTime? deliveryDateFrom,
+            DateTime? deliveryDateTo,
+            string? pdfAvailability,
             CancellationToken cancellationToken = default)
         {
             var filteredPurchaseOrders =
@@ -164,7 +197,18 @@ namespace POTracker.Controllers.Api
                         CreateAggregateQuery(
                             filteredPurchaseOrders),
                         status,
-                        materialStatus)
+                        materialStatus,
+                        minMaterials,
+                        maxMaterials,
+                        minPoQuantity,
+                        maxPoQuantity,
+                        minPoValue,
+                        maxPoValue,
+                        minDispatchBalance,
+                        maxDispatchBalance,
+                        deliveryDateFrom,
+                        deliveryDateTo,
+                        pdfAvailability)
                     .OrderByDescending(row =>
                         row.POReceivedDate ??
                         row.PODate ??
@@ -470,6 +514,10 @@ namespace POTracker.Controllers.Api
                     POReceivedDate = purchaseOrder.ReceivedDate,
                     Handler =
                         purchaseOrder.BuyerContactPerson ?? string.Empty,
+                    PurchaserName =
+                        purchaseOrder.Purchaser != null
+                            ? purchaseOrder.Purchaser.PurchaserName
+                            : string.Empty,
                     purchaseOrder.BuyerEmail,
                     purchaseOrder.VendorCode,
                     purchaseOrder.VendorName,
@@ -594,6 +642,7 @@ namespace POTracker.Controllers.Api
                 PODate = header.PODate,
                 POReceivedDate = header.POReceivedDate,
                 Handler = header.Handler,
+                PurchaserName = header.PurchaserName,
                 BuyerEmail = header.BuyerEmail,
                 VendorCode = header.VendorCode,
                 VendorName = header.VendorName,
@@ -639,7 +688,9 @@ namespace POTracker.Controllers.Api
                 query = query.Where(purchaseOrder =>
                     purchaseOrder.PONumber.Contains(value) ||
                     (purchaseOrder.BuyerContactPerson != null &&
-                     purchaseOrder.BuyerContactPerson.Contains(value)));
+                     purchaseOrder.BuyerContactPerson.Contains(value)) ||
+                    (purchaseOrder.Purchaser != null &&
+                     purchaseOrder.Purchaser.PurchaserName.Contains(value)));
             }
 
             if (!string.IsNullOrWhiteSpace(handler))
@@ -648,7 +699,8 @@ namespace POTracker.Controllers.Api
 
                 query = query.Where(purchaseOrder =>
                     purchaseOrder.BuyerContactPerson != null &&
-                    purchaseOrder.BuyerContactPerson.Contains(value));
+                    purchaseOrder.BuyerContactPerson.Trim() ==
+                        value);
             }
 
             if (poDateFrom.HasValue)
@@ -704,6 +756,10 @@ namespace POTracker.Controllers.Api
                     PONumber = purchaseOrder.PONumber,
                     Handler =
                         purchaseOrder.BuyerContactPerson ?? string.Empty,
+                    PurchaserName =
+                        purchaseOrder.Purchaser != null
+                            ? purchaseOrder.Purchaser.PurchaserName
+                            : string.Empty,
                     PODate = purchaseOrder.PODate,
                     POReceivedDate = purchaseOrder.ReceivedDate,
                     PdfFilePath = purchaseOrder.PdfFilePath,
@@ -770,7 +826,18 @@ namespace POTracker.Controllers.Api
             ApplyAggregateFilters(
                 IQueryable<PurchaseOrderAggregateRow> query,
                 string? status,
-                string? materialStatus)
+                string? materialStatus,
+                int? minMaterials,
+                int? maxMaterials,
+                decimal? minPoQuantity,
+                decimal? maxPoQuantity,
+                decimal? minPoValue,
+                decimal? maxPoValue,
+                decimal? minDispatchBalance,
+                decimal? maxDispatchBalance,
+                DateTime? deliveryDateFrom,
+                DateTime? deliveryDateTo,
+                string? pdfAvailability)
         {
             if (!string.IsNullOrWhiteSpace(status))
             {
@@ -817,6 +884,109 @@ namespace POTracker.Controllers.Api
                 };
             }
 
+            if (minMaterials.HasValue)
+            {
+                query = query.Where(row =>
+                    row.TotalMaterials >=
+                    minMaterials.Value);
+            }
+
+            if (maxMaterials.HasValue)
+            {
+                query = query.Where(row =>
+                    row.TotalMaterials <=
+                    maxMaterials.Value);
+            }
+
+            if (minPoQuantity.HasValue)
+            {
+                query = query.Where(row =>
+                    row.TotalPOQuantity >=
+                    minPoQuantity.Value);
+            }
+
+            if (maxPoQuantity.HasValue)
+            {
+                query = query.Where(row =>
+                    row.TotalPOQuantity <=
+                    maxPoQuantity.Value);
+            }
+
+            if (minPoValue.HasValue)
+            {
+                query = query.Where(row =>
+                    row.TotalMaterialValue >=
+                    minPoValue.Value);
+            }
+
+            if (maxPoValue.HasValue)
+            {
+                query = query.Where(row =>
+                    row.TotalMaterialValue <=
+                    maxPoValue.Value);
+            }
+
+            if (minDispatchBalance.HasValue)
+            {
+                query = query.Where(row =>
+                    row.TotalPendingDispatchQuantity >=
+                    minDispatchBalance.Value);
+            }
+
+            if (maxDispatchBalance.HasValue)
+            {
+                query = query.Where(row =>
+                    row.TotalPendingDispatchQuantity <=
+                    maxDispatchBalance.Value);
+            }
+
+            if (deliveryDateFrom.HasValue)
+            {
+                var startDate =
+                    deliveryDateFrom.Value.Date;
+
+                query = query.Where(row =>
+                    row.LatestDeliveryDate.HasValue &&
+                    row.LatestDeliveryDate.Value >=
+                        startDate);
+            }
+
+            if (deliveryDateTo.HasValue)
+            {
+                var endDateExclusive =
+                    deliveryDateTo.Value.Date.AddDays(1);
+
+                query = query.Where(row =>
+                    row.EarliestDeliveryDate.HasValue &&
+                    row.EarliestDeliveryDate.Value <
+                        endDateExclusive);
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    pdfAvailability))
+            {
+                query =
+                    pdfAvailability
+                        .Trim()
+                        .ToLowerInvariant() switch
+                    {
+                        "available" =>
+                            query.Where(row =>
+                                row.PdfFilePath != null &&
+                                row.PdfFilePath !=
+                                    string.Empty),
+
+                        "missing" =>
+                            query.Where(row =>
+                                row.PdfFilePath == null ||
+                                row.PdfFilePath ==
+                                    string.Empty),
+
+                        _ =>
+                            query
+                    };
+            }
+
             return query;
         }
 
@@ -840,6 +1010,7 @@ namespace POTracker.Controllers.Api
                 PurchaseOrderId = source.PurchaseOrderId,
                 PONumber = source.PONumber,
                 Handler = source.Handler,
+                PurchaserName = source.PurchaserName,
                 PODate = source.PODate,
                 POReceivedDate = source.POReceivedDate,
                 Status = GetPurchaseOrderStatus(source),
@@ -1249,6 +1420,8 @@ namespace POTracker.Controllers.Api
             public string PONumber { get; init; } = string.Empty;
 
             public string Handler { get; init; } = string.Empty;
+
+            public string PurchaserName { get; init; } = string.Empty;
 
             public DateTime? PODate { get; init; }
 

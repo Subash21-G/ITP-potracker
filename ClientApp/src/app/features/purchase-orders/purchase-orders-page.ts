@@ -11,7 +11,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import {
+  ActivatedRoute,
+  RouterLink,
+} from '@angular/router';
 import { finalize } from 'rxjs';
 
 import {
@@ -42,6 +45,7 @@ const EMPTY_SUMMARY: PurchaseOrderListSummary = {
 })
 export class PurchaseOrdersPage {
   private readonly purchaseOrdersApi = inject(PurchaseOrdersApiService);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly filters = new FormGroup({
@@ -49,6 +53,17 @@ export class PurchaseOrdersPage {
     handler: new FormControl('', { nonNullable: true }),
     status: new FormControl('', { nonNullable: true }),
     materialStatus: new FormControl('', { nonNullable: true }),
+    minMaterials: new FormControl('', { nonNullable: true }),
+    maxMaterials: new FormControl('', { nonNullable: true }),
+    minPoQuantity: new FormControl('', { nonNullable: true }),
+    maxPoQuantity: new FormControl('', { nonNullable: true }),
+    minPoValue: new FormControl('', { nonNullable: true }),
+    maxPoValue: new FormControl('', { nonNullable: true }),
+    minDispatchBalance: new FormControl('', { nonNullable: true }),
+    maxDispatchBalance: new FormControl('', { nonNullable: true }),
+    deliveryDateFrom: new FormControl('', { nonNullable: true }),
+    deliveryDateTo: new FormControl('', { nonNullable: true }),
+    pdfAvailability: new FormControl('', { nonNullable: true }),
     poDateFrom: new FormControl('', { nonNullable: true }),
     poDateTo: new FormControl('', { nonNullable: true }),
     poReceivedDateFrom: new FormControl('', { nonNullable: true }),
@@ -158,7 +173,190 @@ export class PurchaseOrdersPage {
   readonly showingTo = computed(() => Math.min(this.page() * this.pageSize(), this.totalRecords()));
 
   constructor() {
+    const linkedPersonName =
+      this.route.snapshot.queryParamMap
+        .get('handler')
+        ?.trim() ?? '';
+
+    if (linkedPersonName) {
+      this.filters.controls.handler
+        .setValue(linkedPersonName);
+    }
+
     this.loadPurchaseOrders();
+  }
+
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.applyFilters();
+  }
+
+  clearColumnFilter(
+    column:
+      | 'po'
+      | 'poDate'
+      | 'received'
+      | 'status'
+      | 'material'
+      | 'materials'
+      | 'quantity'
+      | 'value'
+      | 'dispatch'
+      | 'delivery'
+      | 'pdf',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'po':
+        this.filters.patchValue({
+          search: '',
+          handler: '',
+        });
+        break;
+
+      case 'poDate':
+        this.filters.patchValue({
+          poDateFrom: '',
+          poDateTo: '',
+        });
+        break;
+
+      case 'received':
+        this.filters.patchValue({
+          poReceivedDateFrom: '',
+          poReceivedDateTo: '',
+        });
+        break;
+
+      case 'status':
+        this.filters.controls.status.setValue('');
+        break;
+
+      case 'material':
+        this.filters.controls.materialStatus.setValue('');
+        break;
+
+      case 'materials':
+        this.filters.patchValue({
+          minMaterials: '',
+          maxMaterials: '',
+        });
+        break;
+
+      case 'quantity':
+        this.filters.patchValue({
+          minPoQuantity: '',
+          maxPoQuantity: '',
+        });
+        break;
+
+      case 'value':
+        this.filters.patchValue({
+          minPoValue: '',
+          maxPoValue: '',
+        });
+        break;
+
+      case 'dispatch':
+        this.filters.patchValue({
+          minDispatchBalance: '',
+          maxDispatchBalance: '',
+        });
+        break;
+
+      case 'delivery':
+        this.filters.patchValue({
+          deliveryDateFrom: '',
+          deliveryDateTo: '',
+        });
+        break;
+
+      case 'pdf':
+        this.filters.controls.pdfAvailability.setValue('');
+        break;
+    }
+
+    filter.open = false;
+    this.applyFilters();
+  }
+
+  columnFilterActive(
+    column:
+      | 'po'
+      | 'poDate'
+      | 'received'
+      | 'status'
+      | 'material'
+      | 'materials'
+      | 'quantity'
+      | 'value'
+      | 'dispatch'
+      | 'delivery'
+      | 'pdf',
+  ): boolean {
+    const values =
+      this.filters.getRawValue();
+
+    switch (column) {
+      case 'po':
+        return Boolean(
+          values.search.trim() ||
+          values.handler.trim(),
+        );
+
+      case 'poDate':
+        return Boolean(
+          values.poDateFrom ||
+          values.poDateTo,
+        );
+
+      case 'received':
+        return Boolean(
+          values.poReceivedDateFrom ||
+          values.poReceivedDateTo,
+        );
+
+      case 'status':
+        return Boolean(values.status);
+
+      case 'material':
+        return Boolean(values.materialStatus);
+
+      case 'materials':
+        return Boolean(
+          values.minMaterials ||
+          values.maxMaterials,
+        );
+
+      case 'quantity':
+        return Boolean(
+          values.minPoQuantity ||
+          values.maxPoQuantity,
+        );
+
+      case 'value':
+        return Boolean(
+          values.minPoValue ||
+          values.maxPoValue,
+        );
+
+      case 'dispatch':
+        return Boolean(
+          values.minDispatchBalance ||
+          values.maxDispatchBalance,
+        );
+
+      case 'delivery':
+        return Boolean(
+          values.deliveryDateFrom ||
+          values.deliveryDateTo,
+        );
+
+      case 'pdf':
+        return Boolean(values.pdfAvailability);
+    }
   }
 
   applyFilters(): void {
@@ -429,6 +627,17 @@ export class PurchaseOrdersPage {
     this.appendQueryValue(params, 'handler', values.handler);
     this.appendQueryValue(params, 'status', values.status);
     this.appendQueryValue(params, 'materialStatus', values.materialStatus);
+    this.appendQueryValue(params, 'minMaterials', values.minMaterials);
+    this.appendQueryValue(params, 'maxMaterials', values.maxMaterials);
+    this.appendQueryValue(params, 'minPoQuantity', values.minPoQuantity);
+    this.appendQueryValue(params, 'maxPoQuantity', values.maxPoQuantity);
+    this.appendQueryValue(params, 'minPoValue', values.minPoValue);
+    this.appendQueryValue(params, 'maxPoValue', values.maxPoValue);
+    this.appendQueryValue(params, 'minDispatchBalance', values.minDispatchBalance);
+    this.appendQueryValue(params, 'maxDispatchBalance', values.maxDispatchBalance);
+    this.appendQueryValue(params, 'deliveryDateFrom', values.deliveryDateFrom);
+    this.appendQueryValue(params, 'deliveryDateTo', values.deliveryDateTo);
+    this.appendQueryValue(params, 'pdfAvailability', values.pdfAvailability);
     this.appendQueryValue(params, 'poDateFrom', values.poDateFrom);
     this.appendQueryValue(params, 'poDateTo', values.poDateTo);
     this.appendQueryValue(params, 'poReceivedDateFrom', values.poReceivedDateFrom);

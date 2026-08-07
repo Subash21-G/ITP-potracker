@@ -2,10 +2,12 @@ import {
   HttpClient,
   HttpParams,
 } from '@angular/common/http';
+
 import {
   inject,
   Injectable,
 } from '@angular/core';
+
 import {
   Observable,
   switchMap,
@@ -14,12 +16,18 @@ import {
 import {
   PurchaseOrderDetails,
 } from '../models/purchase-order-details.model';
+
 import {
   PurchaseOrderBulkDeleteRequest,
   PurchaseOrderBulkDeleteResponse,
   PurchaseOrderListResponse,
   PurchaseOrderQuery,
 } from '../models/purchase-order.model';
+
+import {
+  ApiResponseCacheService,
+} from './api-response-cache.service';
+
 import {
   AuthApiService,
 } from './auth-api.service';
@@ -34,8 +42,14 @@ export class PurchaseOrdersApiService {
   private readonly authApi =
     inject(AuthApiService);
 
+  private readonly cache =
+    inject(
+      ApiResponseCacheService,
+    );
+
   getPurchaseOrders(
     query: PurchaseOrderQuery,
+    forceRefresh = false,
   ): Observable<PurchaseOrderListResponse> {
     let params =
       new HttpParams()
@@ -104,14 +118,100 @@ export class PurchaseOrdersApiService {
         query.materialStatus,
       );
 
-    return this.http.get<
-      PurchaseOrderListResponse
-    >(
-      '/api/purchase-orders',
-      {
+    params =
+      this.setOptional(
         params,
-        withCredentials: true,
-      },
+        'minMaterials',
+        query.minMaterials,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'maxMaterials',
+        query.maxMaterials,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'minPoQuantity',
+        query.minPoQuantity,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'maxPoQuantity',
+        query.maxPoQuantity,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'minPoValue',
+        query.minPoValue,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'maxPoValue',
+        query.maxPoValue,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'minDispatchBalance',
+        query.minDispatchBalance,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'maxDispatchBalance',
+        query.maxDispatchBalance,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'deliveryDateFrom',
+        query.deliveryDateFrom,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'deliveryDateTo',
+        query.deliveryDateTo,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'pdfAvailability',
+        query.pdfAvailability,
+      );
+
+    const cacheKey =
+      `purchase-orders:list:${params.toString()}`;
+
+    return this.cache.get(
+      cacheKey,
+      () =>
+        this.http.get<
+          PurchaseOrderListResponse
+        >(
+          '/api/purchase-orders',
+          {
+            params,
+            withCredentials: true,
+          },
+        ),
+      10_000,
+      forceRefresh,
     );
   }
 
@@ -119,6 +219,7 @@ export class PurchaseOrdersApiService {
     id: number,
     materialPage: number,
     materialPageSize: number,
+    forceRefresh = false,
   ): Observable<PurchaseOrderDetails> {
     const params =
       new HttpParams()
@@ -131,14 +232,26 @@ export class PurchaseOrdersApiService {
           materialPageSize,
         );
 
-    return this.http.get<
-      PurchaseOrderDetails
-    >(
-      `/api/purchase-orders/${id}`,
-      {
-        params,
-        withCredentials: true,
-      },
+    const cacheKey =
+      (
+        `purchase-orders:detail:${id}:` +
+        params.toString()
+      );
+
+    return this.cache.get(
+      cacheKey,
+      () =>
+        this.http.get<
+          PurchaseOrderDetails
+        >(
+          `/api/purchase-orders/${id}`,
+          {
+            params,
+            withCredentials: true,
+          },
+        ),
+      20_000,
+      forceRefresh,
     );
   }
 

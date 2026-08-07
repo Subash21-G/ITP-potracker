@@ -2,10 +2,12 @@ import {
   HttpClient,
   HttpParams,
 } from '@angular/common/http';
+
 import {
   inject,
   Injectable,
 } from '@angular/core';
+
 import {
   Observable,
   switchMap,
@@ -18,6 +20,11 @@ import {
   MaterialQuery,
   PagedResult,
 } from '../models/material.model';
+
+import {
+  ApiResponseCacheService,
+} from './api-response-cache.service';
+
 import {
   AuthApiService,
 } from './auth-api.service';
@@ -32,8 +39,14 @@ export class MaterialsApiService {
   private readonly authApi =
     inject(AuthApiService);
 
+  private readonly cache =
+    inject(
+      ApiResponseCacheService,
+    );
+
   getMaterials(
     query: MaterialQuery,
+    forceRefresh = false,
   ): Observable<PagedResult<MaterialListItem>> {
     const params =
       this.buildFilterParams(query)
@@ -46,14 +59,23 @@ export class MaterialsApiService {
           query.pageSize,
         );
 
-    return this.http.get<
-      PagedResult<MaterialListItem>
-    >(
-      '/api/materials',
-      {
-        params,
-        withCredentials: true,
-      },
+    const cacheKey =
+      `materials:list:${params.toString()}`;
+
+    return this.cache.get(
+      cacheKey,
+      () =>
+        this.http.get<
+          PagedResult<MaterialListItem>
+        >(
+          '/api/materials',
+          {
+            params,
+            withCredentials: true,
+          },
+        ),
+      10_000,
+      forceRefresh,
     );
   }
 
@@ -67,6 +89,7 @@ export class MaterialsApiService {
           this.buildFilterParams(
             query,
           ),
+
         responseType: 'blob',
         withCredentials: true,
       },
@@ -185,6 +208,7 @@ export class MaterialsApiService {
 
     return params;
   }
+
   private setOptional(
     params: HttpParams,
     name: string,

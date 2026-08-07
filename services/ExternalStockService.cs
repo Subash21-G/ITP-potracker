@@ -71,11 +71,29 @@ namespace POTracker.Services
 
     public sealed class ExternalStockService
     {
-        private const string CacheKey =
-            "ExternalStockMaintenance.All";
+        private const string FreshCacheKey =
+            "ExternalStockMaintenance.Fresh";
 
-        private static readonly TimeSpan CacheDuration =
+        private const string StaleCacheKey =
+            "ExternalStockMaintenance.Stale";
+
+        private const string FailureCooldownKey =
+            "ExternalStockMaintenance.FailureCooldown";
+
+        private static readonly TimeSpan FreshCacheDuration =
             TimeSpan.FromSeconds(30);
+
+        private static readonly TimeSpan StaleCacheDuration =
+            TimeSpan.FromMinutes(10);
+
+        private static readonly TimeSpan FailureCooldown =
+            TimeSpan.FromSeconds(20);
+
+        private static readonly TimeSpan RequestTimeout =
+            TimeSpan.FromMilliseconds(650);
+
+        private static readonly SemaphoreSlim RefreshGate =
+            new(1, 1);
 
         private readonly IHttpClientFactory
             _httpClientFactory;
@@ -107,22 +125,68 @@ namespace POTracker.Services
                 CancellationToken cancellationToken =
                     default)
         {
-            if (!forceRefresh &&
-                TryGetCached(
-                    out var cachedRecords))
+            if (
+                !forceRefresh &&
+                TryGetFresh(
+                    out var freshRecords))
             {
                 return new ExternalStockLoadResult
                 {
                     Items =
-                        cachedRecords,
+                        freshRecords,
 
                     IsOnline =
                         true
                 };
             }
 
+            if (
+                !forceRefresh &&
+                IsFailureCoolingDown())
+            {
+                return CreateUnavailableResult(
+                    "Stock Maintenance is temporarily offline. " +
+                    "The main PO Tracker data remains available.");
+            }
+
+            var lockTaken =
+                await RefreshGate.WaitAsync(
+                    0,
+                    cancellationToken);
+
+            if (!lockTaken)
+            {
+                return CreateUnavailableResult(
+                    "Stock refresh is already running. " +
+                    "Showing PO Tracker data without waiting.");
+            }
+
             try
             {
+                if (
+                    !forceRefresh &&
+                    TryGetFresh(
+                        out freshRecords))
+                {
+                    return new ExternalStockLoadResult
+                    {
+                        Items =
+                            freshRecords,
+
+                        IsOnline =
+                            true
+                    };
+                }
+
+                if (
+                    !forceRefresh &&
+                    IsFailureCoolingDown())
+                {
+                    return CreateUnavailableResult(
+                        "Stock Maintenance is temporarily offline. " +
+                        "The main PO Tracker data remains available.");
+                }
+
                 var client =
                     _httpClientFactory
                         .CreateClient("StockApi");
@@ -133,11 +197,19 @@ namespace POTracker.Services
                         "StockApi:BaseUrl is not configured.");
                 }
 
+                using var timeoutSource =
+                    CancellationTokenSource
+                        .CreateLinkedTokenSource(
+                            cancellationToken);
+
+                timeoutSource.CancelAfter(
+                    RequestTimeout);
+
                 var records =
                     await client.GetFromJsonAsync<
                         List<ExternalStockRecordDto>>(
                             "api/stock/all",
-                            cancellationToken) ??
+                            timeoutSource.Token) ??
                     new List<ExternalStockRecordDto>();
 
                 var cleanedRecords =
@@ -150,9 +222,17 @@ namespace POTracker.Services
                         .ToList();
 
                 _memoryCache.Set(
-                    CacheKey,
+                    FreshCacheKey,
                     cleanedRecords,
-                    CacheDuration);
+                    FreshCacheDuration);
+
+                _memoryCache.Set(
+                    StaleCacheKey,
+                    cleanedRecords,
+                    StaleCacheDuration);
+
+                _memoryCache.Remove(
+                    FailureCooldownKey);
 
                 return new ExternalStockLoadResult
                 {
@@ -163,40 +243,31 @@ namespace POTracker.Services
                         true
                 };
             }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception exception)
             {
+                _memoryCache.Set(
+                    FailureCooldownKey,
+                    true,
+                    FailureCooldown);
+
                 _logger.LogWarning(
                     exception,
-                    "Stock Maintenance API could not be loaded.");
+                    "Stock Maintenance API did not respond within {TimeoutMilliseconds} ms. " +
+                    "PO Tracker continued without blocking.",
+                    RequestTimeout.TotalMilliseconds);
 
-                if (TryGetCached(
-                        out var staleRecords))
-                {
-                    return new ExternalStockLoadResult
-                    {
-                        Items =
-                            staleRecords,
-
-                        IsOnline =
-                            false,
-
-                        ErrorMessage =
-                            "Showing recently cached Stock Maintenance data."
-                    };
-                }
-
-                return new ExternalStockLoadResult
-                {
-                    Items =
-                        Array.Empty<
-                            ExternalStockRecordDto>(),
-
-                    IsOnline =
-                        false,
-
-                    ErrorMessage =
-                        "Stock Maintenance is currently unavailable."
-                };
+                return CreateUnavailableResult(
+                    "Stock Maintenance is currently unavailable. " +
+                    "PO Tracker continued without waiting.");
+            }
+            finally
+            {
+                RefreshGate.Release();
             }
         }
 
@@ -339,12 +410,73 @@ namespace POTracker.Services
                 .ToUpperInvariant();
         }
 
-        private bool TryGetCached(
+        private ExternalStockLoadResult
+            CreateUnavailableResult(
+                string message)
+        {
+            if (TryGetStale(
+                    out var staleRecords))
+            {
+                return new ExternalStockLoadResult
+                {
+                    Items =
+                        staleRecords,
+
+                    IsOnline =
+                        false,
+
+                    ErrorMessage =
+                        "Showing recently cached Stock Maintenance data. " +
+                        message
+                };
+            }
+
+            return new ExternalStockLoadResult
+            {
+                Items =
+                    Array.Empty<
+                        ExternalStockRecordDto>(),
+
+                IsOnline =
+                    false,
+
+                ErrorMessage =
+                    message
+            };
+        }
+
+        private bool IsFailureCoolingDown()
+        {
+            return _memoryCache.TryGetValue(
+                FailureCooldownKey,
+                out bool _);
+        }
+
+        private bool TryGetFresh(
+            out IReadOnlyList<
+                ExternalStockRecordDto> records)
+        {
+            return TryGetRecords(
+                FreshCacheKey,
+                out records);
+        }
+
+        private bool TryGetStale(
+            out IReadOnlyList<
+                ExternalStockRecordDto> records)
+        {
+            return TryGetRecords(
+                StaleCacheKey,
+                out records);
+        }
+
+        private bool TryGetRecords(
+            string cacheKey,
             out IReadOnlyList<
                 ExternalStockRecordDto> records)
         {
             if (_memoryCache.TryGetValue(
-                    CacheKey,
+                    cacheKey,
                     out List<
                         ExternalStockRecordDto>?
                         cachedRecords) &&

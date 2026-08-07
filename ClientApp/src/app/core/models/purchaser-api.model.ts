@@ -1,4 +1,9 @@
-﻿export interface PurchaserListItem {
+﻿export interface PurchaserPurchaseOrderPerson {
+  name: string;
+  purchaseOrderCount: number;
+}
+
+export interface PurchaserListItem {
   id: number;
   purchaserName: string;
   contactPerson: string;
@@ -6,6 +11,7 @@
   email: string;
   address: string;
   purchaseOrderCount: number;
+  purchaseOrderPersons: PurchaserPurchaseOrderPerson[];
 }
 
 export interface PurchaserListResponse {

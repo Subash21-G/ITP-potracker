@@ -12,6 +12,8 @@
 
         public string Handler { get; init; } = string.Empty;
 
+        public string PurchaserName { get; init; } = string.Empty;
+
         public string? BuyerEmail { get; init; }
 
         public string? VendorCode { get; init; }

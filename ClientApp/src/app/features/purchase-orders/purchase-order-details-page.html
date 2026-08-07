@@ -66,6 +66,10 @@
         <strong>{{ purchaseOrder.poNumber }}</strong>
       </article>
       <article>
+        <span>Purchaser</span>
+        <strong>{{ purchaseOrder.purchaserName || 'Not set' }}</strong>
+      </article>
+      <article>
         <span>Handler / Person</span>
         <strong>{{ purchaseOrder.handler || 'Unassigned' }}</strong>
       </article>

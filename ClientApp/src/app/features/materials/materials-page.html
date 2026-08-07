@@ -327,7 +327,7 @@
               (change)="toggleCurrentPage($event)"
             />
           </th>
-          <th>PO / Handler</th>
+          <th>PO / Purchaser / Handler</th>
           <th>Line</th>
           <th>Material</th>
           <th>Description</th>
@@ -384,7 +384,11 @@
               </a>
 
               <span class="secondary-value">
-                {{ material.handler || 'No handler' }}
+                {{ material.purchaserName || 'No purchaser' }}
+              </span>
+
+              <span class="secondary-value">
+                Handler: {{ material.handler || 'Unassigned' }}
               </span>
             </td>
 

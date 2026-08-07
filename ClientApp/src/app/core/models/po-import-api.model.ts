@@ -28,6 +28,7 @@ export interface PoImportPreview {
   purchaseOrderNo: string | null;
   poDate: string | null;
   receivedDate: string | null;
+  purchaserName: string | null;
   buyerContactPerson: string | null;
   buyerEmail: string | null;
   vendorCode: string | null;

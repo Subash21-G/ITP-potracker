@@ -98,36 +98,71 @@ namespace POTracker.Controllers
                     GetAssignedDashboard(
                         model.BuyerContactPerson);
 
-                var purchaser =
+                var purchaserName =
+                    WegPurchaseOrderHeaderParser
+                        .NormalizePurchaserName(
+                            model.PurchaserName);
+
+                if (string.IsNullOrWhiteSpace(
+                        purchaserName))
+                {
+                    throw new InvalidOperationException(
+                        "Purchaser company name is missing. " +
+                        "Please extract the PO PDF again before saving.");
+                }
+
+                var purchaserComparisonKey =
+                    WegPurchaseOrderHeaderParser
+                        .CreateComparisonKey(
+                            purchaserName);
+
+                var purchaserCandidates =
                     await _context.Purchasers
-                        .FirstOrDefaultAsync(x =>
-                            x.PurchaserName ==
-                            "WEG Industries (India) PVT LTD");
+                        .ToListAsync();
+
+                var purchaser =
+                    purchaserCandidates
+                        .FirstOrDefault(candidate =>
+                            WegPurchaseOrderHeaderParser
+                                .CreateComparisonKey(
+                                    candidate.PurchaserName) ==
+                            purchaserComparisonKey);
 
                 if (purchaser == null)
                 {
                     purchaser = new Purchaser
                     {
                         PurchaserName =
-                            "WEG Industries (India) PVT LTD",
+                            purchaserName,
 
                         ContactPerson =
-                            model.BuyerContactPerson
+                            string.IsNullOrWhiteSpace(
+                                model.BuyerContactPerson)
+                                ? null
+                                : model.BuyerContactPerson.Trim()
                     };
 
                     _context.Purchasers.Add(purchaser);
 
                     await _context.SaveChangesAsync();
                 }
-                else
+                else if (
+                    string.IsNullOrWhiteSpace(
+                        purchaser.ContactPerson) &&
+                    !string.IsNullOrWhiteSpace(
+                        model.BuyerContactPerson))
                 {
+                    // Keep the buyer/contact on each Purchase Order.
+                    // Do not replace the purchaser's master contact
+                    // every time a different WEG buyer imports a PO.
                     purchaser.ContactPerson =
-                        model.BuyerContactPerson;
-
-                    _context.Purchasers.Update(purchaser);
+                        model.BuyerContactPerson.Trim();
 
                     await _context.SaveChangesAsync();
                 }
+
+                model.PurchaserName =
+                    purchaser.PurchaserName;
 
                 var purchaseOrder =
                     await _context.PurchaseOrders
@@ -627,6 +662,29 @@ namespace POTracker.Controllers
 
                 purchaseOrderModel.PurchaseOrderNo =
                     purchaseOrderModel.PurchaseOrderNo.Trim();
+
+                // ----------------------------------------------------
+                // VALIDATE PURCHASER COMPANY
+                // ----------------------------------------------------
+
+                if (string.IsNullOrWhiteSpace(
+                        purchaseOrderModel.PurchaserName))
+                {
+                    DeleteFileIfExists(physicalFilePath);
+
+                    result.ErrorMessage =
+                        "Purchaser company name could not be " +
+                        "detected from this PDF. The buyer/contact " +
+                        "person and vendor will not be used as the " +
+                        "purchaser.";
+
+                    return result;
+                }
+
+                purchaseOrderModel.PurchaserName =
+                    WegPurchaseOrderHeaderParser
+                        .NormalizePurchaserName(
+                            purchaseOrderModel.PurchaserName);
 
                 // ----------------------------------------------------
                 // VALIDATE MATERIAL ROWS
@@ -1189,6 +1247,10 @@ namespace POTracker.Controllers
                             GetSingleValue(
                                 text,
                                 @"Date\s*of\s*emission\s*:\s*([0-9.\/\-]+)")),
+
+                    PurchaserName =
+                        WegPurchaseOrderHeaderParser
+                            .ExtractPurchaserName(text),
 
                     BuyerContactPerson =
                         GetBuyerName(text)

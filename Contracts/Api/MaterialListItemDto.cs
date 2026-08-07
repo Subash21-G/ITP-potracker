@@ -10,6 +10,8 @@ namespace POTracker.Contracts.Api
 
         public string Handler { get; init; } = string.Empty;
 
+        public string PurchaserName { get; init; } = string.Empty;
+
         public DateTime? PODate { get; init; }
 
         public DateTime? POReceivedDate { get; init; }

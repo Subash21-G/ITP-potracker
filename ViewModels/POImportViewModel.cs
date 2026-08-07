@@ -17,7 +17,11 @@ namespace POTracker.ViewModels
         // Treated as PO received date
         public DateTime? ReceivedDate { get; set; }
 
-        // Buyer / Contact person
+        // Purchaser / customer company extracted from the PO PDF.
+        // Example: WEG Industries (India) PVT LTD
+        public string? PurchaserName { get; set; }
+
+        // Buyer / Contact person. This is not the purchaser company.
         public string? BuyerContactPerson { get; set; }
 
         // Buyer email address

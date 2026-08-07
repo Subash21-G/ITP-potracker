@@ -52,6 +52,17 @@ describe('PurchaseOrdersApiService', () => {
         handler: 'Manoj S',
         status: 'Open',
         poDateFrom: '2026-01-01',
+        minMaterials: '2',
+        maxMaterials: '20',
+        minPoQuantity: '10',
+        maxPoQuantity: '500',
+        minPoValue: '1000',
+        maxPoValue: '500000',
+        minDispatchBalance: '1',
+        maxDispatchBalance: '200',
+        deliveryDateFrom: '2026-02-01',
+        deliveryDateTo: '2026-12-31',
+        pdfAvailability: 'available',
       })
       .subscribe((result) => expect(result).toEqual(response));
 
@@ -66,6 +77,17 @@ describe('PurchaseOrdersApiService', () => {
     expect(request.request.params.get('handler')).toBe('Manoj S');
     expect(request.request.params.get('status')).toBe('Open');
     expect(request.request.params.get('poDateFrom')).toBe('2026-01-01');
+    expect(request.request.params.get('minMaterials')).toBe('2');
+    expect(request.request.params.get('maxMaterials')).toBe('20');
+    expect(request.request.params.get('minPoQuantity')).toBe('10');
+    expect(request.request.params.get('maxPoQuantity')).toBe('500');
+    expect(request.request.params.get('minPoValue')).toBe('1000');
+    expect(request.request.params.get('maxPoValue')).toBe('500000');
+    expect(request.request.params.get('minDispatchBalance')).toBe('1');
+    expect(request.request.params.get('maxDispatchBalance')).toBe('200');
+    expect(request.request.params.get('deliveryDateFrom')).toBe('2026-02-01');
+    expect(request.request.params.get('deliveryDateTo')).toBe('2026-12-31');
+    expect(request.request.params.get('pdfAvailability')).toBe('available');
     expect(request.request.withCredentials).toBe(true);
 
     request.flush(response);
@@ -78,6 +100,7 @@ describe('PurchaseOrdersApiService', () => {
       poDate: '2026-01-01T00:00:00',
       poReceivedDate: '2026-01-02T00:00:00',
       handler: 'Manoj S',
+      purchaserName: 'WEG Industries (India) PVT LTD',
       buyerEmail: null,
       vendorCode: null,
       vendorName: null,

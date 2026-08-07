@@ -76,6 +76,13 @@ namespace POTracker.Controllers.Api
                                   string.Empty
                                 : string.Empty,
 
+                        PurchaserName =
+                            material.PurchaseOrder != null &&
+                            material.PurchaseOrder.Purchaser != null
+                                ? material.PurchaseOrder
+                                    .Purchaser.PurchaserName
+                                : string.Empty,
+
                         PODate =
                             material.PurchaseOrder != null
                                 ? material.PurchaseOrder.PODate ??
@@ -1488,23 +1495,43 @@ namespace POTracker.Controllers.Api
                     .ToHashSet(
                         StringComparer.OrdinalIgnoreCase);
 
-            var allocationCandidates =
-                await _context.Materials
-                    .AsNoTracking()
-                    .Where(material =>
-                        material.MaterialNo != null &&
-                        material.MaterialNo !=
-                            string.Empty)
-                    .Select(material =>
-                        new
-                        {
-                            material.Id,
-                            material.MaterialNo,
-                            material.PendingQty,
-                            material.DeliveryDate
-                        })
-                    .ToListAsync(
-                        cancellationToken);
+            var requestedMaterialNumbers =
+                items
+                    .Select(item =>
+                        item.MaterialNo)
+                    .Where(materialNo =>
+                        !string.IsNullOrWhiteSpace(
+                            materialNo))
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            var typedAllocationCandidates =
+                requestedMaterialNumbers.Count == 0
+                    ? new List<MaterialStockAllocationCandidate>()
+                    : await _context.Materials
+                        .AsNoTracking()
+                        .Where(material =>
+                            material.MaterialNo != null &&
+                            requestedMaterialNumbers.Contains(
+                                material.MaterialNo))
+                        .Select(material =>
+                            new MaterialStockAllocationCandidate
+                            {
+                                Id =
+                                    material.Id,
+
+                                MaterialNo =
+                                    material.MaterialNo,
+
+                                PendingQty =
+                                    material.PendingQty,
+
+                                DeliveryDate =
+                                    material.DeliveryDate
+                            })
+                        .ToListAsync(
+                            cancellationToken);
 
             var allocations =
                 new Dictionary<
@@ -1534,7 +1561,7 @@ namespace POTracker.Controllers.Api
                     stockSnapshot.LiveStock;
 
                 var matchingRows =
-                    allocationCandidates
+                    typedAllocationCandidates
                         .Where(material =>
                             ExternalStockService.Normalize(
                                 material.MaterialNo) ==
@@ -1667,6 +1694,17 @@ namespace POTracker.Controllers.Api
                         "Stock API Offline";
                 }
             }
+        }
+
+        private sealed class MaterialStockAllocationCandidate
+        {
+            public int Id { get; init; }
+
+            public string? MaterialNo { get; init; }
+
+            public decimal PendingQty { get; init; }
+
+            public DateTime? DeliveryDate { get; init; }
         }
 
         private static void WriteMaterialExcel(
@@ -2020,6 +2058,24 @@ namespace POTracker.Controllers.Api
             details.StockDataLive =
                 stockLoad.IsOnline;
 
+            if (
+                !stockLoad.IsOnline &&
+                stockLoad.Items.Count == 0)
+            {
+                details.StockStatus =
+                    "Stock API Offline";
+
+                details.AllocatedStockQuantity =
+                    0;
+
+                details.StockShortageQuantity =
+                    Math.Max(
+                        0,
+                        details.PendingQty);
+
+                return details;
+            }
+
             var normalizedMaterialNo =
                 ExternalStockService.Normalize(
                     details.MaterialNo);
@@ -2029,8 +2085,8 @@ namespace POTracker.Controllers.Api
                     .AsNoTracking()
                     .Where(material =>
                         material.MaterialNo != null &&
-                        material.MaterialNo !=
-                            string.Empty)
+                        material.MaterialNo ==
+                            details.MaterialNo)
                     .Select(material =>
                         new
                         {
@@ -2195,6 +2251,11 @@ namespace POTracker.Controllers.Api
                             (material.PurchaseOrder != null &&
                              material.PurchaseOrder
                                  .PONumber
+                                 .Contains(value)) ||
+                            (material.PurchaseOrder != null &&
+                             material.PurchaseOrder.Purchaser != null &&
+                             material.PurchaseOrder.Purchaser
+                                 .PurchaserName
                                  .Contains(value)));
             }
 

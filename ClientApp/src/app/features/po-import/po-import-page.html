@@ -203,7 +203,14 @@
     </article>
 
     <article>
-      <span>Buyer</span>
+      <span>Purchaser Company</span>
+      <strong>
+        {{ po.purchaserName || 'Not detected' }}
+      </strong>
+    </article>
+
+    <article>
+      <span>Buyer / Handler</span>
       <strong>
         {{ po.buyerContactPerson || '—' }}
       </strong>
@@ -431,7 +438,12 @@
           </span>
 
           <span>
-            Buyer:
+            Purchaser:
+            {{ po.purchaserName || 'Not detected' }}
+          </span>
+
+          <span>
+            Buyer / Handler:
             {{ po.buyerContactPerson || '—' }}
           </span>
 

@@ -188,7 +188,9 @@ builder.Services.AddHttpClient("StockApi", client =>
         client.BaseAddress = new Uri(stockApiBaseUrl);
     }
 
-    client.Timeout = TimeSpan.FromSeconds(30);
+    // External stock is optional page enrichment. Keep a short
+    // transport ceiling so it can never hold the main application.
+    client.Timeout = TimeSpan.FromSeconds(2);
 });
 
 // ============================================================

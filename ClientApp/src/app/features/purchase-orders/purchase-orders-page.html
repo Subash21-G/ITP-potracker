@@ -280,17 +280,608 @@
               (change)="toggleCurrentPage($event)"
             />
           </th>
-          <th>PO / Handler</th>
-          <th>PO date</th>
-          <th>Received</th>
-          <th>PO status</th>
-          <th>Material progress</th>
-          <th>Materials</th>
-          <th class="number-cell">PO quantity</th>
-          <th class="number-cell">PO value</th>
-          <th class="number-cell">Dispatch balance</th>
-          <th>Delivery range</th>
-          <th>PDF</th>
+
+          <th class="po-heading-cell">
+            <div class="table-heading">
+              <span>PO / Purchaser / Handler</span>
+
+              <details
+                #poColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('po')"
+              >
+                <summary
+                  title="Filter PO, purchaser or handler"
+                  aria-label="Filter PO, purchaser or handler"
+                >
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu column-filter__menu--wide">
+                  <label>
+                    <span>PO, purchaser or handler</span>
+                    <input
+                      type="search"
+                      [formControl]="filters.controls.search"
+                      placeholder="Search all matching POs"
+                    />
+                  </label>
+
+                  <label>
+                    <span>PO person</span>
+                    <select [formControl]="filters.controls.handler">
+                      <option value="">All PO persons</option>
+                      @for (handler of handlers(); track handler) {
+                        <option [value]="handler">{{ handler }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('po', poColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(poColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="table-heading">
+              <span>PO date</span>
+
+              <details
+                #poDateColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('poDate')"
+              >
+                <summary title="Filter PO date" aria-label="Filter PO date">
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu">
+                  <label>
+                    <span>From</span>
+                    <input
+                      type="date"
+                      [formControl]="filters.controls.poDateFrom"
+                    />
+                  </label>
+
+                  <label>
+                    <span>To</span>
+                    <input
+                      type="date"
+                      [formControl]="filters.controls.poDateTo"
+                    />
+                  </label>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('poDate', poDateColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(poDateColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="table-heading">
+              <span>Received</span>
+
+              <details
+                #receivedColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('received')"
+              >
+                <summary title="Filter received date" aria-label="Filter received date">
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu">
+                  <label>
+                    <span>From</span>
+                    <input
+                      type="date"
+                      [formControl]="filters.controls.poReceivedDateFrom"
+                    />
+                  </label>
+
+                  <label>
+                    <span>To</span>
+                    <input
+                      type="date"
+                      [formControl]="filters.controls.poReceivedDateTo"
+                    />
+                  </label>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('received', receivedColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(receivedColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="table-heading">
+              <span>PO status</span>
+
+              <details
+                #statusColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('status')"
+              >
+                <summary title="Filter PO status" aria-label="Filter PO status">
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu">
+                  <label>
+                    <span>Status</span>
+                    <select [formControl]="filters.controls.status">
+                      <option value="">All PO statuses</option>
+                      <option value="Open">Open</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                  </label>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('status', statusColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(statusColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="table-heading">
+              <span>Material progress</span>
+
+              <details
+                #materialColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('material')"
+              >
+                <summary
+                  title="Filter material progress"
+                  aria-label="Filter material progress"
+                >
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu">
+                  <label>
+                    <span>Progress</span>
+                    <select [formControl]="filters.controls.materialStatus">
+                      <option value="">All progress statuses</option>
+                      <option value="No Materials">No Materials</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Partially Completed">
+                        Partially Completed
+                      </option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                  </label>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('material', materialColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(materialColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="table-heading">
+              <span>Materials</span>
+
+              <details
+                #materialsColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('materials')"
+              >
+                <summary
+                  title="Filter material count"
+                  aria-label="Filter material count"
+                >
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu">
+                  <div class="column-filter__range">
+                    <label>
+                      <span>Minimum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        [formControl]="filters.controls.minMaterials"
+                        placeholder="0"
+                      />
+                    </label>
+
+                    <label>
+                      <span>Maximum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        [formControl]="filters.controls.maxMaterials"
+                        placeholder="Any"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('materials', materialsColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(materialsColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="table-heading table-heading--number">
+              <span>PO quantity</span>
+
+              <details
+                #quantityColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('quantity')"
+              >
+                <summary
+                  title="Filter PO quantity"
+                  aria-label="Filter PO quantity"
+                >
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu column-filter__menu--right">
+                  <div class="column-filter__range">
+                    <label>
+                      <span>Minimum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        [formControl]="filters.controls.minPoQuantity"
+                        placeholder="0"
+                      />
+                    </label>
+
+                    <label>
+                      <span>Maximum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        [formControl]="filters.controls.maxPoQuantity"
+                        placeholder="Any"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('quantity', quantityColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(quantityColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="table-heading table-heading--number">
+              <span>PO value</span>
+
+              <details
+                #valueColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('value')"
+              >
+                <summary
+                  title="Filter PO value"
+                  aria-label="Filter PO value"
+                >
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu column-filter__menu--right">
+                  <div class="column-filter__range">
+                    <label>
+                      <span>Minimum ₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        [formControl]="filters.controls.minPoValue"
+                        placeholder="0"
+                      />
+                    </label>
+
+                    <label>
+                      <span>Maximum ₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        [formControl]="filters.controls.maxPoValue"
+                        placeholder="Any"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('value', valueColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(valueColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="table-heading table-heading--number">
+              <span>Dispatch balance</span>
+
+              <details
+                #dispatchColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('dispatch')"
+              >
+                <summary
+                  title="Filter dispatch balance"
+                  aria-label="Filter dispatch balance"
+                >
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu column-filter__menu--right">
+                  <div class="column-filter__range">
+                    <label>
+                      <span>Minimum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        [formControl]="filters.controls.minDispatchBalance"
+                        placeholder="0"
+                      />
+                    </label>
+
+                    <label>
+                      <span>Maximum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        [formControl]="filters.controls.maxDispatchBalance"
+                        placeholder="Any"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('dispatch', dispatchColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(dispatchColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="table-heading">
+              <span>Delivery range</span>
+
+              <details
+                #deliveryColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('delivery')"
+              >
+                <summary
+                  title="Filter delivery range"
+                  aria-label="Filter delivery range"
+                >
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu column-filter__menu--right">
+                  <label>
+                    <span>Delivery from</span>
+                    <input
+                      type="date"
+                      [formControl]="filters.controls.deliveryDateFrom"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Delivery to</span>
+                    <input
+                      type="date"
+                      [formControl]="filters.controls.deliveryDateTo"
+                    />
+                  </label>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('delivery', deliveryColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(deliveryColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="table-heading">
+              <span>PDF</span>
+
+              <details
+                #pdfColumnFilter
+                class="column-filter"
+                [class.column-filter--active]="columnFilterActive('pdf')"
+              >
+                <summary title="Filter PDF availability" aria-label="Filter PDF availability">
+                  <span aria-hidden="true">▾</span>
+                </summary>
+
+                <div class="column-filter__menu column-filter__menu--right">
+                  <label>
+                    <span>PDF availability</span>
+                    <select [formControl]="filters.controls.pdfAvailability">
+                      <option value="">All Purchase Orders</option>
+                      <option value="available">PDF available</option>
+                      <option value="missing">PDF missing</option>
+                    </select>
+                  </label>
+
+                  <div class="column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('pdf', pdfColumnFilter)"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      class="column-filter__apply"
+                      type="button"
+                      (click)="applyColumnFilter(pdfColumnFilter)"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
           <th>Action</th>
         </tr>
       </thead>
@@ -335,7 +926,11 @@
                 {{ purchaseOrder.poNumber }}
               </a>
               <span class="secondary-value">
-                {{ purchaseOrder.handler || 'Unassigned' }}
+                {{ purchaseOrder.purchaserName || 'No purchaser' }}
+              </span>
+
+              <span class="secondary-value">
+                Handler: {{ purchaseOrder.handler || 'Unassigned' }}
               </span>
             </td>
             <td class="date-cell">

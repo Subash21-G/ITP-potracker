@@ -8,9 +8,9 @@
       <h1>Purchasers</h1>
 
       <p>
-        Manage purchaser contacts, addresses and
-        linked Purchase Order records without leaving
-        the Angular application.
+        View each purchaser company and the individual
+        PO persons who issued its Purchase Orders.
+        Select a person's name to open only their POs.
       </p>
     </div>
 
@@ -96,7 +96,7 @@
         <input
           type="search"
           [formControl]="searchControl"
-          placeholder="Name, contact, mobile or email"
+          placeholder="Purchaser company or PO person"
         />
       </label>
 
@@ -168,7 +168,7 @@
             <tr>
               <th>#</th>
               <th>Purchaser</th>
-              <th>Contact</th>
+              <th>PO person(s)</th>
               <th>Mobile</th>
               <th>Email</th>
               <th>Address</th>
@@ -200,11 +200,48 @@
                   </small>
                 </td>
 
-                <td>
-                  {{
-                    item.contactPerson ||
-                    '-'
-                  }}
+                <td class="po-person-cell">
+                  @if (
+                    item.purchaseOrderPersons.length > 0
+                  ) {
+                    <div class="po-person-list">
+                      @for (
+                        person of
+                          item.purchaseOrderPersons;
+                        track person.name
+                      ) {
+                        <a
+                          class="po-person-link"
+                          [routerLink]="[
+                            '/purchase-orders'
+                          ]"
+                          [queryParams]="{
+                            handler: person.name
+                          }"
+                          [title]="
+                            'Show ' +
+                            person.purchaseOrderCount +
+                            ' PO(s) issued by ' +
+                            person.name
+                          "
+                        >
+                          <span>{{ person.name }}</span>
+
+                          <small>
+                            {{
+                              person.purchaseOrderCount
+                                | number
+                            }}
+                            PO(s)
+                          </small>
+                        </a>
+                      }
+                    </div>
+                  } @else {
+                    <span class="no-po-person">
+                      No PO person
+                    </span>
+                  }
                 </td>
 
                 <td>
