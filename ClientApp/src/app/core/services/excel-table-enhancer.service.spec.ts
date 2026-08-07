@@ -12,6 +12,60 @@ describe(
     let service:
       ExcelTableEnhancerService;
 
+    const buttonFor =
+      (
+        headerText: string,
+      ):
+        HTMLButtonElement | null =>
+        Array.from(
+          document.querySelectorAll<
+            HTMLButtonElement
+          >(
+            '.po-excel-filter-button',
+          ),
+        ).find(
+          button =>
+            button
+              .closest('th')
+              ?.textContent
+              ?.includes(
+                headerText,
+              ),
+        ) ??
+        null;
+
+    const rowValues =
+      (
+        columnIndex: number,
+      ): string[] =>
+        Array.from(
+          document.querySelectorAll<
+            HTMLTableRowElement
+          >(
+            'tbody tr',
+          ),
+        ).map(
+          row =>
+            row.cells
+              .item(
+                columnIndex,
+              )
+              ?.textContent
+              ?.trim() ??
+            '',
+        );
+
+    const menuButton =
+      (
+        selector: string,
+      ):
+        HTMLButtonElement | null =>
+        document.querySelector<
+          HTMLButtonElement
+        >(
+          selector,
+        );
+
     beforeEach(() => {
       TestBed.configureTestingModule({});
 
@@ -32,6 +86,8 @@ describe(
                       aria-label="Select all">
                   </th>
                   <th>Name</th>
+                  <th>Qty</th>
+                  <th>Updated Date</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -40,14 +96,27 @@ describe(
                   <td>
                     <input type="checkbox">
                   </td>
-                  <td>Alpha</td>
+                  <td>Beta</td>
+                  <td>12</td>
+                  <td>07/08/2026</td>
                   <td>View</td>
                 </tr>
                 <tr>
                   <td>
                     <input type="checkbox">
                   </td>
-                  <td>Beta</td>
+                  <td>Alpha</td>
+                  <td>2</td>
+                  <td>01/08/2026</td>
+                  <td>View</td>
+                </tr>
+                <tr>
+                  <td>
+                    <input type="checkbox">
+                  </td>
+                  <td>Gamma</td>
+                  <td>100</td>
+                  <td>15/08/2026</td>
                   <td>View</td>
                 </tr>
               </tbody>
@@ -61,17 +130,16 @@ describe(
 
     afterEach(() => {
       service.ngOnDestroy();
-      document.body.innerHTML = '';
+      document.body.innerHTML =
+        '';
     });
 
     it(
-      'keeps the active state on the actual table column when skipped headers exist',
+      'keeps filter state on the actual table column when skipped headers exist',
       async () => {
         const button =
-          document.querySelector<
-            HTMLButtonElement
-          >(
-            '.po-excel-filter-button',
+          buttonFor(
+            'Name',
           );
 
         expect(button).not.toBeNull();
@@ -79,12 +147,6 @@ describe(
         if (!button) {
           return;
         }
-
-        expect(
-          button
-            .closest('th')
-            ?.textContent,
-        ).toContain('Name');
 
         expect(
           button.getAttribute(
@@ -104,9 +166,12 @@ describe(
           );
 
         const betaOption =
-          options.find(option =>
-            option.textContent
-              ?.includes('Beta'),
+          options.find(
+            option =>
+              option.textContent
+                ?.includes(
+                  'Beta',
+                ),
           );
 
         expect(betaOption).toBeDefined();
@@ -125,18 +190,12 @@ describe(
           return;
         }
 
-        betaCheckbox.checked = false;
+        betaCheckbox.checked =
+          false;
 
-        const applyButton =
-          document.querySelector<
-            HTMLButtonElement
-          >(
-            '.po-excel-filter-apply',
-          );
-
-        expect(applyButton).not.toBeNull();
-
-        applyButton?.click();
+        menuButton(
+          '.po-excel-filter-apply',
+        )?.click();
 
         expect(
           button.getAttribute(
@@ -153,14 +212,18 @@ describe(
             ),
           );
 
-        expect(
-          rows[0].classList.contains(
-            'po-excel-row-filtered-out',
-          ),
-        ).toBe(false);
+        const betaRow =
+          rows.find(
+            row =>
+              row.cells
+                .item(1)
+                ?.textContent
+                ?.trim() ===
+              'Beta',
+          );
 
         expect(
-          rows[1].classList.contains(
+          betaRow?.classList.contains(
             'po-excel-row-filtered-out',
           ),
         ).toBe(true);
@@ -202,6 +265,204 @@ describe(
             'po-excel-filter-button--active',
           ),
         ).toBe(true);
+      },
+    );
+
+    it(
+      'sorts text A to Z and Z to A like Excel',
+      () => {
+        const button =
+          buttonFor(
+            'Name',
+          );
+
+        expect(button).not.toBeNull();
+
+        button?.click();
+
+        expect(
+          menuButton(
+            '.po-excel-filter-sort-asc',
+          )?.textContent,
+        ).toContain(
+          'Sort A to Z',
+        );
+
+        menuButton(
+          '.po-excel-filter-sort-asc',
+        )?.click();
+
+        expect(
+          rowValues(1),
+        ).toEqual(
+          [
+            'Alpha',
+            'Beta',
+            'Gamma',
+          ],
+        );
+
+        expect(
+          button?.textContent,
+        ).toBe('↑');
+
+        button?.click();
+
+        menuButton(
+          '.po-excel-filter-sort-desc',
+        )?.click();
+
+        expect(
+          rowValues(1),
+        ).toEqual(
+          [
+            'Gamma',
+            'Beta',
+            'Alpha',
+          ],
+        );
+
+        expect(
+          button?.textContent,
+        ).toBe('↓');
+      },
+    );
+
+    it(
+      'uses numeric Smallest to Largest sorting for quantity columns',
+      () => {
+        const button =
+          buttonFor(
+            'Qty',
+          );
+
+        expect(button).not.toBeNull();
+
+        button?.click();
+
+        expect(
+          menuButton(
+            '.po-excel-filter-sort-asc',
+          )?.textContent,
+        ).toContain(
+          'Sort Smallest to Largest',
+        );
+
+        menuButton(
+          '.po-excel-filter-sort-asc',
+        )?.click();
+
+        expect(
+          rowValues(2),
+        ).toEqual(
+          [
+            '2',
+            '12',
+            '100',
+          ],
+        );
+      },
+    );
+
+    it(
+      'uses date Oldest to Newest sorting and exposes searchable contents',
+      () => {
+        const button =
+          buttonFor(
+            'Updated Date',
+          );
+
+        expect(button).not.toBeNull();
+
+        button?.click();
+
+        expect(
+          menuButton(
+            '.po-excel-filter-sort-asc',
+          )?.textContent,
+        ).toContain(
+          'Sort Oldest to Newest',
+        );
+
+        expect(
+          document.querySelector<
+            HTMLElement
+          >(
+            '.po-excel-filter-contents-heading',
+          )?.textContent,
+        ).toContain(
+          'Filter by contents',
+        );
+
+        expect(
+          document.querySelector<
+            HTMLInputElement
+          >(
+            '.po-excel-filter-search',
+          )?.placeholder,
+        ).toBe(
+          'Search contents',
+        );
+
+        menuButton(
+          '.po-excel-filter-sort-asc',
+        )?.click();
+
+        expect(
+          rowValues(3),
+        ).toEqual(
+          [
+            '01/08/2026',
+            '07/08/2026',
+            '15/08/2026',
+          ],
+        );
+      },
+    );
+
+    it(
+      'clears sorting back to original local table order',
+      () => {
+        const button =
+          buttonFor(
+            'Name',
+          );
+
+        button?.click();
+
+        menuButton(
+          '.po-excel-filter-sort-asc',
+        )?.click();
+
+        expect(
+          rowValues(1),
+        ).toEqual(
+          [
+            'Alpha',
+            'Beta',
+            'Gamma',
+          ],
+        );
+
+        button?.click();
+
+        menuButton(
+          '.po-excel-filter-clear-sort',
+        )?.click();
+
+        expect(
+          rowValues(1),
+        ).toEqual(
+          [
+            'Beta',
+            'Alpha',
+            'Gamma',
+          ],
+        );
+
+        expect(
+          button?.textContent,
+        ).toBe('▾');
       },
     );
   },

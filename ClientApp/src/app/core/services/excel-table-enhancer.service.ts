@@ -8,11 +8,35 @@ import {
   OnDestroy,
 } from '@angular/core';
 
+type ExcelSortDirection =
+  | 'asc'
+  | 'desc';
+
+type ExcelSortKind =
+  | 'text'
+  | 'number'
+  | 'date';
+
 interface TableFilterState {
   readonly valuesByColumn: Map<
     number,
     ReadonlySet<string>
   >;
+
+  sortColumn:
+    number | null;
+
+  sortDirection:
+    ExcelSortDirection | null;
+
+  readonly originalOrderByRow:
+    WeakMap<
+      HTMLTableRowElement,
+      number
+    >;
+
+  nextOriginalOrder:
+    number;
 }
 
 @Injectable({
@@ -114,8 +138,10 @@ export class ExcelTableEnhancerService
         '.app-main:not(.app-main--login) table',
       )
       .forEach(
-        (table) =>
-          this.enhanceTable(table),
+        table =>
+          this.enhanceTable(
+            table,
+          ),
       );
   }
 
@@ -140,7 +166,7 @@ export class ExcelTableEnhancerService
         ':scope > thead > tr > th',
       )
       .forEach(
-        (headerCell) =>
+        headerCell =>
           headerCell.classList.add(
             'po-excel-sticky-header',
           ),
@@ -183,6 +209,21 @@ export class ExcelTableEnhancerService
           number,
           ReadonlySet<string>
         >(),
+
+      sortColumn:
+        null,
+
+      sortDirection:
+        null,
+
+      originalOrderByRow:
+        new WeakMap<
+          HTMLTableRowElement,
+          number
+        >(),
+
+      nextOriginalOrder:
+        0,
     };
 
     this.states.set(
@@ -239,22 +280,29 @@ export class ExcelTableEnhancerService
         button.className =
           'po-excel-filter-button';
 
+        button.dataset[
+          'excelColumnIndex'
+        ] =
+          String(
+            columnIndex,
+          );
+
         button.setAttribute(
           'aria-label',
-          `Filter ${this.headerText(
+          `Filter and sort ${this.headerText(
             headerCell,
           )}`,
         );
 
         button.title =
-          'Excel-style filter';
+          'Excel-style filter and sort';
 
         button.textContent =
-          '▾';
+          'â–¾';
 
         button.addEventListener(
           'click',
-          (event) => {
+          event => {
             event.preventDefault();
             event.stopPropagation();
 
@@ -348,6 +396,84 @@ export class ExcelTableEnhancerService
       .trim();
   }
 
+  private tableRows(
+    table: HTMLTableElement,
+  ): HTMLTableRowElement[] {
+    return Array.from(
+      table.tBodies,
+    ).flatMap(
+      body =>
+        Array.from(
+          body.rows,
+        ),
+    );
+  }
+
+  private ensureOriginalOrder(
+    table: HTMLTableElement,
+    state: TableFilterState,
+  ): void {
+    this.tableRows(
+      table,
+    ).forEach(
+      row => {
+        if (
+          state
+            .originalOrderByRow
+            .has(row)
+        ) {
+          return;
+        }
+
+        state
+          .originalOrderByRow
+          .set(
+            row,
+            state.nextOriginalOrder,
+          );
+
+        state.nextOriginalOrder +=
+          1;
+      },
+    );
+  }
+
+  private rowsAvailableForColumn(
+    table: HTMLTableElement,
+    columnIndex: number,
+  ): HTMLTableRowElement[] {
+    const state =
+      this.ensureLocalFilterState(
+        table,
+      );
+
+    return this.tableRows(
+      table,
+    ).filter(
+      row =>
+        Array.from(
+          state
+            .valuesByColumn
+            .entries(),
+        ).every(
+          (
+            [
+              filterColumn,
+              allowedValues,
+            ],
+          ) =>
+            filterColumn ===
+              columnIndex ||
+            allowedValues.has(
+              this.cellValue(
+                row,
+                filterColumn,
+              ),
+            ),
+        ),
+    );
+  }
+
   private openFilterMenu(
     table: HTMLTableElement,
     columnIndex: number,
@@ -356,38 +482,41 @@ export class ExcelTableEnhancerService
     this.closeMenu();
 
     const rows =
-      Array.from(
-        table.tBodies,
-      ).flatMap(
-        body =>
-          Array.from(
-            body.rows,
+      this.rowsAvailableForColumn(
+        table,
+        columnIndex,
+      );
+
+    const rawValues =
+      rows.map(
+        row =>
+          this.cellValue(
+            row,
+            columnIndex,
           ),
+      );
+
+    const sortKind =
+      this.detectSortKind(
+        table,
+        columnIndex,
+        rawValues,
       );
 
     const values =
       Array.from(
         new Set(
-          rows.map(
-            row =>
-              this.cellValue(
-                row,
-                columnIndex,
-              ),
-          ),
+          rawValues,
         ),
       ).sort(
         (
           left,
           right,
         ) =>
-          left.localeCompare(
+          this.compareRawValues(
+            left,
             right,
-            undefined,
-            {
-              numeric: true,
-              sensitivity: 'base',
-            },
+            sortKind,
           ),
       );
 
@@ -414,12 +543,180 @@ export class ExcelTableEnhancerService
       'dialog',
     );
 
+    const headerCell =
+      button.closest<
+        HTMLTableCellElement
+      >(
+        'th',
+      );
+
+    const headerName =
+      headerCell
+        ? this.headerText(
+            headerCell,
+          )
+        : 'column';
+
     menu.setAttribute(
       'aria-label',
-      `Filter ${button.getAttribute(
-        'aria-label',
-      ) ?? 'column'}`,
+      `Filter and sort ${headerName}`,
     );
+
+    const sortSection =
+      this.document.createElement(
+        'div',
+      );
+
+    sortSection.className =
+      'po-excel-filter-sort';
+
+    const sortLabels =
+      this.sortLabels(
+        sortKind,
+      );
+
+    const ascending =
+      this.document.createElement(
+        'button',
+      );
+
+    ascending.type =
+      'button';
+
+    ascending.className =
+      'po-excel-filter-sort-button po-excel-filter-sort-asc';
+
+    ascending.textContent =
+      `â†‘ ${sortLabels.ascending}`;
+
+    ascending.classList.toggle(
+      'po-excel-filter-sort-button--active',
+      state.sortColumn ===
+        columnIndex &&
+        state.sortDirection ===
+          'asc',
+    );
+
+    ascending.addEventListener(
+      'click',
+      () => {
+        state.sortColumn =
+          columnIndex;
+
+        state.sortDirection =
+          'asc';
+
+        this.applyLocalFilters(
+          table,
+        );
+
+        this.closeMenu();
+      },
+    );
+
+    const descending =
+      this.document.createElement(
+        'button',
+      );
+
+    descending.type =
+      'button';
+
+    descending.className =
+      'po-excel-filter-sort-button po-excel-filter-sort-desc';
+
+    descending.textContent =
+      `â†“ ${sortLabels.descending}`;
+
+    descending.classList.toggle(
+      'po-excel-filter-sort-button--active',
+      state.sortColumn ===
+        columnIndex &&
+        state.sortDirection ===
+          'desc',
+    );
+
+    descending.addEventListener(
+      'click',
+      () => {
+        state.sortColumn =
+          columnIndex;
+
+        state.sortDirection =
+          'desc';
+
+        this.applyLocalFilters(
+          table,
+        );
+
+        this.closeMenu();
+      },
+    );
+
+    const clearSort =
+      this.document.createElement(
+        'button',
+      );
+
+    clearSort.type =
+      'button';
+
+    clearSort.className =
+      'po-excel-filter-sort-button po-excel-filter-clear-sort';
+
+    clearSort.textContent =
+      'Clear sort';
+
+    clearSort.disabled =
+      state.sortColumn !==
+        columnIndex;
+
+    clearSort.addEventListener(
+      'click',
+      () => {
+        if (
+          state.sortColumn ===
+          columnIndex
+        ) {
+          state.sortColumn =
+            null;
+
+          state.sortDirection =
+            null;
+
+          this.applyLocalFilters(
+            table,
+          );
+        }
+
+        this.closeMenu();
+      },
+    );
+
+    sortSection.append(
+      ascending,
+      descending,
+      clearSort,
+    );
+
+    const divider =
+      this.document.createElement(
+        'div',
+      );
+
+    divider.className =
+      'po-excel-filter-divider';
+
+    const contentsHeading =
+      this.document.createElement(
+        'div',
+      );
+
+    contentsHeading.className =
+      'po-excel-filter-contents-heading';
+
+    contentsHeading.textContent =
+      `Filter by contents (${values.length})`;
 
     const search =
       this.document.createElement(
@@ -433,7 +730,7 @@ export class ExcelTableEnhancerService
       'po-excel-filter-search';
 
     search.placeholder =
-      'Search values';
+      'Search contents';
 
     const optionList =
       this.document.createElement(
@@ -494,7 +791,8 @@ export class ExcelTableEnhancerService
           );
 
         text.textContent =
-          value || '(Blank)';
+          value ||
+          '(Blank)';
 
         label.append(
           checkbox,
@@ -526,7 +824,8 @@ export class ExcelTableEnhancerService
               const optionText =
                 option.dataset[
                   'filterSearchText'
-                ] ?? '';
+                ] ??
+                '';
 
               option.hidden =
                 Boolean(query) &&
@@ -568,12 +867,15 @@ export class ExcelTableEnhancerService
           )
           .forEach(
             checkbox => {
+              const option =
+                checkbox.closest<
+                  HTMLElement
+                >(
+                  '.po-excel-filter-value',
+                );
+
               if (
-                !checkbox
-                  .closest<HTMLElement>(
-                    '.po-excel-filter-value',
-                  )
-                  ?.hidden
+                !option?.hidden
               ) {
                 checkbox.checked =
                   true;
@@ -583,18 +885,79 @@ export class ExcelTableEnhancerService
       },
     );
 
-    const clear =
+    const selectNone =
       this.document.createElement(
         'button',
       );
 
-    clear.type =
+    selectNone.type =
       'button';
 
-    clear.textContent =
-      'Clear';
+    selectNone.textContent =
+      'Select none';
 
-    clear.addEventListener(
+    selectNone.addEventListener(
+      'click',
+      () => {
+        optionList
+          .querySelectorAll<
+            HTMLInputElement
+          >(
+            'input[type="checkbox"]',
+          )
+          .forEach(
+            checkbox => {
+              const option =
+                checkbox.closest<
+                  HTMLElement
+                >(
+                  '.po-excel-filter-value',
+                );
+
+              if (
+                !option?.hidden
+              ) {
+                checkbox.checked =
+                  false;
+              }
+            },
+          );
+      },
+    );
+
+    toolbar.append(
+      selectAll,
+      selectNone,
+    );
+
+    const actions =
+      this.document.createElement(
+        'div',
+      );
+
+    actions.className =
+      'po-excel-filter-actions';
+
+    const clearFilter =
+      this.document.createElement(
+        'button',
+      );
+
+    clearFilter.type =
+      'button';
+
+    clearFilter.className =
+      'po-excel-filter-clear';
+
+    clearFilter.textContent =
+      'Clear filter';
+
+    clearFilter.disabled =
+      !state.valuesByColumn.has(
+        columnIndex,
+      );
+
+    clearFilter.addEventListener(
       'click',
       () => {
         state.valuesByColumn.delete(
@@ -605,28 +968,9 @@ export class ExcelTableEnhancerService
           table,
         );
 
-        this.refreshButtonState(
-          table,
-          columnIndex,
-          button,
-        );
-
         this.closeMenu();
       },
     );
-
-    toolbar.append(
-      selectAll,
-      clear,
-    );
-
-    const actions =
-      this.document.createElement(
-        'div',
-      );
-
-    actions.className =
-      'po-excel-filter-actions';
 
     const cancel =
       this.document.createElement(
@@ -695,22 +1039,20 @@ export class ExcelTableEnhancerService
           table,
         );
 
-        this.refreshButtonState(
-          table,
-          columnIndex,
-          button,
-        );
-
         this.closeMenu();
       },
     );
 
     actions.append(
+      clearFilter,
       cancel,
       apply,
     );
 
     menu.append(
+      sortSection,
+      divider,
+      contentsHeading,
       search,
       toolbar,
       optionList,
@@ -721,15 +1063,39 @@ export class ExcelTableEnhancerService
       menu,
     );
 
+    this.positionMenu(
+      menu,
+      button,
+    );
+
+    this.activeMenu =
+      menu;
+
+    search.focus();
+  }
+
+  private positionMenu(
+    menu: HTMLDivElement,
+    button: HTMLButtonElement,
+  ): void {
     const rect =
       button.getBoundingClientRect();
 
     const menuWidth =
-      290;
+      320;
+
+    const menuHeight =
+      500;
 
     const viewportWidth =
-      this.document.documentElement
+      this.document
+        .documentElement
         .clientWidth;
+
+    const viewportHeight =
+      this.document
+        .documentElement
+        .clientHeight;
 
     const left =
       Math.max(
@@ -742,20 +1108,539 @@ export class ExcelTableEnhancerService
         ),
       );
 
+    const preferredTop =
+      rect.bottom +
+      7;
+
+    const maximumTop =
+      Math.max(
+        10,
+        viewportHeight -
+          menuHeight -
+          10,
+      );
+
+    const top =
+      Math.max(
+        10,
+        Math.min(
+          preferredTop,
+          maximumTop,
+        ),
+      );
+
     menu.style.left =
       `${left}px`;
 
     menu.style.top =
-      `${Math.min(
-        rect.bottom + 7,
-        this.document.documentElement
-          .clientHeight - 430,
-      )}px`;
+      `${top}px`;
+  }
 
-    this.activeMenu =
-      menu;
+  private detectSortKind(
+    table: HTMLTableElement,
+    columnIndex: number,
+    values: readonly string[],
+  ): ExcelSortKind {
+    const headerCell =
+      table
+        .querySelectorAll<
+          HTMLTableCellElement
+        >(
+          ':scope > thead > tr > th',
+        )
+        .item(
+          columnIndex,
+        );
 
-    search.focus();
+    const header =
+      headerCell
+        ? this.headerText(
+            headerCell,
+          ).toLowerCase()
+        : '';
+
+    if (
+      /(date|updated|created|delivery|received|due|start)/i
+        .test(header)
+    ) {
+      return 'date';
+    }
+
+    if (
+      /(qty|quantity|price|amount|value|stock|balance|count|total|rate|percent|progress)/i
+        .test(header)
+    ) {
+      return 'number';
+    }
+
+    const nonBlank =
+      values.filter(
+        value =>
+          Boolean(
+            value.trim(),
+          ),
+      );
+
+    if (
+      nonBlank.length ===
+      0
+    ) {
+      return 'text';
+    }
+
+    const numericCount =
+      nonBlank.filter(
+        value =>
+          this.numericValue(
+            value,
+          ) !==
+          null,
+      ).length;
+
+    if (
+      numericCount /
+        nonBlank.length >=
+      0.8
+    ) {
+      return 'number';
+    }
+
+    const dateCount =
+      nonBlank.filter(
+        value =>
+          this.dateValue(
+            value,
+          ) !==
+          null,
+      ).length;
+
+    if (
+      dateCount /
+        nonBlank.length >=
+      0.8
+    ) {
+      return 'date';
+    }
+
+    return 'text';
+  }
+
+  private sortLabels(
+    kind: ExcelSortKind,
+  ): {
+    readonly ascending: string;
+    readonly descending: string;
+  } {
+    if (
+      kind ===
+      'number'
+    ) {
+      return {
+        ascending:
+          'Sort Smallest to Largest',
+
+        descending:
+          'Sort Largest to Smallest',
+      };
+    }
+
+    if (
+      kind ===
+      'date'
+    ) {
+      return {
+        ascending:
+          'Sort Oldest to Newest',
+
+        descending:
+          'Sort Newest to Oldest',
+      };
+    }
+
+    return {
+      ascending:
+        'Sort A to Z',
+
+      descending:
+        'Sort Z to A',
+    };
+  }
+
+  private numericValue(
+    value: string,
+  ): number | null {
+    const normalized =
+      value
+        .replace(
+          /[â‚¹$â‚¬Â£,%]/g,
+          '',
+        )
+        .replace(
+          /,/g,
+          '',
+        )
+        .replace(
+          /\s+/g,
+          '',
+        );
+
+    if (
+      !normalized ||
+      !/^[+-]?(?:\d+\.?\d*|\.\d+)$/
+        .test(
+          normalized,
+        )
+    ) {
+      return null;
+    }
+
+    const parsed =
+      Number(
+        normalized,
+      );
+
+    return Number.isFinite(
+      parsed,
+    )
+      ? parsed
+      : null;
+  }
+
+  private dateValue(
+    value: string,
+  ): number | null {
+    const normalized =
+      value.trim();
+
+    if (!normalized) {
+      return null;
+    }
+
+    const dayFirst =
+      /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/
+        .exec(
+          normalized,
+        );
+
+    if (dayFirst) {
+      const day =
+        Number(
+          dayFirst[1],
+        );
+
+      const month =
+        Number(
+          dayFirst[2],
+        );
+
+      const year =
+        Number(
+          dayFirst[3],
+        );
+
+      const date =
+        new Date(
+          year,
+          month - 1,
+          day,
+        );
+
+      if (
+        date.getFullYear() ===
+          year &&
+        date.getMonth() ===
+          month - 1 &&
+        date.getDate() ===
+          day
+      ) {
+        return date.getTime();
+      }
+    }
+
+    const parsed =
+      Date.parse(
+        normalized,
+      );
+
+    return Number.isNaN(
+      parsed,
+    )
+      ? null
+      : parsed;
+  }
+
+  private compareRawValues(
+    left: string,
+    right: string,
+    kind: ExcelSortKind,
+  ): number {
+    const leftBlank =
+      !left.trim();
+
+    const rightBlank =
+      !right.trim();
+
+    if (
+      leftBlank ||
+      rightBlank
+    ) {
+      if (
+        leftBlank &&
+        rightBlank
+      ) {
+        return 0;
+      }
+
+      return leftBlank
+        ? 1
+        : -1;
+    }
+
+    if (
+      kind ===
+      'number'
+    ) {
+      const leftNumber =
+        this.numericValue(
+          left,
+        );
+
+      const rightNumber =
+        this.numericValue(
+          right,
+        );
+
+      if (
+        leftNumber !==
+          null &&
+        rightNumber !==
+          null
+      ) {
+        return (
+          leftNumber -
+          rightNumber
+        );
+      }
+    }
+
+    if (
+      kind ===
+      'date'
+    ) {
+      const leftDate =
+        this.dateValue(
+          left,
+        );
+
+      const rightDate =
+        this.dateValue(
+          right,
+        );
+
+      if (
+        leftDate !==
+          null &&
+        rightDate !==
+          null
+      ) {
+        return (
+          leftDate -
+          rightDate
+        );
+      }
+    }
+
+    return left.localeCompare(
+      right,
+      undefined,
+      {
+        numeric: true,
+        sensitivity: 'base',
+      },
+    );
+  }
+
+  private compareRows(
+    left: HTMLTableRowElement,
+    right: HTMLTableRowElement,
+    columnIndex: number,
+    direction: ExcelSortDirection,
+    kind: ExcelSortKind,
+    state: TableFilterState,
+  ): number {
+    const leftValue =
+      this.cellValue(
+        left,
+        columnIndex,
+      );
+
+    const rightValue =
+      this.cellValue(
+        right,
+        columnIndex,
+      );
+
+    const leftBlank =
+      !leftValue.trim();
+
+    const rightBlank =
+      !rightValue.trim();
+
+    if (
+      leftBlank !==
+      rightBlank
+    ) {
+      return leftBlank
+        ? 1
+        : -1;
+    }
+
+    let comparison =
+      this.compareRawValues(
+        leftValue,
+        rightValue,
+        kind,
+      );
+
+    if (
+      direction ===
+      'desc'
+    ) {
+      comparison *=
+        -1;
+    }
+
+    if (
+      comparison !==
+      0
+    ) {
+      return comparison;
+    }
+
+    const leftOrder =
+      state
+        .originalOrderByRow
+        .get(left) ??
+      0;
+
+    const rightOrder =
+      state
+        .originalOrderByRow
+        .get(right) ??
+      0;
+
+    return (
+      leftOrder -
+      rightOrder
+    );
+  }
+
+  private applySort(
+    table: HTMLTableElement,
+    state: TableFilterState,
+  ): void {
+    this.ensureOriginalOrder(
+      table,
+      state,
+    );
+
+    Array.from(
+      table.tBodies,
+    ).forEach(
+      body => {
+        const currentRows =
+          Array.from(
+            body.rows,
+          );
+
+        let desiredRows =
+          [...currentRows];
+
+        if (
+          state.sortColumn !==
+            null &&
+          state.sortDirection !==
+            null
+        ) {
+          const values =
+            currentRows.map(
+              row =>
+                this.cellValue(
+                  row,
+                  state.sortColumn ??
+                    0,
+                ),
+            );
+
+          const kind =
+            this.detectSortKind(
+              table,
+              state.sortColumn,
+              values,
+            );
+
+          desiredRows =
+            desiredRows.sort(
+              (
+                left,
+                right,
+              ) =>
+                this.compareRows(
+                  left,
+                  right,
+                  state.sortColumn ??
+                    0,
+                  state.sortDirection ??
+                    'asc',
+                  kind,
+                  state,
+                ),
+            );
+        }
+        else {
+          desiredRows =
+            desiredRows.sort(
+              (
+                left,
+                right,
+              ) => {
+                const leftOrder =
+                  state
+                    .originalOrderByRow
+                    .get(left) ??
+                  0;
+
+                const rightOrder =
+                  state
+                    .originalOrderByRow
+                    .get(right) ??
+                  0;
+
+                return (
+                  leftOrder -
+                  rightOrder
+                );
+              },
+            );
+        }
+
+        const changed =
+          desiredRows.some(
+            (
+              row,
+              index,
+            ) =>
+              row !==
+              currentRows[index],
+          );
+
+        if (changed) {
+          body.append(
+            ...desiredRows,
+          );
+        }
+      },
+    );
   }
 
   private applyLocalFilters(
@@ -766,44 +1651,47 @@ export class ExcelTableEnhancerService
         table,
       );
 
+    this.ensureOriginalOrder(
+      table,
+      state,
+    );
+
     const filters =
       state.valuesByColumn;
 
-    Array.from(
-      table.tBodies,
-    )
-      .flatMap(
-        body =>
+    this.tableRows(
+      table,
+    ).forEach(
+      row => {
+        const visible =
           Array.from(
-            body.rows,
-          ),
-      )
-      .forEach(
-        row => {
-          const visible =
-            Array.from(
-              filters.entries(),
-            ).every(
-              (
-                [
+            filters.entries(),
+          ).every(
+            (
+              [
+                columnIndex,
+                allowedValues,
+              ],
+            ) =>
+              allowedValues.has(
+                this.cellValue(
+                  row,
                   columnIndex,
-                  allowedValues,
-                ],
-              ) =>
-                allowedValues.has(
-                  this.cellValue(
-                    row,
-                    columnIndex,
-                  ),
                 ),
-            );
-
-          row.classList.toggle(
-            'po-excel-row-filtered-out',
-            !visible,
+              ),
           );
-        },
-      );
+
+        row.classList.toggle(
+          'po-excel-row-filtered-out',
+          !visible,
+        );
+      },
+    );
+
+    this.applySort(
+      table,
+      state,
+    );
 
     const headerCells =
       Array.from(
@@ -838,7 +1726,10 @@ export class ExcelTableEnhancerService
               headerCell,
             );
 
-          if (columnIndex < 0) {
+          if (
+            columnIndex <
+            0
+          ) {
             return;
           }
 
@@ -856,24 +1747,103 @@ export class ExcelTableEnhancerService
     columnIndex: number,
     button: HTMLButtonElement,
   ): void {
-    const active =
+    const state =
       this.ensureLocalFilterState(
         table,
-      ).valuesByColumn.has(
+      );
+
+    const filtered =
+      state.valuesByColumn.has(
         columnIndex,
       );
 
+    const sorted =
+      state.sortColumn ===
+        columnIndex &&
+      state.sortDirection !==
+        null;
+
+    const ascending =
+      sorted &&
+      state.sortDirection ===
+        'asc';
+
+    const descending =
+      sorted &&
+      state.sortDirection ===
+        'desc';
+
     button.classList.toggle(
       'po-excel-filter-button--active',
-      active,
+      filtered,
     );
 
-    button.setAttribute(
+    button.classList.toggle(
+      'po-excel-filter-button--sorted',
+      sorted,
+    );
+
+    button.classList.toggle(
+      'po-excel-filter-button--sorted-asc',
+      ascending,
+    );
+
+    button.classList.toggle(
+      'po-excel-filter-button--sorted-desc',
+      descending,
+    );
+
+    const nextButtonText =
+      ascending
+        ? '\u2191'
+        : descending
+          ? '\u2193'
+          : '\u25BE';
+
+    if (
+      button.textContent !==
+      nextButtonText
+    ) {
+      button.textContent =
+        nextButtonText;
+    }
+button.setAttribute(
       'aria-pressed',
-      active
+      filtered ||
+        sorted
         ? 'true'
         : 'false',
     );
+
+    const states:
+      string[] =
+        [];
+
+    if (ascending) {
+      states.push(
+        'sorted ascending',
+      );
+    }
+
+    if (descending) {
+      states.push(
+        'sorted descending',
+      );
+    }
+
+    if (filtered) {
+      states.push(
+        'filter active',
+      );
+    }
+
+    button.title =
+      states.length >
+      0
+        ? states.join(
+            ' Â· ',
+          )
+        : 'Excel-style filter and sort';
   }
 
   private closeMenu(): void {
