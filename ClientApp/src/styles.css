@@ -673,3 +673,141 @@ app-root .app-footer span:first-child {
     );
   }
 }
+/* ============================================================
+   PO TRACKER SERVER COLUMN FILTER FRAMEWORK
+   ============================================================ */
+
+.app-main:not(.app-main--login) .server-table-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  min-width: max-content;
+}
+
+.app-main:not(.app-main--login) .server-column-filter {
+  position: relative;
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+}
+
+.app-main:not(.app-main--login) .server-column-filter summary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: #64748b;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.app-main:not(.app-main--login) .server-column-filter summary::-webkit-details-marker {
+  display: none;
+}
+
+.app-main:not(.app-main--login) .server-column-filter summary:hover {
+  color: #5b21b6;
+  background: #f5f3ff;
+  border-color: #a78bfa;
+}
+
+.app-main:not(.app-main--login) .server-column-filter[open] summary,
+.app-main:not(.app-main--login) .server-column-filter--active summary {
+  color: #ffffff;
+  background: #6d28d9;
+  border-color: #6d28d9;
+  box-shadow: 0 6px 14px rgba(109, 40, 217, 0.24);
+}
+
+.app-main:not(.app-main--login) .server-column-filter--active summary::after {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  content: '';
+  background: #f97316;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+}
+
+.app-main:not(.app-main--login) th:has(.server-column-filter[open]) {
+  z-index: 90 !important;
+}
+
+.app-main:not(.app-main--login) .server-column-filter__menu {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 0;
+  z-index: 150;
+  display: grid;
+  gap: 11px;
+  width: 250px;
+  max-height: min(420px, calc(100vh - 220px));
+  padding: 14px;
+  overflow: auto;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.2), 0 5px 14px rgba(15, 23, 42, 0.08);
+}
+
+.app-main:not(.app-main--login) .server-column-filter__menu--wide { width: 310px; }
+.app-main:not(.app-main--login) .server-column-filter__menu--right { right: 0; left: auto; }
+.app-main:not(.app-main--login) .server-column-filter__menu label { display: grid; gap: 6px; }
+.app-main:not(.app-main--login) .server-column-filter__menu label > span {
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.app-main:not(.app-main--login) .server-column-filter__menu input,
+.app-main:not(.app-main--login) .server-column-filter__menu select {
+  width: 100%;
+  min-height: 38px;
+  font-size: 0.78rem;
+  text-transform: none;
+}
+
+.app-main:not(.app-main--login) .server-column-filter__range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.app-main:not(.app-main--login) .server-column-filter__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.app-main:not(.app-main--login) .server-column-filter__actions button {
+  min-height: 36px;
+  padding: 7px 9px;
+  color: #475569;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 850;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.app-main:not(.app-main--login) .server-column-filter__actions button:last-child {
+  color: #ffffff;
+  background: #6d28d9;
+  border-color: #6d28d9;
+}

@@ -295,16 +295,127 @@
           loading()
         ">
         <table>
-          <thead>
+                    <thead>
             <tr>
               <th>#</th>
-              <th>Material</th>
-              <th>Description</th>
-              <th>Priority Date</th>
-              <th>Delivery</th>
-              <th>Process</th>
-              <th>Dispatch</th>
-              <th>Allocated / Live Stock</th>
+              <th>
+                <div class="server-table-heading"><span>Material</span>
+                  <details #fMaterial class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('material')">
+                    <summary title="Filter Material">â–¾</summary>
+                    <div class="server-column-filter__menu">
+                      <label><span>Material / line item</span><input type="search" [formControl]="columnFilters.controls.material" placeholder="Contains"></label>
+                      <div class="server-column-filter__actions">
+                        <button type="button" (click)="clearColumnFilter('material', fMaterial)">Clear</button>
+                        <button type="button" (click)="applyColumnFilter(fMaterial)">Apply</button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading"><span>Description</span>
+                  <details #fDescription class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('description')">
+                    <summary title="Filter Description">â–¾</summary>
+                    <div class="server-column-filter__menu">
+                      <label><span>Description contains</span><input type="search" [formControl]="columnFilters.controls.description" placeholder="Contains"></label>
+                      <div class="server-column-filter__actions">
+                        <button type="button" (click)="clearColumnFilter('description', fDescription)">Clear</button>
+                        <button type="button" (click)="applyColumnFilter(fDescription)">Apply</button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading"><span>Priority Date</span>
+                  <details #fPriority class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('priority')">
+                    <summary title="Filter Priority Date">â–¾</summary>
+                    <div class="server-column-filter__menu">
+                      <div class="server-column-filter__range">
+                        <label><span>From</span><input type="date" [formControl]="columnFilters.controls.priorityDateFrom"></label>
+                        <label><span>To</span><input type="date" [formControl]="columnFilters.controls.priorityDateTo"></label>
+                      </div>
+                      <div class="server-column-filter__actions">
+                        <button type="button" (click)="clearColumnFilter('priority', fPriority)">Clear</button>
+                        <button type="button" (click)="applyColumnFilter(fPriority)">Apply</button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading"><span>Delivery</span>
+                  <details #fDelivery class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('delivery')">
+                    <summary title="Filter Delivery">â–¾</summary>
+                    <div class="server-column-filter__menu">
+                      <div class="server-column-filter__range">
+                        <label><span>From</span><input type="date" [formControl]="columnFilters.controls.deliveryDateFrom"></label>
+                        <label><span>To</span><input type="date" [formControl]="columnFilters.controls.deliveryDateTo"></label>
+                      </div>
+                      <div class="server-column-filter__actions">
+                        <button type="button" (click)="clearColumnFilter('delivery', fDelivery)">Clear</button>
+                        <button type="button" (click)="applyColumnFilter(fDelivery)">Apply</button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading"><span>Process</span>
+                  <details #fProcess class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('process')">
+                    <summary title="Filter Process">â–¾</summary>
+                    <div class="server-column-filter__menu">
+                      <label><span>Process status</span><select [formControl]="columnFilters.controls.processStatus">
+                        <option value="">All</option><option value="Pending">Pending</option><option value="In Process">In Process</option><option value="Completed">Completed</option><option value="Hold">Hold</option>
+                      </select></label>
+                      <div class="server-column-filter__actions">
+                        <button type="button" (click)="clearColumnFilter('process', fProcess)">Clear</button>
+                        <button type="button" (click)="applyColumnFilter(fProcess)">Apply</button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading"><span>Dispatch</span>
+                  <details #fDispatch class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('dispatch')">
+                    <summary title="Filter Dispatch">â–¾</summary>
+                    <div class="server-column-filter__menu">
+                      <label><span>Dispatch status</span><select [formControl]="columnFilters.controls.dispatchStatus">
+                        <option value="">All</option><option value="Pending">Pending</option><option value="Partial">Partial</option><option value="Dispatched">Dispatched</option>
+                      </select></label>
+                      <div class="server-column-filter__actions">
+                        <button type="button" (click)="clearColumnFilter('dispatch', fDispatch)">Clear</button>
+                        <button type="button" (click)="applyColumnFilter(fDispatch)">Apply</button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading"><span>Allocated / Live Stock</span>
+                  <details #fStock class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('stock')">
+                    <summary title="Filter Stock">â–¾</summary>
+                    <div class="server-column-filter__menu server-column-filter__menu--wide server-column-filter__menu--right">
+                      <span>Allocated stock</span>
+                      <div class="server-column-filter__range">
+                        <label><span>Minimum</span><input type="number" step="any" [formControl]="columnFilters.controls.minAllocatedStock"></label>
+                        <label><span>Maximum</span><input type="number" step="any" [formControl]="columnFilters.controls.maxAllocatedStock"></label>
+                      </div>
+                      <span>Live stock</span>
+                      <div class="server-column-filter__range">
+                        <label><span>Minimum</span><input type="number" step="any" [formControl]="columnFilters.controls.minLiveStock"></label>
+                        <label><span>Maximum</span><input type="number" step="any" [formControl]="columnFilters.controls.maxLiveStock"></label>
+                      </div>
+                      <label><span>Stock status</span><input type="search" [formControl]="columnFilters.controls.stockStatus" placeholder="Available, shortage..."></label>
+                      <div class="server-column-filter__actions">
+                        <button type="button" (click)="clearColumnFilter('stock', fStock)">Clear</button>
+                        <button type="button" (click)="applyColumnFilter(fStock)">Apply</button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
               <th>Actions</th>
             </tr>
           </thead>

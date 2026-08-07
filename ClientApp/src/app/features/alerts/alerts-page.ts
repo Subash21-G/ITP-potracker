@@ -23,6 +23,7 @@ import {
 
 import {
   FormControl,
+  FormGroup,
   ReactiveFormsModule,
 } from '@angular/forms';
 
@@ -270,6 +271,23 @@ export class AlertsPage {
       },
     );
 
+  readonly columnFilters =
+    new FormGroup({
+      material: new FormControl(this.initialParams.get('material') ?? '', { nonNullable: true }),
+      description: new FormControl(this.initialParams.get('description') ?? '', { nonNullable: true }),
+      priorityDateFrom: new FormControl(this.initialParams.get('priorityDateFrom') ?? '', { nonNullable: true }),
+      priorityDateTo: new FormControl(this.initialParams.get('priorityDateTo') ?? '', { nonNullable: true }),
+      deliveryDateFrom: new FormControl(this.initialParams.get('deliveryDateFrom') ?? '', { nonNullable: true }),
+      deliveryDateTo: new FormControl(this.initialParams.get('deliveryDateTo') ?? '', { nonNullable: true }),
+      processStatus: new FormControl(this.initialParams.get('processStatus') ?? '', { nonNullable: true }),
+      dispatchStatus: new FormControl(this.initialParams.get('dispatchStatus') ?? '', { nonNullable: true }),
+      minAllocatedStock: new FormControl(this.initialParams.get('minAllocatedStock') ?? '', { nonNullable: true }),
+      maxAllocatedStock: new FormControl(this.initialParams.get('maxAllocatedStock') ?? '', { nonNullable: true }),
+      minLiveStock: new FormControl(this.initialParams.get('minLiveStock') ?? '', { nonNullable: true }),
+      maxLiveStock: new FormControl(this.initialParams.get('maxLiveStock') ?? '', { nonNullable: true }),
+      stockStatus: new FormControl(this.initialParams.get('stockStatus') ?? '', { nonNullable: true }),
+    });
+
   readonly page =
     signal(
       this.parsePositiveInteger(
@@ -457,6 +475,52 @@ export class AlertsPage {
       );
 
     this.load();
+  }
+
+  applyColumnFilter(filter: HTMLDetailsElement): void {
+    filter.open = false;
+    this.page.set(1);
+    this.load();
+  }
+
+  clearColumnFilter(
+    column: 'material' | 'description' | 'priority' | 'delivery' | 'process' | 'dispatch' | 'stock',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'material': this.columnFilters.controls.material.setValue(''); break;
+      case 'description': this.columnFilters.controls.description.setValue(''); break;
+      case 'priority': this.columnFilters.patchValue({ priorityDateFrom: '', priorityDateTo: '' }); break;
+      case 'delivery': this.columnFilters.patchValue({ deliveryDateFrom: '', deliveryDateTo: '' }); break;
+      case 'process': this.columnFilters.controls.processStatus.setValue(''); break;
+      case 'dispatch': this.columnFilters.controls.dispatchStatus.setValue(''); break;
+      case 'stock':
+        this.columnFilters.patchValue({
+          minAllocatedStock: '', maxAllocatedStock: '', minLiveStock: '', maxLiveStock: '', stockStatus: '',
+        });
+        break;
+    }
+    filter.open = false;
+    this.page.set(1);
+    this.load();
+  }
+
+  columnFilterActive(
+    column: 'material' | 'description' | 'priority' | 'delivery' | 'process' | 'dispatch' | 'stock',
+  ): boolean {
+    const value = this.columnFilters.getRawValue();
+    switch (column) {
+      case 'material': return Boolean(value.material.trim());
+      case 'description': return Boolean(value.description.trim());
+      case 'priority': return Boolean(value.priorityDateFrom || value.priorityDateTo);
+      case 'delivery': return Boolean(value.deliveryDateFrom || value.deliveryDateTo);
+      case 'process': return Boolean(value.processStatus);
+      case 'dispatch': return Boolean(value.dispatchStatus);
+      case 'stock':
+        return Boolean(
+          value.minAllocatedStock || value.maxAllocatedStock || value.minLiveStock || value.maxLiveStock || value.stockStatus,
+        );
+    }
   }
 
   load(): void {
@@ -680,63 +744,41 @@ export class AlertsPage {
     return 'status status--warning';
   }
 
-  private buildQuery():
-    AlertsQuery {
+  private buildQuery(): AlertsQuery {
     return {
-      category:
-        this.category(),
-
-      search:
-        this.searchControl.value,
-
-      page:
-        this.page(),
-
-      pageSize:
-        this.pageSize(),
+      category: this.category(),
+      search: this.searchControl.value,
+      ...this.columnFilters.getRawValue(),
+      page: this.page(),
+      pageSize: this.pageSize(),
     };
   }
 
   private replaceUrlState(): void {
-    const query =
-      this.buildQuery();
-
-    const urlTree =
-      this.router.createUrlTree(
-        [],
-        {
-          relativeTo:
-            this.route,
-
-          queryParams: {
-            category:
-              query.category !==
-              'process-start'
-                ? query.category
-                : null,
-
-            search:
-              query.search?.trim() ||
-              null,
-
-            page:
-              query.page > 1
-                ? query.page
-                : null,
-
-            pageSize:
-              query.pageSize !== 25
-                ? query.pageSize
-                : null,
-          },
-        },
-      );
-
-    this.location.replaceState(
-      this.router.serializeUrl(
-        urlTree,
-      ),
-    );
+    const query = this.buildQuery();
+    const urlTree = this.router.createUrlTree([], {
+      relativeTo: this.route,
+      queryParams: {
+        category: query.category !== 'process-start' ? query.category : null,
+        search: query.search?.trim() || null,
+        material: query.material?.trim() || null,
+        description: query.description?.trim() || null,
+        priorityDateFrom: query.priorityDateFrom || null,
+        priorityDateTo: query.priorityDateTo || null,
+        deliveryDateFrom: query.deliveryDateFrom || null,
+        deliveryDateTo: query.deliveryDateTo || null,
+        processStatus: query.processStatus || null,
+        dispatchStatus: query.dispatchStatus || null,
+        minAllocatedStock: query.minAllocatedStock || null,
+        maxAllocatedStock: query.maxAllocatedStock || null,
+        minLiveStock: query.minLiveStock || null,
+        maxLiveStock: query.maxLiveStock || null,
+        stockStatus: query.stockStatus || null,
+        page: query.page > 1 ? query.page : null,
+        pageSize: query.pageSize !== 25 ? query.pageSize : null,
+      },
+    });
+    this.location.replaceState(this.router.serializeUrl(urlTree));
   }
 
   private parseCategory(

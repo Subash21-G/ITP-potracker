@@ -47,6 +47,19 @@ namespace POTracker.Controllers.Api
             GetAlerts(
                 string? category,
                 string? search,
+                string? material,
+                string? description,
+                DateTime? priorityDateFrom,
+                DateTime? priorityDateTo,
+                DateTime? deliveryDateFrom,
+                DateTime? deliveryDateTo,
+                string? processStatus,
+                string? dispatchStatus,
+                decimal? minAllocatedStock,
+                decimal? maxAllocatedStock,
+                decimal? minLiveStock,
+                decimal? maxLiveStock,
+                string? stockStatus,
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken
@@ -318,7 +331,97 @@ namespace POTracker.Controllers.Api
                         .ToList();
             }
 
+            var normalizedMaterial = Clean(material);
+            if (normalizedMaterial != null)
+            {
+                categoryItems = categoryItems
+                    .Where(item => Contains(item.MaterialNo, normalizedMaterial) || Contains(item.LineItem, normalizedMaterial))
+                    .ToList();
+            }
+
+            var normalizedDescription = Clean(description);
+            if (normalizedDescription != null)
+            {
+                categoryItems = categoryItems
+                    .Where(item => Contains(item.Description, normalizedDescription))
+                    .ToList();
+            }
+
+            if (priorityDateFrom.HasValue)
+            {
+                var priorityStart = priorityDateFrom.Value.Date;
+                categoryItems = categoryItems
+                    .Where(item => GetPriorityDate(item, normalizedCategory) is DateTime priorityDate && priorityDate >= priorityStart)
+                    .ToList();
+            }
+
+            if (priorityDateTo.HasValue)
+            {
+                var priorityEndExclusive = priorityDateTo.Value.Date.AddDays(1);
+                categoryItems = categoryItems
+                    .Where(item => GetPriorityDate(item, normalizedCategory) is DateTime priorityDate && priorityDate < priorityEndExclusive)
+                    .ToList();
+            }
+
+            if (deliveryDateFrom.HasValue)
+            {
+                var deliveryStart = deliveryDateFrom.Value.Date;
+                categoryItems = categoryItems
+                    .Where(item => item.DeliveryDate.HasValue && item.DeliveryDate.Value >= deliveryStart)
+                    .ToList();
+            }
+
+            if (deliveryDateTo.HasValue)
+            {
+                var deliveryEndExclusive = deliveryDateTo.Value.Date.AddDays(1);
+                categoryItems = categoryItems
+                    .Where(item => item.DeliveryDate.HasValue && item.DeliveryDate.Value < deliveryEndExclusive)
+                    .ToList();
+            }
+
+            var normalizedProcessStatus = Clean(processStatus);
+            if (normalizedProcessStatus != null)
+            {
+                categoryItems = categoryItems
+                    .Where(item => IsStatus(item.ProcessStatus, normalizedProcessStatus))
+                    .ToList();
+            }
+
+            var normalizedDispatchStatus = Clean(dispatchStatus);
+            if (normalizedDispatchStatus != null)
+            {
+                categoryItems = categoryItems
+                    .Where(item => IsStatus(item.DispatchStatus, normalizedDispatchStatus))
+                    .ToList();
+            }
+
+            if (minAllocatedStock.HasValue)
+            {
+                categoryItems = categoryItems.Where(item => item.AllocatedStockQuantity >= minAllocatedStock.Value).ToList();
+            }
+
+            if (maxAllocatedStock.HasValue)
+            {
+                categoryItems = categoryItems.Where(item => item.AllocatedStockQuantity <= maxAllocatedStock.Value).ToList();
+            }
+
+            if (minLiveStock.HasValue)
+            {
+                categoryItems = categoryItems.Where(item => item.LiveStockQuantity >= minLiveStock.Value).ToList();
+            }
+
+            if (maxLiveStock.HasValue)
+            {
+                categoryItems = categoryItems.Where(item => item.LiveStockQuantity <= maxLiveStock.Value).ToList();
+            }
+
+            var normalizedStockStatus = Clean(stockStatus);
+            if (normalizedStockStatus != null)
+            {
+                categoryItems = categoryItems.Where(item => Contains(item.StockStatus, normalizedStockStatus)).ToList();
+            }
             var totalCount =
+
                 categoryItems.Count;
 
             var totalPages =
@@ -412,6 +515,18 @@ namespace POTracker.Controllers.Api
 
                 _ =>
                     processStartAlerts
+            };
+        }
+
+        private static DateTime? GetPriorityDate(
+            AlertMaterialDto material,
+            string category)
+        {
+            return category switch
+            {
+                "process-start" => material.AlertDate,
+                "dispatch-date" => material.DispatchDate,
+                _ => material.DeliveryDate
             };
         }
 
