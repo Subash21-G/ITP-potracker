@@ -42,15 +42,57 @@ export class StockApiService {
             : 'false',
         );
 
-    const search =
-      query.search.trim();
+    const values:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['material', query.material],
+        ['description', query.description],
+        ['supplier', query.supplier],
+        ['location', query.location],
+        [
+          'minCurrentStock',
+          query.minCurrentStock,
+        ],
+        [
+          'maxCurrentStock',
+          query.maxCurrentStock,
+        ],
+        [
+          'minMinimumStock',
+          query.minMinimumStock,
+        ],
+        [
+          'maxMinimumStock',
+          query.maxMinimumStock,
+        ],
+        ['minUnitPrice', query.minUnitPrice],
+        ['maxUnitPrice', query.maxUnitPrice],
+        ['minTotalValue', query.minTotalValue],
+        ['maxTotalValue', query.maxTotalValue],
+        ['status', query.status],
+        ['updatedFrom', query.updatedFrom],
+        ['updatedTo', query.updatedTo],
+      ];
 
-    if (search) {
-      params =
-        params.set(
-          'search',
-          search,
-        );
+    for (
+      const [
+        name,
+        value,
+      ] of values
+    ) {
+      const normalized =
+        value?.trim();
+
+      if (normalized) {
+        params =
+          params.set(
+            name,
+            normalized,
+          );
+      }
     }
 
     return this.http.get<StockListResponse>(

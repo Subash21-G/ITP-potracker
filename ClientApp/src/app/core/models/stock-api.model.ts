@@ -38,6 +38,29 @@ export interface StockListResponse {
 
 export interface StockListQuery {
   readonly search: string;
+
+  readonly material?: string;
+  readonly description?: string;
+  readonly supplier?: string;
+  readonly location?: string;
+
+  readonly minCurrentStock?: string;
+  readonly maxCurrentStock?: string;
+
+  readonly minMinimumStock?: string;
+  readonly maxMinimumStock?: string;
+
+  readonly minUnitPrice?: string;
+  readonly maxUnitPrice?: string;
+
+  readonly minTotalValue?: string;
+  readonly maxTotalValue?: string;
+
+  readonly status?: string;
+
+  readonly updatedFrom?: string;
+  readonly updatedTo?: string;
+
   readonly page: number;
   readonly pageSize: number;
   readonly refresh?: boolean;

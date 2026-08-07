@@ -59,6 +59,81 @@ export class StocksPage {
       },
     );
 
+  readonly materialControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly descriptionControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly supplierControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly locationControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly minCurrentStockControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly maxCurrentStockControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly minMinimumStockControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly maxMinimumStockControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly minUnitPriceControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly maxUnitPriceControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly minTotalValueControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly maxTotalValueControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly statusControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly updatedFromControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
+  readonly updatedToControl =
+    new FormControl('', {
+      nonNullable: true,
+    });
+
   readonly items =
     signal<readonly StockListItem[]>([]);
 
@@ -129,6 +204,153 @@ export class StocksPage {
     this.searchControl.setValue('');
     this.page.set(1);
     this.loadStocks();
+  }
+
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.page.set(1);
+    this.loadStocks();
+  }
+
+  clearColumnFilter(
+    column:
+      | 'material'
+      | 'description'
+      | 'supplier'
+      | 'location'
+      | 'current'
+      | 'minimum'
+      | 'unitPrice'
+      | 'totalValue'
+      | 'status'
+      | 'updated',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'material':
+        this.materialControl.setValue('');
+        break;
+
+      case 'description':
+        this.descriptionControl.setValue('');
+        break;
+
+      case 'supplier':
+        this.supplierControl.setValue('');
+        break;
+
+      case 'location':
+        this.locationControl.setValue('');
+        break;
+
+      case 'current':
+        this.minCurrentStockControl.setValue('');
+        this.maxCurrentStockControl.setValue('');
+        break;
+
+      case 'minimum':
+        this.minMinimumStockControl.setValue('');
+        this.maxMinimumStockControl.setValue('');
+        break;
+
+      case 'unitPrice':
+        this.minUnitPriceControl.setValue('');
+        this.maxUnitPriceControl.setValue('');
+        break;
+
+      case 'totalValue':
+        this.minTotalValueControl.setValue('');
+        this.maxTotalValueControl.setValue('');
+        break;
+
+      case 'status':
+        this.statusControl.setValue('');
+        break;
+
+      case 'updated':
+        this.updatedFromControl.setValue('');
+        this.updatedToControl.setValue('');
+        break;
+    }
+
+    filter.open = false;
+    this.page.set(1);
+    this.loadStocks();
+  }
+
+  columnFilterActive(
+    column:
+      | 'material'
+      | 'description'
+      | 'supplier'
+      | 'location'
+      | 'current'
+      | 'minimum'
+      | 'unitPrice'
+      | 'totalValue'
+      | 'status'
+      | 'updated',
+  ): boolean {
+    switch (column) {
+      case 'material':
+        return Boolean(
+          this.materialControl.value.trim(),
+        );
+
+      case 'description':
+        return Boolean(
+          this.descriptionControl.value.trim(),
+        );
+
+      case 'supplier':
+        return Boolean(
+          this.supplierControl.value.trim(),
+        );
+
+      case 'location':
+        return Boolean(
+          this.locationControl.value.trim(),
+        );
+
+      case 'current':
+        return Boolean(
+          this.minCurrentStockControl.value.trim() ||
+          this.maxCurrentStockControl.value.trim(),
+        );
+
+      case 'minimum':
+        return Boolean(
+          this.minMinimumStockControl.value.trim() ||
+          this.maxMinimumStockControl.value.trim(),
+        );
+
+      case 'unitPrice':
+        return Boolean(
+          this.minUnitPriceControl.value.trim() ||
+          this.maxUnitPriceControl.value.trim(),
+        );
+
+      case 'totalValue':
+        return Boolean(
+          this.minTotalValueControl.value.trim() ||
+          this.maxTotalValueControl.value.trim(),
+        );
+
+      case 'status':
+        return Boolean(
+          this.statusControl.value,
+        );
+
+      case 'updated':
+        return Boolean(
+          this.updatedFromControl.value ||
+          this.updatedToControl.value,
+        );
+    }
+
+    return false;
   }
 
   refresh(): void {
@@ -208,10 +430,58 @@ export class StocksPage {
       .getStocks({
         search:
           this.searchControl.value,
+
+        material:
+          this.materialControl.value,
+
+        description:
+          this.descriptionControl.value,
+
+        supplier:
+          this.supplierControl.value,
+
+        location:
+          this.locationControl.value,
+
+        minCurrentStock:
+          this.minCurrentStockControl.value,
+
+        maxCurrentStock:
+          this.maxCurrentStockControl.value,
+
+        minMinimumStock:
+          this.minMinimumStockControl.value,
+
+        maxMinimumStock:
+          this.maxMinimumStockControl.value,
+
+        minUnitPrice:
+          this.minUnitPriceControl.value,
+
+        maxUnitPrice:
+          this.maxUnitPriceControl.value,
+
+        minTotalValue:
+          this.minTotalValueControl.value,
+
+        maxTotalValue:
+          this.maxTotalValueControl.value,
+
+        status:
+          this.statusControl.value,
+
+        updatedFrom:
+          this.updatedFromControl.value,
+
+        updatedTo:
+          this.updatedToControl.value,
+
         page:
           this.page(),
+
         pageSize:
           this.pageSize(),
+
         refresh:
           forceRefresh,
       })

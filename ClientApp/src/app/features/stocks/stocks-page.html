@@ -207,18 +207,353 @@
     } @else if (items().length > 0) {
       <div class="table-scroll">
         <table>
-          <thead>
+                    <thead>
             <tr>
-              <th>Material</th>
-              <th>Description</th>
-              <th>Supplier</th>
-              <th>Location</th>
-              <th>Current</th>
-              <th>Minimum</th>
-              <th>Unit price</th>
-              <th>Total value</th>
-              <th>Status</th>
-              <th>Updated</th>
+              <th>
+                <div class="server-table-heading">
+                  <span>Material</span>
+                  <details #stockMaterialFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('material')
+                    ">
+                    <summary title="Filter Material">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Material number / code</span>
+                        <input type="search"
+                          [formControl]="materialControl"
+                          placeholder="Contains">
+                      </label>
+                      <div class="server-column-filter__actions">
+                        <button type="button"
+                          (click)="clearColumnFilter('material', stockMaterialFilter)">
+                          Clear
+                        </button>
+                        <button type="button"
+                          (click)="applyColumnFilter(stockMaterialFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Description</span>
+                  <details #stockDescriptionFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('description')
+                    ">
+                    <summary title="Filter Description">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Description contains</span>
+                        <input type="search"
+                          [formControl]="descriptionControl"
+                          placeholder="Contains">
+                      </label>
+                      <div class="server-column-filter__actions">
+                        <button type="button"
+                          (click)="clearColumnFilter('description', stockDescriptionFilter)">
+                          Clear
+                        </button>
+                        <button type="button"
+                          (click)="applyColumnFilter(stockDescriptionFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Supplier</span>
+                  <details #stockSupplierFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('supplier')
+                    ">
+                    <summary title="Filter Supplier">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Supplier contains</span>
+                        <input type="search"
+                          [formControl]="supplierControl"
+                          placeholder="Contains">
+                      </label>
+                      <div class="server-column-filter__actions">
+                        <button type="button"
+                          (click)="clearColumnFilter('supplier', stockSupplierFilter)">
+                          Clear
+                        </button>
+                        <button type="button"
+                          (click)="applyColumnFilter(stockSupplierFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Location</span>
+                  <details #stockLocationFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('location')
+                    ">
+                    <summary title="Filter Location">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Location contains</span>
+                        <input type="search"
+                          [formControl]="locationControl"
+                          placeholder="Contains">
+                      </label>
+                      <div class="server-column-filter__actions">
+                        <button type="button"
+                          (click)="clearColumnFilter('location', stockLocationFilter)">
+                          Clear
+                        </button>
+                        <button type="button"
+                          (click)="applyColumnFilter(stockLocationFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Current</span>
+                  <details #stockCurrentFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('current')
+                    ">
+                    <summary title="Filter Current Stock">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <div class="server-column-filter__range">
+                        <label>
+                          <span>Min</span>
+                          <input type="number" step="0.01"
+                            [formControl]="minCurrentStockControl">
+                        </label>
+                        <label>
+                          <span>Max</span>
+                          <input type="number" step="0.01"
+                            [formControl]="maxCurrentStockControl">
+                        </label>
+                      </div>
+                      <div class="server-column-filter__actions">
+                        <button type="button"
+                          (click)="clearColumnFilter('current', stockCurrentFilter)">
+                          Clear
+                        </button>
+                        <button type="button"
+                          (click)="applyColumnFilter(stockCurrentFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Minimum</span>
+                  <details #stockMinimumFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('minimum')
+                    ">
+                    <summary title="Filter Minimum Stock">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <div class="server-column-filter__range">
+                        <label>
+                          <span>Min</span>
+                          <input type="number" step="0.01"
+                            [formControl]="minMinimumStockControl">
+                        </label>
+                        <label>
+                          <span>Max</span>
+                          <input type="number" step="0.01"
+                            [formControl]="maxMinimumStockControl">
+                        </label>
+                      </div>
+                      <div class="server-column-filter__actions">
+                        <button type="button"
+                          (click)="clearColumnFilter('minimum', stockMinimumFilter)">
+                          Clear
+                        </button>
+                        <button type="button"
+                          (click)="applyColumnFilter(stockMinimumFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Unit price</span>
+                  <details #stockUnitPriceFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('unitPrice')
+                    ">
+                    <summary title="Filter Unit Price">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <div class="server-column-filter__range">
+                        <label>
+                          <span>Min</span>
+                          <input type="number" step="0.01"
+                            [formControl]="minUnitPriceControl">
+                        </label>
+                        <label>
+                          <span>Max</span>
+                          <input type="number" step="0.01"
+                            [formControl]="maxUnitPriceControl">
+                        </label>
+                      </div>
+                      <div class="server-column-filter__actions">
+                        <button type="button"
+                          (click)="clearColumnFilter('unitPrice', stockUnitPriceFilter)">
+                          Clear
+                        </button>
+                        <button type="button"
+                          (click)="applyColumnFilter(stockUnitPriceFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Total value</span>
+                  <details #stockTotalValueFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('totalValue')
+                    ">
+                    <summary title="Filter Total Value">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <div class="server-column-filter__range">
+                        <label>
+                          <span>Min</span>
+                          <input type="number" step="0.01"
+                            [formControl]="minTotalValueControl">
+                        </label>
+                        <label>
+                          <span>Max</span>
+                          <input type="number" step="0.01"
+                            [formControl]="maxTotalValueControl">
+                        </label>
+                      </div>
+                      <div class="server-column-filter__actions">
+                        <button type="button"
+                          (click)="clearColumnFilter('totalValue', stockTotalValueFilter)">
+                          Clear
+                        </button>
+                        <button type="button"
+                          (click)="applyColumnFilter(stockTotalValueFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Status</span>
+                  <details #stockStatusFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('status')
+                    ">
+                    <summary title="Filter Status">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Stock status</span>
+                        <select [formControl]="statusControl">
+                          <option value="">All</option>
+                          <option value="low">Low Stock</option>
+                          <option value="available">Available</option>
+                        </select>
+                      </label>
+                      <div class="server-column-filter__actions">
+                        <button type="button"
+                          (click)="clearColumnFilter('status', stockStatusFilter)">
+                          Clear
+                        </button>
+                        <button type="button"
+                          (click)="applyColumnFilter(stockStatusFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Updated</span>
+                  <details #stockUpdatedFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('updated')
+                    ">
+                    <summary title="Filter Updated Date">▾</summary>
+                    <div
+                      class="
+                        server-column-filter__menu
+                        server-column-filter__menu--right
+                      ">
+                      <div class="server-column-filter__range">
+                        <label>
+                          <span>From</span>
+                          <input type="date"
+                            [formControl]="updatedFromControl">
+                        </label>
+                        <label>
+                          <span>To</span>
+                          <input type="date"
+                            [formControl]="updatedToControl">
+                        </label>
+                      </div>
+                      <div class="server-column-filter__actions">
+                        <button type="button"
+                          (click)="clearColumnFilter('updated', stockUpdatedFilter)">
+                          Clear
+                        </button>
+                        <button type="button"
+                          (click)="applyColumnFilter(stockUpdatedFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
             </tr>
           </thead>
 

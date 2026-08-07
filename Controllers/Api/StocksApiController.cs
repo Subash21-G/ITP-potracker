@@ -30,6 +30,21 @@ namespace POTracker.Controllers.Api
             ActionResult<StockListResponseDto>>
             Index(
                 string? search,
+                string? material,
+                string? description,
+                string? supplier,
+                string? location,
+                decimal? minCurrentStock,
+                decimal? maxCurrentStock,
+                decimal? minMinimumStock,
+                decimal? maxMinimumStock,
+                decimal? minUnitPrice,
+                decimal? maxUnitPrice,
+                decimal? minTotalValue,
+                decimal? maxTotalValue,
+                string? status,
+                DateTime? updatedFrom,
+                DateTime? updatedTo,
                 int page = 1,
                 int pageSize = 25,
                 bool refresh = false,
@@ -80,6 +95,170 @@ namespace POTracker.Controllers.Api
                         Contains(
                             record.Location,
                             searchValue));
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    material))
+            {
+                var value =
+                    material.Trim();
+
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        Contains(
+                            record.MaterialNo,
+                            value) ||
+                        Contains(
+                            record.MaterialCode,
+                            value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    description))
+            {
+                var value =
+                    description.Trim();
+
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        Contains(
+                            record.Description,
+                            value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    supplier))
+            {
+                var value =
+                    supplier.Trim();
+
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        Contains(
+                            record.SupplierName,
+                            value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    location))
+            {
+                var value =
+                    location.Trim();
+
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        Contains(
+                            record.Location,
+                            value));
+            }
+
+            if (minCurrentStock.HasValue)
+            {
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.CurrentStock >=
+                        minCurrentStock.Value);
+            }
+
+            if (maxCurrentStock.HasValue)
+            {
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.CurrentStock <=
+                        maxCurrentStock.Value);
+            }
+
+            if (minMinimumStock.HasValue)
+            {
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.MinimumStock >=
+                        minMinimumStock.Value);
+            }
+
+            if (maxMinimumStock.HasValue)
+            {
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.MinimumStock <=
+                        maxMinimumStock.Value);
+            }
+
+            if (minUnitPrice.HasValue)
+            {
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.UnitPrice >=
+                        minUnitPrice.Value);
+            }
+
+            if (maxUnitPrice.HasValue)
+            {
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.UnitPrice <=
+                        maxUnitPrice.Value);
+            }
+
+            if (minTotalValue.HasValue)
+            {
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.TotalValue >=
+                        minTotalValue.Value);
+            }
+
+            if (maxTotalValue.HasValue)
+            {
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.TotalValue <=
+                        maxTotalValue.Value);
+            }
+
+            var normalizedStatus =
+                status?
+                    .Trim()
+                    .ToLowerInvariant();
+
+            if (normalizedStatus == "low")
+            {
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.IsLowStock);
+            }
+            else if (
+                normalizedStatus ==
+                "available"
+            )
+            {
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        !record.IsLowStock);
+            }
+
+            if (updatedFrom.HasValue)
+            {
+                var start =
+                    updatedFrom.Value.Date;
+
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.LastUpdated.HasValue &&
+                        record.LastUpdated.Value >=
+                        start);
+            }
+
+            if (updatedTo.HasValue)
+            {
+                var endExclusive =
+                    updatedTo.Value.Date.AddDays(1);
+
+                filteredRecords =
+                    filteredRecords.Where(record =>
+                        record.LastUpdated.HasValue &&
+                        record.LastUpdated.Value <
+                        endExclusive);
             }
 
             var records =
