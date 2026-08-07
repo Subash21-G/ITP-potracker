@@ -39,6 +39,14 @@ namespace POTracker.Controllers.Api
             Index(
                 string? search,
                 string? status,
+                string? material,
+                string? poNumber,
+                string? drawingVersion,
+                DateTime? updatedDateFrom,
+                DateTime? updatedDateTo,
+                string? drawingAvailability,
+                string? pdfAvailability,
+                string? columnStatus,
                 int page = 1,
                 int pageSize = 25,
                 CancellationToken cancellationToken = default)
@@ -66,67 +74,154 @@ namespace POTracker.Controllers.Api
 
                     MissingDrawings =
                         await allMaterials.CountAsync(
-                            material =>
-                                material.DrawingFilePath == null ||
-                                material.DrawingFilePath == string.Empty,
+                            item =>
+                                item.DrawingFilePath == null ||
+                                item.DrawingFilePath == string.Empty,
                             cancellationToken),
 
                     UpdatedThisWeek =
                         await allMaterials.CountAsync(
-                            material =>
-                                material.DrawingUpdatedDate.HasValue &&
-                                material.DrawingUpdatedDate.Value >=
+                            item =>
+                                item.DrawingUpdatedDate.HasValue &&
+                                item.DrawingUpdatedDate.Value >=
                                 weekStart,
                             cancellationToken),
 
                     WithVersion =
                         await allMaterials.CountAsync(
-                            material =>
-                                material.DrawingVersion != null &&
-                                material.DrawingVersion != string.Empty,
+                            item =>
+                                item.DrawingVersion != null &&
+                                item.DrawingVersion != string.Empty,
                             cancellationToken)
                 };
 
             var query =
                 allMaterials.AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(search))
+            var normalizedSearch =
+                Clean(search);
+
+            if (normalizedSearch != null)
             {
-                var value =
-                    search.Trim();
+                query =
+                    query.Where(item =>
+                        (
+                            item.MaterialNo != null &&
+                            item.MaterialNo.Contains(
+                                normalizedSearch)
+                        ) ||
+                        (
+                            item.ShortDescription != null &&
+                            item.ShortDescription.Contains(
+                                normalizedSearch)
+                        ) ||
+                        (
+                            item.DrawingVersion != null &&
+                            item.DrawingVersion.Contains(
+                                normalizedSearch)
+                        ) ||
+                        (
+                            item.PurchaseOrder != null &&
+                            item.PurchaseOrder.PONumber.Contains(
+                                normalizedSearch)
+                        ));
+            }
+
+            query =
+                ApplyAvailabilityFilter(
+                    query,
+                    status,
+                    usePdfFile: false);
+
+            var normalizedMaterial =
+                Clean(material);
+
+            if (normalizedMaterial != null)
+            {
+                query =
+                    query.Where(item =>
+                        (
+                            item.MaterialNo != null &&
+                            item.MaterialNo.Contains(
+                                normalizedMaterial)
+                        ) ||
+                        (
+                            item.ShortDescription != null &&
+                            item.ShortDescription.Contains(
+                                normalizedMaterial)
+                        ) ||
+                        (
+                            item.BriefDescription != null &&
+                            item.BriefDescription.Contains(
+                                normalizedMaterial)
+                        ));
+            }
+
+            var normalizedPONumber =
+                Clean(poNumber);
+
+            if (normalizedPONumber != null)
+            {
+                query =
+                    query.Where(item =>
+                        item.PurchaseOrder != null &&
+                        item.PurchaseOrder.PONumber.Contains(
+                            normalizedPONumber));
+            }
+
+            var normalizedDrawingVersion =
+                Clean(drawingVersion);
+
+            if (normalizedDrawingVersion != null)
+            {
+                query =
+                    query.Where(item =>
+                        item.DrawingVersion != null &&
+                        item.DrawingVersion.Contains(
+                            normalizedDrawingVersion));
+            }
+
+            if (updatedDateFrom.HasValue)
+            {
+                var updatedStart =
+                    updatedDateFrom.Value.Date;
 
                 query =
-                    query.Where(material =>
-                        (material.MaterialNo != null &&
-                         material.MaterialNo.Contains(value)) ||
-                        (material.ShortDescription != null &&
-                         material.ShortDescription.Contains(value)) ||
-                        (material.DrawingVersion != null &&
-                         material.DrawingVersion.Contains(value)) ||
-                        (material.PurchaseOrder != null &&
-                         material.PurchaseOrder.PONumber.Contains(value)));
+                    query.Where(item =>
+                        item.DrawingUpdatedDate.HasValue &&
+                        item.DrawingUpdatedDate.Value >=
+                            updatedStart);
             }
 
-            if (!string.IsNullOrWhiteSpace(status))
+            if (updatedDateTo.HasValue)
             {
-                switch (
-                    status.Trim().ToLowerInvariant())
-                {
-                    case "available":
-                        query =
-                            query.Where(material =>
-                                material.DrawingFilePath != null &&
-                                material.DrawingFilePath != string.Empty);
-                        break;
+                var updatedEndExclusive =
+                    updatedDateTo.Value.Date.AddDays(1);
 
-                    case "missing":
-                        query =
-                            query.Where(material =>
-                                material.DrawingFilePath == null ||
-                                material.DrawingFilePath == string.Empty);
-                        break;
-                }
+                query =
+                    query.Where(item =>
+                        item.DrawingUpdatedDate.HasValue &&
+                        item.DrawingUpdatedDate.Value <
+                            updatedEndExclusive);
             }
+
+            query =
+                ApplyAvailabilityFilter(
+                    query,
+                    drawingAvailability,
+                    usePdfFile: false);
+
+            query =
+                ApplyAvailabilityFilter(
+                    query,
+                    pdfAvailability,
+                    usePdfFile: true);
+
+            query =
+                ApplyAvailabilityFilter(
+                    query,
+                    columnStatus,
+                    usePdfFile: false);
 
             var totalRecords =
                 await query.CountAsync(
@@ -146,51 +241,51 @@ namespace POTracker.Controllers.Api
 
             var items =
                 await query
-                    .OrderByDescending(material =>
-                        material.DrawingUpdatedDate ??
-                        material.CreatedDate)
-                    .ThenByDescending(material =>
-                        material.Id)
+                    .OrderByDescending(item =>
+                        item.DrawingUpdatedDate ??
+                        item.CreatedDate)
+                    .ThenByDescending(item =>
+                        item.Id)
                     .Skip(
                         (page - 1) *
                         pageSize)
                     .Take(pageSize)
-                    .Select(material =>
+                    .Select(item =>
                         new DrawingListItemDto
                         {
                             MaterialId =
-                                material.Id,
+                                item.Id,
 
                             MaterialNo =
-                                material.MaterialNo ??
+                                item.MaterialNo ??
                                 string.Empty,
 
                             Description =
-                                material.ShortDescription ??
-                                material.BriefDescription ??
+                                item.ShortDescription ??
+                                item.BriefDescription ??
                                 string.Empty,
 
                             PONumber =
-                                material.PurchaseOrder != null
-                                    ? material.PurchaseOrder.PONumber
+                                item.PurchaseOrder != null
+                                    ? item.PurchaseOrder.PONumber
                                     : string.Empty,
 
                             DrawingVersion =
-                                material.DrawingVersion ??
+                                item.DrawingVersion ??
                                 string.Empty,
 
                             DrawingUpdatedDate =
-                                material.DrawingUpdatedDate,
+                                item.DrawingUpdatedDate,
 
                             DrawingFilePath =
-                                material.DrawingFilePath,
+                                item.DrawingFilePath,
 
                             PdfFilePath =
-                                material.PDFFilePath,
+                                item.PDFFilePath,
 
                             HasDrawing =
-                                material.DrawingFilePath != null &&
-                                material.DrawingFilePath != string.Empty
+                                item.DrawingFilePath != null &&
+                                item.DrawingFilePath != string.Empty
                         })
                     .ToListAsync(
                         cancellationToken);
@@ -218,6 +313,53 @@ namespace POTracker.Controllers.Api
                     TotalRecords = totalRecords,
                     TotalPages = totalPages
                 });
+        }
+
+        private static IQueryable<POTracker.Models.Material>
+            ApplyAvailabilityFilter(
+                IQueryable<POTracker.Models.Material> query,
+                string? value,
+                bool usePdfFile)
+        {
+            var normalized =
+                Clean(value)?
+                    .ToLowerInvariant();
+
+            return normalized switch
+            {
+                "available" =>
+                    usePdfFile
+                        ? query.Where(item =>
+                            item.PDFFilePath != null &&
+                            item.PDFFilePath != string.Empty)
+                        : query.Where(item =>
+                            item.DrawingFilePath != null &&
+                            item.DrawingFilePath != string.Empty),
+
+                "missing" =>
+                    usePdfFile
+                        ? query.Where(item =>
+                            item.PDFFilePath == null ||
+                            item.PDFFilePath == string.Empty)
+                        : query.Where(item =>
+                            item.DrawingFilePath == null ||
+                            item.DrawingFilePath == string.Empty),
+
+                _ =>
+                    query
+            };
+        }
+
+        private static string? Clean(
+            string? value)
+        {
+            var cleaned =
+                value?.Trim();
+
+            return string.IsNullOrWhiteSpace(
+                cleaned)
+                    ? null
+                    : cleaned;
         }
     }
 }

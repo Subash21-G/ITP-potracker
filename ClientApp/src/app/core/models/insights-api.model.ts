@@ -29,6 +29,18 @@ export interface DrawingListResponse {
 export interface DrawingListQuery {
   readonly search: string;
   readonly status: string;
+
+  readonly material?: string;
+  readonly poNumber?: string;
+  readonly drawingVersion?: string;
+
+  readonly updatedDateFrom?: string;
+  readonly updatedDateTo?: string;
+
+  readonly drawingAvailability?: string;
+  readonly pdfAvailability?: string;
+  readonly columnStatus?: string;
+
   readonly page: number;
   readonly pageSize: number;
 }

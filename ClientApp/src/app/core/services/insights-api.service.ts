@@ -38,26 +38,57 @@ export class InsightsApiService {
           query.pageSize,
         );
 
-    const search =
-      query.search.trim();
+    const optionalValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['status', query.status],
+        ['material', query.material],
+        ['poNumber', query.poNumber],
+        [
+          'drawingVersion',
+          query.drawingVersion,
+        ],
+        [
+          'updatedDateFrom',
+          query.updatedDateFrom,
+        ],
+        [
+          'updatedDateTo',
+          query.updatedDateTo,
+        ],
+        [
+          'drawingAvailability',
+          query.drawingAvailability,
+        ],
+        [
+          'pdfAvailability',
+          query.pdfAvailability,
+        ],
+        [
+          'columnStatus',
+          query.columnStatus,
+        ],
+      ];
 
-    const status =
-      query.status.trim();
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      const cleaned =
+        value?.trim();
 
-    if (search) {
-      params =
-        params.set(
-          'search',
-          search,
-        );
-    }
-
-    if (status) {
-      params =
-        params.set(
-          'status',
-          status,
-        );
+      if (cleaned) {
+        params =
+          params.set(
+            name,
+            cleaned,
+          );
+      }
     }
 
     return this.http.get<DrawingListResponse>(

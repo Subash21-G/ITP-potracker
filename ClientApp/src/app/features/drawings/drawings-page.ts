@@ -18,6 +18,7 @@ import {
 } from '@angular/core/rxjs-interop';
 import {
   FormControl,
+  FormGroup,
   ReactiveFormsModule,
 } from '@angular/forms';
 import {
@@ -75,6 +76,73 @@ export class DrawingsPage {
       },
     );
 
+  readonly columnFilters =
+    new FormGroup({
+      material:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      poNumber:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      drawingVersion:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      updatedDateFrom:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      updatedDateTo:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      drawingAvailability:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      pdfAvailability:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      columnStatus:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+    });
+
   readonly items =
     signal<readonly DrawingListItem[]>([]);
 
@@ -128,14 +196,154 @@ export class DrawingsPage {
     this.load();
   }
 
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.page.set(1);
+    this.load();
+  }
+
+  clearColumnFilter(
+    column:
+      | 'material'
+      | 'po'
+      | 'version'
+      | 'updated'
+      | 'drawing'
+      | 'pdf'
+      | 'status',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'material':
+        this.columnFilters.controls
+          .material.setValue('');
+        break;
+
+      case 'po':
+        this.columnFilters.controls
+          .poNumber.setValue('');
+        break;
+
+      case 'version':
+        this.columnFilters.controls
+          .drawingVersion.setValue('');
+        break;
+
+      case 'updated':
+        this.columnFilters.patchValue({
+          updatedDateFrom: '',
+          updatedDateTo: '',
+        });
+        break;
+
+      case 'drawing':
+        this.columnFilters.controls
+          .drawingAvailability
+          .setValue('');
+        break;
+
+      case 'pdf':
+        this.columnFilters.controls
+          .pdfAvailability
+          .setValue('');
+        break;
+
+      case 'status':
+        this.columnFilters.controls
+          .columnStatus
+          .setValue('');
+        break;
+    }
+
+    filter.open = false;
+    this.page.set(1);
+    this.load();
+  }
+
+  columnFilterActive(
+    column:
+      | 'material'
+      | 'po'
+      | 'version'
+      | 'updated'
+      | 'drawing'
+      | 'pdf'
+      | 'status',
+  ): boolean {
+    const value =
+      this.columnFilters
+        .getRawValue();
+
+    switch (column) {
+      case 'material':
+        return Boolean(
+          value.material.trim(),
+        );
+
+      case 'po':
+        return Boolean(
+          value.poNumber.trim(),
+        );
+
+      case 'version':
+        return Boolean(
+          value.drawingVersion.trim(),
+        );
+
+      case 'updated':
+        return Boolean(
+          value.updatedDateFrom ||
+          value.updatedDateTo,
+        );
+
+      case 'drawing':
+        return Boolean(
+          value.drawingAvailability,
+        );
+
+      case 'pdf':
+        return Boolean(
+          value.pdfAvailability,
+        );
+
+      case 'status':
+        return Boolean(
+          value.columnStatus,
+        );
+    }
+
+    return false;
+  }
+
   applyFilters(): void {
     this.page.set(1);
     this.load();
   }
 
   clearFilters(): void {
-    this.searchControl.setValue('');
-    this.statusControl.setValue('');
+    this.searchControl.setValue(
+      '',
+      {
+        emitEvent: false,
+      },
+    );
+
+    this.statusControl.setValue(
+      '',
+      {
+        emitEvent: false,
+      },
+    );
+
+    this.columnFilters.reset(
+      undefined,
+      {
+        emitEvent: false,
+      },
+    );
+
     this.page.set(1);
     this.load();
   }
@@ -217,6 +425,10 @@ export class DrawingsPage {
           this.searchControl.value,
         status:
           this.statusControl.value,
+
+        ...this.columnFilters
+          .getRawValue(),
+
         page:
           this.page(),
         pageSize:

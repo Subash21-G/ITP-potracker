@@ -157,15 +157,374 @@
     } @else if (items().length > 0) {
       <div class="table-scroll">
         <table>
-          <thead>
+                    <thead>
             <tr>
-              <th>Material</th>
-              <th>PO</th>
-              <th>Version</th>
-              <th>Updated</th>
-              <th>Drawing</th>
-              <th>PDF</th>
-              <th>Status</th>
+              <th>
+                <div class="server-table-heading">
+                  <span>Material</span>
+
+                  <details
+                    #drawingMaterialFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('material')
+                    ">
+                    <summary title="Filter Material">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Material / description</span>
+                        <input
+                          type="search"
+                          [formControl]="
+                            columnFilters.controls.material
+                          "
+                          placeholder="Contains">
+                      </label>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'material',
+                              drawingMaterialFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              drawingMaterialFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>PO</span>
+
+                  <details
+                    #drawingPoFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('po')
+                    ">
+                    <summary title="Filter PO">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>PO number</span>
+                        <input
+                          type="search"
+                          [formControl]="
+                            columnFilters.controls.poNumber
+                          "
+                          placeholder="Contains">
+                      </label>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'po',
+                              drawingPoFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              drawingPoFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Version</span>
+
+                  <details
+                    #drawingVersionFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('version')
+                    ">
+                    <summary title="Filter Version">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Drawing version</span>
+                        <input
+                          type="search"
+                          [formControl]="
+                            columnFilters.controls.drawingVersion
+                          "
+                          placeholder="Contains">
+                      </label>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'version',
+                              drawingVersionFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              drawingVersionFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Updated</span>
+
+                  <details
+                    #drawingUpdatedFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('updated')
+                    ">
+                    <summary title="Filter Updated Date">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <div class="server-column-filter__range">
+                        <label>
+                          <span>From</span>
+                          <input
+                            type="date"
+                            [formControl]="
+                              columnFilters.controls.updatedDateFrom
+                            ">
+                        </label>
+
+                        <label>
+                          <span>To</span>
+                          <input
+                            type="date"
+                            [formControl]="
+                              columnFilters.controls.updatedDateTo
+                            ">
+                        </label>
+                      </div>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'updated',
+                              drawingUpdatedFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              drawingUpdatedFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Drawing</span>
+
+                  <details
+                    #drawingAvailabilityFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('drawing')
+                    ">
+                    <summary title="Filter Drawing File">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Drawing file</span>
+                        <select
+                          [formControl]="
+                            columnFilters.controls.drawingAvailability
+                          ">
+                          <option value="">All</option>
+                          <option value="available">Available</option>
+                          <option value="missing">Missing</option>
+                        </select>
+                      </label>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'drawing',
+                              drawingAvailabilityFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              drawingAvailabilityFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>PDF</span>
+
+                  <details
+                    #drawingPdfFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('pdf')
+                    ">
+                    <summary title="Filter PDF">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>PDF file</span>
+                        <select
+                          [formControl]="
+                            columnFilters.controls.pdfAvailability
+                          ">
+                          <option value="">All</option>
+                          <option value="available">Available</option>
+                          <option value="missing">Missing</option>
+                        </select>
+                      </label>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'pdf',
+                              drawingPdfFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              drawingPdfFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Status</span>
+
+                  <details
+                    #drawingStatusFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('status')
+                    ">
+                    <summary title="Filter Status">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Drawing status</span>
+                        <select
+                          [formControl]="
+                            columnFilters.controls.columnStatus
+                          ">
+                          <option value="">All</option>
+                          <option value="available">Available</option>
+                          <option value="missing">Missing</option>
+                        </select>
+                      </label>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'status',
+                              drawingStatusFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              drawingStatusFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
               <th>Manage</th>
             </tr>
           </thead>
