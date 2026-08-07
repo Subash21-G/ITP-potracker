@@ -28,6 +28,7 @@ import {
 } from 'rxjs';
 
 import {
+  InvoiceImportReportQuery,
   InvoiceImportReportResponse,
   InvoiceImportReportRow,
 } from '../../../../core/models/invoice-import-history-api.model';
@@ -86,6 +87,30 @@ export class InvoiceImportReportPage {
   readonly statusFilter =
     signal('');
 
+  readonly poNumberColumnFilter =
+    signal('');
+
+  readonly lineItemColumnFilter =
+    signal('');
+
+  readonly materialNumberColumnFilter =
+    signal('');
+
+  readonly invoiceNumberColumnFilter =
+    signal('');
+
+  readonly minInvoiceQuantityColumnFilter =
+    signal('');
+
+  readonly maxInvoiceQuantityColumnFilter =
+    signal('');
+
+  readonly statusColumnFilter =
+    signal('');
+
+  readonly messageColumnFilter =
+    signal('');
+
   readonly loading =
     signal(false);
 
@@ -93,47 +118,9 @@ export class InvoiceImportReportPage {
     signal('');
 
   readonly filteredItems =
-    computed(() => {
-      const items =
-        this.report()?.items ?? [];
-
-      const search =
-        this.searchText()
-          .trim()
-          .toLowerCase();
-
-      const status =
-        this.statusFilter()
-          .trim()
-          .toLowerCase();
-
-      return items.filter((row) => {
-        const searchValue = [
-          row.poNumber,
-          row.lineItem,
-          row.materialNumber,
-          row.invoiceNumber,
-          row.status,
-          row.message,
-        ]
-          .join(' ')
-          .toLowerCase();
-
-        const searchMatches =
-          !search ||
-          searchValue.includes(search);
-
-        const statusMatches =
-          !status ||
-          row.status.toLowerCase() ===
-            status;
-
-        return (
-          searchMatches &&
-          statusMatches
-        );
-      });
-    });
+    computed(() =>
+      this.report()?.items ?? [],
+    );
 
   readonly filteredPageQuantity =
     computed(() =>
@@ -212,9 +199,144 @@ export class InvoiceImportReportPage {
     this.loadReport(1);
   }
 
+  applyFilters(): void {
+    this.loadReport(1);
+  }
+
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.loadReport(1);
+  }
+
+  clearColumnFilter(
+    column:
+      | 'po'
+      | 'line'
+      | 'material'
+      | 'invoice'
+      | 'quantity'
+      | 'status'
+      | 'message',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'po':
+        this.poNumberColumnFilter
+          .set('');
+        break;
+
+      case 'line':
+        this.lineItemColumnFilter
+          .set('');
+        break;
+
+      case 'material':
+        this.materialNumberColumnFilter
+          .set('');
+        break;
+
+      case 'invoice':
+        this.invoiceNumberColumnFilter
+          .set('');
+        break;
+
+      case 'quantity':
+        this.minInvoiceQuantityColumnFilter
+          .set('');
+
+        this.maxInvoiceQuantityColumnFilter
+          .set('');
+        break;
+
+      case 'status':
+        this.statusColumnFilter
+          .set('');
+        break;
+
+      case 'message':
+        this.messageColumnFilter
+          .set('');
+        break;
+    }
+
+    filter.open = false;
+    this.loadReport(1);
+  }
+
+  columnFilterActive(
+    column:
+      | 'po'
+      | 'line'
+      | 'material'
+      | 'invoice'
+      | 'quantity'
+      | 'status'
+      | 'message',
+  ): boolean {
+    switch (column) {
+      case 'po':
+        return Boolean(
+          this.poNumberColumnFilter()
+            .trim(),
+        );
+
+      case 'line':
+        return Boolean(
+          this.lineItemColumnFilter()
+            .trim(),
+        );
+
+      case 'material':
+        return Boolean(
+          this.materialNumberColumnFilter()
+            .trim(),
+        );
+
+      case 'invoice':
+        return Boolean(
+          this.invoiceNumberColumnFilter()
+            .trim(),
+        );
+
+      case 'quantity':
+        return Boolean(
+          this.minInvoiceQuantityColumnFilter()
+            .trim() ||
+          this.maxInvoiceQuantityColumnFilter()
+            .trim(),
+        );
+
+      case 'status':
+        return Boolean(
+          this.statusColumnFilter(),
+        );
+
+      case 'message':
+        return Boolean(
+          this.messageColumnFilter()
+            .trim(),
+        );
+    }
+
+    return false;
+  }
+
   clearFilters(): void {
     this.searchText.set('');
     this.statusFilter.set('');
+
+    this.poNumberColumnFilter.set('');
+    this.lineItemColumnFilter.set('');
+    this.materialNumberColumnFilter.set('');
+    this.invoiceNumberColumnFilter.set('');
+    this.minInvoiceQuantityColumnFilter.set('');
+    this.maxInvoiceQuantityColumnFilter.set('');
+    this.statusColumnFilter.set('');
+    this.messageColumnFilter.set('');
+
+    this.loadReport(1);
   }
 
   changePageSize(
@@ -345,6 +467,40 @@ export class InvoiceImportReportPage {
     return 'No Reference';
   }
 
+  private buildReportQuery(
+    page: number,
+  ): InvoiceImportReportQuery {
+    return {
+      search:
+        this.searchText(),
+      status:
+        this.statusFilter(),
+
+      poNumber:
+        this.poNumberColumnFilter(),
+      lineItem:
+        this.lineItemColumnFilter(),
+      materialNumber:
+        this.materialNumberColumnFilter(),
+      invoiceNumber:
+        this.invoiceNumberColumnFilter(),
+
+      minInvoiceQuantity:
+        this.minInvoiceQuantityColumnFilter(),
+      maxInvoiceQuantity:
+        this.maxInvoiceQuantityColumnFilter(),
+
+      columnStatus:
+        this.statusColumnFilter(),
+      message:
+        this.messageColumnFilter(),
+
+      page,
+      pageSize:
+        this.pageSize(),
+    };
+  }
+
   private loadReport(
     page: number,
   ): void {
@@ -361,8 +517,9 @@ export class InvoiceImportReportPage {
     this.invoiceApi
       .getImportHistoryReport(
         this.batchId(),
-        page,
-        this.pageSize(),
+        this.buildReportQuery(
+          page,
+        ),
       )
       .pipe(
         takeUntilDestroyed(
@@ -379,8 +536,7 @@ export class InvoiceImportReportPage {
             report.currentPage,
           );
 
-          this.searchText.set('');
-          this.statusFilter.set('');
+
         },
         error: (
           error: HttpErrorResponse,

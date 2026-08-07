@@ -31,6 +31,25 @@ export interface InvoiceImportReportRow {
   message: string;
 }
 
+export interface InvoiceImportReportQuery {
+  readonly search?: string;
+  readonly status?: string;
+
+  readonly poNumber?: string;
+  readonly lineItem?: string;
+  readonly materialNumber?: string;
+  readonly invoiceNumber?: string;
+
+  readonly minInvoiceQuantity?: string;
+  readonly maxInvoiceQuantity?: string;
+
+  readonly columnStatus?: string;
+  readonly message?: string;
+
+  readonly page: number;
+  readonly pageSize: number;
+}
+
 export interface InvoiceImportReportResponse {
   batchId: number;
   fileName: string;

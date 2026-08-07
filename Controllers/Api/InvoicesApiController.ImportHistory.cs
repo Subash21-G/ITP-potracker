@@ -137,6 +137,16 @@ namespace POTracker.Controllers.Api
         public async Task<ActionResult<
             InvoiceImportReportResponseDto>> ImportHistoryReport(
                 int batchId,
+                string? search,
+                string? status,
+                string? poNumber,
+                string? lineItem,
+                string? materialNumber,
+                string? invoiceNumber,
+                decimal? minInvoiceQuantity,
+                decimal? maxInvoiceQuantity,
+                string? columnStatus,
+                string? message,
                 int page = 1,
                 int pageSize = 50)
         {
@@ -186,6 +196,189 @@ namespace POTracker.Controllers.Api
                 .VyaparInvoiceImportRows
                 .AsNoTracking()
                 .Where(row => row.BatchId == batchId);
+
+            var normalizedSearch =
+                CleanImportHistoryFilter(
+                    search);
+
+            if (normalizedSearch != null)
+            {
+                var searchMatchesSuccess =
+                    "Success".Contains(
+                        normalizedSearch,
+                        StringComparison.OrdinalIgnoreCase);
+
+                var searchMatchesPending =
+                    "Pending".Contains(
+                        normalizedSearch,
+                        StringComparison.OrdinalIgnoreCase);
+
+                var searchMatchesDeleted =
+                    "Deleted".Contains(
+                        normalizedSearch,
+                        StringComparison.OrdinalIgnoreCase);
+
+                var searchMatchesSuccessMessage =
+                    "Imported successfully.".Contains(
+                        normalizedSearch,
+                        StringComparison.OrdinalIgnoreCase);
+
+                var searchMatchesDeletedMessage =
+                    "The related invoice was deleted.".Contains(
+                        normalizedSearch,
+                        StringComparison.OrdinalIgnoreCase);
+
+                var searchMatchesPendingMessage =
+                    (
+                        "Stored as Pending for review or " +
+                        "automatic matching."
+                    ).Contains(
+                        normalizedSearch,
+                        StringComparison.OrdinalIgnoreCase);
+
+                query =
+                    query.Where(row =>
+                        row.PONumber.Contains(
+                            normalizedSearch) ||
+                        row.LineItem.Contains(
+                            normalizedSearch) ||
+                        row.MaterialNumber.Contains(
+                            normalizedSearch) ||
+                        row.InvoiceNumber.Contains(
+                            normalizedSearch) ||
+                        (
+                            row.ErrorMessage != null &&
+                            row.ErrorMessage.Contains(
+                                normalizedSearch)
+                        ) ||
+                        (
+                            searchMatchesSuccess &&
+                            row.Status == "Success"
+                        ) ||
+                        (
+                            searchMatchesDeleted &&
+                            row.Status == "Deleted"
+                        ) ||
+                        (
+                            searchMatchesPending &&
+                            (
+                                row.Status == null ||
+                                (
+                                    row.Status != "Success" &&
+                                    row.Status != "Deleted"
+                                )
+                            )
+                        ) ||
+                        (
+                            searchMatchesSuccessMessage &&
+                            (
+                                row.ErrorMessage == null ||
+                                row.ErrorMessage == string.Empty
+                            ) &&
+                            row.Status == "Success"
+                        ) ||
+                        (
+                            searchMatchesDeletedMessage &&
+                            (
+                                row.ErrorMessage == null ||
+                                row.ErrorMessage == string.Empty
+                            ) &&
+                            row.Status == "Deleted"
+                        ) ||
+                        (
+                            searchMatchesPendingMessage &&
+                            (
+                                row.ErrorMessage == null ||
+                                row.ErrorMessage == string.Empty
+                            ) &&
+                            (
+                                row.Status == null ||
+                                (
+                                    row.Status != "Success" &&
+                                    row.Status != "Deleted"
+                                )
+                            )
+                        ));
+            }
+
+            query =
+                ApplyImportHistoryStatusFilter(
+                    query,
+                    status);
+
+            var normalizedPONumber =
+                CleanImportHistoryFilter(
+                    poNumber);
+
+            if (normalizedPONumber != null)
+            {
+                query =
+                    query.Where(row =>
+                        row.PONumber.Contains(
+                            normalizedPONumber));
+            }
+
+            var normalizedLineItem =
+                CleanImportHistoryFilter(
+                    lineItem);
+
+            if (normalizedLineItem != null)
+            {
+                query =
+                    query.Where(row =>
+                        row.LineItem.Contains(
+                            normalizedLineItem));
+            }
+
+            var normalizedMaterialNumber =
+                CleanImportHistoryFilter(
+                    materialNumber);
+
+            if (normalizedMaterialNumber != null)
+            {
+                query =
+                    query.Where(row =>
+                        row.MaterialNumber.Contains(
+                            normalizedMaterialNumber));
+            }
+
+            var normalizedInvoiceNumber =
+                CleanImportHistoryFilter(
+                    invoiceNumber);
+
+            if (normalizedInvoiceNumber != null)
+            {
+                query =
+                    query.Where(row =>
+                        row.InvoiceNumber.Contains(
+                            normalizedInvoiceNumber));
+            }
+
+            if (minInvoiceQuantity.HasValue)
+            {
+                query =
+                    query.Where(row =>
+                        row.InvoiceQty >=
+                        minInvoiceQuantity.Value);
+            }
+
+            if (maxInvoiceQuantity.HasValue)
+            {
+                query =
+                    query.Where(row =>
+                        row.InvoiceQty <=
+                        maxInvoiceQuantity.Value);
+            }
+
+            query =
+                ApplyImportHistoryStatusFilter(
+                    query,
+                    columnStatus);
+
+            query =
+                ApplyImportHistoryMessageFilter(
+                    query,
+                    message);
 
             var summaryData = await query
                 .GroupBy(row => 1)
@@ -298,6 +491,125 @@ namespace POTracker.Controllers.Api
                     PageSize = pageSize,
                     TotalPages = totalPages
                 });
+        }
+
+        private static IQueryable<
+            POTracker.Models.VyaparInvoiceImportRow>
+            ApplyImportHistoryStatusFilter(
+                IQueryable<
+                    POTracker.Models.VyaparInvoiceImportRow> query,
+                string? value)
+        {
+            var normalized =
+                CleanImportHistoryFilter(
+                    value)?
+                    .ToLowerInvariant();
+
+            return normalized switch
+            {
+                "success" =>
+                    query.Where(row =>
+                        row.Status == "Success"),
+
+                "deleted" =>
+                    query.Where(row =>
+                        row.Status == "Deleted"),
+
+                "pending" =>
+                    query.Where(row =>
+                        row.Status == null ||
+                        (
+                            row.Status != "Success" &&
+                            row.Status != "Deleted"
+                        )),
+
+                _ =>
+                    query
+            };
+        }
+
+        private static IQueryable<
+            POTracker.Models.VyaparInvoiceImportRow>
+            ApplyImportHistoryMessageFilter(
+                IQueryable<
+                    POTracker.Models.VyaparInvoiceImportRow> query,
+                string? value)
+        {
+            var normalized =
+                CleanImportHistoryFilter(
+                    value);
+
+            if (normalized == null)
+            {
+                return query;
+            }
+
+            var matchesSuccessFallback =
+                "Imported successfully.".Contains(
+                    normalized,
+                    StringComparison.OrdinalIgnoreCase);
+
+            var matchesDeletedFallback =
+                "The related invoice was deleted.".Contains(
+                    normalized,
+                    StringComparison.OrdinalIgnoreCase);
+
+            var matchesPendingFallback =
+                (
+                    "Stored as Pending for review or " +
+                    "automatic matching."
+                ).Contains(
+                    normalized,
+                    StringComparison.OrdinalIgnoreCase);
+
+            return query.Where(row =>
+                (
+                    row.ErrorMessage != null &&
+                    row.ErrorMessage.Contains(
+                        normalized)
+                ) ||
+                (
+                    matchesSuccessFallback &&
+                    (
+                        row.ErrorMessage == null ||
+                        row.ErrorMessage == string.Empty
+                    ) &&
+                    row.Status == "Success"
+                ) ||
+                (
+                    matchesDeletedFallback &&
+                    (
+                        row.ErrorMessage == null ||
+                        row.ErrorMessage == string.Empty
+                    ) &&
+                    row.Status == "Deleted"
+                ) ||
+                (
+                    matchesPendingFallback &&
+                    (
+                        row.ErrorMessage == null ||
+                        row.ErrorMessage == string.Empty
+                    ) &&
+                    (
+                        row.Status == null ||
+                        (
+                            row.Status != "Success" &&
+                            row.Status != "Deleted"
+                        )
+                    )
+                ));
+        }
+
+        private static string? CleanImportHistoryFilter(
+            string? value)
+        {
+            var cleaned =
+                value?.Trim();
+
+            return string.IsNullOrWhiteSpace(
+                cleaned)
+                    ? null
+                    : cleaned;
         }
 
         private static string NormalizeImportHistoryStatus(

@@ -234,12 +234,12 @@
           <h2>Search and Filter</h2>
 
           <p>
-            Filters apply to the rows loaded on the current page.
+            Filters apply to the full import batch before pagination.
           </p>
         </div>
 
         <span class="count-badge">
-          {{ filteredItems().length }} row(s) visible
+          {{ currentReport.summary.totalRows }} row(s) match
         </span>
       </div>
 
@@ -284,8 +284,18 @@
 
         <div class="filter-actions">
           <button
+            class="button button--primary"
+            type="button"
+            [disabled]="loading()"
+            (click)="applyFilters()"
+          >
+            Apply Filters
+          </button>
+
+          <button
             class="button button--quiet"
             type="button"
+            [disabled]="loading()"
             (click)="clearFilters()"
           >
             Clear Filters
@@ -325,16 +335,407 @@
       } @else {
         <div class="table-wrap">
           <table>
-            <thead>
+                        <thead>
               <tr>
                 <th>#</th>
-                <th>PO No</th>
-                <th>Line Item</th>
-                <th>Material No</th>
-                <th>Invoice No</th>
-                <th>Invoice Qty</th>
-                <th>Status</th>
-                <th>Exact Message / Reason</th>
+
+                <th>
+                  <div class="server-table-heading">
+                    <span>PO No</span>
+
+                    <details
+                      #reportPoFilter
+                      class="server-column-filter"
+                      [class.server-column-filter--active]="
+                        columnFilterActive('po')
+                      ">
+                      <summary title="Filter PO Number">▾</summary>
+
+                      <div class="server-column-filter__menu">
+                        <label>
+                          <span>PO number contains</span>
+                          <input
+                            type="search"
+                            [ngModel]="
+                              poNumberColumnFilter()
+                            "
+                            (ngModelChange)="
+                              poNumberColumnFilter.set($event)
+                            "
+                            placeholder="Contains">
+                        </label>
+
+                        <div class="server-column-filter__actions">
+                          <button
+                            type="button"
+                            (click)="
+                              clearColumnFilter(
+                                'po',
+                                reportPoFilter
+                              )
+                            ">
+                            Clear
+                          </button>
+
+                          <button
+                            type="button"
+                            (click)="
+                              applyColumnFilter(
+                                reportPoFilter
+                              )
+                            ">
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                </th>
+
+                <th>
+                  <div class="server-table-heading">
+                    <span>Line Item</span>
+
+                    <details
+                      #reportLineFilter
+                      class="server-column-filter"
+                      [class.server-column-filter--active]="
+                        columnFilterActive('line')
+                      ">
+                      <summary title="Filter Line Item">▾</summary>
+
+                      <div class="server-column-filter__menu">
+                        <label>
+                          <span>Line item contains</span>
+                          <input
+                            type="search"
+                            [ngModel]="
+                              lineItemColumnFilter()
+                            "
+                            (ngModelChange)="
+                              lineItemColumnFilter.set($event)
+                            "
+                            placeholder="Contains">
+                        </label>
+
+                        <div class="server-column-filter__actions">
+                          <button
+                            type="button"
+                            (click)="
+                              clearColumnFilter(
+                                'line',
+                                reportLineFilter
+                              )
+                            ">
+                            Clear
+                          </button>
+
+                          <button
+                            type="button"
+                            (click)="
+                              applyColumnFilter(
+                                reportLineFilter
+                              )
+                            ">
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                </th>
+
+                <th>
+                  <div class="server-table-heading">
+                    <span>Material No</span>
+
+                    <details
+                      #reportMaterialFilter
+                      class="server-column-filter"
+                      [class.server-column-filter--active]="
+                        columnFilterActive('material')
+                      ">
+                      <summary title="Filter Material Number">▾</summary>
+
+                      <div class="server-column-filter__menu">
+                        <label>
+                          <span>Material number contains</span>
+                          <input
+                            type="search"
+                            [ngModel]="
+                              materialNumberColumnFilter()
+                            "
+                            (ngModelChange)="
+                              materialNumberColumnFilter.set($event)
+                            "
+                            placeholder="Contains">
+                        </label>
+
+                        <div class="server-column-filter__actions">
+                          <button
+                            type="button"
+                            (click)="
+                              clearColumnFilter(
+                                'material',
+                                reportMaterialFilter
+                              )
+                            ">
+                            Clear
+                          </button>
+
+                          <button
+                            type="button"
+                            (click)="
+                              applyColumnFilter(
+                                reportMaterialFilter
+                              )
+                            ">
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                </th>
+
+                <th>
+                  <div class="server-table-heading">
+                    <span>Invoice No</span>
+
+                    <details
+                      #reportInvoiceFilter
+                      class="server-column-filter"
+                      [class.server-column-filter--active]="
+                        columnFilterActive('invoice')
+                      ">
+                      <summary title="Filter Invoice Number">▾</summary>
+
+                      <div class="server-column-filter__menu">
+                        <label>
+                          <span>Invoice number contains</span>
+                          <input
+                            type="search"
+                            [ngModel]="
+                              invoiceNumberColumnFilter()
+                            "
+                            (ngModelChange)="
+                              invoiceNumberColumnFilter.set($event)
+                            "
+                            placeholder="Contains">
+                        </label>
+
+                        <div class="server-column-filter__actions">
+                          <button
+                            type="button"
+                            (click)="
+                              clearColumnFilter(
+                                'invoice',
+                                reportInvoiceFilter
+                              )
+                            ">
+                            Clear
+                          </button>
+
+                          <button
+                            type="button"
+                            (click)="
+                              applyColumnFilter(
+                                reportInvoiceFilter
+                              )
+                            ">
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                </th>
+
+                <th>
+                  <div class="server-table-heading">
+                    <span>Invoice Qty</span>
+
+                    <details
+                      #reportQuantityFilter
+                      class="server-column-filter"
+                      [class.server-column-filter--active]="
+                        columnFilterActive('quantity')
+                      ">
+                      <summary title="Filter Invoice Quantity">▾</summary>
+
+                      <div class="server-column-filter__menu">
+                        <div class="server-column-filter__range">
+                          <label>
+                            <span>Minimum</span>
+                            <input
+                              type="text"
+                              inputmode="decimal"
+                              [ngModel]="
+                                minInvoiceQuantityColumnFilter()
+                              "
+                              (ngModelChange)="
+                                minInvoiceQuantityColumnFilter
+                                  .set($event)
+                              "
+                              placeholder="Min">
+                          </label>
+
+                          <label>
+                            <span>Maximum</span>
+                            <input
+                              type="text"
+                              inputmode="decimal"
+                              [ngModel]="
+                                maxInvoiceQuantityColumnFilter()
+                              "
+                              (ngModelChange)="
+                                maxInvoiceQuantityColumnFilter
+                                  .set($event)
+                              "
+                              placeholder="Max">
+                          </label>
+                        </div>
+
+                        <div class="server-column-filter__actions">
+                          <button
+                            type="button"
+                            (click)="
+                              clearColumnFilter(
+                                'quantity',
+                                reportQuantityFilter
+                              )
+                            ">
+                            Clear
+                          </button>
+
+                          <button
+                            type="button"
+                            (click)="
+                              applyColumnFilter(
+                                reportQuantityFilter
+                              )
+                            ">
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                </th>
+
+                <th>
+                  <div class="server-table-heading">
+                    <span>Status</span>
+
+                    <details
+                      #reportStatusFilter
+                      class="server-column-filter"
+                      [class.server-column-filter--active]="
+                        columnFilterActive('status')
+                      ">
+                      <summary title="Filter Status">▾</summary>
+
+                      <div class="server-column-filter__menu">
+                        <label>
+                          <span>Import status</span>
+                          <select
+                            [ngModel]="
+                              statusColumnFilter()
+                            "
+                            (ngModelChange)="
+                              statusColumnFilter.set($event)
+                            ">
+                            <option value="">All</option>
+                            <option value="Success">Success</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Deleted">Deleted</option>
+                          </select>
+                        </label>
+
+                        <div class="server-column-filter__actions">
+                          <button
+                            type="button"
+                            (click)="
+                              clearColumnFilter(
+                                'status',
+                                reportStatusFilter
+                              )
+                            ">
+                            Clear
+                          </button>
+
+                          <button
+                            type="button"
+                            (click)="
+                              applyColumnFilter(
+                                reportStatusFilter
+                              )
+                            ">
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                </th>
+
+                <th>
+                  <div class="server-table-heading">
+                    <span>Exact Message / Reason</span>
+
+                    <details
+                      #reportMessageFilter
+                      class="server-column-filter"
+                      [class.server-column-filter--active]="
+                        columnFilterActive('message')
+                      ">
+                      <summary title="Filter Message or Reason">▾</summary>
+
+                      <div
+                        class="
+                          server-column-filter__menu
+                          server-column-filter__menu--right
+                        ">
+                        <label>
+                          <span>Message contains</span>
+                          <input
+                            type="search"
+                            [ngModel]="
+                              messageColumnFilter()
+                            "
+                            (ngModelChange)="
+                              messageColumnFilter.set($event)
+                            "
+                            placeholder="Contains">
+                        </label>
+
+                        <div class="server-column-filter__actions">
+                          <button
+                            type="button"
+                            (click)="
+                              clearColumnFilter(
+                                'message',
+                                reportMessageFilter
+                              )
+                            ">
+                            Clear
+                          </button>
+
+                          <button
+                            type="button"
+                            (click)="
+                              applyColumnFilter(
+                                reportMessageFilter
+                              )
+                            ">
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                </th>
+
                 <th>Action</th>
               </tr>
             </thead>

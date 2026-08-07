@@ -30,6 +30,7 @@ import { AuthApiService } from './auth-api.service';
 import {
   InvoiceImportHistoryBulkDeleteRequest,
   InvoiceImportHistoryBulkDeleteResponse,
+  InvoiceImportReportQuery,
   InvoiceImportReportResponse,
 } from '../models/invoice-import-history-api.model';
 @Injectable({
@@ -218,12 +219,62 @@ export class InvoiceApiService {
   }
   getImportHistoryReport(
     batchId: number,
-    page = 1,
-    pageSize = 50,
+    query: InvoiceImportReportQuery,
   ): Observable<InvoiceImportReportResponse> {
-    const params = new HttpParams()
-      .set('page', String(page))
-      .set('pageSize', String(pageSize));
+    let params =
+      new HttpParams()
+        .set(
+          'page',
+          String(query.page),
+        )
+        .set(
+          'pageSize',
+          String(query.pageSize),
+        );
+
+    const optionalValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['status', query.status],
+        ['poNumber', query.poNumber],
+        ['lineItem', query.lineItem],
+        ['materialNumber', query.materialNumber],
+        ['invoiceNumber', query.invoiceNumber],
+        [
+          'minInvoiceQuantity',
+          query.minInvoiceQuantity,
+        ],
+        [
+          'maxInvoiceQuantity',
+          query.maxInvoiceQuantity,
+        ],
+        [
+          'columnStatus',
+          query.columnStatus,
+        ],
+        ['message', query.message],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      const cleaned =
+        value?.trim();
+
+      if (cleaned) {
+        params =
+          params.set(
+            name,
+            cleaned,
+          );
+      }
+    }
 
     return this.http.get<InvoiceImportReportResponse>(
       `/api/invoices/import-history/${batchId}/report`,
