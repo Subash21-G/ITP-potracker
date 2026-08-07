@@ -67,6 +67,10 @@ namespace POTracker.Controllers.Api
                 DateTime? deliveryDateFrom,
                 DateTime? deliveryDateTo,
                 string? pdfAvailability,
+
+                string? sortColumn,
+                string? sortDirection,
+
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
@@ -128,13 +132,12 @@ namespace POTracker.Controllers.Api
                 page = totalPages;
             }
 
-            var aggregateRows = await aggregateQuery
-                .OrderByDescending(row =>
-                    row.POReceivedDate ??
-                    row.PODate ??
-                    row.CreatedDate)
-                .ThenByDescending(row => row.PurchaseOrderId)
-                .Skip((page - 1) * pageSize)
+            var aggregateRows =
+                await ApplyPurchaseOrderSort(
+                        aggregateQuery,
+                        sortColumn,
+                        sortDirection)
+                    .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);
 
@@ -180,6 +183,10 @@ namespace POTracker.Controllers.Api
             DateTime? deliveryDateFrom,
             DateTime? deliveryDateTo,
             string? pdfAvailability,
+
+            string? sortColumn,
+            string? sortDirection,
+
             CancellationToken cancellationToken = default)
         {
             var filteredPurchaseOrders =
@@ -193,28 +200,25 @@ namespace POTracker.Controllers.Api
                     poReceivedDateTo);
 
             var aggregateRows =
-                await ApplyAggregateFilters(
-                        CreateAggregateQuery(
-                            filteredPurchaseOrders),
-                        status,
-                        materialStatus,
-                        minMaterials,
-                        maxMaterials,
-                        minPoQuantity,
-                        maxPoQuantity,
-                        minPoValue,
-                        maxPoValue,
-                        minDispatchBalance,
-                        maxDispatchBalance,
-                        deliveryDateFrom,
-                        deliveryDateTo,
-                        pdfAvailability)
-                    .OrderByDescending(row =>
-                        row.POReceivedDate ??
-                        row.PODate ??
-                        row.CreatedDate)
-                    .ThenByDescending(row =>
-                        row.PurchaseOrderId)
+                await ApplyPurchaseOrderSort(
+                        ApplyAggregateFilters(
+                            CreateAggregateQuery(
+                                filteredPurchaseOrders),
+                            status,
+                            materialStatus,
+                            minMaterials,
+                            maxMaterials,
+                            minPoQuantity,
+                            maxPoQuantity,
+                            minPoValue,
+                            maxPoValue,
+                            minDispatchBalance,
+                            maxDispatchBalance,
+                            deliveryDateFrom,
+                            deliveryDateTo,
+                            pdfAvailability),
+                        sortColumn,
+                        sortDirection)
                     .ToListAsync(cancellationToken);
 
             var rows = aggregateRows
@@ -1258,6 +1262,236 @@ namespace POTracker.Controllers.Api
                             .Max(material => material.DeliveryDate)
                 });
         }
+
+        private static IOrderedQueryable<PurchaseOrderAggregateRow>
+            ApplyPurchaseOrderSort(
+                IQueryable<PurchaseOrderAggregateRow> query,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column =
+                sortColumn?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            var descending =
+                string.Equals(
+                    sortDirection?.Trim(),
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+            return column switch
+            {
+                "po" when descending =>
+                    query
+                        .OrderByDescending(row =>
+                            row.PONumber)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "po" =>
+                    query
+                        .OrderBy(row =>
+                            row.PONumber)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                "podate" when descending =>
+                    query
+                        .OrderByDescending(row =>
+                            row.PODate.HasValue)
+                        .ThenByDescending(row =>
+                            row.PODate)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "podate" =>
+                    query
+                        .OrderByDescending(row =>
+                            row.PODate.HasValue)
+                        .ThenBy(row =>
+                            row.PODate)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                "received" when descending =>
+                    query
+                        .OrderByDescending(row =>
+                            row.POReceivedDate.HasValue)
+                        .ThenByDescending(row =>
+                            row.POReceivedDate)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "received" =>
+                    query
+                        .OrderByDescending(row =>
+                            row.POReceivedDate.HasValue)
+                        .ThenBy(row =>
+                            row.POReceivedDate)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                "status" when descending =>
+                    query
+                        .OrderByDescending(row =>
+                            row.TotalMaterials > 0 &&
+                            row.CompletedMaterials >= row.TotalMaterials
+                                ? 0
+                                : row.TotalMaterials > 0 &&
+                                  row.CompletedMaterials > 0
+                                    ? 1
+                                    : 2)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "status" =>
+                    query
+                        .OrderBy(row =>
+                            row.TotalMaterials > 0 &&
+                            row.CompletedMaterials >= row.TotalMaterials
+                                ? 0
+                                : row.TotalMaterials > 0 &&
+                                  row.CompletedMaterials > 0
+                                    ? 1
+                                    : 2)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                "materialprogress" when descending =>
+                    query
+                        .OrderByDescending(row =>
+                            row.TotalMaterials > 0 &&
+                            row.CompletedMaterials >= row.TotalMaterials
+                                ? 0
+                                : row.TotalMaterials <= 0
+                                    ? 1
+                                    : row.CompletedMaterials > 0
+                                        ? 2
+                                        : 3)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "materialprogress" =>
+                    query
+                        .OrderBy(row =>
+                            row.TotalMaterials > 0 &&
+                            row.CompletedMaterials >= row.TotalMaterials
+                                ? 0
+                                : row.TotalMaterials <= 0
+                                    ? 1
+                                    : row.CompletedMaterials > 0
+                                        ? 2
+                                        : 3)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                "materials" when descending =>
+                    query
+                        .OrderByDescending(row =>
+                            row.TotalMaterials)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "materials" =>
+                    query
+                        .OrderBy(row =>
+                            row.TotalMaterials)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                "quantity" when descending =>
+                    query
+                        .OrderByDescending(row =>
+                            row.TotalPOQuantity)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "quantity" =>
+                    query
+                        .OrderBy(row =>
+                            row.TotalPOQuantity)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                "value" when descending =>
+                    query
+                        .OrderByDescending(row =>
+                            row.TotalMaterialValue)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "value" =>
+                    query
+                        .OrderBy(row =>
+                            row.TotalMaterialValue)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                "dispatchbalance" when descending =>
+                    query
+                        .OrderByDescending(row =>
+                            row.TotalPendingDispatchQuantity)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "dispatchbalance" =>
+                    query
+                        .OrderBy(row =>
+                            row.TotalPendingDispatchQuantity)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                "delivery" when descending =>
+                    query
+                        .OrderByDescending(row =>
+                            row.EarliestDeliveryDate.HasValue)
+                        .ThenByDescending(row =>
+                            row.EarliestDeliveryDate)
+                        .ThenByDescending(row =>
+                            row.LatestDeliveryDate)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "delivery" =>
+                    query
+                        .OrderByDescending(row =>
+                            row.EarliestDeliveryDate.HasValue)
+                        .ThenBy(row =>
+                            row.EarliestDeliveryDate)
+                        .ThenBy(row =>
+                            row.LatestDeliveryDate)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                "pdf" when descending =>
+                    query
+                        .OrderBy(row =>
+                            row.PdfFilePath != null &&
+                            row.PdfFilePath != string.Empty)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId),
+
+                "pdf" =>
+                    query
+                        .OrderByDescending(row =>
+                            row.PdfFilePath != null &&
+                            row.PdfFilePath != string.Empty)
+                        .ThenBy(row =>
+                            row.PurchaseOrderId),
+
+                _ =>
+                    query
+                        .OrderByDescending(row =>
+                            row.POReceivedDate ??
+                            row.PODate ??
+                            row.CreatedDate)
+                        .ThenByDescending(row =>
+                            row.PurchaseOrderId)
+            };
+        }
+
 
         private static IQueryable<PurchaseOrderAggregateRow>
             ApplyAggregateFilters(

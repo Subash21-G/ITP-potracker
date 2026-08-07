@@ -20,6 +20,8 @@ import { finalize } from 'rxjs';
 import {
   PurchaseOrderListItem,
   PurchaseOrderListSummary,
+  PurchaseOrderSortColumn,
+  PurchaseOrderSortDirection,
 } from '../../core/models/purchase-order.model';
 import { PurchaseOrdersApiService } from '../../core/services/purchase-orders-api.service';
 
@@ -75,6 +77,17 @@ export class PurchaseOrdersPage {
   readonly handlers = signal<readonly string[]>([]);
   readonly page = signal(1);
   readonly pageSize = signal(25);
+
+  readonly sortColumn =
+    signal<PurchaseOrderSortColumn | null>(
+      null,
+    );
+
+  readonly sortDirection =
+    signal<PurchaseOrderSortDirection | null>(
+      null,
+    );
+
   readonly totalRecords = signal(0);
   readonly totalPages = signal(1);
   readonly loading = signal(false);
@@ -184,6 +197,61 @@ export class PurchaseOrdersPage {
     }
 
     this.loadPurchaseOrders();
+  }
+
+  toggleSort(
+    column: PurchaseOrderSortColumn,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    if (
+      this.sortColumn() !== column ||
+      this.sortDirection() === null
+    ) {
+      this.sortColumn.set(column);
+      this.sortDirection.set('asc');
+    } else if (
+      this.sortDirection() === 'asc'
+    ) {
+      this.sortDirection.set('desc');
+    } else {
+      this.sortColumn.set(null);
+      this.sortDirection.set(null);
+    }
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+    this.loadPurchaseOrders();
+  }
+
+  sortIndicator(
+    column: PurchaseOrderSortColumn,
+  ): string {
+    if (this.sortColumn() !== column) {
+      return '\u2195';
+    }
+
+    return this.sortDirection() === 'desc'
+      ? '\u2193'
+      : '\u2191';
+  }
+
+  sortTitle(
+    column: PurchaseOrderSortColumn,
+    label: string,
+  ): string {
+    if (this.sortColumn() !== column) {
+      return `Sort ${label} ascending`;
+    }
+
+    if (this.sortDirection() === 'asc') {
+      return `Sort ${label} descending`;
+    }
+
+    return `Clear ${label} sort`;
   }
 
   applyColumnFilter(
@@ -623,6 +691,27 @@ export class PurchaseOrdersPage {
     const values = this.filters.getRawValue();
     const params = new URLSearchParams();
 
+    const sortColumn =
+      this.sortColumn();
+
+    const sortDirection =
+      this.sortDirection();
+
+    if (
+      sortColumn &&
+      sortDirection
+    ) {
+      params.set(
+        'sortColumn',
+        sortColumn,
+      );
+
+      params.set(
+        'sortDirection',
+        sortDirection,
+      );
+    }
+
     this.appendQueryValue(params, 'search', values.search);
     this.appendQueryValue(params, 'handler', values.handler);
     this.appendQueryValue(params, 'status', values.status);
@@ -669,6 +758,15 @@ export class PurchaseOrdersPage {
       .getPurchaseOrders({
         page: this.page(),
         pageSize: this.pageSize(),
+
+        sortColumn:
+          this.sortColumn() ??
+          undefined,
+
+        sortDirection:
+          this.sortDirection() ??
+          undefined,
+
         ...filterValues,
       })
       .pipe(

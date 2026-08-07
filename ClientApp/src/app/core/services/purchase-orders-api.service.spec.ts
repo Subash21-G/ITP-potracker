@@ -48,6 +48,8 @@ describe('PurchaseOrdersApiService', () => {
       .getPurchaseOrders({
         page: 2,
         pageSize: 25,
+        sortColumn: 'delivery',
+        sortDirection: 'desc',
         search: '4500',
         handler: 'Manoj S',
         status: 'Open',
@@ -73,6 +75,19 @@ describe('PurchaseOrdersApiService', () => {
     expect(request.request.method).toBe('GET');
     expect(request.request.params.get('page')).toBe('2');
     expect(request.request.params.get('pageSize')).toBe('25');
+
+    expect(
+      request.request.params.get(
+        'sortColumn',
+      ),
+    ).toBe('delivery');
+
+    expect(
+      request.request.params.get(
+        'sortDirection',
+      ),
+    ).toBe('desc');
+
     expect(request.request.params.get('search')).toBe('4500');
     expect(request.request.params.get('handler')).toBe('Manoj S');
     expect(request.request.params.get('status')).toBe('Open');

@@ -51,9 +51,29 @@ export interface PurchaseOrderListResponse {
   readonly hasNextPage: boolean;
 }
 
+export type PurchaseOrderSortColumn =
+  | 'po'
+  | 'poDate'
+  | 'received'
+  | 'status'
+  | 'materialProgress'
+  | 'materials'
+  | 'quantity'
+  | 'value'
+  | 'dispatchBalance'
+  | 'delivery'
+  | 'pdf';
+
+export type PurchaseOrderSortDirection =
+  | 'asc'
+  | 'desc';
+
 export interface PurchaseOrderQuery {
   readonly page: number;
   readonly pageSize: number;
+
+  readonly sortColumn?: PurchaseOrderSortColumn;
+  readonly sortDirection?: PurchaseOrderSortDirection;
   readonly search?: string;
   readonly handler?: string;
   readonly poDateFrom?: string;

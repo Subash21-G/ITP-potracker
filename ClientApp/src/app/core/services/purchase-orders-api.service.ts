@@ -66,6 +66,20 @@ export class PurchaseOrdersApiService {
     params =
       this.setOptional(
         params,
+        'sortColumn',
+        query.sortColumn,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'sortDirection',
+        query.sortDirection,
+      );
+
+    params =
+      this.setOptional(
+        params,
         'search',
         query.search,
       );

@@ -285,6 +285,24 @@
             <div class="table-heading">
               <span>PO / Purchaser / Handler</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'po'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('po', 'PO number')
+                "
+                [title]="
+                  sortTitle('po', 'PO number')
+                "
+                (click)="toggleSort('po')"
+              >
+                {{ sortIndicator('po') }}
+              </button>
+
               <details
                 #poColumnFilter
                 class="column-filter"
@@ -342,6 +360,24 @@
             <div class="table-heading">
               <span>PO date</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'poDate'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('poDate', 'PO date')
+                "
+                [title]="
+                  sortTitle('poDate', 'PO date')
+                "
+                (click)="toggleSort('poDate')"
+              >
+                {{ sortIndicator('poDate') }}
+              </button>
+
               <details
                 #poDateColumnFilter
                 class="column-filter"
@@ -392,6 +428,24 @@
           <th>
             <div class="table-heading">
               <span>Received</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'received'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('received', 'received date')
+                "
+                [title]="
+                  sortTitle('received', 'received date')
+                "
+                (click)="toggleSort('received')"
+              >
+                {{ sortIndicator('received') }}
+              </button>
 
               <details
                 #receivedColumnFilter
@@ -444,6 +498,24 @@
             <div class="table-heading">
               <span>PO status</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'status'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('status', 'PO status')
+                "
+                [title]="
+                  sortTitle('status', 'PO status')
+                "
+                (click)="toggleSort('status')"
+              >
+                {{ sortIndicator('status') }}
+              </button>
+
               <details
                 #statusColumnFilter
                 class="column-filter"
@@ -488,6 +560,24 @@
           <th>
             <div class="table-heading">
               <span>Material progress</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'materialProgress'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('materialProgress', 'material progress')
+                "
+                [title]="
+                  sortTitle('materialProgress', 'material progress')
+                "
+                (click)="toggleSort('materialProgress')"
+              >
+                {{ sortIndicator('materialProgress') }}
+              </button>
 
               <details
                 #materialColumnFilter
@@ -539,6 +629,24 @@
           <th>
             <div class="table-heading">
               <span>Materials</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'materials'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('materials', 'material count')
+                "
+                [title]="
+                  sortTitle('materials', 'material count')
+                "
+                (click)="toggleSort('materials')"
+              >
+                {{ sortIndicator('materials') }}
+              </button>
 
               <details
                 #materialsColumnFilter
@@ -602,6 +710,24 @@
             <div class="table-heading table-heading--number">
               <span>PO quantity</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'quantity'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('quantity', 'PO quantity')
+                "
+                [title]="
+                  sortTitle('quantity', 'PO quantity')
+                "
+                (click)="toggleSort('quantity')"
+              >
+                {{ sortIndicator('quantity') }}
+              </button>
+
               <details
                 #quantityColumnFilter
                 class="column-filter"
@@ -663,6 +789,24 @@
           <th class="number-cell">
             <div class="table-heading table-heading--number">
               <span>PO value</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'value'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('value', 'PO value')
+                "
+                [title]="
+                  sortTitle('value', 'PO value')
+                "
+                (click)="toggleSort('value')"
+              >
+                {{ sortIndicator('value') }}
+              </button>
 
               <details
                 #valueColumnFilter
@@ -726,6 +870,24 @@
             <div class="table-heading table-heading--number">
               <span>Dispatch balance</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'dispatchBalance'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('dispatchBalance', 'dispatch balance')
+                "
+                [title]="
+                  sortTitle('dispatchBalance', 'dispatch balance')
+                "
+                (click)="toggleSort('dispatchBalance')"
+              >
+                {{ sortIndicator('dispatchBalance') }}
+              </button>
+
               <details
                 #dispatchColumnFilter
                 class="column-filter"
@@ -788,6 +950,24 @@
             <div class="table-heading">
               <span>Delivery range</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'delivery'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('delivery', 'delivery date')
+                "
+                [title]="
+                  sortTitle('delivery', 'delivery date')
+                "
+                (click)="toggleSort('delivery')"
+              >
+                {{ sortIndicator('delivery') }}
+              </button>
+
               <details
                 #deliveryColumnFilter
                 class="column-filter"
@@ -841,6 +1021,24 @@
           <th>
             <div class="table-heading">
               <span>PDF</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'pdf'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('pdf', 'PDF availability')
+                "
+                [title]="
+                  sortTitle('pdf', 'PDF availability')
+                "
+                (click)="toggleSort('pdf')"
+              >
+                {{ sortIndicator('pdf') }}
+              </button>
 
               <details
                 #pdfColumnFilter
