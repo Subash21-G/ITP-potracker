@@ -299,7 +299,26 @@
             <tr>
               <th>#</th>
               <th>
-                <div class="server-table-heading"><span>Material</span>
+                <div class="server-table-heading">
+                  <span>Material</span>
+
+                  <button
+                    type="button"
+                    class="server-sort-button"
+                    [class.server-sort-button--active]="
+                      sortColumn() === 'material'
+                    "
+                    [disabled]="loading()"
+                    [attr.aria-label]="
+                      sortTitle('material', 'material')
+                    "
+                    [title]="
+                      sortTitle('material', 'material')
+                    "
+                    (click)="toggleSort('material')"
+                  >
+                    {{ sortIndicator('material') }}
+                  </button>
                   <details #fMaterial class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('material')">
                     <summary title="Filter Material">â–¾</summary>
                     <div class="server-column-filter__menu">
@@ -313,7 +332,26 @@
                 </div>
               </th>
               <th>
-                <div class="server-table-heading"><span>Description</span>
+                <div class="server-table-heading">
+                  <span>Description</span>
+
+                  <button
+                    type="button"
+                    class="server-sort-button"
+                    [class.server-sort-button--active]="
+                      sortColumn() === 'description'
+                    "
+                    [disabled]="loading()"
+                    [attr.aria-label]="
+                      sortTitle('description', 'description')
+                    "
+                    [title]="
+                      sortTitle('description', 'description')
+                    "
+                    (click)="toggleSort('description')"
+                  >
+                    {{ sortIndicator('description') }}
+                  </button>
                   <details #fDescription class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('description')">
                     <summary title="Filter Description">â–¾</summary>
                     <div class="server-column-filter__menu">
@@ -327,7 +365,26 @@
                 </div>
               </th>
               <th>
-                <div class="server-table-heading"><span>Priority Date</span>
+                <div class="server-table-heading">
+                  <span>Priority Date</span>
+
+                  <button
+                    type="button"
+                    class="server-sort-button"
+                    [class.server-sort-button--active]="
+                      sortColumn() === 'priorityDate'
+                    "
+                    [disabled]="loading()"
+                    [attr.aria-label]="
+                      sortTitle('priorityDate', 'priority date')
+                    "
+                    [title]="
+                      sortTitle('priorityDate', 'priority date')
+                    "
+                    (click)="toggleSort('priorityDate')"
+                  >
+                    {{ sortIndicator('priorityDate') }}
+                  </button>
                   <details #fPriority class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('priority')">
                     <summary title="Filter Priority Date">â–¾</summary>
                     <div class="server-column-filter__menu">
@@ -344,7 +401,26 @@
                 </div>
               </th>
               <th>
-                <div class="server-table-heading"><span>Delivery</span>
+                <div class="server-table-heading">
+                  <span>Delivery</span>
+
+                  <button
+                    type="button"
+                    class="server-sort-button"
+                    [class.server-sort-button--active]="
+                      sortColumn() === 'deliveryDate'
+                    "
+                    [disabled]="loading()"
+                    [attr.aria-label]="
+                      sortTitle('deliveryDate', 'delivery date')
+                    "
+                    [title]="
+                      sortTitle('deliveryDate', 'delivery date')
+                    "
+                    (click)="toggleSort('deliveryDate')"
+                  >
+                    {{ sortIndicator('deliveryDate') }}
+                  </button>
                   <details #fDelivery class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('delivery')">
                     <summary title="Filter Delivery">â–¾</summary>
                     <div class="server-column-filter__menu">
@@ -361,7 +437,26 @@
                 </div>
               </th>
               <th>
-                <div class="server-table-heading"><span>Process</span>
+                <div class="server-table-heading">
+                  <span>Process</span>
+
+                  <button
+                    type="button"
+                    class="server-sort-button"
+                    [class.server-sort-button--active]="
+                      sortColumn() === 'process'
+                    "
+                    [disabled]="loading()"
+                    [attr.aria-label]="
+                      sortTitle('process', 'process status')
+                    "
+                    [title]="
+                      sortTitle('process', 'process status')
+                    "
+                    (click)="toggleSort('process')"
+                  >
+                    {{ sortIndicator('process') }}
+                  </button>
                   <details #fProcess class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('process')">
                     <summary title="Filter Process">â–¾</summary>
                     <div class="server-column-filter__menu">
@@ -377,7 +472,26 @@
                 </div>
               </th>
               <th>
-                <div class="server-table-heading"><span>Dispatch</span>
+                <div class="server-table-heading">
+                  <span>Dispatch</span>
+
+                  <button
+                    type="button"
+                    class="server-sort-button"
+                    [class.server-sort-button--active]="
+                      sortColumn() === 'dispatch'
+                    "
+                    [disabled]="loading()"
+                    [attr.aria-label]="
+                      sortTitle('dispatch', 'dispatch status')
+                    "
+                    [title]="
+                      sortTitle('dispatch', 'dispatch status')
+                    "
+                    (click)="toggleSort('dispatch')"
+                  >
+                    {{ sortIndicator('dispatch') }}
+                  </button>
                   <details #fDispatch class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('dispatch')">
                     <summary title="Filter Dispatch">â–¾</summary>
                     <div class="server-column-filter__menu">
@@ -393,7 +507,26 @@
                 </div>
               </th>
               <th>
-                <div class="server-table-heading"><span>Allocated / Live Stock</span>
+                <div class="server-table-heading">
+                  <span>Allocated / Live Stock</span>
+
+                  <button
+                    type="button"
+                    class="server-sort-button"
+                    [class.server-sort-button--active]="
+                      sortColumn() === 'stock'
+                    "
+                    [disabled]="loading()"
+                    [attr.aria-label]="
+                      sortTitle('stock', 'allocated and live stock')
+                    "
+                    [title]="
+                      sortTitle('stock', 'allocated and live stock')
+                    "
+                    (click)="toggleSort('stock')"
+                  >
+                    {{ sortIndicator('stock') }}
+                  </button>
                   <details #fStock class="server-column-filter" [class.server-column-filter--active]="columnFilterActive('stock')">
                     <summary title="Filter Stock">â–¾</summary>
                     <div class="server-column-filter__menu server-column-filter__menu--wide server-column-filter__menu--right">

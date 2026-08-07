@@ -48,6 +48,8 @@ import {
 import {
   AlertCategory,
   AlertMaterial,
+  AlertSortColumn,
+  AlertSortDirection,
   AlertsPagedResponse,
   AlertsQuery,
   AlertsSummary,
@@ -257,6 +259,24 @@ export class AlertsPage {
       this.parseCategory(
         this.initialParams.get(
           'category',
+        ),
+      ),
+    );
+
+  readonly sortColumn =
+    signal<AlertSortColumn | null>(
+      this.parseSortColumn(
+        this.initialParams.get(
+          'sortColumn',
+        ),
+      ),
+    );
+
+  readonly sortDirection =
+    signal<AlertSortDirection | null>(
+      this.parseSortDirection(
+        this.initialParams.get(
+          'sortDirection',
         ),
       ),
     );
@@ -475,6 +495,71 @@ export class AlertsPage {
       );
 
     this.load();
+  }
+
+  toggleSort(
+    column: AlertSortColumn,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    if (
+      this.sortColumn() !== column ||
+      this.sortDirection() === null
+    ) {
+      this.sortColumn.set(
+        column,
+      );
+
+      this.sortDirection.set(
+        'asc',
+      );
+    } else if (
+      this.sortDirection() === 'asc'
+    ) {
+      this.sortDirection.set(
+        'desc',
+      );
+    } else {
+      this.sortColumn.set(
+        null,
+      );
+
+      this.sortDirection.set(
+        null,
+      );
+    }
+
+    this.page.set(1);
+    this.load();
+  }
+
+  sortIndicator(
+    column: AlertSortColumn,
+  ): string {
+    if (this.sortColumn() !== column) {
+      return '\u2195';
+    }
+
+    return this.sortDirection() === 'desc'
+      ? '\u2193'
+      : '\u2191';
+  }
+
+  sortTitle(
+    column: AlertSortColumn,
+    label: string,
+  ): string {
+    if (this.sortColumn() !== column) {
+      return `Sort ${label} ascending`;
+    }
+
+    if (this.sortDirection() === 'asc') {
+      return `Sort ${label} descending`;
+    }
+
+    return `Clear ${label} sort`;
   }
 
   applyColumnFilter(filter: HTMLDetailsElement): void {
@@ -747,6 +832,15 @@ export class AlertsPage {
   private buildQuery(): AlertsQuery {
     return {
       category: this.category(),
+
+      sortColumn:
+        this.sortColumn() ??
+        undefined,
+
+      sortDirection:
+        this.sortDirection() ??
+        undefined,
+
       search: this.searchControl.value,
       ...this.columnFilters.getRawValue(),
       page: this.page(),
@@ -759,7 +853,19 @@ export class AlertsPage {
     const urlTree = this.router.createUrlTree([], {
       relativeTo: this.route,
       queryParams: {
-        category: query.category !== 'process-start' ? query.category : null,
+        category:
+          query.category !== 'process-start'
+            ? query.category
+            : null,
+
+        sortColumn:
+          query.sortColumn ??
+          null,
+
+        sortDirection:
+          query.sortDirection ??
+          null,
+
         search: query.search?.trim() || null,
         material: query.material?.trim() || null,
         description: query.description?.trim() || null,
@@ -779,6 +885,37 @@ export class AlertsPage {
       },
     });
     this.location.replaceState(this.router.serializeUrl(urlTree));
+  }
+
+  private parseSortColumn(
+    value:
+      | string
+      | null,
+  ): AlertSortColumn | null {
+    switch (value) {
+      case 'material':
+      case 'description':
+      case 'priorityDate':
+      case 'deliveryDate':
+      case 'process':
+      case 'dispatch':
+      case 'stock':
+        return value;
+
+      default:
+        return null;
+    }
+  }
+
+  private parseSortDirection(
+    value:
+      | string
+      | null,
+  ): AlertSortDirection | null {
+    return value === 'asc' ||
+      value === 'desc'
+      ? value
+      : null;
   }
 
   private parseCategory(

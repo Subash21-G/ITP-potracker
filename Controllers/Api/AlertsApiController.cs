@@ -60,6 +60,10 @@ namespace POTracker.Controllers.Api
                 decimal? minLiveStock,
                 decimal? maxLiveStock,
                 string? stockStatus,
+
+                string? sortColumn,
+                string? sortDirection,
+
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken
@@ -420,8 +424,14 @@ namespace POTracker.Controllers.Api
             {
                 categoryItems = categoryItems.Where(item => Contains(item.StockStatus, normalizedStockStatus)).ToList();
             }
-            var totalCount =
+            categoryItems =
+                ApplyAlertSort(
+                    categoryItems,
+                    normalizedCategory,
+                    sortColumn,
+                    sortDirection);
 
+            var totalCount =
                 categoryItems.Count;
 
             var totalPages =
@@ -474,6 +484,230 @@ namespace POTracker.Controllers.Api
                         totalPages
                 });
         }
+
+        private static List<AlertMaterialDto>
+            ApplyAlertSort(
+                List<AlertMaterialDto> items,
+                string category,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column =
+                Clean(
+                    sortColumn)?
+                    .ToLowerInvariant();
+
+            var descending =
+                string.Equals(
+                    Clean(
+                        sortDirection),
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+            if (column == null)
+            {
+                return items;
+            }
+
+            return column switch
+            {
+                "material" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.MaterialNo,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.LineItem,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "material" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.MaterialNo,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.LineItem,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "description" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.Description,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "description" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.Description,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "prioritydate" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                GetPriorityDate(
+                                    item,
+                                    category)
+                                    .HasValue)
+                        .ThenByDescending(
+                            item =>
+                                GetPriorityDate(
+                                    item,
+                                    category))
+                        .ThenByDescending(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "prioritydate" =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                GetPriorityDate(
+                                    item,
+                                    category)
+                                    .HasValue)
+                        .ThenBy(
+                            item =>
+                                GetPriorityDate(
+                                    item,
+                                    category))
+                        .ThenBy(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "deliverydate" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.DeliveryDate
+                                    .HasValue)
+                        .ThenByDescending(
+                            item =>
+                                item.DeliveryDate)
+                        .ThenByDescending(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "deliverydate" =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.DeliveryDate
+                                    .HasValue)
+                        .ThenBy(
+                            item =>
+                                item.DeliveryDate)
+                        .ThenBy(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "process" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.ProcessStatus,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "process" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.ProcessStatus,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "dispatch" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.DispatchStatus,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "dispatch" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.DispatchStatus,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "stock" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.AllocatedStockQuantity)
+                        .ThenByDescending(
+                            item =>
+                                item.LiveStockQuantity)
+                        .ThenByDescending(
+                            item =>
+                                item.StockShortageQuantity)
+                        .ThenByDescending(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                "stock" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.AllocatedStockQuantity)
+                        .ThenBy(
+                            item =>
+                                item.LiveStockQuantity)
+                        .ThenBy(
+                            item =>
+                                item.StockShortageQuantity)
+                        .ThenBy(
+                            item =>
+                                item.MaterialId)
+                        .ToList(),
+
+                _ =>
+                    items
+            };
+        }
+
 
         private static List<AlertMaterialDto>
             SelectCategory(

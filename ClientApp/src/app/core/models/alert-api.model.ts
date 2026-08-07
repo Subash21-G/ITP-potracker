@@ -39,8 +39,24 @@ export interface AlertsSummary {
   totalAlerts: number;
 }
 
+export type AlertSortColumn =
+  | 'material'
+  | 'description'
+  | 'priorityDate'
+  | 'deliveryDate'
+  | 'process'
+  | 'dispatch'
+  | 'stock';
+
+export type AlertSortDirection =
+  | 'asc'
+  | 'desc';
+
 export interface AlertsQuery {
   readonly category: AlertCategory;
+
+  readonly sortColumn?: AlertSortColumn;
+  readonly sortDirection?: AlertSortDirection;
   readonly search?: string;
   readonly material?: string;
   readonly description?: string;

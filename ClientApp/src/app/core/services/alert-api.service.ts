@@ -14,6 +14,8 @@ export class AlertApiService {
       .set('pageSize', query.pageSize.toString());
 
     const values: readonly [string, string | undefined][] = [
+      ['sortColumn', query.sortColumn],
+      ['sortDirection', query.sortDirection],
       ['search', query.search],
       ['material', query.material],
       ['description', query.description],
