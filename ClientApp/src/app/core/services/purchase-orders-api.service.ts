@@ -15,6 +15,7 @@ import {
 
 import {
   PurchaseOrderDetails,
+  PurchaseOrderMaterialQuery,
 } from '../models/purchase-order-details.model';
 
 import {
@@ -221,16 +222,97 @@ export class PurchaseOrdersApiService {
     materialPageSize: number,
     forceRefresh = false,
   ): Observable<PurchaseOrderDetails> {
-    const params =
+    return this.getPurchaseOrderDetailsFiltered(
+      id,
+      {
+        materialPage,
+        materialPageSize,
+      },
+      forceRefresh,
+    );
+  }
+
+  getPurchaseOrderDetailsFiltered(
+    id: number,
+    query: PurchaseOrderMaterialQuery,
+    forceRefresh = false,
+  ): Observable<PurchaseOrderDetails> {
+    let params =
       new HttpParams()
         .set(
           'materialPage',
-          materialPage,
+          query.materialPage,
         )
         .set(
           'materialPageSize',
-          materialPageSize,
+          query.materialPageSize,
         );
+
+    const values:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['lineItem', query.lineItem],
+        ['material', query.material],
+        ['description', query.description],
+        ['minQuantity', query.minQuantity],
+        ['maxQuantity', query.maxQuantity],
+        ['minUnitPrice', query.minUnitPrice],
+        ['maxUnitPrice', query.maxUnitPrice],
+        [
+          'minInvoiceBalance',
+          query.minInvoiceBalance,
+        ],
+        [
+          'maxInvoiceBalance',
+          query.maxInvoiceBalance,
+        ],
+        [
+          'minDispatchBalance',
+          query.minDispatchBalance,
+        ],
+        [
+          'maxDispatchBalance',
+          query.maxDispatchBalance,
+        ],
+        [
+          'deliveryDateFrom',
+          query.deliveryDateFrom,
+        ],
+        [
+          'deliveryDateTo',
+          query.deliveryDateTo,
+        ],
+        ['processStatus', query.processStatus],
+        ['invoiceStatus', query.invoiceStatus],
+        ['dispatchStatus', query.dispatchStatus],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of values
+    ) {
+      params =
+        this.setOptional(
+          params,
+          name,
+          value,
+        );
+    }
+
+    if (
+      query.overdueStatus &&
+      query.overdueStatus !== 'all'
+    ) {
+      params =
+        params.set(
+          'overdueStatus',
+          query.overdueStatus,
+        );
+    }
 
     const cacheKey =
       (

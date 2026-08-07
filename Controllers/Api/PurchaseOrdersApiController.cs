@@ -496,179 +496,616 @@ namespace POTracker.Controllers.Api
         public async Task<ActionResult<PurchaseOrderDetailsDto>>
             Details(
                 int id,
+                string? lineItem,
+                string? material,
+                string? description,
+                decimal? minQuantity,
+                decimal? maxQuantity,
+                decimal? minUnitPrice,
+                decimal? maxUnitPrice,
+                decimal? minInvoiceBalance,
+                decimal? maxInvoiceBalance,
+                decimal? minDispatchBalance,
+                decimal? maxDispatchBalance,
+                DateTime? deliveryDateFrom,
+                DateTime? deliveryDateTo,
+                string? overdueStatus,
+                string? processStatus,
+                string? invoiceStatus,
+                string? dispatchStatus,
                 int materialPage = 1,
                 int materialPageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
         {
-            materialPage = Math.Max(1, materialPage);
-            materialPageSize = NormalizePageSize(materialPageSize);
+            materialPage =
+                Math.Max(
+                    1,
+                    materialPage);
 
-            var header = await _context.PurchaseOrders
-                .AsNoTracking()
-                .Where(purchaseOrder => purchaseOrder.Id == id)
-                .Select(purchaseOrder => new
-                {
-                    PurchaseOrderId = purchaseOrder.Id,
-                    purchaseOrder.PONumber,
-                    purchaseOrder.PODate,
-                    POReceivedDate = purchaseOrder.ReceivedDate,
-                    Handler =
-                        purchaseOrder.BuyerContactPerson ?? string.Empty,
-                    PurchaserName =
-                        purchaseOrder.Purchaser != null
-                            ? purchaseOrder.Purchaser.PurchaserName
-                            : string.Empty,
-                    purchaseOrder.BuyerEmail,
-                    purchaseOrder.VendorCode,
-                    purchaseOrder.VendorName,
-                    purchaseOrder.PaymentTerms,
-                    purchaseOrder.DeliveryCondition,
-                    purchaseOrder.Currency,
-                    purchaseOrder.BasicValue,
-                    purchaseOrder.TaxValue,
-                    purchaseOrder.GrandTotal,
-                    purchaseOrder.ImportFormat,
-                    purchaseOrder.PdfFilePath,
-                    purchaseOrder.Status,
-                    purchaseOrder.CreatedDate,
-                    purchaseOrder.UpdatedDate
-                })
-                .FirstOrDefaultAsync(cancellationToken);
+            materialPageSize =
+                NormalizePageSize(
+                    materialPageSize);
+
+            var header =
+                await _context.PurchaseOrders
+                    .AsNoTracking()
+                    .Where(purchaseOrder =>
+                        purchaseOrder.Id == id)
+                    .Select(purchaseOrder =>
+                        new
+                        {
+                            PurchaseOrderId =
+                                purchaseOrder.Id,
+
+                            purchaseOrder.PONumber,
+                            purchaseOrder.PODate,
+
+                            POReceivedDate =
+                                purchaseOrder.ReceivedDate,
+
+                            Handler =
+                                purchaseOrder.BuyerContactPerson ??
+                                string.Empty,
+
+                            PurchaserName =
+                                purchaseOrder.Purchaser != null
+                                    ? purchaseOrder.Purchaser.PurchaserName
+                                    : string.Empty,
+
+                            purchaseOrder.BuyerEmail,
+                            purchaseOrder.VendorCode,
+                            purchaseOrder.VendorName,
+                            purchaseOrder.PaymentTerms,
+                            purchaseOrder.DeliveryCondition,
+                            purchaseOrder.Currency,
+                            purchaseOrder.BasicValue,
+                            purchaseOrder.TaxValue,
+                            purchaseOrder.GrandTotal,
+                            purchaseOrder.ImportFormat,
+                            purchaseOrder.PdfFilePath,
+                            purchaseOrder.Status,
+                            purchaseOrder.CreatedDate,
+                            purchaseOrder.UpdatedDate
+                        })
+                    .FirstOrDefaultAsync(
+                        cancellationToken);
 
             if (header == null)
             {
-                return NotFound(new
-                {
-                    error = $"Purchase Order {id} was not found."
-                });
+                return NotFound(
+                    new
+                    {
+                        error =
+                            $"Purchase Order {id} was not found."
+                    });
             }
 
-            var today = DateTime.Today;
-            var materialsQuery = _context.Materials
-                .AsNoTracking()
-                .Where(material => material.PurchaseOrderId == id);
+            var today =
+                DateTime.Today;
 
-            var summary = await materialsQuery
-                .GroupBy(_ => 1)
-                .Select(group =>
-                    new PurchaseOrderDetailsSummaryDto
-                    {
-                        TotalMaterials = group.Count(),
-                        CompletedMaterials = group.Count(material =>
-                            (material.BalanceQty <= 0 ||
-                             material.InvoiceStatus == "Fully Invoiced") &&
-                            (material.PendingQty <= 0 ||
-                             material.DispatchStatus == "Dispatched")),
-                        PendingMaterials = group.Count(material =>
-                            !((material.BalanceQty <= 0 ||
-                               material.InvoiceStatus == "Fully Invoiced") &&
-                              (material.PendingQty <= 0 ||
-                               material.DispatchStatus == "Dispatched"))),
-                        OverdueMaterials = group.Count(material =>
-                            material.DeliveryDate.HasValue &&
-                            material.DeliveryDate < today &&
-                            material.PendingQty > 0),
-                        TotalPOQuantity = group.Sum(material =>
-                            material.Qty),
-                        TotalInvoiceBalance = group.Sum(material =>
-                            material.BalanceQty > 0
-                                ? material.BalanceQty
-                                : 0m),
-                        TotalDispatchBalance = group.Sum(material =>
-                            material.PendingQty > 0
-                                ? material.PendingQty
-                                : 0m)
-                    })
-                .FirstOrDefaultAsync(cancellationToken)
-                ?? new PurchaseOrderDetailsSummaryDto();
+            var materialsQuery =
+                _context.Materials
+                    .AsNoTracking()
+                    .Where(materialRow =>
+                        materialRow.PurchaseOrderId == id);
 
-            var materialTotalPages = Math.Max(
-                1,
-                (int)Math.Ceiling(
-                    summary.TotalMaterials /
-                    (double)materialPageSize));
+            materialsQuery =
+                ApplyPurchaseOrderMaterialFilters(
+                    materialsQuery,
+                    lineItem,
+                    material,
+                    description,
+                    minQuantity,
+                    maxQuantity,
+                    minUnitPrice,
+                    maxUnitPrice,
+                    minInvoiceBalance,
+                    maxInvoiceBalance,
+                    minDispatchBalance,
+                    maxDispatchBalance,
+                    deliveryDateFrom,
+                    deliveryDateTo,
+                    overdueStatus,
+                    processStatus,
+                    invoiceStatus,
+                    dispatchStatus,
+                    today);
+
+            var summary =
+                await materialsQuery
+                    .GroupBy(_ => 1)
+                    .Select(group =>
+                        new PurchaseOrderDetailsSummaryDto
+                        {
+                            TotalMaterials =
+                                group.Count(),
+
+                            CompletedMaterials =
+                                group.Count(materialRow =>
+                                    (
+                                        materialRow.BalanceQty <= 0 ||
+                                        materialRow.InvoiceStatus ==
+                                            "Fully Invoiced"
+                                    ) &&
+                                    (
+                                        materialRow.PendingQty <= 0 ||
+                                        materialRow.DispatchStatus ==
+                                            "Dispatched"
+                                    )),
+
+                            PendingMaterials =
+                                group.Count(materialRow =>
+                                    !(
+                                        (
+                                            materialRow.BalanceQty <= 0 ||
+                                            materialRow.InvoiceStatus ==
+                                                "Fully Invoiced"
+                                        ) &&
+                                        (
+                                            materialRow.PendingQty <= 0 ||
+                                            materialRow.DispatchStatus ==
+                                                "Dispatched"
+                                        )
+                                    )),
+
+                            OverdueMaterials =
+                                group.Count(materialRow =>
+                                    materialRow.DeliveryDate.HasValue &&
+                                    materialRow.DeliveryDate < today &&
+                                    materialRow.PendingQty > 0),
+
+                            TotalPOQuantity =
+                                group.Sum(materialRow =>
+                                    materialRow.Qty),
+
+                            TotalInvoiceBalance =
+                                group.Sum(materialRow =>
+                                    materialRow.BalanceQty > 0
+                                        ? materialRow.BalanceQty
+                                        : 0m),
+
+                            TotalDispatchBalance =
+                                group.Sum(materialRow =>
+                                    materialRow.PendingQty > 0
+                                        ? materialRow.PendingQty
+                                        : 0m)
+                        })
+                    .FirstOrDefaultAsync(
+                        cancellationToken)
+                    ?? new PurchaseOrderDetailsSummaryDto();
+
+            var materialTotalPages =
+                Math.Max(
+                    1,
+                    (int)Math.Ceiling(
+                        summary.TotalMaterials /
+                        (double)materialPageSize));
 
             if (materialPage > materialTotalPages)
             {
-                materialPage = materialTotalPages;
+                materialPage =
+                    materialTotalPages;
             }
 
-            var materials = await materialsQuery
-                .OrderBy(material => material.LineItem)
-                .ThenBy(material => material.MaterialNo)
-                .ThenBy(material => material.Id)
-                .Skip((materialPage - 1) * materialPageSize)
-                .Take(materialPageSize)
-                .Select(material => new PurchaseOrderMaterialDto
-                {
-                    Id = material.Id,
-                    LineItem = material.LineItem ?? string.Empty,
-                    MaterialNo = material.MaterialNo ?? string.Empty,
-                    HsnSacCode = material.HsnSacCode,
-                    Description =
-                        material.ShortDescription != null &&
-                        material.ShortDescription != string.Empty
-                            ? material.ShortDescription
-                            : material.BriefDescription ?? string.Empty,
-                    DrawingNo = material.DrawingNo ?? string.Empty,
-                    Quantity = material.Qty,
-                    Unit = material.Unit ?? string.Empty,
-                    UnitPrice = material.Cost,
-                    InvoiceQuantity = material.InvoiceQty,
-                    InvoiceBalanceQuantity =
-                        material.BalanceQty > 0
-                            ? material.BalanceQty
-                            : 0m,
-                    DispatchQuantity = material.DispatchQty,
-                    DispatchBalanceQuantity =
-                        material.PendingQty > 0
-                            ? material.PendingQty
-                            : 0m,
-                    DeliveryDate = material.DeliveryDate,
-                    ProcessStatus = material.ProcessStatus,
-                    InvoiceStatus = material.InvoiceStatus,
-                    DispatchStatus = material.DispatchStatus,
-                    IsOverdue =
-                        material.DeliveryDate.HasValue &&
-                        material.DeliveryDate < today &&
-                        material.PendingQty > 0
-                })
-                .ToListAsync(cancellationToken);
+            var materials =
+                await materialsQuery
+                    .OrderBy(materialRow =>
+                        materialRow.LineItem)
+                    .ThenBy(materialRow =>
+                        materialRow.MaterialNo)
+                    .ThenBy(materialRow =>
+                        materialRow.Id)
+                    .Skip(
+                        (materialPage - 1) *
+                        materialPageSize)
+                    .Take(
+                        materialPageSize)
+                    .Select(materialRow =>
+                        new PurchaseOrderMaterialDto
+                        {
+                            Id =
+                                materialRow.Id,
 
-            return Ok(new PurchaseOrderDetailsDto
-            {
-                PurchaseOrderId = header.PurchaseOrderId,
-                PONumber = header.PONumber,
-                PODate = header.PODate,
-                POReceivedDate = header.POReceivedDate,
-                Handler = header.Handler,
-                PurchaserName = header.PurchaserName,
-                BuyerEmail = header.BuyerEmail,
-                VendorCode = header.VendorCode,
-                VendorName = header.VendorName,
-                PaymentTerms = header.PaymentTerms,
-                DeliveryCondition = header.DeliveryCondition,
-                Currency = header.Currency,
-                BasicValue = header.BasicValue,
-                TaxValue = header.TaxValue,
-                GrandTotal = header.GrandTotal,
-                ImportFormat = header.ImportFormat,
-                PdfFilePath =
-                    _documentReferences.ToDownloadUrl(
-                        header.PdfFilePath,
-                        "po"),
-                Status = header.Status,
-                CreatedDate = header.CreatedDate,
-                UpdatedDate = header.UpdatedDate,
-                Summary = summary,
-                Materials = new PagedResult<PurchaseOrderMaterialDto>
+                            LineItem =
+                                materialRow.LineItem ??
+                                string.Empty,
+
+                            MaterialNo =
+                                materialRow.MaterialNo ??
+                                string.Empty,
+
+                            HsnSacCode =
+                                materialRow.HsnSacCode,
+
+                            Description =
+                                materialRow.ShortDescription != null &&
+                                materialRow.ShortDescription != string.Empty
+                                    ? materialRow.ShortDescription
+                                    : materialRow.BriefDescription ??
+                                      string.Empty,
+
+                            DrawingNo =
+                                materialRow.DrawingNo ??
+                                string.Empty,
+
+                            Quantity =
+                                materialRow.Qty,
+
+                            Unit =
+                                materialRow.Unit ??
+                                string.Empty,
+
+                            UnitPrice =
+                                materialRow.Cost,
+
+                            InvoiceQuantity =
+                                materialRow.InvoiceQty,
+
+                            InvoiceBalanceQuantity =
+                                materialRow.BalanceQty > 0
+                                    ? materialRow.BalanceQty
+                                    : 0m,
+
+                            DispatchQuantity =
+                                materialRow.DispatchQty,
+
+                            DispatchBalanceQuantity =
+                                materialRow.PendingQty > 0
+                                    ? materialRow.PendingQty
+                                    : 0m,
+
+                            DeliveryDate =
+                                materialRow.DeliveryDate,
+
+                            ProcessStatus =
+                                materialRow.ProcessStatus,
+
+                            InvoiceStatus =
+                                materialRow.InvoiceStatus,
+
+                            DispatchStatus =
+                                materialRow.DispatchStatus,
+
+                            IsOverdue =
+                                materialRow.DeliveryDate.HasValue &&
+                                materialRow.DeliveryDate < today &&
+                                materialRow.PendingQty > 0
+                        })
+                    .ToListAsync(
+                        cancellationToken);
+
+            return Ok(
+                new PurchaseOrderDetailsDto
                 {
-                    Items = materials,
-                    Page = materialPage,
-                    PageSize = materialPageSize,
-                    TotalRecords = summary.TotalMaterials
-                }
-            });
+                    PurchaseOrderId =
+                        header.PurchaseOrderId,
+
+                    PONumber =
+                        header.PONumber,
+
+                    PODate =
+                        header.PODate,
+
+                    POReceivedDate =
+                        header.POReceivedDate,
+
+                    Handler =
+                        header.Handler,
+
+                    PurchaserName =
+                        header.PurchaserName,
+
+                    BuyerEmail =
+                        header.BuyerEmail,
+
+                    VendorCode =
+                        header.VendorCode,
+
+                    VendorName =
+                        header.VendorName,
+
+                    PaymentTerms =
+                        header.PaymentTerms,
+
+                    DeliveryCondition =
+                        header.DeliveryCondition,
+
+                    Currency =
+                        header.Currency,
+
+                    BasicValue =
+                        header.BasicValue,
+
+                    TaxValue =
+                        header.TaxValue,
+
+                    GrandTotal =
+                        header.GrandTotal,
+
+                    ImportFormat =
+                        header.ImportFormat,
+
+                    PdfFilePath =
+                        _documentReferences.ToDownloadUrl(
+                            header.PdfFilePath,
+                            "po"),
+
+                    Status =
+                        header.Status,
+
+                    CreatedDate =
+                        header.CreatedDate,
+
+                    UpdatedDate =
+                        header.UpdatedDate,
+
+                    Summary =
+                        summary,
+
+                    Materials =
+                        new PagedResult<PurchaseOrderMaterialDto>
+                        {
+                            Items =
+                                materials,
+
+                            Page =
+                                materialPage,
+
+                            PageSize =
+                                materialPageSize,
+
+                            TotalRecords =
+                                summary.TotalMaterials
+                        }
+                });
+        }
+
+        private static IQueryable<Material>
+            ApplyPurchaseOrderMaterialFilters(
+                IQueryable<Material> query,
+                string? lineItem,
+                string? material,
+                string? description,
+                decimal? minQuantity,
+                decimal? maxQuantity,
+                decimal? minUnitPrice,
+                decimal? maxUnitPrice,
+                decimal? minInvoiceBalance,
+                decimal? maxInvoiceBalance,
+                decimal? minDispatchBalance,
+                decimal? maxDispatchBalance,
+                DateTime? deliveryDateFrom,
+                DateTime? deliveryDateTo,
+                string? overdueStatus,
+                string? processStatus,
+                string? invoiceStatus,
+                string? dispatchStatus,
+                DateTime today)
+        {
+            if (!string.IsNullOrWhiteSpace(lineItem))
+            {
+                var value =
+                    lineItem.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.LineItem != null &&
+                        materialRow.LineItem.Contains(
+                            value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(material))
+            {
+                var value =
+                    material.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        (
+                            materialRow.MaterialNo != null &&
+                            materialRow.MaterialNo.Contains(
+                                value)
+                        ) ||
+                        (
+                            materialRow.DrawingNo != null &&
+                            materialRow.DrawingNo.Contains(
+                                value)
+                        ) ||
+                        (
+                            materialRow.HsnSacCode != null &&
+                            materialRow.HsnSacCode.Contains(
+                                value)
+                        ));
+            }
+
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                var value =
+                    description.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        (
+                            materialRow.ShortDescription != null &&
+                            materialRow.ShortDescription.Contains(
+                                value)
+                        ) ||
+                        (
+                            materialRow.BriefDescription != null &&
+                            materialRow.BriefDescription.Contains(
+                                value)
+                        ));
+            }
+
+            if (minQuantity.HasValue)
+            {
+                query =
+                    query.Where(materialRow =>
+                        materialRow.Qty >=
+                        minQuantity.Value);
+            }
+
+            if (maxQuantity.HasValue)
+            {
+                query =
+                    query.Where(materialRow =>
+                        materialRow.Qty <=
+                        maxQuantity.Value);
+            }
+
+            if (minUnitPrice.HasValue)
+            {
+                query =
+                    query.Where(materialRow =>
+                        materialRow.Cost >=
+                        minUnitPrice.Value);
+            }
+
+            if (maxUnitPrice.HasValue)
+            {
+                query =
+                    query.Where(materialRow =>
+                        materialRow.Cost <=
+                        maxUnitPrice.Value);
+            }
+
+            if (minInvoiceBalance.HasValue)
+            {
+                query =
+                    query.Where(materialRow =>
+                        (
+                            materialRow.BalanceQty > 0
+                                ? materialRow.BalanceQty
+                                : 0m
+                        ) >= minInvoiceBalance.Value);
+            }
+
+            if (maxInvoiceBalance.HasValue)
+            {
+                query =
+                    query.Where(materialRow =>
+                        (
+                            materialRow.BalanceQty > 0
+                                ? materialRow.BalanceQty
+                                : 0m
+                        ) <= maxInvoiceBalance.Value);
+            }
+
+            if (minDispatchBalance.HasValue)
+            {
+                query =
+                    query.Where(materialRow =>
+                        (
+                            materialRow.PendingQty > 0
+                                ? materialRow.PendingQty
+                                : 0m
+                        ) >= minDispatchBalance.Value);
+            }
+
+            if (maxDispatchBalance.HasValue)
+            {
+                query =
+                    query.Where(materialRow =>
+                        (
+                            materialRow.PendingQty > 0
+                                ? materialRow.PendingQty
+                                : 0m
+                        ) <= maxDispatchBalance.Value);
+            }
+
+            if (deliveryDateFrom.HasValue)
+            {
+                var start =
+                    deliveryDateFrom.Value.Date;
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.DeliveryDate.HasValue &&
+                        materialRow.DeliveryDate.Value >=
+                            start);
+            }
+
+            if (deliveryDateTo.HasValue)
+            {
+                var endExclusive =
+                    deliveryDateTo
+                        .Value
+                        .Date
+                        .AddDays(1);
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.DeliveryDate.HasValue &&
+                        materialRow.DeliveryDate.Value <
+                            endExclusive);
+            }
+
+            var normalizedOverdueStatus =
+                overdueStatus?.Trim();
+
+            if (
+                string.Equals(
+                    normalizedOverdueStatus,
+                    "overdue",
+                    StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                query =
+                    query.Where(materialRow =>
+                        materialRow.DeliveryDate.HasValue &&
+                        materialRow.DeliveryDate.Value < today &&
+                        materialRow.PendingQty > 0);
+            }
+            else if (
+                string.Equals(
+                    normalizedOverdueStatus,
+                    "not-overdue",
+                    StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                query =
+                    query.Where(materialRow =>
+                        !(
+                            materialRow.DeliveryDate.HasValue &&
+                            materialRow.DeliveryDate.Value < today &&
+                            materialRow.PendingQty > 0
+                        ));
+            }
+
+            if (!string.IsNullOrWhiteSpace(processStatus))
+            {
+                var value =
+                    processStatus.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.ProcessStatus.Contains(
+                            value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(invoiceStatus))
+            {
+                var value =
+                    invoiceStatus.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.InvoiceStatus.Contains(
+                            value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(dispatchStatus))
+            {
+                var value =
+                    dispatchStatus.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.DispatchStatus.Contains(
+                            value));
+            }
+
+            return query;
         }
 
         private static IQueryable<PurchaseOrder>

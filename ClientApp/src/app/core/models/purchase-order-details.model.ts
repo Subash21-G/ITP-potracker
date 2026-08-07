@@ -56,3 +56,35 @@ export interface PurchaseOrderMaterial {
   readonly isOverdue: boolean;
 }
 
+export interface PurchaseOrderMaterialQuery {
+  readonly materialPage: number;
+  readonly materialPageSize: number;
+
+  readonly lineItem?: string;
+  readonly material?: string;
+  readonly description?: string;
+
+  readonly minQuantity?: string;
+  readonly maxQuantity?: string;
+
+  readonly minUnitPrice?: string;
+  readonly maxUnitPrice?: string;
+
+  readonly minInvoiceBalance?: string;
+  readonly maxInvoiceBalance?: string;
+
+  readonly minDispatchBalance?: string;
+  readonly maxDispatchBalance?: string;
+
+  readonly deliveryDateFrom?: string;
+  readonly deliveryDateTo?: string;
+
+  readonly overdueStatus?:
+    | 'all'
+    | 'overdue'
+    | 'not-overdue';
+
+  readonly processStatus?: string;
+  readonly invoiceStatus?: string;
+  readonly dispatchStatus?: string;
+}

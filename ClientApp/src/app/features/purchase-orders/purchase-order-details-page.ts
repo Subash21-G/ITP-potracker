@@ -10,6 +10,11 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
@@ -18,7 +23,13 @@ import { PurchaseOrdersApiService } from '../../core/services/purchase-orders-ap
 
 @Component({
   selector: 'app-purchase-order-details-page',
-  imports: [ManageOnlyDirective, DatePipe, DecimalPipe, RouterLink],
+  imports: [
+    ManageOnlyDirective,
+    DatePipe,
+    DecimalPipe,
+    ReactiveFormsModule,
+    RouterLink,
+  ],
   templateUrl: './purchase-order-details-page.html',
   styleUrl: './purchase-order-details-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,6 +40,99 @@ export class PurchaseOrderDetailsPage {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly purchaseOrderId = Number(this.route.snapshot.paramMap.get('id'));
+  readonly materialFilters =
+    new FormGroup({
+      lineItem:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      material:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      description:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minQuantity:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxQuantity:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minUnitPrice:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxUnitPrice:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minInvoiceBalance:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxInvoiceBalance:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minDispatchBalance:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxDispatchBalance:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      deliveryDateFrom:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      deliveryDateTo:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      overdueStatus:
+        new FormControl<
+          'all' | 'overdue' | 'not-overdue'
+        >(
+          'all',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      processStatus:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      invoiceStatus:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      dispatchStatus:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+    });
+
   readonly details = signal<PurchaseOrderDetails | null>(null);
   readonly materialPage = signal(1);
   readonly materialPageSize = signal(25);
@@ -56,6 +160,185 @@ export class PurchaseOrderDetailsPage {
     }
 
     this.loadDetails();
+  }
+
+  applyMaterialFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.materialPage.set(1);
+    this.loadDetails();
+  }
+
+  clearMaterialFilter(
+    column:
+      | 'line'
+      | 'material'
+      | 'description'
+      | 'quantity'
+      | 'unitPrice'
+      | 'invoiceBalance'
+      | 'dispatchBalance'
+      | 'delivery'
+      | 'process'
+      | 'invoice'
+      | 'dispatch',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'line':
+        this.materialFilters.controls
+          .lineItem.setValue('');
+        break;
+
+      case 'material':
+        this.materialFilters.controls
+          .material.setValue('');
+        break;
+
+      case 'description':
+        this.materialFilters.controls
+          .description.setValue('');
+        break;
+
+      case 'quantity':
+        this.materialFilters.patchValue({
+          minQuantity: '',
+          maxQuantity: '',
+        });
+        break;
+
+      case 'unitPrice':
+        this.materialFilters.patchValue({
+          minUnitPrice: '',
+          maxUnitPrice: '',
+        });
+        break;
+
+      case 'invoiceBalance':
+        this.materialFilters.patchValue({
+          minInvoiceBalance: '',
+          maxInvoiceBalance: '',
+        });
+        break;
+
+      case 'dispatchBalance':
+        this.materialFilters.patchValue({
+          minDispatchBalance: '',
+          maxDispatchBalance: '',
+        });
+        break;
+
+      case 'delivery':
+        this.materialFilters.patchValue({
+          deliveryDateFrom: '',
+          deliveryDateTo: '',
+          overdueStatus: 'all',
+        });
+        break;
+
+      case 'process':
+        this.materialFilters.controls
+          .processStatus.setValue('');
+        break;
+
+      case 'invoice':
+        this.materialFilters.controls
+          .invoiceStatus.setValue('');
+        break;
+
+      case 'dispatch':
+        this.materialFilters.controls
+          .dispatchStatus.setValue('');
+        break;
+    }
+
+    filter.open = false;
+    this.materialPage.set(1);
+    this.loadDetails();
+  }
+
+  materialFilterActive(
+    column:
+      | 'line'
+      | 'material'
+      | 'description'
+      | 'quantity'
+      | 'unitPrice'
+      | 'invoiceBalance'
+      | 'dispatchBalance'
+      | 'delivery'
+      | 'process'
+      | 'invoice'
+      | 'dispatch',
+  ): boolean {
+    const values =
+      this.materialFilters.getRawValue();
+
+    switch (column) {
+      case 'line':
+        return Boolean(
+          values.lineItem.trim(),
+        );
+
+      case 'material':
+        return Boolean(
+          values.material.trim(),
+        );
+
+      case 'description':
+        return Boolean(
+          values.description.trim(),
+        );
+
+      case 'quantity':
+        return Boolean(
+          values.minQuantity.trim() ||
+          values.maxQuantity.trim(),
+        );
+
+      case 'unitPrice':
+        return Boolean(
+          values.minUnitPrice.trim() ||
+          values.maxUnitPrice.trim(),
+        );
+
+      case 'invoiceBalance':
+        return Boolean(
+          values.minInvoiceBalance.trim() ||
+          values.maxInvoiceBalance.trim(),
+        );
+
+      case 'dispatchBalance':
+        return Boolean(
+          values.minDispatchBalance.trim() ||
+          values.maxDispatchBalance.trim(),
+        );
+
+      case 'delivery':
+        return Boolean(
+          values.deliveryDateFrom ||
+          values.deliveryDateTo ||
+          values.overdueStatus !== 'all',
+        );
+
+      case 'process':
+        return Boolean(
+          values.processStatus.trim(),
+        );
+
+      case 'invoice':
+        return Boolean(
+          values.invoiceStatus.trim(),
+        );
+
+      case 'dispatch':
+        return Boolean(
+          values.dispatchStatus.trim(),
+        );
+    }
+
+    return false;
   }
 
   changePageSize(event: Event): void {
@@ -127,8 +410,22 @@ export class PurchaseOrderDetailsPage {
     this.errorMessage.set('');
     this.errorStatus.set(null);
 
+    const materialFilters =
+      this.materialFilters.getRawValue();
+
     this.purchaseOrdersApi
-      .getPurchaseOrderDetails(this.purchaseOrderId, this.materialPage(), this.materialPageSize())
+      .getPurchaseOrderDetailsFiltered(
+        this.purchaseOrderId,
+        {
+          materialPage:
+            this.materialPage(),
+
+          materialPageSize:
+            this.materialPageSize(),
+
+          ...materialFilters,
+        },
+      )
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loading.set(false)),

@@ -218,19 +218,511 @@
 
     <div class="table-wrap" [class.table-wrap--loading]="loading()">
       <table>
-        <thead>
+                <thead>
           <tr>
-            <th>Line</th>
-            <th>Material</th>
-            <th>Description</th>
-            <th class="number-cell">PO qty</th>
-            <th class="number-cell">Price per No</th>
-            <th class="number-cell">Invoice balance</th>
-            <th class="number-cell">Dispatch balance</th>
-            <th>Delivery</th>
-            <th>Process</th>
-            <th>Invoice</th>
-            <th>Dispatch</th>
+            <th>
+              <div class="server-table-heading">
+                <span>Line</span>
+                <details
+                  #poDetailLineFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('line')
+                  ">
+                  <summary title="Filter Line">▾</summary>
+                  <div class="server-column-filter__menu">
+                    <label>
+                      <span>Line contains</span>
+                      <input
+                        type="search"
+                        [formControl]="
+                          materialFilters.controls.lineItem
+                        "
+                        placeholder="Line item">
+                    </label>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('line', poDetailLineFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailLineFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
+            <th>
+              <div class="server-table-heading">
+                <span>Material</span>
+                <details
+                  #poDetailMaterialFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('material')
+                  ">
+                  <summary title="Filter Material">▾</summary>
+                  <div class="server-column-filter__menu">
+                    <label>
+                      <span>Material / Drawing / HSN contains</span>
+                      <input
+                        type="search"
+                        [formControl]="
+                          materialFilters.controls.material
+                        "
+                        placeholder="Material, drawing or HSN">
+                    </label>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('material', poDetailMaterialFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailMaterialFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
+            <th>
+              <div class="server-table-heading">
+                <span>Description</span>
+                <details
+                  #poDetailDescriptionFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('description')
+                  ">
+                  <summary title="Filter Description">▾</summary>
+                  <div class="server-column-filter__menu">
+                    <label>
+                      <span>Description contains</span>
+                      <input
+                        type="search"
+                        [formControl]="
+                          materialFilters.controls.description
+                        "
+                        placeholder="Description">
+                    </label>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('description', poDetailDescriptionFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailDescriptionFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
+            <th class="number-cell">
+              <div class="server-table-heading">
+                <span>PO qty</span>
+                <details
+                  #poDetailQuantityFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('quantity')
+                  ">
+                  <summary title="Filter PO Quantity">▾</summary>
+                  <div class="server-column-filter__menu">
+                    <div class="server-column-filter__range">
+                      <label>
+                        <span>Min</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          [formControl]="
+                            materialFilters.controls.minQuantity
+                          ">
+                      </label>
+
+                      <label>
+                        <span>Max</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          [formControl]="
+                            materialFilters.controls.maxQuantity
+                          ">
+                      </label>
+                    </div>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('quantity', poDetailQuantityFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailQuantityFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
+            <th class="number-cell">
+              <div class="server-table-heading">
+                <span>Price per No</span>
+                <details
+                  #poDetailPriceFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('unitPrice')
+                  ">
+                  <summary title="Filter Price">▾</summary>
+                  <div class="server-column-filter__menu">
+                    <div class="server-column-filter__range">
+                      <label>
+                        <span>Min</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          [formControl]="
+                            materialFilters.controls.minUnitPrice
+                          ">
+                      </label>
+
+                      <label>
+                        <span>Max</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          [formControl]="
+                            materialFilters.controls.maxUnitPrice
+                          ">
+                      </label>
+                    </div>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('unitPrice', poDetailPriceFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailPriceFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
+            <th class="number-cell">
+              <div class="server-table-heading">
+                <span>Invoice balance</span>
+                <details
+                  #poDetailInvoiceBalanceFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('invoiceBalance')
+                  ">
+                  <summary title="Filter Invoice Balance">▾</summary>
+                  <div class="server-column-filter__menu">
+                    <div class="server-column-filter__range">
+                      <label>
+                        <span>Min</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          [formControl]="
+                            materialFilters.controls.minInvoiceBalance
+                          ">
+                      </label>
+
+                      <label>
+                        <span>Max</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          [formControl]="
+                            materialFilters.controls.maxInvoiceBalance
+                          ">
+                      </label>
+                    </div>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('invoiceBalance', poDetailInvoiceBalanceFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailInvoiceBalanceFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
+            <th class="number-cell">
+              <div class="server-table-heading">
+                <span>Dispatch balance</span>
+                <details
+                  #poDetailDispatchBalanceFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('dispatchBalance')
+                  ">
+                  <summary title="Filter Dispatch Balance">▾</summary>
+                  <div class="server-column-filter__menu">
+                    <div class="server-column-filter__range">
+                      <label>
+                        <span>Min</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          [formControl]="
+                            materialFilters.controls.minDispatchBalance
+                          ">
+                      </label>
+
+                      <label>
+                        <span>Max</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          [formControl]="
+                            materialFilters.controls.maxDispatchBalance
+                          ">
+                      </label>
+                    </div>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('dispatchBalance', poDetailDispatchBalanceFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailDispatchBalanceFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
+            <th>
+              <div class="server-table-heading">
+                <span>Delivery</span>
+                <details
+                  #poDetailDeliveryFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('delivery')
+                  ">
+                  <summary title="Filter Delivery">▾</summary>
+                  <div class="server-column-filter__menu">
+                    <div class="server-column-filter__range">
+                      <label>
+                        <span>From</span>
+                        <input
+                          type="date"
+                          [formControl]="
+                            materialFilters.controls.deliveryDateFrom
+                          ">
+                      </label>
+
+                      <label>
+                        <span>To</span>
+                        <input
+                          type="date"
+                          [formControl]="
+                            materialFilters.controls.deliveryDateTo
+                          ">
+                      </label>
+                    </div>
+
+                    <label>
+                      <span>Delivery state</span>
+                      <select
+                        [formControl]="
+                          materialFilters.controls.overdueStatus
+                        ">
+                        <option value="all">All</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="not-overdue">Not overdue</option>
+                      </select>
+                    </label>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('delivery', poDetailDeliveryFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailDeliveryFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
+            <th>
+              <div class="server-table-heading">
+                <span>Process</span>
+                <details
+                  #poDetailProcessFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('process')
+                  ">
+                  <summary title="Filter Process">▾</summary>
+                  <div class="server-column-filter__menu">
+                    <label>
+                      <span>Process status contains</span>
+                      <input
+                        type="search"
+                        [formControl]="
+                          materialFilters.controls.processStatus
+                        "
+                        placeholder="Process status">
+                    </label>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('process', poDetailProcessFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailProcessFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
+            <th>
+              <div class="server-table-heading">
+                <span>Invoice</span>
+                <details
+                  #poDetailInvoiceFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('invoice')
+                  ">
+                  <summary title="Filter Invoice Status">▾</summary>
+                  <div class="server-column-filter__menu">
+                    <label>
+                      <span>Invoice status contains</span>
+                      <input
+                        type="search"
+                        [formControl]="
+                          materialFilters.controls.invoiceStatus
+                        "
+                        placeholder="Invoice status">
+                    </label>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('invoice', poDetailInvoiceFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailInvoiceFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
+            <th>
+              <div class="server-table-heading">
+                <span>Dispatch</span>
+                <details
+                  #poDetailDispatchFilter
+                  class="server-column-filter"
+                  [class.server-column-filter--active]="
+                    materialFilterActive('dispatch')
+                  ">
+                  <summary title="Filter Dispatch Status">▾</summary>
+                  <div
+                    class="
+                      server-column-filter__menu
+                      server-column-filter__menu--right
+                    ">
+                    <label>
+                      <span>Dispatch status contains</span>
+                      <input
+                        type="search"
+                        [formControl]="
+                          materialFilters.controls.dispatchStatus
+                        "
+                        placeholder="Dispatch status">
+                    </label>
+
+                    <div class="server-column-filter__actions">
+                      <button
+                        type="button"
+                        (click)="clearMaterialFilter('dispatch', poDetailDispatchFilter)">
+                        Clear
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="applyMaterialFilter(poDetailDispatchFilter)">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </th>
+
             <th>Action</th>
           </tr>
         </thead>
