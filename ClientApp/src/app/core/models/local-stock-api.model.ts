@@ -29,6 +29,22 @@ export interface LocalStockListResponse {
 
 export interface LocalStockListQuery {
   readonly search: string;
+
+  readonly material?: string;
+  readonly rmGrade?: string;
+  readonly location?: string;
+
+  readonly minAvailableQty?: string;
+  readonly maxAvailableQty?: string;
+
+  readonly minMinimumQty?: string;
+  readonly maxMinimumQty?: string;
+
+  readonly status?: string;
+
+  readonly updatedFrom?: string;
+  readonly updatedTo?: string;
+
   readonly page: number;
   readonly pageSize: number;
 }

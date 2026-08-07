@@ -46,6 +46,16 @@ namespace POTracker.Controllers.Api
             ActionResult<LocalStockListResponseDto>>
             Index(
                 string? search,
+                string? material,
+                string? rmGrade,
+                string? location,
+                decimal? minAvailableQty,
+                decimal? maxAvailableQty,
+                decimal? minMinimumQty,
+                decimal? maxMinimumQty,
+                string? status,
+                DateTime? updatedFrom,
+                DateTime? updatedTo,
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
@@ -65,6 +75,126 @@ namespace POTracker.Controllers.Api
                     _context.Stocks
                         .AsNoTracking(),
                     search);
+
+            var normalizedMaterial =
+                NormalizeOptional(
+                    material);
+
+            if (normalizedMaterial != null)
+            {
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.MaterialNo.Contains(
+                            normalizedMaterial) ||
+                        (
+                            stock.MaterialName != null &&
+                            stock.MaterialName.Contains(
+                                normalizedMaterial)
+                        ));
+            }
+
+            var normalizedGrade =
+                NormalizeOptional(
+                    rmGrade);
+
+            if (normalizedGrade != null)
+            {
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.RMGrade != null &&
+                        stock.RMGrade.Contains(
+                            normalizedGrade));
+            }
+
+            var normalizedLocation =
+                NormalizeOptional(
+                    location);
+
+            if (normalizedLocation != null)
+            {
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.Location != null &&
+                        stock.Location.Contains(
+                            normalizedLocation));
+            }
+
+            if (minAvailableQty.HasValue)
+            {
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.AvailableQty >=
+                        minAvailableQty.Value);
+            }
+
+            if (maxAvailableQty.HasValue)
+            {
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.AvailableQty <=
+                        maxAvailableQty.Value);
+            }
+
+            if (minMinimumQty.HasValue)
+            {
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.MinimumQty >=
+                        minMinimumQty.Value);
+            }
+
+            if (maxMinimumQty.HasValue)
+            {
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.MinimumQty <=
+                        maxMinimumQty.Value);
+            }
+
+            var normalizedStatus =
+                NormalizeOptional(
+                    status)?
+                    .ToLowerInvariant();
+
+            if (normalizedStatus == "low")
+            {
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.AvailableQty <=
+                        stock.MinimumQty);
+            }
+            else if (
+                normalizedStatus ==
+                "healthy"
+            )
+            {
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.AvailableQty >
+                        stock.MinimumQty);
+            }
+
+            if (updatedFrom.HasValue)
+            {
+                var updatedStart =
+                    updatedFrom.Value.Date;
+
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.UpdatedDate >=
+                        updatedStart);
+            }
+
+            if (updatedTo.HasValue)
+            {
+                var updatedEndExclusive =
+                    updatedTo.Value.Date.AddDays(1);
+
+                filteredQuery =
+                    filteredQuery.Where(stock =>
+                        stock.UpdatedDate <
+                        updatedEndExclusive);
+            }
 
             var totalRecords =
                 await filteredQuery.CountAsync(

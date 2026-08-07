@@ -46,15 +46,52 @@ export class LocalStockApiService {
           query.pageSize,
         );
 
-    const search =
-      query.search.trim();
+    const optionalValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['material', query.material],
+        ['rmGrade', query.rmGrade],
+        ['location', query.location],
+        [
+          'minAvailableQty',
+          query.minAvailableQty,
+        ],
+        [
+          'maxAvailableQty',
+          query.maxAvailableQty,
+        ],
+        [
+          'minMinimumQty',
+          query.minMinimumQty,
+        ],
+        [
+          'maxMinimumQty',
+          query.maxMinimumQty,
+        ],
+        ['status', query.status],
+        ['updatedFrom', query.updatedFrom],
+        ['updatedTo', query.updatedTo],
+      ];
 
-    if (search) {
-      params =
-        params.set(
-          'search',
-          search,
-        );
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      const cleaned =
+        value?.trim();
+
+      if (cleaned) {
+        params =
+          params.set(
+            name,
+            cleaned,
+          );
+      }
     }
 
     return this.http.get<LocalStockListResponse>(

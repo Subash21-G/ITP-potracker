@@ -72,6 +72,89 @@ export class LocalStocksPage {
       },
     );
 
+  readonly columnFilters =
+    new FormGroup({
+      material:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      rmGrade:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      location:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      minAvailableQty:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      maxAvailableQty:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      minMinimumQty:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      maxMinimumQty:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      status:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      updatedFrom:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      updatedTo:
+        new FormControl(
+          '',
+          {
+            nonNullable: true,
+          },
+        ),
+    });
+
   readonly form =
     new FormGroup({
       materialNo:
@@ -433,6 +516,131 @@ export class LocalStocksPage {
     this.load();
   }
 
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.page.set(1);
+    this.successMessage.set('');
+    this.load();
+  }
+
+  clearColumnFilter(
+    column:
+      | 'material'
+      | 'grade'
+      | 'location'
+      | 'available'
+      | 'minimum'
+      | 'status'
+      | 'updated',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'material':
+        this.columnFilters.controls
+          .material.setValue('');
+        break;
+
+      case 'grade':
+        this.columnFilters.controls
+          .rmGrade.setValue('');
+        break;
+
+      case 'location':
+        this.columnFilters.controls
+          .location.setValue('');
+        break;
+
+      case 'available':
+        this.columnFilters.patchValue({
+          minAvailableQty: '',
+          maxAvailableQty: '',
+        });
+        break;
+
+      case 'minimum':
+        this.columnFilters.patchValue({
+          minMinimumQty: '',
+          maxMinimumQty: '',
+        });
+        break;
+
+      case 'status':
+        this.columnFilters.controls
+          .status.setValue('');
+        break;
+
+      case 'updated':
+        this.columnFilters.patchValue({
+          updatedFrom: '',
+          updatedTo: '',
+        });
+        break;
+    }
+
+    filter.open = false;
+    this.page.set(1);
+    this.successMessage.set('');
+    this.load();
+  }
+
+  columnFilterActive(
+    column:
+      | 'material'
+      | 'grade'
+      | 'location'
+      | 'available'
+      | 'minimum'
+      | 'status'
+      | 'updated',
+  ): boolean {
+    const values =
+      this.columnFilters.getRawValue();
+
+    switch (column) {
+      case 'material':
+        return Boolean(
+          values.material.trim(),
+        );
+
+      case 'grade':
+        return Boolean(
+          values.rmGrade.trim(),
+        );
+
+      case 'location':
+        return Boolean(
+          values.location.trim(),
+        );
+
+      case 'available':
+        return Boolean(
+          values.minAvailableQty.trim() ||
+          values.maxAvailableQty.trim(),
+        );
+
+      case 'minimum':
+        return Boolean(
+          values.minMinimumQty.trim() ||
+          values.maxMinimumQty.trim(),
+        );
+
+      case 'status':
+        return Boolean(
+          values.status,
+        );
+
+      case 'updated':
+        return Boolean(
+          values.updatedFrom ||
+          values.updatedTo,
+        );
+    }
+
+    return false;
+  }
+
   clearSearch(): void {
     this.searchControl.setValue('');
     this.page.set(1);
@@ -508,6 +716,9 @@ export class LocalStocksPage {
       return;
     }
 
+    const columnValues =
+      this.columnFilters.getRawValue();
+
     this.loading.set(true);
     this.errorMessage.set('');
 
@@ -515,8 +726,40 @@ export class LocalStocksPage {
       .getStocks({
         search:
           this.searchControl.value,
+
+        material:
+          columnValues.material,
+
+        rmGrade:
+          columnValues.rmGrade,
+
+        location:
+          columnValues.location,
+
+        minAvailableQty:
+          columnValues.minAvailableQty,
+
+        maxAvailableQty:
+          columnValues.maxAvailableQty,
+
+        minMinimumQty:
+          columnValues.minMinimumQty,
+
+        maxMinimumQty:
+          columnValues.maxMinimumQty,
+
+        status:
+          columnValues.status,
+
+        updatedFrom:
+          columnValues.updatedFrom,
+
+        updatedTo:
+          columnValues.updatedTo,
+
         page:
           this.page(),
+
         pageSize:
           this.pageSize(),
       })

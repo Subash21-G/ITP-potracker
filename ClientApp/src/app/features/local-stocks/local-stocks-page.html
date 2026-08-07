@@ -294,15 +294,402 @@
     } @else if (items().length > 0) {
       <div class="table-scroll">
         <table>
-          <thead>
+                    <thead>
             <tr>
-              <th>Material</th>
-              <th>RM Grade</th>
-              <th>Location</th>
-              <th>Available</th>
-              <th>Minimum</th>
-              <th>Status</th>
-              <th>Updated</th>
+              <th>
+                <div class="server-table-heading">
+                  <span>Material</span>
+
+                  <details
+                    #localMaterialFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('material')
+                    ">
+                    <summary title="Filter Material">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Material number / name</span>
+                        <input
+                          type="search"
+                          [formControl]="
+                            columnFilters.controls.material
+                          "
+                          placeholder="Contains">
+                      </label>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'material',
+                              localMaterialFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              localMaterialFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>RM Grade</span>
+
+                  <details
+                    #localGradeFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('grade')
+                    ">
+                    <summary title="Filter RM Grade">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>RM grade contains</span>
+                        <input
+                          type="search"
+                          [formControl]="
+                            columnFilters.controls.rmGrade
+                          "
+                          placeholder="Contains">
+                      </label>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'grade',
+                              localGradeFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              localGradeFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Location</span>
+
+                  <details
+                    #localLocationFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('location')
+                    ">
+                    <summary title="Filter Location">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Location contains</span>
+                        <input
+                          type="search"
+                          [formControl]="
+                            columnFilters.controls.location
+                          "
+                          placeholder="Contains">
+                      </label>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'location',
+                              localLocationFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              localLocationFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Available</span>
+
+                  <details
+                    #localAvailableFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('available')
+                    ">
+                    <summary title="Filter Available Quantity">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <div class="server-column-filter__range">
+                        <label>
+                          <span>Minimum</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            [formControl]="
+                              columnFilters.controls.minAvailableQty
+                            "
+                            placeholder="Min">
+                        </label>
+
+                        <label>
+                          <span>Maximum</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            [formControl]="
+                              columnFilters.controls.maxAvailableQty
+                            "
+                            placeholder="Max">
+                        </label>
+                      </div>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'available',
+                              localAvailableFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              localAvailableFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Minimum</span>
+
+                  <details
+                    #localMinimumFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('minimum')
+                    ">
+                    <summary title="Filter Minimum Quantity">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <div class="server-column-filter__range">
+                        <label>
+                          <span>Minimum</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            [formControl]="
+                              columnFilters.controls.minMinimumQty
+                            "
+                            placeholder="Min">
+                        </label>
+
+                        <label>
+                          <span>Maximum</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            [formControl]="
+                              columnFilters.controls.maxMinimumQty
+                            "
+                            placeholder="Max">
+                        </label>
+                      </div>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'minimum',
+                              localMinimumFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              localMinimumFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Status</span>
+
+                  <details
+                    #localStatusFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('status')
+                    ">
+                    <summary title="Filter Status">▾</summary>
+
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Stock status</span>
+                        <select
+                          [formControl]="
+                            columnFilters.controls.status
+                          ">
+                          <option value="">All</option>
+                          <option value="low">Low Stock</option>
+                          <option value="healthy">Healthy</option>
+                        </select>
+                      </label>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'status',
+                              localStatusFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              localStatusFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Updated</span>
+
+                  <details
+                    #localUpdatedFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('updated')
+                    ">
+                    <summary title="Filter Updated Date">▾</summary>
+
+                    <div
+                      class="
+                        server-column-filter__menu
+                        server-column-filter__menu--right
+                      ">
+                      <div class="server-column-filter__range">
+                        <label>
+                          <span>From</span>
+                          <input
+                            type="date"
+                            [formControl]="
+                              columnFilters.controls.updatedFrom
+                            ">
+                        </label>
+
+                        <label>
+                          <span>To</span>
+                          <input
+                            type="date"
+                            [formControl]="
+                              columnFilters.controls.updatedTo
+                            ">
+                        </label>
+                      </div>
+
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="
+                            clearColumnFilter(
+                              'updated',
+                              localUpdatedFilter
+                            )
+                          ">
+                          Clear
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="
+                            applyColumnFilter(
+                              localUpdatedFilter
+                            )
+                          ">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
               <th>Actions</th>
             </tr>
           </thead>
