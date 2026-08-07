@@ -38,6 +38,21 @@ namespace POTracker.Controllers.Api
             string? search,
             DateTime? dateFrom,
             DateTime? dateTo,
+            string? invoiceNumber,
+            DateTime? columnInvoiceDateFrom,
+            DateTime? columnInvoiceDateTo,
+            string? customerName,
+            int? minItemCount,
+            int? maxItemCount,
+            decimal? minTotalQuantity,
+            decimal? maxTotalQuantity,
+            decimal? minTotalGstAmount,
+            decimal? maxTotalGstAmount,
+            decimal? minTotalAmount,
+            decimal? maxTotalAmount,
+            string? uploadedFileName,
+            DateTime? importedDateFrom,
+            DateTime? importedDateTo,
             int page = 1,
             int pageSize = 25)
         {
@@ -78,6 +93,182 @@ namespace POTracker.Controllers.Api
                     invoice.InvoiceDate.Value < nextDate);
             }
 
+            if (!string.IsNullOrWhiteSpace(invoiceNumber))
+            {
+                var value = invoiceNumber.Trim();
+
+                query = query.Where(invoice =>
+                    invoice.InvoiceNumber.Contains(value));
+            }
+
+            if (columnInvoiceDateFrom.HasValue)
+            {
+                var fromDate =
+                    columnInvoiceDateFrom.Value.Date;
+
+                query = query.Where(invoice =>
+                    invoice.InvoiceDate.HasValue &&
+                    invoice.InvoiceDate.Value >= fromDate);
+            }
+
+            if (columnInvoiceDateTo.HasValue)
+            {
+                var nextDate =
+                    columnInvoiceDateTo.Value.Date.AddDays(1);
+
+                query = query.Where(invoice =>
+                    invoice.InvoiceDate.HasValue &&
+                    invoice.InvoiceDate.Value < nextDate);
+            }
+
+            if (!string.IsNullOrWhiteSpace(customerName))
+            {
+                var value = customerName.Trim();
+
+                query = query.Where(invoice =>
+                    invoice.CustomerName != null &&
+                    invoice.CustomerName.Contains(value));
+            }
+
+            if (minItemCount.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0,
+                        minItemCount.Value);
+
+                query = query.Where(invoice =>
+                    invoice.Items.Count >= value);
+            }
+
+            if (maxItemCount.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0,
+                        maxItemCount.Value);
+
+                query = query.Where(invoice =>
+                    invoice.Items.Count <= value);
+            }
+
+            if (minTotalQuantity.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        minTotalQuantity.Value);
+
+                query = query.Where(invoice =>
+                    (
+                        invoice.Items.Sum(item =>
+                            (decimal?)item.InvoiceQty) ??
+                        0m
+                    ) >= value);
+            }
+
+            if (maxTotalQuantity.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        maxTotalQuantity.Value);
+
+                query = query.Where(invoice =>
+                    (
+                        invoice.Items.Sum(item =>
+                            (decimal?)item.InvoiceQty) ??
+                        0m
+                    ) <= value);
+            }
+
+            if (minTotalGstAmount.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        minTotalGstAmount.Value);
+
+                query = query.Where(invoice =>
+                    (
+                        invoice.Items.Sum(item =>
+                            (decimal?)item.GstAmount) ??
+                        0m
+                    ) >= value);
+            }
+
+            if (maxTotalGstAmount.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        maxTotalGstAmount.Value);
+
+                query = query.Where(invoice =>
+                    (
+                        invoice.Items.Sum(item =>
+                            (decimal?)item.GstAmount) ??
+                        0m
+                    ) <= value);
+            }
+
+            if (minTotalAmount.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        minTotalAmount.Value);
+
+                query = query.Where(invoice =>
+                    (
+                        invoice.Items.Sum(item =>
+                            (decimal?)item.Amount) ??
+                        0m
+                    ) >= value);
+            }
+
+            if (maxTotalAmount.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        maxTotalAmount.Value);
+
+                query = query.Where(invoice =>
+                    (
+                        invoice.Items.Sum(item =>
+                            (decimal?)item.Amount) ??
+                        0m
+                    ) <= value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(uploadedFileName))
+            {
+                var value = uploadedFileName.Trim();
+
+                query = query.Where(invoice =>
+                    invoice.UploadedFileName != null &&
+                    invoice.UploadedFileName.Contains(value));
+            }
+
+            if (importedDateFrom.HasValue)
+            {
+                var fromDate =
+                    importedDateFrom.Value.Date;
+
+                query = query.Where(invoice =>
+                    invoice.CreatedDate >= fromDate);
+            }
+
+            if (importedDateTo.HasValue)
+            {
+                var nextDate =
+                    importedDateTo.Value.Date.AddDays(1);
+
+                query = query.Where(invoice =>
+                    invoice.CreatedDate < nextDate);
+            }
+
             var totalCount = await query.CountAsync();
 
             var totalPages = Math.Max(
@@ -100,17 +291,21 @@ namespace POTracker.Controllers.Api
                     Id = invoice.Id,
                     InvoiceNumber = invoice.InvoiceNumber,
                     InvoiceDate = invoice.InvoiceDate,
-                    CustomerName = invoice.CustomerName ?? string.Empty,
+                    CustomerName =
+                        invoice.CustomerName ?? string.Empty,
                     UploadedFileName =
                         invoice.UploadedFileName ?? string.Empty,
                     CreatedDate = invoice.CreatedDate,
                     ItemCount = invoice.Items.Count,
                     TotalQuantity = invoice.Items
-                        .Sum(item => (decimal?)item.InvoiceQty) ?? 0m,
+                        .Sum(item =>
+                            (decimal?)item.InvoiceQty) ?? 0m,
                     TotalGstAmount = invoice.Items
-                        .Sum(item => (decimal?)item.GstAmount) ?? 0m,
+                        .Sum(item =>
+                            (decimal?)item.GstAmount) ?? 0m,
                     TotalAmount = invoice.Items
-                        .Sum(item => (decimal?)item.Amount) ?? 0m
+                        .Sum(item =>
+                            (decimal?)item.Amount) ?? 0m
                 })
                 .ToListAsync();
 

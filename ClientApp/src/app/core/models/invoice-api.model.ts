@@ -33,6 +33,29 @@ export interface InvoiceListQuery {
   search?: string;
   dateFrom?: string | null;
   dateTo?: string | null;
+
+  invoiceNumber?: string;
+  columnInvoiceDateFrom?: string | null;
+  columnInvoiceDateTo?: string | null;
+  customerName?: string;
+
+  minItemCount?: string;
+  maxItemCount?: string;
+
+  minTotalQuantity?: string;
+  maxTotalQuantity?: string;
+
+  minTotalGstAmount?: string;
+  maxTotalGstAmount?: string;
+
+  minTotalAmount?: string;
+  maxTotalAmount?: string;
+
+  uploadedFileName?: string;
+
+  importedDateFrom?: string | null;
+  importedDateTo?: string | null;
+
   page?: number;
   pageSize?: number;
 }

@@ -52,6 +52,84 @@ export class InvoicesPage {
     dateTo: new FormControl('', { nonNullable: true }),
   });
 
+  readonly columnFilters =
+    new FormGroup({
+      invoiceNumber:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      invoiceDateFrom:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      invoiceDateTo:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      customerName:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minItemCount:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxItemCount:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minTotalQuantity:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxTotalQuantity:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minTotalGstAmount:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxTotalGstAmount:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minTotalAmount:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxTotalAmount:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      uploadedFileName:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      importedDateFrom:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      importedDateTo:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+    });
+
   readonly items = signal<readonly InvoiceListItem[]>([]);
   readonly summary = signal<InvoiceListSummary>(EMPTY_SUMMARY);
   readonly page = signal(1);
@@ -105,8 +183,165 @@ export class InvoicesPage {
     this.loadInvoices();
   }
 
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.page.set(1);
+    this.loadInvoices();
+  }
+
+  clearColumnFilter(
+    column:
+      | 'invoice'
+      | 'invoiceDate'
+      | 'customer'
+      | 'items'
+      | 'quantity'
+      | 'gst'
+      | 'amount'
+      | 'uploadedFile'
+      | 'imported',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'invoice':
+        this.columnFilters.controls
+          .invoiceNumber.setValue('');
+        break;
+
+      case 'invoiceDate':
+        this.columnFilters.patchValue({
+          invoiceDateFrom: '',
+          invoiceDateTo: '',
+        });
+        break;
+
+      case 'customer':
+        this.columnFilters.controls
+          .customerName.setValue('');
+        break;
+
+      case 'items':
+        this.columnFilters.patchValue({
+          minItemCount: '',
+          maxItemCount: '',
+        });
+        break;
+
+      case 'quantity':
+        this.columnFilters.patchValue({
+          minTotalQuantity: '',
+          maxTotalQuantity: '',
+        });
+        break;
+
+      case 'gst':
+        this.columnFilters.patchValue({
+          minTotalGstAmount: '',
+          maxTotalGstAmount: '',
+        });
+        break;
+
+      case 'amount':
+        this.columnFilters.patchValue({
+          minTotalAmount: '',
+          maxTotalAmount: '',
+        });
+        break;
+
+      case 'uploadedFile':
+        this.columnFilters.controls
+          .uploadedFileName.setValue('');
+        break;
+
+      case 'imported':
+        this.columnFilters.patchValue({
+          importedDateFrom: '',
+          importedDateTo: '',
+        });
+        break;
+    }
+
+    filter.open = false;
+    this.page.set(1);
+    this.loadInvoices();
+  }
+
+  columnFilterActive(
+    column:
+      | 'invoice'
+      | 'invoiceDate'
+      | 'customer'
+      | 'items'
+      | 'quantity'
+      | 'gst'
+      | 'amount'
+      | 'uploadedFile'
+      | 'imported',
+  ): boolean {
+    const values =
+      this.columnFilters.getRawValue();
+
+    switch (column) {
+      case 'invoice':
+        return Boolean(
+          values.invoiceNumber.trim(),
+        );
+
+      case 'invoiceDate':
+        return Boolean(
+          values.invoiceDateFrom ||
+          values.invoiceDateTo,
+        );
+
+      case 'customer':
+        return Boolean(
+          values.customerName.trim(),
+        );
+
+      case 'items':
+        return Boolean(
+          values.minItemCount.trim() ||
+          values.maxItemCount.trim(),
+        );
+
+      case 'quantity':
+        return Boolean(
+          values.minTotalQuantity.trim() ||
+          values.maxTotalQuantity.trim(),
+        );
+
+      case 'gst':
+        return Boolean(
+          values.minTotalGstAmount.trim() ||
+          values.maxTotalGstAmount.trim(),
+        );
+
+      case 'amount':
+        return Boolean(
+          values.minTotalAmount.trim() ||
+          values.maxTotalAmount.trim(),
+        );
+
+      case 'uploadedFile':
+        return Boolean(
+          values.uploadedFileName.trim(),
+        );
+
+      case 'imported':
+        return Boolean(
+          values.importedDateFrom ||
+          values.importedDateTo,
+        );
+    }
+
+    return false;
+  }
+
   clearFilters(): void {
     this.filters.reset();
+    this.columnFilters.reset();
     this.page.set(1);
     this.loadInvoices();
   }
@@ -410,7 +645,11 @@ export class InvoicesPage {
       return;
     }
 
-    const filterValues = this.filters.getRawValue();
+    const filterValues =
+      this.filters.getRawValue();
+
+    const columnValues =
+      this.columnFilters.getRawValue();
 
     this.loading.set(true);
 
@@ -421,11 +660,63 @@ export class InvoicesPage {
 
     this.invoiceApi
       .getInvoices({
-        search: filterValues.search,
-        dateFrom: filterValues.dateFrom || null,
-        dateTo: filterValues.dateTo || null,
-        page: this.page(),
-        pageSize: this.pageSize(),
+        search:
+          filterValues.search,
+        dateFrom:
+          filterValues.dateFrom || null,
+        dateTo:
+          filterValues.dateTo || null,
+
+        invoiceNumber:
+          columnValues.invoiceNumber,
+
+        columnInvoiceDateFrom:
+          columnValues.invoiceDateFrom || null,
+
+        columnInvoiceDateTo:
+          columnValues.invoiceDateTo || null,
+
+        customerName:
+          columnValues.customerName,
+
+        minItemCount:
+          columnValues.minItemCount,
+
+        maxItemCount:
+          columnValues.maxItemCount,
+
+        minTotalQuantity:
+          columnValues.minTotalQuantity,
+
+        maxTotalQuantity:
+          columnValues.maxTotalQuantity,
+
+        minTotalGstAmount:
+          columnValues.minTotalGstAmount,
+
+        maxTotalGstAmount:
+          columnValues.maxTotalGstAmount,
+
+        minTotalAmount:
+          columnValues.minTotalAmount,
+
+        maxTotalAmount:
+          columnValues.maxTotalAmount,
+
+        uploadedFileName:
+          columnValues.uploadedFileName,
+
+        importedDateFrom:
+          columnValues.importedDateFrom || null,
+
+        importedDateTo:
+          columnValues.importedDateTo || null,
+
+        page:
+          this.page(),
+
+        pageSize:
+          this.pageSize(),
       })
       .pipe(
         takeUntilDestroyed(this.destroyRef),

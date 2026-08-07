@@ -43,23 +43,92 @@ export class InvoiceApiService {
   getInvoices(
     query: InvoiceListQuery = {},
   ): Observable<InvoiceListResponse> {
-    let params = new HttpParams();
+    let params =
+      new HttpParams()
+        .set(
+          'page',
+          String(query.page ?? 1),
+        )
+        .set(
+          'pageSize',
+          String(query.pageSize ?? 25),
+        );
 
-    if (query.search?.trim()) {
-      params = params.set('search', query.search.trim());
+    const optionalValues:
+      readonly [
+        string,
+        string | null | undefined,
+      ][] = [
+        ['search', query.search],
+        ['dateFrom', query.dateFrom],
+        ['dateTo', query.dateTo],
+        ['invoiceNumber', query.invoiceNumber],
+        [
+          'columnInvoiceDateFrom',
+          query.columnInvoiceDateFrom,
+        ],
+        [
+          'columnInvoiceDateTo',
+          query.columnInvoiceDateTo,
+        ],
+        ['customerName', query.customerName],
+        ['minItemCount', query.minItemCount],
+        ['maxItemCount', query.maxItemCount],
+        [
+          'minTotalQuantity',
+          query.minTotalQuantity,
+        ],
+        [
+          'maxTotalQuantity',
+          query.maxTotalQuantity,
+        ],
+        [
+          'minTotalGstAmount',
+          query.minTotalGstAmount,
+        ],
+        [
+          'maxTotalGstAmount',
+          query.maxTotalGstAmount,
+        ],
+        [
+          'minTotalAmount',
+          query.minTotalAmount,
+        ],
+        [
+          'maxTotalAmount',
+          query.maxTotalAmount,
+        ],
+        [
+          'uploadedFileName',
+          query.uploadedFileName,
+        ],
+        [
+          'importedDateFrom',
+          query.importedDateFrom,
+        ],
+        [
+          'importedDateTo',
+          query.importedDateTo,
+        ],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      const cleaned =
+        value?.trim();
+
+      if (cleaned) {
+        params =
+          params.set(
+            name,
+            cleaned,
+          );
+      }
     }
-
-    if (query.dateFrom) {
-      params = params.set('dateFrom', query.dateFrom);
-    }
-
-    if (query.dateTo) {
-      params = params.set('dateTo', query.dateTo);
-    }
-
-    params = params
-      .set('page', String(query.page ?? 1))
-      .set('pageSize', String(query.pageSize ?? 25));
 
     return this.http.get<InvoiceListResponse>(
       '/api/invoices',

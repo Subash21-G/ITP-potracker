@@ -173,7 +173,7 @@
 
   <div class="table-wrap" [class.table-wrap--loading]="loading()">
     <table>
-      <thead>
+            <thead>
         <tr>
           <th appManageOnly>
             <input type="checkbox"
@@ -182,15 +182,545 @@
                    [disabled]="loading() || bulkDeleting() || items().length === 0"
                    (change)="toggleVisibleSelection($any($event.target).checked)" />
           </th>
-          <th>Invoice</th>
-          <th>Invoice Date</th>
-          <th>Customer</th>
-          <th>Items</th>
-          <th class="number-cell">Quantity</th>
-          <th class="number-cell">GST</th>
-          <th class="number-cell">Amount</th>
-          <th>Uploaded File</th>
-          <th>Imported</th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Invoice</span>
+
+              <details
+                #invoiceNumberFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('invoice')
+                ">
+                <summary title="Filter Invoice">▾</summary>
+
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>Invoice number contains</span>
+                    <input
+                      type="search"
+                      [formControl]="
+                        columnFilters.controls.invoiceNumber
+                      "
+                      placeholder="Contains">
+                  </label>
+
+                  <div class="server-column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="
+                        clearColumnFilter(
+                          'invoice',
+                          invoiceNumberFilter
+                        )
+                      ">
+                      Clear
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="
+                        applyColumnFilter(
+                          invoiceNumberFilter
+                        )
+                      ">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Invoice Date</span>
+
+              <details
+                #invoiceDateFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('invoiceDate')
+                ">
+                <summary title="Filter Invoice Date">▾</summary>
+
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label>
+                      <span>From</span>
+                      <input
+                        type="date"
+                        [formControl]="
+                          columnFilters.controls.invoiceDateFrom
+                        ">
+                    </label>
+
+                    <label>
+                      <span>To</span>
+                      <input
+                        type="date"
+                        [formControl]="
+                          columnFilters.controls.invoiceDateTo
+                        ">
+                    </label>
+                  </div>
+
+                  <div class="server-column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="
+                        clearColumnFilter(
+                          'invoiceDate',
+                          invoiceDateFilter
+                        )
+                      ">
+                      Clear
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="
+                        applyColumnFilter(
+                          invoiceDateFilter
+                        )
+                      ">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Customer</span>
+
+              <details
+                #invoiceCustomerFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('customer')
+                ">
+                <summary title="Filter Customer">▾</summary>
+
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>Customer contains</span>
+                    <input
+                      type="search"
+                      [formControl]="
+                        columnFilters.controls.customerName
+                      "
+                      placeholder="Contains">
+                  </label>
+
+                  <div class="server-column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="
+                        clearColumnFilter(
+                          'customer',
+                          invoiceCustomerFilter
+                        )
+                      ">
+                      Clear
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="
+                        applyColumnFilter(
+                          invoiceCustomerFilter
+                        )
+                      ">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Items</span>
+
+              <details
+                #invoiceItemsFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('items')
+                ">
+                <summary title="Filter Item Count">▾</summary>
+
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label>
+                      <span>Minimum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        [formControl]="
+                          columnFilters.controls.minItemCount
+                        "
+                        placeholder="Min">
+                    </label>
+
+                    <label>
+                      <span>Maximum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        [formControl]="
+                          columnFilters.controls.maxItemCount
+                        "
+                        placeholder="Max">
+                    </label>
+                  </div>
+
+                  <div class="server-column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="
+                        clearColumnFilter(
+                          'items',
+                          invoiceItemsFilter
+                        )
+                      ">
+                      Clear
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="
+                        applyColumnFilter(
+                          invoiceItemsFilter
+                        )
+                      ">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Quantity</span>
+
+              <details
+                #invoiceQuantityFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('quantity')
+                ">
+                <summary title="Filter Quantity">▾</summary>
+
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label>
+                      <span>Minimum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        [formControl]="
+                          columnFilters.controls.minTotalQuantity
+                        "
+                        placeholder="Min">
+                    </label>
+
+                    <label>
+                      <span>Maximum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        [formControl]="
+                          columnFilters.controls.maxTotalQuantity
+                        "
+                        placeholder="Max">
+                    </label>
+                  </div>
+
+                  <div class="server-column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="
+                        clearColumnFilter(
+                          'quantity',
+                          invoiceQuantityFilter
+                        )
+                      ">
+                      Clear
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="
+                        applyColumnFilter(
+                          invoiceQuantityFilter
+                        )
+                      ">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>GST</span>
+
+              <details
+                #invoiceGstFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('gst')
+                ">
+                <summary title="Filter GST">▾</summary>
+
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label>
+                      <span>Minimum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        [formControl]="
+                          columnFilters.controls.minTotalGstAmount
+                        "
+                        placeholder="Min">
+                    </label>
+
+                    <label>
+                      <span>Maximum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        [formControl]="
+                          columnFilters.controls.maxTotalGstAmount
+                        "
+                        placeholder="Max">
+                    </label>
+                  </div>
+
+                  <div class="server-column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="
+                        clearColumnFilter(
+                          'gst',
+                          invoiceGstFilter
+                        )
+                      ">
+                      Clear
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="
+                        applyColumnFilter(
+                          invoiceGstFilter
+                        )
+                      ">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Amount</span>
+
+              <details
+                #invoiceAmountFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('amount')
+                ">
+                <summary title="Filter Amount">▾</summary>
+
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label>
+                      <span>Minimum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        [formControl]="
+                          columnFilters.controls.minTotalAmount
+                        "
+                        placeholder="Min">
+                    </label>
+
+                    <label>
+                      <span>Maximum</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        [formControl]="
+                          columnFilters.controls.maxTotalAmount
+                        "
+                        placeholder="Max">
+                    </label>
+                  </div>
+
+                  <div class="server-column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="
+                        clearColumnFilter(
+                          'amount',
+                          invoiceAmountFilter
+                        )
+                      ">
+                      Clear
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="
+                        applyColumnFilter(
+                          invoiceAmountFilter
+                        )
+                      ">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Uploaded File</span>
+
+              <details
+                #invoiceUploadedFileFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('uploadedFile')
+                ">
+                <summary title="Filter Uploaded File">▾</summary>
+
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>File name contains</span>
+                    <input
+                      type="search"
+                      [formControl]="
+                        columnFilters.controls.uploadedFileName
+                      "
+                      placeholder="Contains">
+                  </label>
+
+                  <div class="server-column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="
+                        clearColumnFilter(
+                          'uploadedFile',
+                          invoiceUploadedFileFilter
+                        )
+                      ">
+                      Clear
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="
+                        applyColumnFilter(
+                          invoiceUploadedFileFilter
+                        )
+                      ">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Imported</span>
+
+              <details
+                #invoiceImportedFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('imported')
+                ">
+                <summary title="Filter Imported Date">▾</summary>
+
+                <div
+                  class="
+                    server-column-filter__menu
+                    server-column-filter__menu--right
+                  ">
+                  <div class="server-column-filter__range">
+                    <label>
+                      <span>From</span>
+                      <input
+                        type="date"
+                        [formControl]="
+                          columnFilters.controls.importedDateFrom
+                        ">
+                    </label>
+
+                    <label>
+                      <span>To</span>
+                      <input
+                        type="date"
+                        [formControl]="
+                          columnFilters.controls.importedDateTo
+                        ">
+                    </label>
+                  </div>
+
+                  <div class="server-column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="
+                        clearColumnFilter(
+                          'imported',
+                          invoiceImportedFilter
+                        )
+                      ">
+                      Clear
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="
+                        applyColumnFilter(
+                          invoiceImportedFilter
+                        )
+                      ">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
           <th>Actions</th>
         </tr>
       </thead>
