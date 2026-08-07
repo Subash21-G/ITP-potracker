@@ -269,15 +269,245 @@
           loading()
         ">
         <table>
-          <thead>
+                    <thead>
             <tr>
               <th>#</th>
-              <th>Type</th>
-              <th>Material</th>
-              <th>Message</th>
-              <th>Alert Date</th>
-              <th>Mobile</th>
-              <th>Status</th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Type</span>
+                  <details
+                    #notificationTypeFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('type')
+                    ">
+                    <summary title="Filter Type">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Type contains</span>
+                        <input
+                          type="search"
+                          [formControl]="
+                            columnFilters.controls.alertType
+                          "
+                          placeholder="Alert type">
+                      </label>
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="clearColumnFilter('type', notificationTypeFilter)">
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          (click)="applyColumnFilter(notificationTypeFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Material</span>
+                  <details
+                    #notificationMaterialFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('material')
+                    ">
+                    <summary title="Filter Material">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Material contains</span>
+                        <input
+                          type="search"
+                          [formControl]="
+                            columnFilters.controls.material
+                          "
+                          placeholder="Material no">
+                      </label>
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="clearColumnFilter('material', notificationMaterialFilter)">
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          (click)="applyColumnFilter(notificationMaterialFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Message</span>
+                  <details
+                    #notificationMessageFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('message')
+                    ">
+                    <summary title="Filter Message">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Message contains</span>
+                        <input
+                          type="search"
+                          [formControl]="
+                            columnFilters.controls.message
+                          "
+                          placeholder="Message">
+                      </label>
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="clearColumnFilter('message', notificationMessageFilter)">
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          (click)="applyColumnFilter(notificationMessageFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Alert Date</span>
+                  <details
+                    #notificationDateFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('date')
+                    ">
+                    <summary title="Filter Alert Date">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <div class="server-column-filter__range">
+                        <label>
+                          <span>From</span>
+                          <input
+                            type="date"
+                            [formControl]="
+                              columnFilters.controls.alertDateFrom
+                            ">
+                        </label>
+                        <label>
+                          <span>To</span>
+                          <input
+                            type="date"
+                            [formControl]="
+                              columnFilters.controls.alertDateTo
+                            ">
+                        </label>
+                      </div>
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="clearColumnFilter('date', notificationDateFilter)">
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          (click)="applyColumnFilter(notificationDateFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Mobile</span>
+                  <details
+                    #notificationMobileFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('mobile')
+                    ">
+                    <summary title="Filter Mobile Status">▾</summary>
+                    <div class="server-column-filter__menu">
+                      <label>
+                        <span>Mobile status</span>
+                        <select
+                          [formControl]="
+                            columnFilters.controls.mobileStatus
+                          ">
+                          <option value="all">All</option>
+                          <option value="sent">Sent</option>
+                          <option value="queued">Queued</option>
+                        </select>
+                      </label>
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="clearColumnFilter('mobile', notificationMobileFilter)">
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          (click)="applyColumnFilter(notificationMobileFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
+              <th>
+                <div class="server-table-heading">
+                  <span>Status</span>
+                  <details
+                    #notificationStatusFilter
+                    class="server-column-filter"
+                    [class.server-column-filter--active]="
+                      columnFilterActive('status')
+                    ">
+                    <summary title="Filter Read Status">▾</summary>
+                    <div class="server-column-filter__menu server-column-filter__menu--right">
+                      <label>
+                        <span>Read status</span>
+                        <select
+                          [formControl]="
+                            columnFilters.controls.columnStatus
+                          ">
+                          <option value="all">All</option>
+                          <option value="unread">Unread</option>
+                          <option value="read">Read</option>
+                        </select>
+                      </label>
+                      <div class="server-column-filter__actions">
+                        <button
+                          type="button"
+                          (click)="clearColumnFilter('status', notificationStatusFilter)">
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          (click)="applyColumnFilter(notificationStatusFilter)">
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </th>
+
               <th>Action</th>
             </tr>
           </thead>

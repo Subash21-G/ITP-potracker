@@ -39,15 +39,35 @@ export class NotificationApiService {
           query.pageSize.toString(),
         );
 
-    const search =
-      query.search?.trim();
+    const textValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['alertType', query.alertType],
+        ['material', query.material],
+        ['message', query.message],
+        ['alertDateFrom', query.alertDateFrom],
+        ['alertDateTo', query.alertDateTo],
+      ];
 
-    if (search) {
-      params =
-        params.set(
-          'search',
-          search,
-        );
+    for (
+      const [
+        name,
+        value,
+      ] of textValues
+    ) {
+      const normalized =
+        value?.trim();
+
+      if (normalized) {
+        params =
+          params.set(
+            name,
+            normalized,
+          );
+      }
     }
 
     if (
@@ -58,6 +78,28 @@ export class NotificationApiService {
         params.set(
           'status',
           query.status,
+        );
+    }
+
+    if (
+      query.mobileStatus &&
+      query.mobileStatus !== 'all'
+    ) {
+      params =
+        params.set(
+          'mobileStatus',
+          query.mobileStatus,
+        );
+    }
+
+    if (
+      query.columnStatus &&
+      query.columnStatus !== 'all'
+    ) {
+      params =
+        params.set(
+          'columnStatus',
+          query.columnStatus,
         );
     }
 

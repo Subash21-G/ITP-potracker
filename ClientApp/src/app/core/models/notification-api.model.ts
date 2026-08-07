@@ -20,7 +20,25 @@ export interface NotificationSummary {
 
 export interface NotificationsQuery {
   readonly search?: string;
+
   readonly status?:
+    | 'all'
+    | 'unread'
+    | 'read';
+
+  readonly alertType?: string;
+  readonly material?: string;
+  readonly message?: string;
+
+  readonly alertDateFrom?: string;
+  readonly alertDateTo?: string;
+
+  readonly mobileStatus?:
+    | 'all'
+    | 'sent'
+    | 'queued';
+
+  readonly columnStatus?:
     | 'all'
     | 'unread'
     | 'read';

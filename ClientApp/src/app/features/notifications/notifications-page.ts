@@ -157,6 +157,54 @@ export class NotificationsPage {
         ),
     });
 
+  readonly columnFilters =
+    new FormGroup({
+      alertType:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      material:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      message:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      alertDateFrom:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      alertDateTo:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      mobileStatus:
+        new FormControl<
+          'all' | 'sent' | 'queued'
+        >(
+          'all',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      columnStatus:
+        new FormControl<
+          NotificationStatusFilter
+        >(
+          'all',
+          {
+            nonNullable: true,
+          },
+        ),
+    });
+
   readonly data =
     signal<NotificationsPagedResponse>(
       EMPTY_RESPONSE,
@@ -365,7 +413,122 @@ export class NotificationsPage {
       status: 'all',
     });
 
+    this.columnFilters.setValue({
+      alertType: '',
+      material: '',
+      message: '',
+      alertDateFrom: '',
+      alertDateTo: '',
+      mobileStatus: 'all',
+      columnStatus: 'all',
+    });
+
     this.page.set(1);
+  }
+
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.page.set(1);
+    this.load();
+  }
+
+  clearColumnFilter(
+    column:
+      | 'type'
+      | 'material'
+      | 'message'
+      | 'date'
+      | 'mobile'
+      | 'status',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'type':
+        this.columnFilters.controls
+          .alertType.setValue('');
+        break;
+
+      case 'material':
+        this.columnFilters.controls
+          .material.setValue('');
+        break;
+
+      case 'message':
+        this.columnFilters.controls
+          .message.setValue('');
+        break;
+
+      case 'date':
+        this.columnFilters.patchValue({
+          alertDateFrom: '',
+          alertDateTo: '',
+        });
+        break;
+
+      case 'mobile':
+        this.columnFilters.controls
+          .mobileStatus.setValue('all');
+        break;
+
+      case 'status':
+        this.columnFilters.controls
+          .columnStatus.setValue('all');
+        break;
+    }
+
+    filter.open = false;
+    this.page.set(1);
+    this.load();
+  }
+
+  columnFilterActive(
+    column:
+      | 'type'
+      | 'material'
+      | 'message'
+      | 'date'
+      | 'mobile'
+      | 'status',
+  ): boolean {
+    const values =
+      this.columnFilters.getRawValue();
+
+    switch (column) {
+      case 'type':
+        return Boolean(
+          values.alertType.trim(),
+        );
+
+      case 'material':
+        return Boolean(
+          values.material.trim(),
+        );
+
+      case 'message':
+        return Boolean(
+          values.message.trim(),
+        );
+
+      case 'date':
+        return Boolean(
+          values.alertDateFrom ||
+          values.alertDateTo,
+        );
+
+      case 'mobile':
+        return (
+          values.mobileStatus !== 'all'
+        );
+
+      case 'status':
+        return (
+          values.columnStatus !== 'all'
+        );
+    }
+
+    return false;
   }
 
   changePageSize(
@@ -535,12 +698,36 @@ export class NotificationsPage {
     const filters =
       this.filters.getRawValue();
 
+    const columnFilters =
+      this.columnFilters.getRawValue();
+
     return {
       search:
         filters.search,
 
       status:
         filters.status,
+
+      alertType:
+        columnFilters.alertType,
+
+      material:
+        columnFilters.material,
+
+      message:
+        columnFilters.message,
+
+      alertDateFrom:
+        columnFilters.alertDateFrom,
+
+      alertDateTo:
+        columnFilters.alertDateTo,
+
+      mobileStatus:
+        columnFilters.mobileStatus,
+
+      columnStatus:
+        columnFilters.columnStatus,
 
       page:
         this.page(),

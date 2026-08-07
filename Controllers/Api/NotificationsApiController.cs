@@ -34,6 +34,13 @@ namespace POTracker.Controllers.Api
             Index(
                 string? search,
                 string? status,
+                string? alertType,
+                string? material,
+                string? message,
+                DateTime? alertDateFrom,
+                DateTime? alertDateTo,
+                string? mobileStatus,
+                string? columnStatus,
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
@@ -50,60 +57,35 @@ namespace POTracker.Controllers.Api
                 NormalizePageSize(
                     pageSize);
 
-            var allAlerts =
+            var query =
                 _context.Alerts
                     .AsNoTracking();
 
-            var summary =
-                new NotificationSummaryDto
-                {
-                    TotalAlerts =
-                        await allAlerts.CountAsync(
-                            cancellationToken),
-
-                    UnreadCount =
-                        await allAlerts.CountAsync(
-                            alert =>
-                                !alert.IsRead,
-                            cancellationToken),
-
-                    MobileQueue =
-                        await allAlerts.CountAsync(
-                            alert =>
-                                !alert.IsSentToMobile,
-                            cancellationToken),
-
-                    DueToday =
-                        await allAlerts.CountAsync(
-                            alert =>
-                                alert.AlertDate.Date <=
-                                today,
-                            cancellationToken)
-                };
-
-            var query =
-                allAlerts;
-
             var normalizedStatus =
-                Clean(status)?
-                    .ToLowerInvariant();
+                Clean(status);
 
-            query =
-                normalizedStatus switch
-                {
-                    "unread" =>
-                        query.Where(
-                            alert =>
-                                !alert.IsRead),
+            if (normalizedStatus != null)
+            {
+                normalizedStatus =
+                    normalizedStatus.ToLowerInvariant();
 
-                    "read" =>
-                        query.Where(
-                            alert =>
-                                alert.IsRead),
+                query =
+                    normalizedStatus switch
+                    {
+                        "unread" =>
+                            query.Where(
+                                alert =>
+                                    !alert.IsRead),
 
-                    _ =>
-                        query
-                };
+                        "read" =>
+                            query.Where(
+                                alert =>
+                                    alert.IsRead),
+
+                        _ =>
+                            query
+                    };
+            }
 
             var normalizedSearch =
                 Clean(search);
@@ -127,9 +109,153 @@ namespace POTracker.Controllers.Api
                                 normalizedSearch));
             }
 
+            var normalizedAlertType =
+                Clean(alertType);
+
+            if (normalizedAlertType != null)
+            {
+                query =
+                    query.Where(alert =>
+                        alert.AlertType.Contains(
+                            normalizedAlertType));
+            }
+
+            var normalizedMaterial =
+                Clean(material);
+
+            if (normalizedMaterial != null)
+            {
+                query =
+                    query.Where(alert =>
+                        alert.Material != null &&
+                        (
+                            alert.Material.MaterialNo ??
+                            string.Empty
+                        ).Contains(
+                            normalizedMaterial));
+            }
+
+            var normalizedMessage =
+                Clean(message);
+
+            if (normalizedMessage != null)
+            {
+                query =
+                    query.Where(alert =>
+                        alert.Message.Contains(
+                            normalizedMessage));
+            }
+
+            if (alertDateFrom.HasValue)
+            {
+                var start =
+                    alertDateFrom.Value.Date;
+
+                query =
+                    query.Where(alert =>
+                        alert.AlertDate >= start);
+            }
+
+            if (alertDateTo.HasValue)
+            {
+                var endExclusive =
+                    alertDateTo
+                        .Value
+                        .Date
+                        .AddDays(1);
+
+                query =
+                    query.Where(alert =>
+                        alert.AlertDate < endExclusive);
+            }
+
+            var normalizedMobileStatus =
+                Clean(mobileStatus);
+
+            if (normalizedMobileStatus != null)
+            {
+                normalizedMobileStatus =
+                    normalizedMobileStatus
+                        .ToLowerInvariant();
+
+                if (
+                    normalizedMobileStatus ==
+                    "sent"
+                )
+                {
+                    query =
+                        query.Where(alert =>
+                            alert.IsSentToMobile);
+                }
+                else if (
+                    normalizedMobileStatus ==
+                    "queued"
+                )
+                {
+                    query =
+                        query.Where(alert =>
+                            !alert.IsSentToMobile);
+                }
+            }
+
+            var normalizedColumnStatus =
+                Clean(columnStatus);
+
+            if (normalizedColumnStatus != null)
+            {
+                normalizedColumnStatus =
+                    normalizedColumnStatus
+                        .ToLowerInvariant();
+
+                if (
+                    normalizedColumnStatus ==
+                    "unread"
+                )
+                {
+                    query =
+                        query.Where(alert =>
+                            !alert.IsRead);
+                }
+                else if (
+                    normalizedColumnStatus ==
+                    "read"
+                )
+                {
+                    query =
+                        query.Where(alert =>
+                            alert.IsRead);
+                }
+            }
+
+            var summary =
+                new NotificationSummaryDto
+                {
+                    TotalAlerts =
+                        await query.CountAsync(
+                            cancellationToken),
+
+                    UnreadCount =
+                        await query.CountAsync(
+                            alert =>
+                                !alert.IsRead,
+                            cancellationToken),
+
+                    MobileQueue =
+                        await query.CountAsync(
+                            alert =>
+                                !alert.IsSentToMobile,
+                            cancellationToken),
+
+                    DueToday =
+                        await query.CountAsync(
+                            alert =>
+                                alert.AlertDate.Date <=
+                                today,
+                            cancellationToken)
+                };
+
             var totalCount =
-                await query.CountAsync(
-                    cancellationToken);
+                summary.TotalAlerts;
 
             var totalPages =
                 Math.Max(
