@@ -36,6 +36,22 @@ export interface ProcessQueueResponse {
 
 export interface ProcessQueueQuery {
   search?: string;
+
+  material?: string;
+  description?: string;
+  poNumber?: string;
+  purchaser?: string;
+
+  processStartFrom?: string;
+  processStartTo?: string;
+
+  deliveryFrom?: string;
+  deliveryTo?: string;
+
+  owner?: string;
+  processStatus?: string;
+  dispatchStatus?: string;
+
   page?: number;
   pageSize?: number;
 }

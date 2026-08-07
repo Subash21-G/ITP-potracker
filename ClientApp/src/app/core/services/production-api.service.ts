@@ -25,21 +25,64 @@ export class ProductionApiService {
   getProcessQueue(
     query: ProcessQueueQuery = {},
   ): Observable<ProcessQueueResponse> {
-    let params = new HttpParams()
-      .set(
-        'page',
-        String(query.page ?? 1),
-      )
-      .set(
-        'pageSize',
-        String(query.pageSize ?? 50),
-      );
+    let params =
+      new HttpParams()
+        .set(
+          'page',
+          String(query.page ?? 1),
+        )
+        .set(
+          'pageSize',
+          String(query.pageSize ?? 50),
+        );
 
-    if (query.search?.trim()) {
-      params = params.set(
-        'search',
-        query.search.trim(),
-      );
+    const values:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['material', query.material],
+        ['description', query.description],
+        ['poNumber', query.poNumber],
+        ['purchaser', query.purchaser],
+        [
+          'processStartFrom',
+          query.processStartFrom,
+        ],
+        [
+          'processStartTo',
+          query.processStartTo,
+        ],
+        ['deliveryFrom', query.deliveryFrom],
+        ['deliveryTo', query.deliveryTo],
+        ['owner', query.owner],
+        [
+          'processStatus',
+          query.processStatus,
+        ],
+        [
+          'dispatchStatus',
+          query.dispatchStatus,
+        ],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of values
+    ) {
+      const normalized =
+        value?.trim();
+
+      if (normalized) {
+        params =
+          params.set(
+            name,
+            normalized,
+          );
+      }
     }
 
     return this.http.get<ProcessQueueResponse>(

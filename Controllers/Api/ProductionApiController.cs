@@ -25,146 +25,412 @@ namespace POTracker.Controllers.Api
         public async Task<ActionResult<ProcessQueueResponseDto>>
             ProcessQueue(
                 string? search,
+                string? material,
+                string? description,
+                string? poNumber,
+                string? purchaser,
+                DateTime? processStartFrom,
+                DateTime? processStartTo,
+                DateTime? deliveryFrom,
+                DateTime? deliveryTo,
+                string? owner,
+                string? processStatus,
+                string? dispatchStatus,
                 int page = 1,
                 int pageSize = 50)
         {
-            page = Math.Max(1, page);
+            page =
+                Math.Max(
+                    1,
+                    page);
 
             var allowedPageSizes =
-                new[] { 10, 25, 50, 100, 200 };
+                new[]
+                {
+                    10,
+                    25,
+                    50,
+                    100,
+                    200
+                };
 
             if (!allowedPageSizes.Contains(pageSize))
             {
                 pageSize = 50;
             }
 
-            var today = DateTime.Today;
-            var tomorrow = today.AddDays(1);
-            var weekEndExclusive = today.AddDays(8);
+            var today =
+                DateTime.Today;
 
-            var baseQuery = _context.Materials
-                .AsNoTracking()
-                .AsQueryable();
+            var tomorrow =
+                today.AddDays(1);
+
+            var weekEndExclusive =
+                today.AddDays(8);
+
+            var baseQuery =
+                _context.Materials
+                    .AsNoTracking()
+                    .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var searchValue = search.Trim();
+                var searchValue =
+                    search.Trim();
 
-                baseQuery = baseQuery.Where(material =>
-                    (material.MaterialNo != null &&
-                     material.MaterialNo.Contains(searchValue)) ||
-                    (material.ShortDescription != null &&
-                     material.ShortDescription.Contains(searchValue)) ||
-                    (material.AssignedDashboard != null &&
-                     material.AssignedDashboard.Contains(searchValue)) ||
-                    (material.PurchaseOrder != null &&
-                     material.PurchaseOrder.PONumber.Contains(searchValue)) ||
-                    (material.PurchaseOrder != null &&
-                     material.PurchaseOrder.Purchaser != null &&
-                     material.PurchaseOrder.Purchaser.PurchaserName
-                         .Contains(searchValue)));
+                baseQuery =
+                    baseQuery.Where(materialRow =>
+                        (
+                            materialRow.MaterialNo != null &&
+                            materialRow.MaterialNo.Contains(
+                                searchValue)
+                        ) ||
+                        (
+                            materialRow.ShortDescription != null &&
+                            materialRow.ShortDescription.Contains(
+                                searchValue)
+                        ) ||
+                        (
+                            materialRow.AssignedDashboard != null &&
+                            materialRow.AssignedDashboard.Contains(
+                                searchValue)
+                        ) ||
+                        (
+                            materialRow.PurchaseOrder != null &&
+                            materialRow.PurchaseOrder.PONumber.Contains(
+                                searchValue)
+                        ) ||
+                        (
+                            materialRow.PurchaseOrder != null &&
+                            materialRow.PurchaseOrder.Purchaser != null &&
+                            materialRow.PurchaseOrder.Purchaser
+                                .PurchaserName
+                                .Contains(
+                                    searchValue)
+                        ));
             }
 
-            var summary = new ProcessQueueSummaryDto
-            {
-                TotalMaterials =
-                    await baseQuery.CountAsync(),
+            baseQuery =
+                ApplyProcessQueueColumnFilters(
+                    baseQuery,
+                    material,
+                    description,
+                    poNumber,
+                    purchaser,
+                    processStartFrom,
+                    processStartTo,
+                    deliveryFrom,
+                    deliveryTo,
+                    owner,
+                    processStatus,
+                    dispatchStatus);
 
-                Overdue =
-                    await baseQuery.CountAsync(material =>
-                        material.DeliveryDate != null &&
-                        material.DeliveryDate < today &&
-                        material.ProcessStatus != "Completed" &&
-                        material.DispatchStatus != "Dispatched"),
+            var summary =
+                new ProcessQueueSummaryDto
+                {
+                    TotalMaterials =
+                        await baseQuery.CountAsync(),
 
-                StartToday =
-                    await baseQuery.CountAsync(material =>
-                        material.ProcessStartDate != null &&
-                        material.ProcessStartDate < tomorrow &&
-                        material.ProcessStatus == "Pending"),
+                    Overdue =
+                        await baseQuery.CountAsync(materialRow =>
+                            materialRow.DeliveryDate != null &&
+                            materialRow.DeliveryDate < today &&
+                            materialRow.ProcessStatus != "Completed" &&
+                            materialRow.DispatchStatus != "Dispatched"),
 
-                ThisWeek =
-                    await baseQuery.CountAsync(material =>
-                        material.ProcessStartDate != null &&
-                        material.ProcessStartDate >= tomorrow &&
-                        material.ProcessStartDate < weekEndExclusive &&
-                        material.ProcessStatus != "Completed"),
+                    StartToday =
+                        await baseQuery.CountAsync(materialRow =>
+                            materialRow.ProcessStartDate != null &&
+                            materialRow.ProcessStartDate < tomorrow &&
+                            materialRow.ProcessStatus == "Pending"),
 
-                Future =
-                    await baseQuery.CountAsync(material =>
-                        material.ProcessStartDate != null &&
-                        material.ProcessStartDate >= weekEndExclusive &&
-                        material.ProcessStatus != "Completed")
-            };
+                    ThisWeek =
+                        await baseQuery.CountAsync(materialRow =>
+                            materialRow.ProcessStartDate != null &&
+                            materialRow.ProcessStartDate >= tomorrow &&
+                            materialRow.ProcessStartDate <
+                                weekEndExclusive &&
+                            materialRow.ProcessStatus != "Completed"),
 
-            var totalPages = Math.Max(
-                1,
-                (int)Math.Ceiling(
-                    summary.TotalMaterials /
-                    (double)pageSize));
+                    Future =
+                        await baseQuery.CountAsync(materialRow =>
+                            materialRow.ProcessStartDate != null &&
+                            materialRow.ProcessStartDate >=
+                                weekEndExclusive &&
+                            materialRow.ProcessStatus != "Completed")
+                };
+
+            var totalPages =
+                Math.Max(
+                    1,
+                    (int)Math.Ceiling(
+                        summary.TotalMaterials /
+                        (double)pageSize));
 
             if (page > totalPages)
             {
-                page = totalPages;
+                page =
+                    totalPages;
             }
 
-            var overdue = await MapQueueItems(
-                baseQuery.Where(material =>
-                    material.DeliveryDate != null &&
-                    material.DeliveryDate < today &&
-                    material.ProcessStatus != "Completed" &&
-                    material.DispatchStatus != "Dispatched")
-                .OrderBy(material => material.DeliveryDate)
-                .Take(6));
+            var overdue =
+                await MapQueueItems(
+                    baseQuery
+                        .Where(materialRow =>
+                            materialRow.DeliveryDate != null &&
+                            materialRow.DeliveryDate < today &&
+                            materialRow.ProcessStatus != "Completed" &&
+                            materialRow.DispatchStatus != "Dispatched")
+                        .OrderBy(materialRow =>
+                            materialRow.DeliveryDate)
+                        .Take(6));
 
-            var startToday = await MapQueueItems(
-                baseQuery.Where(material =>
-                    material.ProcessStartDate != null &&
-                        material.ProcessStartDate < tomorrow &&
-                        material.ProcessStatus == "Pending")
-                .OrderBy(material => material.ProcessStartDate)
-                .Take(6));
+            var startToday =
+                await MapQueueItems(
+                    baseQuery
+                        .Where(materialRow =>
+                            materialRow.ProcessStartDate != null &&
+                            materialRow.ProcessStartDate < tomorrow &&
+                            materialRow.ProcessStatus == "Pending")
+                        .OrderBy(materialRow =>
+                            materialRow.ProcessStartDate)
+                        .Take(6));
 
-            var thisWeek = await MapQueueItems(
-                baseQuery.Where(material =>
-                    material.ProcessStartDate != null &&
-                    material.ProcessStartDate >= tomorrow &&
-                    material.ProcessStartDate < weekEndExclusive &&
-                    material.ProcessStatus != "Completed")
-                .OrderBy(material => material.ProcessStartDate)
-                .Take(6));
+            var thisWeek =
+                await MapQueueItems(
+                    baseQuery
+                        .Where(materialRow =>
+                            materialRow.ProcessStartDate != null &&
+                            materialRow.ProcessStartDate >= tomorrow &&
+                            materialRow.ProcessStartDate <
+                                weekEndExclusive &&
+                            materialRow.ProcessStatus != "Completed")
+                        .OrderBy(materialRow =>
+                            materialRow.ProcessStartDate)
+                        .Take(6));
 
-            var future = await MapQueueItems(
-                baseQuery.Where(material =>
-                    material.ProcessStartDate != null &&
-                    material.ProcessStartDate >= weekEndExclusive &&
-                    material.ProcessStatus != "Completed")
-                .OrderBy(material => material.ProcessStartDate)
-                .Take(6));
+            var future =
+                await MapQueueItems(
+                    baseQuery
+                        .Where(materialRow =>
+                            materialRow.ProcessStartDate != null &&
+                            materialRow.ProcessStartDate >=
+                                weekEndExclusive &&
+                            materialRow.ProcessStatus != "Completed")
+                        .OrderBy(materialRow =>
+                            materialRow.ProcessStartDate)
+                        .Take(6));
 
-            var items = await MapQueueItems(
-                baseQuery
-                    .OrderBy(material =>
-                        material.ProcessStartDate ??
-                        material.DeliveryDate)
-                    .ThenByDescending(material =>
-                        material.Id)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize));
+            var items =
+                await MapQueueItems(
+                    baseQuery
+                        .OrderBy(materialRow =>
+                            materialRow.ProcessStartDate ??
+                            materialRow.DeliveryDate)
+                        .ThenByDescending(materialRow =>
+                            materialRow.Id)
+                        .Skip(
+                            (page - 1) *
+                            pageSize)
+                        .Take(pageSize));
 
-            return Ok(new ProcessQueueResponseDto
+            return Ok(
+                new ProcessQueueResponseDto
+                {
+                    Summary =
+                        summary,
+
+                    Overdue =
+                        overdue,
+
+                    StartToday =
+                        startToday,
+
+                    ThisWeek =
+                        thisWeek,
+
+                    Future =
+                        future,
+
+                    Items =
+                        items,
+
+                    Page =
+                        page,
+
+                    PageSize =
+                        pageSize,
+
+                    TotalCount =
+                        summary.TotalMaterials,
+
+                    TotalPages =
+                        totalPages
+                });
+        }
+
+        private static IQueryable<POTracker.Models.Material>
+            ApplyProcessQueueColumnFilters(
+                IQueryable<POTracker.Models.Material> query,
+                string? material,
+                string? description,
+                string? poNumber,
+                string? purchaser,
+                DateTime? processStartFrom,
+                DateTime? processStartTo,
+                DateTime? deliveryFrom,
+                DateTime? deliveryTo,
+                string? owner,
+                string? processStatus,
+                string? dispatchStatus)
+        {
+            if (!string.IsNullOrWhiteSpace(material))
             {
-                Summary = summary,
-                Overdue = overdue,
-                StartToday = startToday,
-                ThisWeek = thisWeek,
-                Future = future,
-                Items = items,
-                Page = page,
-                PageSize = pageSize,
-                TotalCount = summary.TotalMaterials,
-                TotalPages = totalPages
-            });
+                var value =
+                    material.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.MaterialNo != null &&
+                        materialRow.MaterialNo.Contains(
+                            value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                var value =
+                    description.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        (
+                            materialRow.ShortDescription != null &&
+                            materialRow.ShortDescription.Contains(
+                                value)
+                        ) ||
+                        (
+                            materialRow.BriefDescription != null &&
+                            materialRow.BriefDescription.Contains(
+                                value)
+                        ));
+            }
+
+            if (!string.IsNullOrWhiteSpace(poNumber))
+            {
+                var value =
+                    poNumber.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.PurchaseOrder != null &&
+                        materialRow.PurchaseOrder.PONumber.Contains(
+                            value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(purchaser))
+            {
+                var value =
+                    purchaser.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.PurchaseOrder != null &&
+                        materialRow.PurchaseOrder.Purchaser != null &&
+                        materialRow.PurchaseOrder.Purchaser
+                            .PurchaserName
+                            .Contains(
+                                value));
+            }
+
+            if (processStartFrom.HasValue)
+            {
+                var start =
+                    processStartFrom.Value.Date;
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.ProcessStartDate.HasValue &&
+                        materialRow.ProcessStartDate.Value >=
+                            start);
+            }
+
+            if (processStartTo.HasValue)
+            {
+                var endExclusive =
+                    processStartTo
+                        .Value
+                        .Date
+                        .AddDays(1);
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.ProcessStartDate.HasValue &&
+                        materialRow.ProcessStartDate.Value <
+                            endExclusive);
+            }
+
+            if (deliveryFrom.HasValue)
+            {
+                var start =
+                    deliveryFrom.Value.Date;
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.DeliveryDate.HasValue &&
+                        materialRow.DeliveryDate.Value >=
+                            start);
+            }
+
+            if (deliveryTo.HasValue)
+            {
+                var endExclusive =
+                    deliveryTo
+                        .Value
+                        .Date
+                        .AddDays(1);
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.DeliveryDate.HasValue &&
+                        materialRow.DeliveryDate.Value <
+                            endExclusive);
+            }
+
+            if (!string.IsNullOrWhiteSpace(owner))
+            {
+                var value =
+                    owner.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.AssignedDashboard != null &&
+                        materialRow.AssignedDashboard.Contains(
+                            value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(processStatus))
+            {
+                var value =
+                    processStatus.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.ProcessStatus.Contains(
+                            value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(dispatchStatus))
+            {
+                var value =
+                    dispatchStatus.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        materialRow.DispatchStatus.Contains(
+                            value));
+            }
+
+            return query;
         }
 
         // ============================================================

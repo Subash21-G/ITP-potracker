@@ -75,6 +75,64 @@ export class ProcessQueuePage {
     ),
   });
 
+  readonly columnFilters =
+    new FormGroup({
+      material:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      description:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      poNumber:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      purchaser:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      processStartFrom:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      processStartTo:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      deliveryFrom:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      deliveryTo:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      owner:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      processStatus:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      dispatchStatus:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+    });
+
   readonly queue =
     signal<ProcessQueueResponse>(EMPTY_QUEUE);
 
@@ -105,8 +163,157 @@ export class ProcessQueuePage {
       search: '',
     });
 
+    this.columnFilters.reset({
+      material: '',
+      description: '',
+      poNumber: '',
+      purchaser: '',
+      processStartFrom: '',
+      processStartTo: '',
+      deliveryFrom: '',
+      deliveryTo: '',
+      owner: '',
+      processStatus: '',
+      dispatchStatus: '',
+    });
+
     this.page.set(1);
     this.loadQueue();
+  }
+
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.page.set(1);
+    this.loadQueue();
+  }
+
+  clearColumnFilter(
+    column:
+      | 'material'
+      | 'po'
+      | 'purchaser'
+      | 'processStart'
+      | 'delivery'
+      | 'owner'
+      | 'process'
+      | 'dispatch',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'material':
+        this.columnFilters.patchValue({
+          material: '',
+          description: '',
+        });
+        break;
+
+      case 'po':
+        this.columnFilters.controls
+          .poNumber.setValue('');
+        break;
+
+      case 'purchaser':
+        this.columnFilters.controls
+          .purchaser.setValue('');
+        break;
+
+      case 'processStart':
+        this.columnFilters.patchValue({
+          processStartFrom: '',
+          processStartTo: '',
+        });
+        break;
+
+      case 'delivery':
+        this.columnFilters.patchValue({
+          deliveryFrom: '',
+          deliveryTo: '',
+        });
+        break;
+
+      case 'owner':
+        this.columnFilters.controls
+          .owner.setValue('');
+        break;
+
+      case 'process':
+        this.columnFilters.controls
+          .processStatus.setValue('');
+        break;
+
+      case 'dispatch':
+        this.columnFilters.controls
+          .dispatchStatus.setValue('');
+        break;
+    }
+
+    filter.open = false;
+    this.page.set(1);
+    this.loadQueue();
+  }
+
+  columnFilterActive(
+    column:
+      | 'material'
+      | 'po'
+      | 'purchaser'
+      | 'processStart'
+      | 'delivery'
+      | 'owner'
+      | 'process'
+      | 'dispatch',
+  ): boolean {
+    const values =
+      this.columnFilters.getRawValue();
+
+    switch (column) {
+      case 'material':
+        return Boolean(
+          values.material.trim() ||
+          values.description.trim(),
+        );
+
+      case 'po':
+        return Boolean(
+          values.poNumber.trim(),
+        );
+
+      case 'purchaser':
+        return Boolean(
+          values.purchaser.trim(),
+        );
+
+      case 'processStart':
+        return Boolean(
+          values.processStartFrom ||
+          values.processStartTo,
+        );
+
+      case 'delivery':
+        return Boolean(
+          values.deliveryFrom ||
+          values.deliveryTo,
+        );
+
+      case 'owner':
+        return Boolean(
+          values.owner.trim(),
+        );
+
+      case 'process':
+        return Boolean(
+          values.processStatus.trim(),
+        );
+
+      case 'dispatch':
+        return Boolean(
+          values.dispatchStatus.trim(),
+        );
+    }
+
+    return false;
   }
 
   changePageSize(event: Event): void {
@@ -172,11 +379,52 @@ export class ProcessQueuePage {
     const filters =
       this.filters.getRawValue();
 
+    const columnFilters =
+      this.columnFilters.getRawValue();
+
     this.productionApi
       .getProcessQueue({
-        search: filters.search,
-        page: this.page(),
-        pageSize: this.pageSize(),
+        search:
+          filters.search,
+
+        material:
+          columnFilters.material,
+
+        description:
+          columnFilters.description,
+
+        poNumber:
+          columnFilters.poNumber,
+
+        purchaser:
+          columnFilters.purchaser,
+
+        processStartFrom:
+          columnFilters.processStartFrom,
+
+        processStartTo:
+          columnFilters.processStartTo,
+
+        deliveryFrom:
+          columnFilters.deliveryFrom,
+
+        deliveryTo:
+          columnFilters.deliveryTo,
+
+        owner:
+          columnFilters.owner,
+
+        processStatus:
+          columnFilters.processStatus,
+
+        dispatchStatus:
+          columnFilters.dispatchStatus,
+
+        page:
+          this.page(),
+
+        pageSize:
+          this.pageSize(),
       })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
