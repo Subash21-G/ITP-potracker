@@ -127,6 +127,8 @@ export class MaterialsApiService {
         string,
         string | undefined,
       ][] = [
+        ['sortColumn', query.sortColumn],
+        ['sortDirection', query.sortDirection],
         ['search', query.search],
         ['poNumber', query.poNumber],
         ['handler', query.handler],

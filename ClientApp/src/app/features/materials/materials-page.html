@@ -332,6 +332,24 @@
             <div class="server-table-heading">
               <span>PO / Purchaser / Handler</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'po'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('po', 'PO number')
+                "
+                [title]="
+                  sortTitle('po', 'PO number')
+                "
+                (click)="toggleSort('po')"
+              >
+                {{ sortIndicator('po') }}
+              </button>
+
               <details
                 #materialPoFilter
                 class="server-column-filter"
@@ -392,6 +410,24 @@
           <th>
             <div class="server-table-heading">
               <span>Line</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'line'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('line', 'Line')
+                "
+                [title]="
+                  sortTitle('line', 'Line')
+                "
+                (click)="toggleSort('line')"
+              >
+                {{ sortIndicator('line') }}
+              </button>
               <details
                 #materialLineFilter
                 class="server-column-filter"
@@ -425,6 +461,24 @@
           <th>
             <div class="server-table-heading">
               <span>Material</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'material'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('material', 'Material')
+                "
+                [title]="
+                  sortTitle('material', 'Material')
+                "
+                (click)="toggleSort('material')"
+              >
+                {{ sortIndicator('material') }}
+              </button>
               <details
                 #materialNumberFilter
                 class="server-column-filter"
@@ -458,6 +512,24 @@
           <th>
             <div class="server-table-heading">
               <span>Description</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'description'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('description', 'Description')
+                "
+                [title]="
+                  sortTitle('description', 'Description')
+                "
+                (click)="toggleSort('description')"
+              >
+                {{ sortIndicator('description') }}
+              </button>
               <details
                 #materialDescriptionFilter
                 class="server-column-filter"
@@ -491,6 +563,24 @@
           <th class="number-cell">
             <div class="server-table-heading">
               <span>Ordered</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'ordered'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('ordered', 'Ordered quantity')
+                "
+                [title]="
+                  sortTitle('ordered', 'Ordered quantity')
+                "
+                (click)="toggleSort('ordered')"
+              >
+                {{ sortIndicator('ordered') }}
+              </button>
               <details
                 #materialOrderedFilter
                 class="server-column-filter"
@@ -517,6 +607,24 @@
           <th class="number-cell">
             <div class="server-table-heading">
               <span>Unit Price</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'unitPrice'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('unitPrice', 'Unit price')
+                "
+                [title]="
+                  sortTitle('unitPrice', 'Unit price')
+                "
+                (click)="toggleSort('unitPrice')"
+              >
+                {{ sortIndicator('unitPrice') }}
+              </button>
               <details
                 #materialUnitPriceFilter
                 class="server-column-filter"
@@ -543,6 +651,24 @@
           <th class="number-cell">
             <div class="server-table-heading">
               <span>Material Value</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'materialValue'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('materialValue', 'Material value')
+                "
+                [title]="
+                  sortTitle('materialValue', 'Material value')
+                "
+                (click)="toggleSort('materialValue')"
+              >
+                {{ sortIndicator('materialValue') }}
+              </button>
               <details
                 #materialValueFilter
                 class="server-column-filter"
@@ -569,6 +695,24 @@
           <th class="number-cell">
             <div class="server-table-heading">
               <span>Dispatched</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'dispatched'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('dispatched', 'Dispatched quantity')
+                "
+                [title]="
+                  sortTitle('dispatched', 'Dispatched quantity')
+                "
+                (click)="toggleSort('dispatched')"
+              >
+                {{ sortIndicator('dispatched') }}
+              </button>
               <details
                 #materialDispatchedFilter
                 class="server-column-filter"
@@ -595,6 +739,24 @@
           <th class="number-cell">
             <div class="server-table-heading">
               <span>Pending</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'pending'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('pending', 'Pending quantity')
+                "
+                [title]="
+                  sortTitle('pending', 'Pending quantity')
+                "
+                (click)="toggleSort('pending')"
+              >
+                {{ sortIndicator('pending') }}
+              </button>
               <details
                 #materialPendingFilter
                 class="server-column-filter"
@@ -712,6 +874,24 @@
           <th>
             <div class="server-table-heading">
               <span>Process</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'process'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('process', 'Process status')
+                "
+                [title]="
+                  sortTitle('process', 'Process status')
+                "
+                (click)="toggleSort('process')"
+              >
+                {{ sortIndicator('process') }}
+              </button>
               <details
                 #materialProcessFilter
                 class="server-column-filter"
@@ -738,6 +918,24 @@
           <th>
             <div class="server-table-heading">
               <span>Dispatch</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'dispatch'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('dispatch', 'Dispatch status')
+                "
+                [title]="
+                  sortTitle('dispatch', 'Dispatch status')
+                "
+                (click)="toggleSort('dispatch')"
+              >
+                {{ sortIndicator('dispatch') }}
+              </button>
               <details
                 #materialDispatchFilter
                 class="server-column-filter"
@@ -764,6 +962,24 @@
           <th>
             <div class="server-table-heading">
               <span>Delivery</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'delivery'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('delivery', 'Delivery date')
+                "
+                [title]="
+                  sortTitle('delivery', 'Delivery date')
+                "
+                (click)="toggleSort('delivery')"
+              >
+                {{ sortIndicator('delivery') }}
+              </button>
               <details
                 #materialDeliveryFilter
                 class="server-column-filter"

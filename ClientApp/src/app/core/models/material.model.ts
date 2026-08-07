@@ -45,9 +45,30 @@ export interface PagedResult<T> {
   readonly hasNextPage: boolean;
 }
 
+export type MaterialSortColumn =
+  | 'po'
+  | 'line'
+  | 'material'
+  | 'description'
+  | 'ordered'
+  | 'unitPrice'
+  | 'materialValue'
+  | 'dispatched'
+  | 'pending'
+  | 'process'
+  | 'dispatch'
+  | 'delivery';
+
+export type MaterialSortDirection =
+  | 'asc'
+  | 'desc';
+
 export interface MaterialQuery {
   readonly page: number;
   readonly pageSize: number;
+
+  readonly sortColumn?: MaterialSortColumn;
+  readonly sortDirection?: MaterialSortDirection;
 
   readonly search?: string;
   readonly poNumber?: string;

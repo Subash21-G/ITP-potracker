@@ -35,6 +35,8 @@ describe('MaterialsApiService', () => {
       .getMaterials({
         page: 2,
         pageSize: 25,
+        sortColumn: 'delivery',
+        sortDirection: 'desc',
         search: 'shaft',
         poNumber: 'PO-100',
         handler: 'Manoj',
@@ -76,6 +78,18 @@ describe('MaterialsApiService', () => {
         'pageSize',
       ),
     ).toBe('25');
+
+    expect(
+      request.request.params.get(
+        'sortColumn',
+      ),
+    ).toBe('delivery');
+
+    expect(
+      request.request.params.get(
+        'sortDirection',
+      ),
+    ).toBe('desc');
 
     expect(
       request.request.params.get(

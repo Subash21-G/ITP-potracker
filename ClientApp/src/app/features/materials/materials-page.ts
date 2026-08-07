@@ -19,6 +19,8 @@ import { finalize } from 'rxjs';
 
 import {
   MaterialListItem,
+  MaterialSortColumn,
+  MaterialSortDirection,
 } from '../../core/models/material.model';
 import { MaterialsApiService } from '../../core/services/materials-api.service';
 
@@ -195,6 +197,17 @@ export class MaterialsPage {
   readonly items = signal<readonly MaterialListItem[]>([]);
   readonly page = signal(1);
   readonly pageSize = signal(25);
+
+  readonly sortColumn =
+    signal<MaterialSortColumn | null>(
+      null,
+    );
+
+  readonly sortDirection =
+    signal<MaterialSortDirection | null>(
+      null,
+    );
+
   readonly totalRecords = signal(0);
   readonly totalMaterialValue = signal(0);
   readonly totalPages = signal(1);
@@ -304,6 +317,91 @@ export class MaterialsPage {
     }
 
     this.loadMaterials();
+  }
+
+  toggleSort(
+    column: MaterialSortColumn,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    const currentColumn =
+      this.sortColumn();
+
+    const currentDirection =
+      this.sortDirection();
+
+    if (
+      currentColumn !== column ||
+      currentDirection === null
+    ) {
+      this.sortColumn.set(
+        column,
+      );
+
+      this.sortDirection.set(
+        'asc',
+      );
+    } else if (
+      currentDirection ===
+      'asc'
+    ) {
+      this.sortDirection.set(
+        'desc',
+      );
+    } else {
+      this.sortColumn.set(
+        null,
+      );
+
+      this.sortDirection.set(
+        null,
+      );
+    }
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+
+    this.loadMaterials();
+  }
+
+  sortIndicator(
+    column: MaterialSortColumn,
+  ): string {
+    if (
+      this.sortColumn() !==
+      column
+    ) {
+      return '\u2195';
+    }
+
+    return this.sortDirection() ===
+      'desc'
+      ? '\u2193'
+      : '\u2191';
+  }
+
+  sortTitle(
+    column: MaterialSortColumn,
+    label: string,
+  ): string {
+    if (
+      this.sortColumn() !==
+      column
+    ) {
+      return `Sort ${label} ascending`;
+    }
+
+    if (
+      this.sortDirection() ===
+      'asc'
+    ) {
+      return `Sort ${label} descending`;
+    }
+
+    return `Clear ${label} sort`;
   }
 
   applyFilters(): void {
@@ -711,8 +809,18 @@ export class MaterialsPage {
     this.materialsApi
       .downloadExcel({
         page: 1,
+
         pageSize:
           this.pageSize(),
+
+        sortColumn:
+          this.sortColumn() ??
+          undefined,
+
+        sortDirection:
+          this.sortDirection() ??
+          undefined,
+
         ...filterValues,
         ...columnValues,
       })
@@ -1004,8 +1112,18 @@ export class MaterialsPage {
       .getMaterials({
         page:
           this.page(),
+
         pageSize:
           this.pageSize(),
+
+        sortColumn:
+          this.sortColumn() ??
+          undefined,
+
+        sortDirection:
+          this.sortDirection() ??
+          undefined,
+
         ...filterValues,
         ...columnValues,
       })

@@ -467,6 +467,9 @@ namespace POTracker.Controllers.Api
                 DateTime? columnDeliveryDateFrom,
                 DateTime? columnDeliveryDateTo,
 
+                string? sortColumn,
+                string? sortDirection,
+
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
@@ -557,10 +560,10 @@ namespace POTracker.Controllers.Api
                 }
 
                 items =
-                    await query
-                        .OrderByDescending(
-                            material =>
-                                material.Id)
+                    await ApplyMaterialSort(
+                            query,
+                            sortColumn,
+                            sortDirection)
                         .Skip(
                             (page - 1) *
                             pageSize)
@@ -577,10 +580,10 @@ namespace POTracker.Controllers.Api
             else
             {
                 var allItems =
-                    await query
-                        .OrderByDescending(
-                            material =>
-                                material.Id)
+                    await ApplyMaterialSort(
+                            query,
+                            sortColumn,
+                            sortDirection)
                         .Select(
                             MaterialListProjection)
                         .ToListAsync(
@@ -1282,6 +1285,9 @@ namespace POTracker.Controllers.Api
             DateTime? columnDeliveryDateFrom,
             DateTime? columnDeliveryDateTo,
 
+            string? sortColumn,
+            string? sortDirection,
+
             CancellationToken cancellationToken = default)
         {
             var items =
@@ -1360,6 +1366,12 @@ namespace POTracker.Controllers.Api
                                 maxShortageQty))
                         .ToList();
             }
+
+            items =
+                ApplyMaterialDtoSort(
+                    items,
+                    sortColumn,
+                    sortDirection);
 
             using var workbook =
                 new XLWorkbook();
@@ -2338,6 +2350,561 @@ namespace POTracker.Controllers.Api
 
             return details;
         }
+        private static IOrderedQueryable<Material>
+            ApplyMaterialSort(
+                IQueryable<Material> query,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column =
+                sortColumn?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            var descending =
+                string.Equals(
+                    sortDirection?.Trim(),
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+            return column switch
+            {
+                "po" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.PurchaseOrder != null
+                                    ? material.PurchaseOrder.PONumber
+                                    : string.Empty)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "po" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.PurchaseOrder != null
+                                    ? material.PurchaseOrder.PONumber
+                                    : string.Empty)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "line" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.LineItem ??
+                                string.Empty)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "line" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.LineItem ??
+                                string.Empty)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "material" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.MaterialNo ??
+                                string.Empty)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "material" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.MaterialNo ??
+                                string.Empty)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "description" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.ShortDescription != null &&
+                                material.ShortDescription != string.Empty
+                                    ? material.ShortDescription
+                                    : material.BriefDescription ??
+                                      string.Empty)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "description" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.ShortDescription != null &&
+                                material.ShortDescription != string.Empty
+                                    ? material.ShortDescription
+                                    : material.BriefDescription ??
+                                      string.Empty)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "ordered" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.Qty)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "ordered" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.Qty)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "unitprice" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.Cost)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "unitprice" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.Cost)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "materialvalue" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.TotalValue)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "materialvalue" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.TotalValue)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "dispatched" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.DispatchQty)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "dispatched" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.DispatchQty)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "pending" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.PendingQty)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "pending" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.PendingQty)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "process" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.ProcessStatus)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "process" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.ProcessStatus)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "dispatch" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.DispatchStatus)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "dispatch" =>
+                    query
+                        .OrderBy(
+                            material =>
+                                material.DispatchStatus)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                "delivery" when descending =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.DeliveryDate.HasValue)
+                        .ThenByDescending(
+                            material =>
+                                material.DeliveryDate)
+                        .ThenByDescending(
+                            material =>
+                                material.Id),
+
+                "delivery" =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.DeliveryDate.HasValue)
+                        .ThenBy(
+                            material =>
+                                material.DeliveryDate)
+                        .ThenBy(
+                            material =>
+                                material.Id),
+
+                _ =>
+                    query
+                        .OrderByDescending(
+                            material =>
+                                material.Id)
+            };
+        }
+
+
+        private static List<MaterialListItemDto>
+            ApplyMaterialDtoSort(
+                IEnumerable<MaterialListItemDto> items,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column =
+                sortColumn?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            var descending =
+                string.Equals(
+                    sortDirection?.Trim(),
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+            return column switch
+            {
+                "po" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.PONumber,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "po" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.PONumber,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "line" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.LineItem,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "line" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.LineItem,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "material" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.MaterialNo,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "material" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.MaterialNo,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "description" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.Description,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "description" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.Description,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "ordered" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.Quantity)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "ordered" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.Quantity)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "unitprice" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.UnitPrice)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "unitprice" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.UnitPrice)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "materialvalue" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.TotalValue)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "materialvalue" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.TotalValue)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "dispatched" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.DispatchQuantity)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "dispatched" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.DispatchQuantity)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "pending" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.PendingQuantity)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "pending" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.PendingQuantity)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "process" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.ProcessStatus,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "process" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.ProcessStatus,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "dispatch" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.DispatchStatus,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "dispatch" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.DispatchStatus,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "delivery" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.DeliveryDate.HasValue)
+                        .ThenByDescending(
+                            item =>
+                                item.DeliveryDate)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "delivery" =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.DeliveryDate.HasValue)
+                        .ThenBy(
+                            item =>
+                                item.DeliveryDate)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                _ =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.Id)
+                        .ToList()
+            };
+        }
+
+
         private static IQueryable<Material>
             ApplyFilters(
                 IQueryable<Material> query,
