@@ -436,13 +436,45 @@ namespace POTracker.Controllers.Api
                 string? stockStatus,
                 DateTime? deliveryDateFrom,
                 DateTime? deliveryDateTo,
+
+                string? columnPoNumber,
+                string? columnPurchaser,
+                string? columnHandler,
+                string? lineItem,
+                string? materialNo,
+                string? description,
+                decimal? minOrderedQty,
+                decimal? maxOrderedQty,
+                decimal? minUnitPrice,
+                decimal? maxUnitPrice,
+                decimal? minMaterialValue,
+                decimal? maxMaterialValue,
+                decimal? minDispatchQty,
+                decimal? maxDispatchQty,
+                decimal? minPendingQty,
+                decimal? maxPendingQty,
+
+                decimal? minAllocatedQty,
+                decimal? maxAllocatedQty,
+                decimal? minLiveStockQty,
+                decimal? maxLiveStockQty,
+                decimal? minShortageQty,
+                decimal? maxShortageQty,
+                string? columnStockStatus,
+
+                string? processStatus,
+                string? columnDispatchStatus,
+                DateTime? columnDeliveryDateFrom,
+                DateTime? columnDeliveryDateTo,
+
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
         {
-            page = Math.Max(
-                page,
-                1);
+            page =
+                Math.Max(
+                    page,
+                    1);
 
             pageSize =
                 NormalizePageSize(
@@ -462,15 +494,45 @@ namespace POTracker.Controllers.Api
                     invoiceStatus,
                     dispatchStatus,
                     deliveryDateFrom,
-                    deliveryDateTo);
+                    deliveryDateTo,
+                    columnPoNumber,
+                    columnPurchaser,
+                    columnHandler,
+                    lineItem,
+                    materialNo,
+                    description,
+                    minOrderedQty,
+                    maxOrderedQty,
+                    minUnitPrice,
+                    maxUnitPrice,
+                    minMaterialValue,
+                    maxMaterialValue,
+                    minDispatchQty,
+                    maxDispatchQty,
+                    minPendingQty,
+                    maxPendingQty,
+                    processStatus,
+                    columnDispatchStatus,
+                    columnDeliveryDateFrom,
+                    columnDeliveryDateTo);
+
+            var requiresStockDerivedFiltering =
+                !string.IsNullOrWhiteSpace(
+                    stockStatus) ||
+                !string.IsNullOrWhiteSpace(
+                    columnStockStatus) ||
+                minAllocatedQty.HasValue ||
+                maxAllocatedQty.HasValue ||
+                minLiveStockQty.HasValue ||
+                maxLiveStockQty.HasValue ||
+                minShortageQty.HasValue ||
+                maxShortageQty.HasValue;
 
             List<MaterialListItemDto> items;
             int totalRecords;
             decimal totalValue;
 
-            if (
-                string.IsNullOrWhiteSpace(
-                    stockStatus))
+            if (!requiresStockDerivedFiltering)
             {
                 totalRecords =
                     await query.CountAsync(
@@ -528,15 +590,19 @@ namespace POTracker.Controllers.Api
                     allItems,
                     cancellationToken);
 
-                var requestedStockStatus =
-                    stockStatus.Trim();
-
                 var filteredItems =
                     allItems
                         .Where(item =>
-                            MatchesStockStatus(
-                                item.StockStatus,
-                                requestedStockStatus))
+                            MatchesStockDerivedFilters(
+                                item,
+                                stockStatus,
+                                columnStockStatus,
+                                minAllocatedQty,
+                                maxAllocatedQty,
+                                minLiveStockQty,
+                                maxLiveStockQty,
+                                minShortageQty,
+                                maxShortageQty))
                         .ToList();
 
                 totalRecords =
@@ -588,6 +654,7 @@ namespace POTracker.Controllers.Api
                         totalValue
                 });
         }
+
         // ============================================================
         // DETAILS
         // ============================================================
@@ -1184,6 +1251,37 @@ namespace POTracker.Controllers.Api
             string? stockStatus,
             DateTime? deliveryDateFrom,
             DateTime? deliveryDateTo,
+
+            string? columnPoNumber,
+            string? columnPurchaser,
+            string? columnHandler,
+            string? lineItem,
+            string? materialNo,
+            string? description,
+            decimal? minOrderedQty,
+            decimal? maxOrderedQty,
+            decimal? minUnitPrice,
+            decimal? maxUnitPrice,
+            decimal? minMaterialValue,
+            decimal? maxMaterialValue,
+            decimal? minDispatchQty,
+            decimal? maxDispatchQty,
+            decimal? minPendingQty,
+            decimal? maxPendingQty,
+
+            decimal? minAllocatedQty,
+            decimal? maxAllocatedQty,
+            decimal? minLiveStockQty,
+            decimal? maxLiveStockQty,
+            decimal? minShortageQty,
+            decimal? maxShortageQty,
+            string? columnStockStatus,
+
+            string? processStatus,
+            string? columnDispatchStatus,
+            DateTime? columnDeliveryDateFrom,
+            DateTime? columnDeliveryDateTo,
+
             CancellationToken cancellationToken = default)
         {
             var items =
@@ -1200,7 +1298,27 @@ namespace POTracker.Controllers.Api
                         invoiceStatus,
                         dispatchStatus,
                         deliveryDateFrom,
-                        deliveryDateTo)
+                        deliveryDateTo,
+                        columnPoNumber,
+                        columnPurchaser,
+                        columnHandler,
+                        lineItem,
+                        materialNo,
+                        description,
+                        minOrderedQty,
+                        maxOrderedQty,
+                        minUnitPrice,
+                        maxUnitPrice,
+                        minMaterialValue,
+                        maxMaterialValue,
+                        minDispatchQty,
+                        maxDispatchQty,
+                        minPendingQty,
+                        maxPendingQty,
+                        processStatus,
+                        columnDispatchStatus,
+                        columnDeliveryDateFrom,
+                        columnDeliveryDateTo)
                     .OrderByDescending(
                         material =>
                             material.Id)
@@ -1213,19 +1331,33 @@ namespace POTracker.Controllers.Api
                 items,
                 cancellationToken);
 
-            if (
+            var requiresStockDerivedFiltering =
                 !string.IsNullOrWhiteSpace(
-                    stockStatus))
-            {
-                var requestedStockStatus =
-                    stockStatus.Trim();
+                    stockStatus) ||
+                !string.IsNullOrWhiteSpace(
+                    columnStockStatus) ||
+                minAllocatedQty.HasValue ||
+                maxAllocatedQty.HasValue ||
+                minLiveStockQty.HasValue ||
+                maxLiveStockQty.HasValue ||
+                minShortageQty.HasValue ||
+                maxShortageQty.HasValue;
 
+            if (requiresStockDerivedFiltering)
+            {
                 items =
                     items
                         .Where(item =>
-                            MatchesStockStatus(
-                                item.StockStatus,
-                                requestedStockStatus))
+                            MatchesStockDerivedFilters(
+                                item,
+                                stockStatus,
+                                columnStockStatus,
+                                minAllocatedQty,
+                                maxAllocatedQty,
+                                minLiveStockQty,
+                                maxLiveStockQty,
+                                minShortageQty,
+                                maxShortageQty))
                         .ToList();
             }
 
@@ -1250,6 +1382,7 @@ namespace POTracker.Controllers.Api
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"Materials_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
         }
+
         // ============================================================
         // BULK DELETE
         // ============================================================
@@ -2218,7 +2351,27 @@ namespace POTracker.Controllers.Api
                 string? invoiceStatus,
                 string? dispatchStatus,
                 DateTime? deliveryDateFrom,
-                DateTime? deliveryDateTo)
+                DateTime? deliveryDateTo,
+                string? columnPoNumber,
+                string? columnPurchaser,
+                string? columnHandler,
+                string? lineItem,
+                string? materialNo,
+                string? description,
+                decimal? minOrderedQty,
+                decimal? maxOrderedQty,
+                decimal? minUnitPrice,
+                decimal? maxUnitPrice,
+                decimal? minMaterialValue,
+                decimal? maxMaterialValue,
+                decimal? minDispatchQty,
+                decimal? maxDispatchQty,
+                decimal? minPendingQty,
+                decimal? maxPendingQty,
+                string? processStatus,
+                string? columnDispatchStatus,
+                DateTime? columnDeliveryDateFrom,
+                DateTime? columnDeliveryDateTo)
         {
             if (
                 !string.IsNullOrWhiteSpace(
@@ -2487,7 +2640,321 @@ namespace POTracker.Controllers.Api
                             endDateExclusive);
             }
 
+            var normalizedColumnPoNumber =
+                Clean(
+                    columnPoNumber);
+
+            if (normalizedColumnPoNumber != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.PurchaseOrder != null &&
+                        material.PurchaseOrder
+                            .PONumber
+                            .Contains(
+                                normalizedColumnPoNumber));
+            }
+
+            var normalizedColumnPurchaser =
+                Clean(
+                    columnPurchaser);
+
+            if (normalizedColumnPurchaser != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.PurchaseOrder != null &&
+                        material.PurchaseOrder.Purchaser != null &&
+                        material.PurchaseOrder.Purchaser
+                            .PurchaserName
+                            .Contains(
+                                normalizedColumnPurchaser));
+            }
+
+            var normalizedColumnHandler =
+                Clean(
+                    columnHandler);
+
+            if (normalizedColumnHandler != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.PurchaseOrder != null &&
+                        material.PurchaseOrder
+                            .BuyerContactPerson != null &&
+                        material.PurchaseOrder
+                            .BuyerContactPerson
+                            .Contains(
+                                normalizedColumnHandler));
+            }
+
+            var normalizedLineItem =
+                Clean(
+                    lineItem);
+
+            if (normalizedLineItem != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.LineItem != null &&
+                        material.LineItem.Contains(
+                            normalizedLineItem));
+            }
+
+            var normalizedMaterialNo =
+                Clean(
+                    materialNo);
+
+            if (normalizedMaterialNo != null)
+            {
+                query =
+                    query.Where(material =>
+                        (
+                            material.MaterialNo != null &&
+                            material.MaterialNo.Contains(
+                                normalizedMaterialNo)
+                        ) ||
+                        (
+                            material.HsnSacCode != null &&
+                            material.HsnSacCode.Contains(
+                                normalizedMaterialNo)
+                        ));
+            }
+
+            var normalizedDescription =
+                Clean(
+                    description);
+
+            if (normalizedDescription != null)
+            {
+                query =
+                    query.Where(material =>
+                        (
+                            material.ShortDescription != null &&
+                            material.ShortDescription.Contains(
+                                normalizedDescription)
+                        ) ||
+                        (
+                            material.BriefDescription != null &&
+                            material.BriefDescription.Contains(
+                                normalizedDescription)
+                        ));
+            }
+
+            if (minOrderedQty.HasValue)
+            {
+                query =
+                    query.Where(material =>
+                        material.Qty >=
+                        minOrderedQty.Value);
+            }
+
+            if (maxOrderedQty.HasValue)
+            {
+                query =
+                    query.Where(material =>
+                        material.Qty <=
+                        maxOrderedQty.Value);
+            }
+
+            if (minUnitPrice.HasValue)
+            {
+                query =
+                    query.Where(material =>
+                        material.Cost >=
+                        minUnitPrice.Value);
+            }
+
+            if (maxUnitPrice.HasValue)
+            {
+                query =
+                    query.Where(material =>
+                        material.Cost <=
+                        maxUnitPrice.Value);
+            }
+
+            if (minMaterialValue.HasValue)
+            {
+                query =
+                    query.Where(material =>
+                        material.TotalValue >=
+                        minMaterialValue.Value);
+            }
+
+            if (maxMaterialValue.HasValue)
+            {
+                query =
+                    query.Where(material =>
+                        material.TotalValue <=
+                        maxMaterialValue.Value);
+            }
+
+            if (minDispatchQty.HasValue)
+            {
+                query =
+                    query.Where(material =>
+                        material.DispatchQty >=
+                        minDispatchQty.Value);
+            }
+
+            if (maxDispatchQty.HasValue)
+            {
+                query =
+                    query.Where(material =>
+                        material.DispatchQty <=
+                        maxDispatchQty.Value);
+            }
+
+            if (minPendingQty.HasValue)
+            {
+                query =
+                    query.Where(material =>
+                        material.PendingQty >=
+                        minPendingQty.Value);
+            }
+
+            if (maxPendingQty.HasValue)
+            {
+                query =
+                    query.Where(material =>
+                        material.PendingQty <=
+                        maxPendingQty.Value);
+            }
+
+            var normalizedProcessStatus =
+                Clean(
+                    processStatus);
+
+            if (normalizedProcessStatus != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.ProcessStatus.Contains(
+                            normalizedProcessStatus));
+            }
+
+            var normalizedColumnDispatchStatus =
+                Clean(
+                    columnDispatchStatus);
+
+            if (normalizedColumnDispatchStatus != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.DispatchStatus.Contains(
+                            normalizedColumnDispatchStatus));
+            }
+
+            if (columnDeliveryDateFrom.HasValue)
+            {
+                var columnDeliveryStart =
+                    columnDeliveryDateFrom.Value.Date;
+
+                query =
+                    query.Where(material =>
+                        material.DeliveryDate.HasValue &&
+                        material.DeliveryDate.Value >=
+                        columnDeliveryStart);
+            }
+
+            if (columnDeliveryDateTo.HasValue)
+            {
+                var columnDeliveryEndExclusive =
+                    columnDeliveryDateTo
+                        .Value
+                        .Date
+                        .AddDays(1);
+
+                query =
+                    query.Where(material =>
+                        material.DeliveryDate.HasValue &&
+                        material.DeliveryDate.Value <
+                        columnDeliveryEndExclusive);
+            }
+
             return query;
+        }
+
+        private static bool MatchesStockDerivedFilters(
+            MaterialListItemDto item,
+            string? topStockStatus,
+            string? columnStockStatus,
+            decimal? minAllocatedQty,
+            decimal? maxAllocatedQty,
+            decimal? minLiveStockQty,
+            decimal? maxLiveStockQty,
+            decimal? minShortageQty,
+            decimal? maxShortageQty)
+        {
+            if (
+                !string.IsNullOrWhiteSpace(
+                    topStockStatus) &&
+                !MatchesStockStatus(
+                    item.StockStatus,
+                    topStockStatus.Trim()))
+            {
+                return false;
+            }
+
+            if (
+                !string.IsNullOrWhiteSpace(
+                    columnStockStatus) &&
+                !MatchesStockStatus(
+                    item.StockStatus,
+                    columnStockStatus.Trim()))
+            {
+                return false;
+            }
+
+            if (
+                minAllocatedQty.HasValue &&
+                item.AllocatedStockQuantity <
+                    minAllocatedQty.Value)
+            {
+                return false;
+            }
+
+            if (
+                maxAllocatedQty.HasValue &&
+                item.AllocatedStockQuantity >
+                    maxAllocatedQty.Value)
+            {
+                return false;
+            }
+
+            if (
+                minLiveStockQty.HasValue &&
+                item.LiveStockQuantity <
+                    minLiveStockQty.Value)
+            {
+                return false;
+            }
+
+            if (
+                maxLiveStockQty.HasValue &&
+                item.LiveStockQuantity >
+                    maxLiveStockQty.Value)
+            {
+                return false;
+            }
+
+            if (
+                minShortageQty.HasValue &&
+                item.StockShortageQuantity <
+                    minShortageQty.Value)
+            {
+                return false;
+            }
+
+            if (
+                maxShortageQty.HasValue &&
+                item.StockShortageQuantity >
+                    maxShortageQty.Value)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private static bool MatchesStockStatus(

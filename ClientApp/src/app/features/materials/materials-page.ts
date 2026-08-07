@@ -54,6 +54,144 @@ export class MaterialsPage {
     deliveryDateTo: new FormControl('', { nonNullable: true }),
   });
 
+  readonly columnFilters =
+    new FormGroup({
+      columnPoNumber:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      columnPurchaser:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      columnHandler:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      lineItem:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      materialNo:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      description:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minOrderedQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxOrderedQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minUnitPrice:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxUnitPrice:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minMaterialValue:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxMaterialValue:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minDispatchQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxDispatchQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minPendingQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxPendingQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minAllocatedQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxAllocatedQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minLiveStockQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxLiveStockQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      minShortageQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      maxShortageQty:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      columnStockStatus:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      processStatus:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      columnDispatchStatus:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      columnDeliveryDateFrom:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+
+      columnDeliveryDateTo:
+        new FormControl('', {
+          nonNullable: true,
+        }),
+    });
+
   readonly items = signal<readonly MaterialListItem[]>([]);
   readonly page = signal(1);
   readonly pageSize = signal(25);
@@ -175,8 +313,256 @@ export class MaterialsPage {
     this.loadMaterials();
   }
 
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+    this.loadMaterials();
+  }
+
+  clearColumnFilter(
+    column:
+      | 'po'
+      | 'line'
+      | 'material'
+      | 'description'
+      | 'ordered'
+      | 'unitPrice'
+      | 'materialValue'
+      | 'dispatched'
+      | 'pending'
+      | 'allocatedLive'
+      | 'shortage'
+      | 'stock'
+      | 'process'
+      | 'dispatch'
+      | 'delivery',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'po':
+        this.columnFilters.patchValue({
+          columnPoNumber: '',
+          columnPurchaser: '',
+          columnHandler: '',
+        });
+        break;
+
+      case 'line':
+        this.columnFilters.controls
+          .lineItem.setValue('');
+        break;
+
+      case 'material':
+        this.columnFilters.controls
+          .materialNo.setValue('');
+        break;
+
+      case 'description':
+        this.columnFilters.controls
+          .description.setValue('');
+        break;
+
+      case 'ordered':
+        this.columnFilters.patchValue({
+          minOrderedQty: '',
+          maxOrderedQty: '',
+        });
+        break;
+
+      case 'unitPrice':
+        this.columnFilters.patchValue({
+          minUnitPrice: '',
+          maxUnitPrice: '',
+        });
+        break;
+
+      case 'materialValue':
+        this.columnFilters.patchValue({
+          minMaterialValue: '',
+          maxMaterialValue: '',
+        });
+        break;
+
+      case 'dispatched':
+        this.columnFilters.patchValue({
+          minDispatchQty: '',
+          maxDispatchQty: '',
+        });
+        break;
+
+      case 'pending':
+        this.columnFilters.patchValue({
+          minPendingQty: '',
+          maxPendingQty: '',
+        });
+        break;
+
+      case 'allocatedLive':
+        this.columnFilters.patchValue({
+          minAllocatedQty: '',
+          maxAllocatedQty: '',
+          minLiveStockQty: '',
+          maxLiveStockQty: '',
+        });
+        break;
+
+      case 'shortage':
+        this.columnFilters.patchValue({
+          minShortageQty: '',
+          maxShortageQty: '',
+        });
+        break;
+
+      case 'stock':
+        this.columnFilters.controls
+          .columnStockStatus.setValue('');
+        break;
+
+      case 'process':
+        this.columnFilters.controls
+          .processStatus.setValue('');
+        break;
+
+      case 'dispatch':
+        this.columnFilters.controls
+          .columnDispatchStatus.setValue('');
+        break;
+
+      case 'delivery':
+        this.columnFilters.patchValue({
+          columnDeliveryDateFrom: '',
+          columnDeliveryDateTo: '',
+        });
+        break;
+    }
+
+    filter.open = false;
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+    this.loadMaterials();
+  }
+
+  columnFilterActive(
+    column:
+      | 'po'
+      | 'line'
+      | 'material'
+      | 'description'
+      | 'ordered'
+      | 'unitPrice'
+      | 'materialValue'
+      | 'dispatched'
+      | 'pending'
+      | 'allocatedLive'
+      | 'shortage'
+      | 'stock'
+      | 'process'
+      | 'dispatch'
+      | 'delivery',
+  ): boolean {
+    const values =
+      this.columnFilters.getRawValue();
+
+    switch (column) {
+      case 'po':
+        return Boolean(
+          values.columnPoNumber.trim() ||
+          values.columnPurchaser.trim() ||
+          values.columnHandler.trim(),
+        );
+
+      case 'line':
+        return Boolean(
+          values.lineItem.trim(),
+        );
+
+      case 'material':
+        return Boolean(
+          values.materialNo.trim(),
+        );
+
+      case 'description':
+        return Boolean(
+          values.description.trim(),
+        );
+
+      case 'ordered':
+        return Boolean(
+          values.minOrderedQty.trim() ||
+          values.maxOrderedQty.trim(),
+        );
+
+      case 'unitPrice':
+        return Boolean(
+          values.minUnitPrice.trim() ||
+          values.maxUnitPrice.trim(),
+        );
+
+      case 'materialValue':
+        return Boolean(
+          values.minMaterialValue.trim() ||
+          values.maxMaterialValue.trim(),
+        );
+
+      case 'dispatched':
+        return Boolean(
+          values.minDispatchQty.trim() ||
+          values.maxDispatchQty.trim(),
+        );
+
+      case 'pending':
+        return Boolean(
+          values.minPendingQty.trim() ||
+          values.maxPendingQty.trim(),
+        );
+
+      case 'allocatedLive':
+        return Boolean(
+          values.minAllocatedQty.trim() ||
+          values.maxAllocatedQty.trim() ||
+          values.minLiveStockQty.trim() ||
+          values.maxLiveStockQty.trim(),
+        );
+
+      case 'shortage':
+        return Boolean(
+          values.minShortageQty.trim() ||
+          values.maxShortageQty.trim(),
+        );
+
+      case 'stock':
+        return Boolean(
+          values.columnStockStatus,
+        );
+
+      case 'process':
+        return Boolean(
+          values.processStatus.trim(),
+        );
+
+      case 'dispatch':
+        return Boolean(
+          values.columnDispatchStatus.trim(),
+        );
+
+      case 'delivery':
+        return Boolean(
+          values.columnDeliveryDateFrom ||
+          values.columnDeliveryDateTo,
+        );
+    }
+
+    return false;
+  }
+
   clearFilters(): void {
     this.filters.reset();
+    this.columnFilters.reset();
     this.page.set(1);
     this.clearSelection();
     this.successMessage.set('');
@@ -312,6 +698,9 @@ export class MaterialsPage {
     const filterValues =
       this.filters.getRawValue();
 
+    const columnValues =
+      this.columnFilters.getRawValue();
+
     this.downloadingExcel.set(
       true,
     );
@@ -325,6 +714,7 @@ export class MaterialsPage {
         pageSize:
           this.pageSize(),
         ...filterValues,
+        ...columnValues,
       })
       .pipe(
         takeUntilDestroyed(
@@ -600,7 +990,11 @@ export class MaterialsPage {
       return;
     }
 
-    const filterValues = this.filters.getRawValue();
+    const filterValues =
+      this.filters.getRawValue();
+
+    const columnValues =
+      this.columnFilters.getRawValue();
 
     this.loading.set(true);
     this.errorMessage.set('');
@@ -608,9 +1002,12 @@ export class MaterialsPage {
 
     this.materialsApi
       .getMaterials({
-        page: this.page(),
-        pageSize: this.pageSize(),
+        page:
+          this.page(),
+        pageSize:
+          this.pageSize(),
         ...filterValues,
+        ...columnValues,
       })
       .pipe(
         takeUntilDestroyed(this.destroyRef),

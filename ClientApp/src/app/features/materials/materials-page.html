@@ -315,7 +315,7 @@
     [class.table-wrap--loading]="loading()"
   >
     <table>
-      <thead>
+            <thead>
         <tr>
           <th class="select-cell">
             <input
@@ -327,21 +327,466 @@
               (change)="toggleCurrentPage($event)"
             />
           </th>
-          <th>PO / Purchaser / Handler</th>
-          <th>Line</th>
-          <th>Material</th>
-          <th>Description</th>
-          <th class="number-cell">Ordered</th>
-          <th class="number-cell">Unit Price</th>
-          <th class="number-cell">Material Value</th>
-          <th class="number-cell">Dispatched</th>
-          <th class="number-cell">Pending</th>
-          <th class="number-cell">Allocated / Live</th>
-          <th class="number-cell">Shortage</th>
-          <th>Stock</th>
-          <th>Process</th>
-          <th>Dispatch</th>
-          <th>Delivery</th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>PO / Purchaser / Handler</span>
+
+              <details
+                #materialPoFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('po')
+                ">
+                <summary title="Filter PO / Purchaser / Handler">▾</summary>
+
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>PO number contains</span>
+                    <input
+                      type="search"
+                      [formControl]="
+                        columnFilters.controls.columnPoNumber
+                      "
+                      placeholder="PO number">
+                  </label>
+
+                  <label>
+                    <span>Purchaser contains</span>
+                    <input
+                      type="search"
+                      [formControl]="
+                        columnFilters.controls.columnPurchaser
+                      "
+                      placeholder="Purchaser">
+                  </label>
+
+                  <label>
+                    <span>Handler contains</span>
+                    <input
+                      type="search"
+                      [formControl]="
+                        columnFilters.controls.columnHandler
+                      "
+                      placeholder="Handler">
+                  </label>
+
+                  <div class="server-column-filter__actions">
+                    <button
+                      type="button"
+                      (click)="clearColumnFilter('po', materialPoFilter)">
+                      Clear
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="applyColumnFilter(materialPoFilter)">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Line</span>
+              <details
+                #materialLineFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('line')
+                ">
+                <summary title="Filter Line">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>Line contains</span>
+                    <input
+                      type="search"
+                      [formControl]="columnFilters.controls.lineItem"
+                      placeholder="Line">
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('line', materialLineFilter)">
+                      Clear
+                    </button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialLineFilter)">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Material</span>
+              <details
+                #materialNumberFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('material')
+                ">
+                <summary title="Filter Material">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>Material / HSN contains</span>
+                    <input
+                      type="search"
+                      [formControl]="columnFilters.controls.materialNo"
+                      placeholder="Material or HSN">
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('material', materialNumberFilter)">
+                      Clear
+                    </button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialNumberFilter)">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Description</span>
+              <details
+                #materialDescriptionFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="
+                  columnFilterActive('description')
+                ">
+                <summary title="Filter Description">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>Description contains</span>
+                    <input
+                      type="search"
+                      [formControl]="columnFilters.controls.description"
+                      placeholder="Description">
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('description', materialDescriptionFilter)">
+                      Clear
+                    </button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialDescriptionFilter)">
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Ordered</span>
+              <details
+                #materialOrderedFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('ordered')">
+                <summary title="Filter Ordered Quantity">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.minOrderedQty"></label>
+                    <label><span>Max</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.maxOrderedQty"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('ordered', materialOrderedFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialOrderedFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Unit Price</span>
+              <details
+                #materialUnitPriceFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('unitPrice')">
+                <summary title="Filter Unit Price">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.minUnitPrice"></label>
+                    <label><span>Max</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.maxUnitPrice"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('unitPrice', materialUnitPriceFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialUnitPriceFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Material Value</span>
+              <details
+                #materialValueFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('materialValue')">
+                <summary title="Filter Material Value">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.minMaterialValue"></label>
+                    <label><span>Max</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.maxMaterialValue"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('materialValue', materialValueFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialValueFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Dispatched</span>
+              <details
+                #materialDispatchedFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('dispatched')">
+                <summary title="Filter Dispatched Quantity">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.minDispatchQty"></label>
+                    <label><span>Max</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.maxDispatchQty"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('dispatched', materialDispatchedFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialDispatchedFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Pending</span>
+              <details
+                #materialPendingFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('pending')">
+                <summary title="Filter Pending Quantity">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.minPendingQty"></label>
+                    <label><span>Max</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.maxPendingQty"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('pending', materialPendingFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialPendingFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Allocated / Live</span>
+              <details
+                #materialAllocatedFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('allocatedLive')">
+                <summary title="Filter Allocated / Live Stock">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Allocated min</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.minAllocatedQty"></label>
+                    <label><span>Allocated max</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.maxAllocatedQty"></label>
+                  </div>
+                  <div class="server-column-filter__range">
+                    <label><span>Live min</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.minLiveStockQty"></label>
+                    <label><span>Live max</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.maxLiveStockQty"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('allocatedLive', materialAllocatedFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialAllocatedFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Shortage</span>
+              <details
+                #materialShortageFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('shortage')">
+                <summary title="Filter Shortage">▾</summary>
+                <div class="server-column-filter__menu">
+                  <div class="server-column-filter__range">
+                    <label><span>Min</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.minShortageQty"></label>
+                    <label><span>Max</span><input type="number" step="0.01"
+                      [formControl]="columnFilters.controls.maxShortageQty"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('shortage', materialShortageFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialShortageFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Stock</span>
+              <details
+                #materialStockFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('stock')">
+                <summary title="Filter Stock Status">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>Stock status</span>
+                    <select [formControl]="columnFilters.controls.columnStockStatus">
+                      <option value="">All</option>
+                      <option value="Available">Available</option>
+                      <option value="No Pending">No Pending</option>
+                      <option value="Partial Stock">Partial Stock</option>
+                      <option value="Shortage">Shortage</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                      <option value="Not Found">Not Found</option>
+                      <option value="Stock API Offline">Stock API Offline</option>
+                    </select>
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('stock', materialStockFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialStockFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Process</span>
+              <details
+                #materialProcessFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('process')">
+                <summary title="Filter Process Status">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>Process status contains</span>
+                    <input type="search"
+                      [formControl]="columnFilters.controls.processStatus"
+                      placeholder="Process status">
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('process', materialProcessFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialProcessFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Dispatch</span>
+              <details
+                #materialDispatchFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('dispatch')">
+                <summary title="Filter Dispatch Status">▾</summary>
+                <div class="server-column-filter__menu">
+                  <label>
+                    <span>Dispatch status contains</span>
+                    <input type="search"
+                      [formControl]="columnFilters.controls.columnDispatchStatus"
+                      placeholder="Dispatch status">
+                  </label>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('dispatch', materialDispatchFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialDispatchFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
+          <th>
+            <div class="server-table-heading">
+              <span>Delivery</span>
+              <details
+                #materialDeliveryFilter
+                class="server-column-filter"
+                [class.server-column-filter--active]="columnFilterActive('delivery')">
+                <summary title="Filter Delivery Date">▾</summary>
+                <div class="server-column-filter__menu server-column-filter__menu--right">
+                  <div class="server-column-filter__range">
+                    <label><span>From</span><input type="date"
+                      [formControl]="columnFilters.controls.columnDeliveryDateFrom"></label>
+                    <label><span>To</span><input type="date"
+                      [formControl]="columnFilters.controls.columnDeliveryDateTo"></label>
+                  </div>
+                  <div class="server-column-filter__actions">
+                    <button type="button"
+                      (click)="clearColumnFilter('delivery', materialDeliveryFilter)">Clear</button>
+                    <button type="button"
+                      (click)="applyColumnFilter(materialDeliveryFilter)">Apply</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </th>
+
           <th class="action-cell">Action</th>
         </tr>
       </thead>

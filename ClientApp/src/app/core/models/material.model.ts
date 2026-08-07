@@ -48,6 +48,7 @@ export interface PagedResult<T> {
 export interface MaterialQuery {
   readonly page: number;
   readonly pageSize: number;
+
   readonly search?: string;
   readonly poNumber?: string;
   readonly handler?: string;
@@ -60,6 +61,43 @@ export interface MaterialQuery {
   readonly stockStatus?: string;
   readonly deliveryDateFrom?: string;
   readonly deliveryDateTo?: string;
+
+  readonly columnPoNumber?: string;
+  readonly columnPurchaser?: string;
+  readonly columnHandler?: string;
+  readonly lineItem?: string;
+  readonly materialNo?: string;
+  readonly description?: string;
+
+  readonly minOrderedQty?: string;
+  readonly maxOrderedQty?: string;
+
+  readonly minUnitPrice?: string;
+  readonly maxUnitPrice?: string;
+
+  readonly minMaterialValue?: string;
+  readonly maxMaterialValue?: string;
+
+  readonly minDispatchQty?: string;
+  readonly maxDispatchQty?: string;
+
+  readonly minPendingQty?: string;
+  readonly maxPendingQty?: string;
+
+  readonly minAllocatedQty?: string;
+  readonly maxAllocatedQty?: string;
+  readonly minLiveStockQty?: string;
+  readonly maxLiveStockQty?: string;
+
+  readonly minShortageQty?: string;
+  readonly maxShortageQty?: string;
+
+  readonly columnStockStatus?: string;
+  readonly processStatus?: string;
+  readonly columnDispatchStatus?: string;
+
+  readonly columnDeliveryDateFrom?: string;
+  readonly columnDeliveryDateTo?: string;
 }
 
 

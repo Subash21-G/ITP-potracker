@@ -122,89 +122,129 @@ export class MaterialsApiService {
     let params =
       new HttpParams();
 
-    params =
-      this.setOptional(
-        params,
-        'search',
-        query.search,
-      );
+    const optionalValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['poNumber', query.poNumber],
+        ['handler', query.handler],
+        ['poDateFrom', query.poDateFrom],
+        ['poDateTo', query.poDateTo],
+        [
+          'poReceivedDateFrom',
+          query.poReceivedDateFrom,
+        ],
+        [
+          'poReceivedDateTo',
+          query.poReceivedDateTo,
+        ],
+        ['invoiceStatus', query.invoiceStatus],
+        ['dispatchStatus', query.dispatchStatus],
+        ['stockStatus', query.stockStatus],
+        [
+          'deliveryDateFrom',
+          query.deliveryDateFrom,
+        ],
+        [
+          'deliveryDateTo',
+          query.deliveryDateTo,
+        ],
 
-    params =
-      this.setOptional(
-        params,
-        'poNumber',
-        query.poNumber,
-      );
+        [
+          'columnPoNumber',
+          query.columnPoNumber,
+        ],
+        [
+          'columnPurchaser',
+          query.columnPurchaser,
+        ],
+        [
+          'columnHandler',
+          query.columnHandler,
+        ],
+        ['lineItem', query.lineItem],
+        ['materialNo', query.materialNo],
+        ['description', query.description],
+        ['minOrderedQty', query.minOrderedQty],
+        ['maxOrderedQty', query.maxOrderedQty],
+        ['minUnitPrice', query.minUnitPrice],
+        ['maxUnitPrice', query.maxUnitPrice],
+        [
+          'minMaterialValue',
+          query.minMaterialValue,
+        ],
+        [
+          'maxMaterialValue',
+          query.maxMaterialValue,
+        ],
+        [
+          'minDispatchQty',
+          query.minDispatchQty,
+        ],
+        [
+          'maxDispatchQty',
+          query.maxDispatchQty,
+        ],
+        ['minPendingQty', query.minPendingQty],
+        ['maxPendingQty', query.maxPendingQty],
+        [
+          'minAllocatedQty',
+          query.minAllocatedQty,
+        ],
+        [
+          'maxAllocatedQty',
+          query.maxAllocatedQty,
+        ],
+        [
+          'minLiveStockQty',
+          query.minLiveStockQty,
+        ],
+        [
+          'maxLiveStockQty',
+          query.maxLiveStockQty,
+        ],
+        [
+          'minShortageQty',
+          query.minShortageQty,
+        ],
+        [
+          'maxShortageQty',
+          query.maxShortageQty,
+        ],
+        [
+          'columnStockStatus',
+          query.columnStockStatus,
+        ],
+        ['processStatus', query.processStatus],
+        [
+          'columnDispatchStatus',
+          query.columnDispatchStatus,
+        ],
+        [
+          'columnDeliveryDateFrom',
+          query.columnDeliveryDateFrom,
+        ],
+        [
+          'columnDeliveryDateTo',
+          query.columnDeliveryDateTo,
+        ],
+      ];
 
-    params =
-      this.setOptional(
-        params,
-        'handler',
-        query.handler,
-      );
-
-    params =
-      this.setOptional(
-        params,
-        'poDateFrom',
-        query.poDateFrom,
-      );
-
-    params =
-      this.setOptional(
-        params,
-        'poDateTo',
-        query.poDateTo,
-      );
-
-    params =
-      this.setOptional(
-        params,
-        'poReceivedDateFrom',
-        query.poReceivedDateFrom,
-      );
-
-    params =
-      this.setOptional(
-        params,
-        'poReceivedDateTo',
-        query.poReceivedDateTo,
-      );
-
-    params =
-      this.setOptional(
-        params,
-        'invoiceStatus',
-        query.invoiceStatus,
-      );
-
-    params =
-      this.setOptional(
-        params,
-        'dispatchStatus',
-        query.dispatchStatus,
-      );
-
-    params =
-      this.setOptional(
-        params,
-        'stockStatus',
-        query.stockStatus,
-      );
-
-    params =
-      this.setOptional(
-        params,
-        'deliveryDateFrom',
-        query.deliveryDateFrom,
-      );
-
-    params =
-      this.setOptional(
-        params,
-        'deliveryDateTo',
-        query.deliveryDateTo,
-      );
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      params =
+        this.setOptional(
+          params,
+          name,
+          value,
+        );
+    }
 
     return params;
   }
