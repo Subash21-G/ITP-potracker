@@ -37,6 +37,10 @@ import {
 } from './core/services/toast.service';
 
 import {
+  ExcelTableEnhancerService,
+} from './core/services/excel-table-enhancer.service';
+
+import {
   ToastContainer,
 } from './shared/toast-container/toast-container';
 
@@ -65,6 +69,11 @@ export class App {
 
   private readonly toastService =
     inject(ToastService);
+
+  private readonly excelTableEnhancer =
+    inject(
+      ExcelTableEnhancerService,
+    );
 
   readonly currentUser =
     this.authApi.currentUser;
@@ -103,6 +112,10 @@ export class App {
         '/register',
       ),
     );
+
+  constructor() {
+    this.excelTableEnhancer.start();
+  }
 
   readonly userInitials =
     computed(() => {

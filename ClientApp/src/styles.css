@@ -479,3 +479,197 @@ app-root .app-footer span:first-child {
   color: #4338ca;
   font-weight: 900;
 }
+/* ============================================================
+   PO TRACKER GLOBAL STICKY EXCEL TABLE FRAMEWORK
+   ============================================================ */
+
+.app-main:not(.app-main--login)
+  .po-excel-table-viewport {
+  position: relative;
+  max-width: 100%;
+  max-height: calc(100vh - 150px);
+  min-height: 240px;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+.app-main:not(.app-main--login)
+  .po-excel-table {
+  margin: 0;
+}
+
+.app-main:not(.app-main--login)
+  .po-excel-sticky-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(238, 242, 255, 0.99),
+      rgba(240, 253, 250, 0.98)
+    ) !important;
+  box-shadow:
+    0 1px 0 rgba(99, 102, 241, 0.18),
+    0 8px 18px rgba(15, 23, 42, 0.07);
+  backdrop-filter: blur(10px);
+}
+
+.app-main:not(.app-main--login)
+  .po-excel-filter-header {
+  min-width: max-content;
+}
+
+.po-excel-filter-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  margin-left: 7px;
+  padding: 0;
+  color: #64748b;
+  vertical-align: middle;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.po-excel-filter-button:hover {
+  color: #5b21b6;
+  background: #f5f3ff;
+  border-color: #a78bfa;
+}
+
+.po-excel-filter-button--active {
+  position: relative;
+  color: #ffffff;
+  background: #6d28d9;
+  border-color: #6d28d9;
+  box-shadow:
+    0 6px 14px rgba(109, 40, 217, 0.24);
+}
+
+.po-excel-filter-button--active::after {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  content: '';
+  background: #f97316;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+}
+
+.po-excel-filter-menu {
+  position: fixed;
+  z-index: 10000;
+  display: grid;
+  gap: 10px;
+  width: 290px;
+  max-height: 410px;
+  padding: 14px;
+  overflow: hidden;
+  color: #334155;
+  font-size: 0.78rem;
+  text-transform: none;
+  background: #ffffff;
+  border: 1px solid #dbe3ee;
+  border-radius: 13px;
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.24),
+    0 5px 18px rgba(15, 23, 42, 0.09);
+}
+
+.po-excel-filter-search {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  color: #172033;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.po-excel-filter-toolbar,
+.po-excel-filter-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.po-excel-filter-toolbar button,
+.po-excel-filter-actions button {
+  min-height: 35px;
+  padding: 7px 9px;
+  color: #475569;
+  font: inherit;
+  font-weight: 800;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.po-excel-filter-values {
+  display: grid;
+  gap: 2px;
+  max-height: 230px;
+  overflow: auto;
+  border-top: 1px solid #edf1f6;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.po-excel-filter-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 5px 3px;
+  color: #334155;
+}
+
+.po-excel-filter-value:hover {
+  background: #f8fafc;
+}
+
+.po-excel-filter-value input {
+  width: 16px;
+  min-height: 16px;
+  margin: 0;
+}
+
+.po-excel-filter-value span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.po-excel-filter-actions
+  .po-excel-filter-apply {
+  color: #ffffff;
+  background: #6d28d9;
+  border-color: #6d28d9;
+}
+
+.po-excel-row-filtered-out {
+  display: none !important;
+}
+
+@media (max-width: 700px) {
+  .app-main:not(.app-main--login)
+    .po-excel-table-viewport {
+    max-height: calc(100vh - 120px);
+  }
+
+  .po-excel-filter-menu {
+    width: min(
+      290px,
+      calc(100vw - 20px)
+    );
+  }
+}
