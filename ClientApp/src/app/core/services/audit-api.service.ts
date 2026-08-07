@@ -38,47 +38,52 @@ export class AuditApiService {
           query.pageSize.toString(),
         );
 
-    params =
-      this.addOptional(
-        params,
-        'search',
-        query.search,
-      );
+    const optionalValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['owner', query.owner],
+        ['processStatus', query.processStatus],
+        ['dispatchStatus', query.dispatchStatus],
+        ['dateFrom', query.dateFrom],
+        ['dateTo', query.dateTo],
+        ['materialNo', query.materialNo],
+        ['poNumber', query.poNumber],
+        ['action', query.action],
+        [
+          'columnProcessStatus',
+          query.columnProcessStatus,
+        ],
+        [
+          'columnDispatchStatus',
+          query.columnDispatchStatus,
+        ],
+        ['columnOwner', query.columnOwner],
+        [
+          'createdDateFrom',
+          query.createdDateFrom,
+        ],
+        [
+          'createdDateTo',
+          query.createdDateTo,
+        ],
+      ];
 
-    params =
-      this.addOptional(
-        params,
-        'owner',
-        query.owner,
-      );
-
-    params =
-      this.addOptional(
-        params,
-        'processStatus',
-        query.processStatus,
-      );
-
-    params =
-      this.addOptional(
-        params,
-        'dispatchStatus',
-        query.dispatchStatus,
-      );
-
-    params =
-      this.addOptional(
-        params,
-        'dateFrom',
-        query.dateFrom,
-      );
-
-    params =
-      this.addOptional(
-        params,
-        'dateTo',
-        query.dateTo,
-      );
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      params =
+        this.addOptional(
+          params,
+          name,
+          value,
+        );
+    }
 
     return this.http.get<
       AuditPagedResponse

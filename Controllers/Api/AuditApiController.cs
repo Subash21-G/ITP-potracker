@@ -17,6 +17,9 @@ namespace POTracker.Controllers.Api
     {
         private const int DefaultPageSize = 25;
 
+        private const string AuditAction =
+            "Material schedule updated";
+
         private readonly ApplicationDbContext _context;
 
         public AuditApiController(
@@ -38,6 +41,14 @@ namespace POTracker.Controllers.Api
                 string? dispatchStatus,
                 DateTime? dateFrom,
                 DateTime? dateTo,
+                string? materialNo,
+                string? poNumber,
+                string? action,
+                string? columnProcessStatus,
+                string? columnDispatchStatus,
+                string? columnOwner,
+                DateTime? createdDateFrom,
+                DateTime? createdDateTo,
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
@@ -135,7 +146,108 @@ namespace POTracker.Controllers.Api
                         endDateExclusive);
             }
 
+            var normalizedMaterialNo =
+                Clean(
+                    materialNo);
+
+            if (normalizedMaterialNo != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.MaterialNo != null &&
+                        material.MaterialNo.Contains(
+                            normalizedMaterialNo));
+            }
+
+            var normalizedPONumber =
+                Clean(
+                    poNumber);
+
+            if (normalizedPONumber != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.PurchaseOrder != null &&
+                        material.PurchaseOrder.PONumber.Contains(
+                            normalizedPONumber));
+            }
+
+            var normalizedAction =
+                Clean(
+                    action);
+
+            if (
+                normalizedAction != null &&
+                !AuditAction.Contains(
+                    normalizedAction,
+                    StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                query =
+                    query.Where(_ => false);
+            }
+
+            var normalizedColumnProcessStatus =
+                Clean(
+                    columnProcessStatus);
+
+            if (normalizedColumnProcessStatus != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.ProcessStatus ==
+                        normalizedColumnProcessStatus);
+            }
+
+            var normalizedColumnDispatchStatus =
+                Clean(
+                    columnDispatchStatus);
+
+            if (normalizedColumnDispatchStatus != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.DispatchStatus ==
+                        normalizedColumnDispatchStatus);
+            }
+
+            var normalizedColumnOwner =
+                Clean(
+                    columnOwner);
+
+            if (normalizedColumnOwner != null)
+            {
+                query =
+                    query.Where(material =>
+                        material.AssignedDashboard != null &&
+                        material.AssignedDashboard.Contains(
+                            normalizedColumnOwner));
+            }
+
+            if (createdDateFrom.HasValue)
+            {
+                var columnStartDate =
+                    createdDateFrom.Value.Date;
+
+                query =
+                    query.Where(material =>
+                        material.CreatedDate >=
+                        columnStartDate);
+            }
+
+            if (createdDateTo.HasValue)
+            {
+                var columnEndDateExclusive =
+                    createdDateTo.Value.Date.AddDays(
+                        1);
+
+                query =
+                    query.Where(material =>
+                        material.CreatedDate <
+                        columnEndDateExclusive);
+            }
             var totalCount =
+
                 await query.CountAsync(
                     cancellationToken);
 
@@ -182,7 +294,7 @@ namespace POTracker.Controllers.Api
                                     : string.Empty,
 
                             Action =
-                                "Material schedule updated",
+                                AuditAction,
 
                             ProcessStatus =
                                 material.ProcessStatus ??

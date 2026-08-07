@@ -160,6 +160,89 @@ export class AuditPage {
         ),
     });
 
+  readonly columnFilters =
+    new FormGroup({
+      createdDateFrom:
+        new FormControl(
+          this.initialParams.get(
+            'createdDateFrom',
+          ) ?? '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      createdDateTo:
+        new FormControl(
+          this.initialParams.get(
+            'createdDateTo',
+          ) ?? '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      materialNo:
+        new FormControl(
+          this.initialParams.get(
+            'materialNo',
+          ) ?? '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      poNumber:
+        new FormControl(
+          this.initialParams.get(
+            'poNumber',
+          ) ?? '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      action:
+        new FormControl(
+          this.initialParams.get(
+            'action',
+          ) ?? '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      columnProcessStatus:
+        new FormControl(
+          this.initialParams.get(
+            'columnProcessStatus',
+          ) ?? '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      columnDispatchStatus:
+        new FormControl(
+          this.initialParams.get(
+            'columnDispatchStatus',
+          ) ?? '',
+          {
+            nonNullable: true,
+          },
+        ),
+
+      columnOwner:
+        new FormControl(
+          this.initialParams.get(
+            'columnOwner',
+          ) ?? '',
+          {
+            nonNullable: true,
+          },
+        ),
+    });
+
   readonly items =
     signal<readonly AuditItem[]>(
       [],
@@ -384,6 +467,126 @@ export class AuditPage {
     this.load();
   }
 
+  applyColumnFilter(
+    filter: HTMLDetailsElement,
+  ): void {
+    filter.open = false;
+    this.page.set(1);
+    this.load();
+  }
+
+  clearColumnFilter(
+    column:
+      | 'date'
+      | 'material'
+      | 'po'
+      | 'action'
+      | 'process'
+      | 'dispatch'
+      | 'owner',
+    filter: HTMLDetailsElement,
+  ): void {
+    switch (column) {
+      case 'date':
+        this.columnFilters.patchValue({
+          createdDateFrom: '',
+          createdDateTo: '',
+        });
+        break;
+
+      case 'material':
+        this.columnFilters.controls
+          .materialNo.setValue('');
+        break;
+
+      case 'po':
+        this.columnFilters.controls
+          .poNumber.setValue('');
+        break;
+
+      case 'action':
+        this.columnFilters.controls
+          .action.setValue('');
+        break;
+
+      case 'process':
+        this.columnFilters.controls
+          .columnProcessStatus
+          .setValue('');
+        break;
+
+      case 'dispatch':
+        this.columnFilters.controls
+          .columnDispatchStatus
+          .setValue('');
+        break;
+
+      case 'owner':
+        this.columnFilters.controls
+          .columnOwner.setValue('');
+        break;
+    }
+
+    filter.open = false;
+    this.page.set(1);
+    this.load();
+  }
+
+  columnFilterActive(
+    column:
+      | 'date'
+      | 'material'
+      | 'po'
+      | 'action'
+      | 'process'
+      | 'dispatch'
+      | 'owner',
+  ): boolean {
+    const value =
+      this.columnFilters
+        .getRawValue();
+
+    switch (column) {
+      case 'date':
+        return Boolean(
+          value.createdDateFrom ||
+          value.createdDateTo,
+        );
+
+      case 'material':
+        return Boolean(
+          value.materialNo.trim(),
+        );
+
+      case 'po':
+        return Boolean(
+          value.poNumber.trim(),
+        );
+
+      case 'action':
+        return Boolean(
+          value.action.trim(),
+        );
+
+      case 'process':
+        return Boolean(
+          value.columnProcessStatus,
+        );
+
+      case 'dispatch':
+        return Boolean(
+          value.columnDispatchStatus,
+        );
+
+      case 'owner':
+        return Boolean(
+          value.columnOwner.trim(),
+        );
+    }
+
+    return false;
+  }
+
   refresh(): void {
     this.load();
   }
@@ -394,16 +597,29 @@ export class AuditPage {
   }
 
   resetFilters(): void {
-    this.filters.setValue({
-      search: '',
-      owner: '',
-      processStatus: '',
-      dispatchStatus: '',
-      dateFrom: '',
-      dateTo: '',
-    });
+    this.filters.setValue(
+      {
+        search: '',
+        owner: '',
+        processStatus: '',
+        dispatchStatus: '',
+        dateFrom: '',
+        dateTo: '',
+      },
+      {
+        emitEvent: false,
+      },
+    );
+
+    this.columnFilters.reset(
+      undefined,
+      {
+        emitEvent: false,
+      },
+    );
 
     this.page.set(1);
+    this.load();
   }
 
   goToPage(
@@ -465,6 +681,10 @@ export class AuditPage {
       this.filters
         .getRawValue();
 
+    const columnValue =
+      this.columnFilters
+        .getRawValue();
+
     return {
       search:
         value.search,
@@ -478,6 +698,9 @@ export class AuditPage {
         value.dateFrom,
       dateTo:
         value.dateTo,
+
+      ...columnValue,
+
       page:
         this.page(),
       pageSize:
@@ -519,6 +742,38 @@ export class AuditPage {
 
             dateTo:
               query.dateTo ||
+              null,
+
+            materialNo:
+              query.materialNo ||
+              null,
+
+            poNumber:
+              query.poNumber ||
+              null,
+
+            action:
+              query.action ||
+              null,
+
+            columnProcessStatus:
+              query.columnProcessStatus ||
+              null,
+
+            columnDispatchStatus:
+              query.columnDispatchStatus ||
+              null,
+
+            columnOwner:
+              query.columnOwner ||
+              null,
+
+            createdDateFrom:
+              query.createdDateFrom ||
+              null,
+
+            createdDateTo:
+              query.createdDateTo ||
               null,
 
             page:

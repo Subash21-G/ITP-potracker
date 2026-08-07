@@ -9,6 +9,18 @@ export interface AuditQuery {
   readonly dispatchStatus?: string;
   readonly dateFrom?: string;
   readonly dateTo?: string;
+
+  readonly materialNo?: string;
+  readonly poNumber?: string;
+  readonly action?: string;
+
+  readonly columnProcessStatus?: string;
+  readonly columnDispatchStatus?: string;
+  readonly columnOwner?: string;
+
+  readonly createdDateFrom?: string;
+  readonly createdDateTo?: string;
+
   readonly page: number;
   readonly pageSize: number;
 }
