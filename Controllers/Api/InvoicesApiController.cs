@@ -53,6 +53,10 @@ namespace POTracker.Controllers.Api
             string? uploadedFileName,
             DateTime? importedDateFrom,
             DateTime? importedDateTo,
+
+            string? sortColumn,
+            string? sortDirection,
+
             int page = 1,
             int pageSize = 25)
         {
@@ -281,10 +285,12 @@ namespace POTracker.Controllers.Api
                 page = totalPages;
             }
 
-            var items = await query
-                .OrderByDescending(invoice => invoice.InvoiceDate)
-                .ThenByDescending(invoice => invoice.CreatedDate)
-                .Skip((page - 1) * pageSize)
+            var items =
+                await ApplyInvoiceSort(
+                        query,
+                        sortColumn,
+                        sortDirection)
+                    .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(invoice => new InvoiceListItemDto
                 {
@@ -350,6 +356,237 @@ namespace POTracker.Controllers.Api
                 TotalPages = totalPages
             });
         }
+
+        private static IOrderedQueryable<Invoice>
+            ApplyInvoiceSort(
+                IQueryable<Invoice> query,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column =
+                sortColumn?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            var descending =
+                string.Equals(
+                    sortDirection?.Trim(),
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+            return column switch
+            {
+                "invoice" when descending =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.InvoiceNumber)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.Id),
+
+                "invoice" =>
+                    query
+                        .OrderBy(
+                            invoice =>
+                                invoice.InvoiceNumber)
+                        .ThenBy(
+                            invoice =>
+                                invoice.Id),
+
+                "invoicedate" when descending =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.InvoiceDate.HasValue)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.InvoiceDate)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.Id),
+
+                "invoicedate" =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.InvoiceDate.HasValue)
+                        .ThenBy(
+                            invoice =>
+                                invoice.InvoiceDate)
+                        .ThenBy(
+                            invoice =>
+                                invoice.Id),
+
+                "customer" when descending =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.CustomerName ??
+                                string.Empty)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.Id),
+
+                "customer" =>
+                    query
+                        .OrderBy(
+                            invoice =>
+                                invoice.CustomerName ??
+                                string.Empty)
+                        .ThenBy(
+                            invoice =>
+                                invoice.Id),
+
+                "items" when descending =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.Items.Count)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.Id),
+
+                "items" =>
+                    query
+                        .OrderBy(
+                            invoice =>
+                                invoice.Items.Count)
+                        .ThenBy(
+                            invoice =>
+                                invoice.Id),
+
+                "quantity" when descending =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.InvoiceQty) ??
+                                0m)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.Id),
+
+                "quantity" =>
+                    query
+                        .OrderBy(
+                            invoice =>
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.InvoiceQty) ??
+                                0m)
+                        .ThenBy(
+                            invoice =>
+                                invoice.Id),
+
+                "gst" when descending =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.GstAmount) ??
+                                0m)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.Id),
+
+                "gst" =>
+                    query
+                        .OrderBy(
+                            invoice =>
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.GstAmount) ??
+                                0m)
+                        .ThenBy(
+                            invoice =>
+                                invoice.Id),
+
+                "amount" when descending =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.Amount) ??
+                                0m)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.Id),
+
+                "amount" =>
+                    query
+                        .OrderBy(
+                            invoice =>
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.Amount) ??
+                                0m)
+                        .ThenBy(
+                            invoice =>
+                                invoice.Id),
+
+                "uploadedfile" when descending =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.UploadedFileName ??
+                                string.Empty)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.Id),
+
+                "uploadedfile" =>
+                    query
+                        .OrderBy(
+                            invoice =>
+                                invoice.UploadedFileName ??
+                                string.Empty)
+                        .ThenBy(
+                            invoice =>
+                                invoice.Id),
+
+                "imported" when descending =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.CreatedDate)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.Id),
+
+                "imported" =>
+                    query
+                        .OrderBy(
+                            invoice =>
+                                invoice.CreatedDate)
+                        .ThenBy(
+                            invoice =>
+                                invoice.Id),
+
+                _ =>
+                    query
+                        .OrderByDescending(
+                            invoice =>
+                                invoice.InvoiceDate)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.CreatedDate)
+                        .ThenByDescending(
+                            invoice =>
+                                invoice.Id)
+            };
+        }
+
 
         // ============================================================
         // INVOICE DETAILS

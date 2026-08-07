@@ -59,6 +59,8 @@ export class InvoiceApiService {
         string,
         string | null | undefined,
       ][] = [
+        ['sortColumn', query.sortColumn],
+        ['sortDirection', query.sortDirection],
         ['search', query.search],
         ['dateFrom', query.dateFrom],
         ['dateTo', query.dateTo],

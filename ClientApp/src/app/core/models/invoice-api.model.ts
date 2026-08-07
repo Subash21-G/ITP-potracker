@@ -29,7 +29,25 @@ export interface InvoiceListResponse {
   totalPages: number;
 }
 
+export type InvoiceSortColumn =
+  | 'invoice'
+  | 'invoiceDate'
+  | 'customer'
+  | 'items'
+  | 'quantity'
+  | 'gst'
+  | 'amount'
+  | 'uploadedFile'
+  | 'imported';
+
+export type InvoiceSortDirection =
+  | 'asc'
+  | 'desc';
+
 export interface InvoiceListQuery {
+  sortColumn?: InvoiceSortColumn;
+  sortDirection?: InvoiceSortDirection;
+
   search?: string;
   dateFrom?: string | null;
   dateTo?: string | null;

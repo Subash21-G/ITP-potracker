@@ -187,6 +187,24 @@
             <div class="server-table-heading">
               <span>Invoice</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'invoice'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('invoice', 'invoice number')
+                "
+                [title]="
+                  sortTitle('invoice', 'invoice number')
+                "
+                (click)="toggleSort('invoice')"
+              >
+                {{ sortIndicator('invoice') }}
+              </button>
+
               <details
                 #invoiceNumberFilter
                 class="server-column-filter"
@@ -236,6 +254,24 @@
           <th>
             <div class="server-table-heading">
               <span>Invoice Date</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'invoiceDate'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('invoiceDate', 'invoice date')
+                "
+                [title]="
+                  sortTitle('invoiceDate', 'invoice date')
+                "
+                (click)="toggleSort('invoiceDate')"
+              >
+                {{ sortIndicator('invoiceDate') }}
+              </button>
 
               <details
                 #invoiceDateFilter
@@ -297,6 +333,24 @@
             <div class="server-table-heading">
               <span>Customer</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'customer'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('customer', 'customer')
+                "
+                [title]="
+                  sortTitle('customer', 'customer')
+                "
+                (click)="toggleSort('customer')"
+              >
+                {{ sortIndicator('customer') }}
+              </button>
+
               <details
                 #invoiceCustomerFilter
                 class="server-column-filter"
@@ -346,6 +400,24 @@
           <th>
             <div class="server-table-heading">
               <span>Items</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'items'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('items', 'item count')
+                "
+                [title]="
+                  sortTitle('items', 'item count')
+                "
+                (click)="toggleSort('items')"
+              >
+                {{ sortIndicator('items') }}
+              </button>
 
               <details
                 #invoiceItemsFilter
@@ -413,6 +485,24 @@
             <div class="server-table-heading">
               <span>Quantity</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'quantity'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('quantity', 'total quantity')
+                "
+                [title]="
+                  sortTitle('quantity', 'total quantity')
+                "
+                (click)="toggleSort('quantity')"
+              >
+                {{ sortIndicator('quantity') }}
+              </button>
+
               <details
                 #invoiceQuantityFilter
                 class="server-column-filter"
@@ -478,6 +568,24 @@
           <th class="number-cell">
             <div class="server-table-heading">
               <span>GST</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'gst'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('gst', 'GST amount')
+                "
+                [title]="
+                  sortTitle('gst', 'GST amount')
+                "
+                (click)="toggleSort('gst')"
+              >
+                {{ sortIndicator('gst') }}
+              </button>
 
               <details
                 #invoiceGstFilter
@@ -545,6 +653,24 @@
             <div class="server-table-heading">
               <span>Amount</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'amount'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('amount', 'invoice amount')
+                "
+                [title]="
+                  sortTitle('amount', 'invoice amount')
+                "
+                (click)="toggleSort('amount')"
+              >
+                {{ sortIndicator('amount') }}
+              </button>
+
               <details
                 #invoiceAmountFilter
                 class="server-column-filter"
@@ -611,6 +737,24 @@
             <div class="server-table-heading">
               <span>Uploaded File</span>
 
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'uploadedFile'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('uploadedFile', 'uploaded file')
+                "
+                [title]="
+                  sortTitle('uploadedFile', 'uploaded file')
+                "
+                (click)="toggleSort('uploadedFile')"
+              >
+                {{ sortIndicator('uploadedFile') }}
+              </button>
+
               <details
                 #invoiceUploadedFileFilter
                 class="server-column-filter"
@@ -660,6 +804,24 @@
           <th>
             <div class="server-table-heading">
               <span>Imported</span>
+
+              <button
+                type="button"
+                class="server-sort-button"
+                [class.server-sort-button--active]="
+                  sortColumn() === 'imported'
+                "
+                [disabled]="loading()"
+                [attr.aria-label]="
+                  sortTitle('imported', 'imported date')
+                "
+                [title]="
+                  sortTitle('imported', 'imported date')
+                "
+                (click)="toggleSort('imported')"
+              >
+                {{ sortIndicator('imported') }}
+              </button>
 
               <details
                 #invoiceImportedFilter

@@ -17,6 +17,8 @@ import { ManageOnlyDirective } from '../../core/directives/manage-only.directive
 import {
   InvoiceListItem,
   InvoiceListSummary,
+  InvoiceSortColumn,
+  InvoiceSortDirection,
 } from '../../core/models/invoice-api.model';
 import { InvoiceApiService } from '../../core/services/invoice-api.service';
 
@@ -134,6 +136,17 @@ export class InvoicesPage {
   readonly summary = signal<InvoiceListSummary>(EMPTY_SUMMARY);
   readonly page = signal(1);
   readonly pageSize = signal(25);
+
+  readonly sortColumn =
+    signal<InvoiceSortColumn | null>(
+      null,
+    );
+
+  readonly sortDirection =
+    signal<InvoiceSortDirection | null>(
+      null,
+    );
+
   readonly totalCount = signal(0);
   readonly totalPages = signal(1);
   readonly loading = signal(false);
@@ -181,6 +194,74 @@ export class InvoicesPage {
   applyFilters(): void {
     this.page.set(1);
     this.loadInvoices();
+  }
+
+  toggleSort(
+    column: InvoiceSortColumn,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    if (
+      this.sortColumn() !== column ||
+      this.sortDirection() === null
+    ) {
+      this.sortColumn.set(
+        column,
+      );
+
+      this.sortDirection.set(
+        'asc',
+      );
+    } else if (
+      this.sortDirection() === 'asc'
+    ) {
+      this.sortDirection.set(
+        'desc',
+      );
+    } else {
+      this.sortColumn.set(
+        null,
+      );
+
+      this.sortDirection.set(
+        null,
+      );
+    }
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+
+    this.loadInvoices();
+  }
+
+  sortIndicator(
+    column: InvoiceSortColumn,
+  ): string {
+    if (this.sortColumn() !== column) {
+      return '\u2195';
+    }
+
+    return this.sortDirection() === 'desc'
+      ? '\u2193'
+      : '\u2191';
+  }
+
+  sortTitle(
+    column: InvoiceSortColumn,
+    label: string,
+  ): string {
+    if (this.sortColumn() !== column) {
+      return `Sort ${label} ascending`;
+    }
+
+    if (this.sortDirection() === 'asc') {
+      return `Sort ${label} descending`;
+    }
+
+    return `Clear ${label} sort`;
   }
 
   applyColumnFilter(
@@ -711,6 +792,14 @@ export class InvoicesPage {
 
         importedDateTo:
           columnValues.importedDateTo || null,
+
+        sortColumn:
+          this.sortColumn() ??
+          undefined,
+
+        sortDirection:
+          this.sortDirection() ??
+          undefined,
 
         page:
           this.page(),
