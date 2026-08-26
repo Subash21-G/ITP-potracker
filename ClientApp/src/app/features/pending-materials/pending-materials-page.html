@@ -448,333 +448,300 @@
           <th>
             <div class="server-table-heading">
               <span>Due Status</span>
-              <details #pendingDueFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('due')">
-                <summary title="Filter Due Status">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Due status</span>
-                    <select [(ngModel)]="dueStatus">
-                      <option value="">All</option>
-                      <option value="Overdue">Overdue</option>
-                      <option value="Due Today">Due Today</option>
-                      <option value="Due This Week">Due This Week</option>
-                      <option value="Upcoming">Upcoming</option>
-                      <option value="No Delivery Date">No Delivery Date</option>
-                    </select>
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('due', pendingDueFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(pendingDueFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Due Status"
+                [options]="excelFilterOptionsFor('due')"
+                [loading]="excelFilterLoading('due')"
+                [active]="excelFilterActive('due')"
+                [selectionActive]="excelFilterActive('due')"
+                [selectedValues]="excelFilterSelectedValues('due')"
+                [sortDirection]="excelSortDirection('due')"
+                (opened)="loadExcelFilterValues('due')"
+                (sortRequested)="applyExcelSort('due', $event)"
+                (applyValues)="applyExcelFilter('due', $event)"
+                (clearRequested)="clearExcelFilter('due')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>PO / Handler</span>
-              <details #pendingPoFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('po')">
-                <summary title="Filter PO / Handler">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label><span>PO contains</span>
-                    <input type="search" [(ngModel)]="columnPoNumber"></label>
-                  <label><span>Handler contains</span>
-                    <input type="search" [(ngModel)]="columnHandler"></label>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('po', pendingPoFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(pendingPoFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="PO / Handler"
+                [options]="excelFilterOptionsFor('po')"
+                [loading]="excelFilterLoading('po')"
+                [active]="excelFilterActive('po')"
+                [selectionActive]="excelFilterActive('po')"
+                [selectedValues]="excelFilterSelectedValues('po')"
+                [sortDirection]="excelSortDirection('po')"
+                (opened)="loadExcelFilterValues('po')"
+                (sortRequested)="applyExcelSort('po', $event)"
+                (applyValues)="applyExcelFilter('po', $event)"
+                (clearRequested)="clearExcelFilter('po')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Material</span>
-              <details #pendingMaterialFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('material')">
-                <summary title="Filter Material">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label><span>Material contains</span>
-                    <input type="search" [(ngModel)]="columnMaterialNo"></label>
-                  <label><span>Line contains</span>
-                    <input type="search" [(ngModel)]="columnLineItem"></label>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('material', pendingMaterialFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(pendingMaterialFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Material"
+                [options]="excelFilterOptionsFor('material')"
+                [loading]="excelFilterLoading('material')"
+                [active]="excelFilterActive('material')"
+                [selectionActive]="excelFilterActive('material')"
+                [selectedValues]="excelFilterSelectedValues('material')"
+                [sortDirection]="excelSortDirection('material')"
+                (opened)="loadExcelFilterValues('material')"
+                (sortRequested)="applyExcelSort('material', $event)"
+                (applyValues)="applyExcelFilter('material', $event)"
+                (clearRequested)="clearExcelFilter('material')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Description</span>
-              <details #pendingDescriptionFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('description')">
-                <summary title="Filter Description">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label><span>Description / drawing</span>
-                    <input type="search" [(ngModel)]="columnDescription"></label>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('description', pendingDescriptionFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(pendingDescriptionFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Description"
+                [options]="excelFilterOptionsFor('description')"
+                [loading]="excelFilterLoading('description')"
+                [active]="excelFilterActive('description')"
+                [selectionActive]="excelFilterActive('description')"
+                [selectedValues]="excelFilterSelectedValues('description')"
+                [sortDirection]="excelSortDirection('description')"
+                (opened)="loadExcelFilterValues('description')"
+                (sortRequested)="applyExcelSort('description', $event)"
+                (applyValues)="applyExcelFilter('description', $event)"
+                (clearRequested)="clearExcelFilter('description')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>PO Qty</span>
-              <details #pendingPoQtyFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('poQty')">
-                <summary title="Filter PO Quantity">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.001" [(ngModel)]="minPoQuantity"></label>
-                    <label><span>Max</span><input type="number" step="0.001" [(ngModel)]="maxPoQuantity"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('poQty', pendingPoQtyFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingPoQtyFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="PO Qty"
+                [options]="excelFilterOptionsFor('poQty')"
+                [loading]="excelFilterLoading('poQty')"
+                [active]="excelFilterActive('poQty')"
+                [selectionActive]="excelFilterActive('poQty')"
+                [selectedValues]="excelFilterSelectedValues('poQty')"
+                [sortDirection]="excelSortDirection('poQty')"
+                (opened)="loadExcelFilterValues('poQty')"
+                (sortRequested)="applyExcelSort('poQty', $event)"
+                (applyValues)="applyExcelFilter('poQty', $event)"
+                (clearRequested)="clearExcelFilter('poQty')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Invoice</span>
-              <details #pendingInvoiceQtyFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('invoice')">
-                <summary title="Filter Invoice Quantity">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.001" [(ngModel)]="minInvoiceQuantity"></label>
-                    <label><span>Max</span><input type="number" step="0.001" [(ngModel)]="maxInvoiceQuantity"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('invoice', pendingInvoiceQtyFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingInvoiceQtyFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Invoice"
+                [options]="excelFilterOptionsFor('invoice')"
+                [loading]="excelFilterLoading('invoice')"
+                [active]="excelFilterActive('invoice')"
+                [selectionActive]="excelFilterActive('invoice')"
+                [selectedValues]="excelFilterSelectedValues('invoice')"
+                [sortDirection]="excelSortDirection('invoice')"
+                (opened)="loadExcelFilterValues('invoice')"
+                (sortRequested)="applyExcelSort('invoice', $event)"
+                (applyValues)="applyExcelFilter('invoice', $event)"
+                (clearRequested)="clearExcelFilter('invoice')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Invoice Balance</span>
-              <details #pendingInvoiceBalanceFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('invoiceBalance')">
-                <summary title="Filter Invoice Balance">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.001" [(ngModel)]="minInvoiceBalanceQuantity"></label>
-                    <label><span>Max</span><input type="number" step="0.001" [(ngModel)]="maxInvoiceBalanceQuantity"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('invoiceBalance', pendingInvoiceBalanceFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingInvoiceBalanceFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Invoice Balance"
+                [options]="excelFilterOptionsFor('invoiceBalance')"
+                [loading]="excelFilterLoading('invoiceBalance')"
+                [active]="excelFilterActive('invoiceBalance')"
+                [selectionActive]="excelFilterActive('invoiceBalance')"
+                [selectedValues]="excelFilterSelectedValues('invoiceBalance')"
+                [sortDirection]="excelSortDirection('invoiceBalance')"
+                (opened)="loadExcelFilterValues('invoiceBalance')"
+                (sortRequested)="applyExcelSort('invoiceBalance', $event)"
+                (applyValues)="applyExcelFilter('invoiceBalance', $event)"
+                (clearRequested)="clearExcelFilter('invoiceBalance')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Dispatch</span>
-              <details #pendingDispatchQtyFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('dispatch')">
-                <summary title="Filter Dispatch Quantity">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.001" [(ngModel)]="minDispatchQuantity"></label>
-                    <label><span>Max</span><input type="number" step="0.001" [(ngModel)]="maxDispatchQuantity"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('dispatch', pendingDispatchQtyFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingDispatchQtyFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Dispatch"
+                [options]="excelFilterOptionsFor('dispatch')"
+                [loading]="excelFilterLoading('dispatch')"
+                [active]="excelFilterActive('dispatch')"
+                [selectionActive]="excelFilterActive('dispatch')"
+                [selectedValues]="excelFilterSelectedValues('dispatch')"
+                [sortDirection]="excelSortDirection('dispatch')"
+                (opened)="loadExcelFilterValues('dispatch')"
+                (sortRequested)="applyExcelSort('dispatch', $event)"
+                (applyValues)="applyExcelFilter('dispatch', $event)"
+                (clearRequested)="clearExcelFilter('dispatch')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Pending Dispatch</span>
-              <details #pendingPendingQtyFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('pendingDispatch')">
-                <summary title="Filter Pending Dispatch">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.001" [(ngModel)]="minPendingDispatchQuantity"></label>
-                    <label><span>Max</span><input type="number" step="0.001" [(ngModel)]="maxPendingDispatchQuantity"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('pendingDispatch', pendingPendingQtyFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingPendingQtyFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Pending Dispatch"
+                [options]="excelFilterOptionsFor('pendingDispatch')"
+                [loading]="excelFilterLoading('pendingDispatch')"
+                [active]="excelFilterActive('pendingDispatch')"
+                [selectionActive]="excelFilterActive('pendingDispatch')"
+                [selectedValues]="excelFilterSelectedValues('pendingDispatch')"
+                [sortDirection]="excelSortDirection('pendingDispatch')"
+                (opened)="loadExcelFilterValues('pendingDispatch')"
+                (sortRequested)="applyExcelSort('pendingDispatch', $event)"
+                (applyValues)="applyExcelFilter('pendingDispatch', $event)"
+                (clearRequested)="clearExcelFilter('pendingDispatch')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Progress</span>
-              <details #pendingProgressFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('progress')">
-                <summary title="Filter Progress">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min %</span><input type="number" min="0" max="100" step="1" [(ngModel)]="minCompletionPercentage"></label>
-                    <label><span>Max %</span><input type="number" min="0" max="100" step="1" [(ngModel)]="maxCompletionPercentage"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('progress', pendingProgressFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingProgressFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Progress"
+                [options]="excelFilterOptionsFor('progress')"
+                [loading]="excelFilterLoading('progress')"
+                [active]="excelFilterActive('progress')"
+                [selectionActive]="excelFilterActive('progress')"
+                [selectedValues]="excelFilterSelectedValues('progress')"
+                [sortDirection]="excelSortDirection('progress')"
+                (opened)="loadExcelFilterValues('progress')"
+                (sortRequested)="applyExcelSort('progress', $event)"
+                (applyValues)="applyExcelFilter('progress', $event)"
+                (clearRequested)="clearExcelFilter('progress')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Process</span>
-              <details #pendingProcessFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('process')">
-                <summary title="Filter Process">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label><span>Process status</span>
-                    <select [(ngModel)]="columnProcessStatus">
-                      <option value="">All</option>
-                      @for (option of data().filters.processStatuses; track option.value) {
-                        <option [value]="option.value">{{ option.text }}</option>
-                      }
-                    </select>
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('process', pendingProcessFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingProcessFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Process"
+                [options]="excelFilterOptionsFor('process')"
+                [loading]="excelFilterLoading('process')"
+                [active]="excelFilterActive('process')"
+                [selectionActive]="excelFilterActive('process')"
+                [selectedValues]="excelFilterSelectedValues('process')"
+                [sortDirection]="excelSortDirection('process')"
+                (opened)="loadExcelFilterValues('process')"
+                (sortRequested)="applyExcelSort('process', $event)"
+                (applyValues)="applyExcelFilter('process', $event)"
+                (clearRequested)="clearExcelFilter('process')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Invoice Status</span>
-              <details #pendingInvoiceStatusFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('invoiceStatus')">
-                <summary title="Filter Invoice Status">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label><span>Invoice status</span>
-                    <select [(ngModel)]="columnInvoiceStatus">
-                      <option value="">All</option>
-                      @for (option of data().filters.invoiceStatuses; track option.value) {
-                        <option [value]="option.value">{{ option.text }}</option>
-                      }
-                    </select>
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('invoiceStatus', pendingInvoiceStatusFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingInvoiceStatusFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Invoice Status"
+                [options]="excelFilterOptionsFor('invoiceStatus')"
+                [loading]="excelFilterLoading('invoiceStatus')"
+                [active]="excelFilterActive('invoiceStatus')"
+                [selectionActive]="excelFilterActive('invoiceStatus')"
+                [selectedValues]="excelFilterSelectedValues('invoiceStatus')"
+                [sortDirection]="excelSortDirection('invoiceStatus')"
+                (opened)="loadExcelFilterValues('invoiceStatus')"
+                (sortRequested)="applyExcelSort('invoiceStatus', $event)"
+                (applyValues)="applyExcelFilter('invoiceStatus', $event)"
+                (clearRequested)="clearExcelFilter('invoiceStatus')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Dispatch Status</span>
-              <details #pendingDispatchStatusFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('dispatchStatus')">
-                <summary title="Filter Dispatch Status">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label><span>Dispatch status</span>
-                    <select [(ngModel)]="columnDispatchStatus">
-                      <option value="">All</option>
-                      @for (option of data().filters.dispatchStatuses; track option.value) {
-                        <option [value]="option.value">{{ option.text }}</option>
-                      }
-                    </select>
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('dispatchStatus', pendingDispatchStatusFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingDispatchStatusFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Dispatch Status"
+                [options]="excelFilterOptionsFor('dispatchStatus')"
+                [loading]="excelFilterLoading('dispatchStatus')"
+                [active]="excelFilterActive('dispatchStatus')"
+                [selectionActive]="excelFilterActive('dispatchStatus')"
+                [selectedValues]="excelFilterSelectedValues('dispatchStatus')"
+                [sortDirection]="excelSortDirection('dispatchStatus')"
+                (opened)="loadExcelFilterValues('dispatchStatus')"
+                (sortRequested)="applyExcelSort('dispatchStatus', $event)"
+                (applyValues)="applyExcelFilter('dispatchStatus', $event)"
+                (clearRequested)="clearExcelFilter('dispatchStatus')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
-              <span>Delivery Date</span>
-              <details #pendingDeliveryFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('delivery')">
-                <summary title="Filter Delivery Date">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>From</span><input type="date" [(ngModel)]="columnDeliveryDateFrom"></label>
-                    <label><span>To</span><input type="date" [(ngModel)]="columnDeliveryDateTo"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('delivery', pendingDeliveryFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingDeliveryFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+              <span>Delivery</span>
+
+              <app-server-excel-filter
+                title="Delivery"
+                [options]="excelFilterOptionsFor('delivery')"
+                [loading]="excelFilterLoading('delivery')"
+                [active]="excelFilterActive('delivery')"
+                [selectionActive]="excelFilterActive('delivery')"
+                [selectedValues]="excelFilterSelectedValues('delivery')"
+                [sortDirection]="excelSortDirection('delivery')"
+                (opened)="loadExcelFilterValues('delivery')"
+                (sortRequested)="applyExcelSort('delivery', $event)"
+                (applyValues)="applyExcelFilter('delivery', $event)"
+                (clearRequested)="clearExcelFilter('delivery')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
-              <span>Assigned To</span>
-              <details #pendingAssignedFilter class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('assigned')">
-                <summary title="Filter Assigned To">▾</summary>
-                <div class="server-column-filter__menu server-column-filter__menu--right">
-                  <label><span>Assigned dashboard</span>
-                    <select [(ngModel)]="columnAssignedDashboard">
-                      <option value="">All</option>
-                      @for (option of data().filters.assignedDashboards; track option.value) {
-                        <option [value]="option.value">{{ option.text }}</option>
-                      }
-                    </select>
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button" (click)="clearColumnFilter('assigned', pendingAssignedFilter)">Clear</button>
-                    <button type="button" (click)="applyColumnFilter(pendingAssignedFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+              <span>Assigned</span>
+
+              <app-server-excel-filter
+                title="Assigned"
+                [options]="excelFilterOptionsFor('assigned')"
+                [loading]="excelFilterLoading('assigned')"
+                [active]="excelFilterActive('assigned')"
+                [selectionActive]="excelFilterActive('assigned')"
+                [selectedValues]="excelFilterSelectedValues('assigned')"
+                [sortDirection]="excelSortDirection('assigned')"
+                (opened)="loadExcelFilterValues('assigned')"
+                (sortRequested)="applyExcelSort('assigned', $event)"
+                (applyValues)="applyExcelFilter('assigned', $event)"
+                (clearRequested)="clearExcelFilter('assigned')"
+              />
             </div>
           </th>
 

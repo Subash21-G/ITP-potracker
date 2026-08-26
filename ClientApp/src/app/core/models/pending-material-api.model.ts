@@ -1,4 +1,4 @@
-﻿export interface PendingMaterialItem {
+export interface PendingMaterialItem {
   materialId: number;
   purchaseOrderId: number;
 
@@ -105,6 +105,45 @@ export interface PendingMaterialsResponse {
   totalPages: number;
 }
 
+export type PendingMaterialSortColumn =
+  | 'due'
+  | 'po'
+  | 'material'
+  | 'description'
+  | 'poQty'
+  | 'invoice'
+  | 'invoiceBalance'
+  | 'dispatch'
+  | 'pendingDispatch'
+  | 'progress'
+  | 'process'
+  | 'invoiceStatus'
+  | 'dispatchStatus'
+  | 'delivery'
+  | 'assigned';
+
+export type PendingMaterialSortDirection =
+  | 'asc'
+  | 'desc';
+
+export type PendingMaterialExcelFilterColumn =
+  PendingMaterialSortColumn;
+
+export interface PendingMaterialExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type PendingMaterialExcelFilterSelections =
+  Partial<
+    Record<
+      PendingMaterialExcelFilterColumn,
+      readonly string[]
+    >
+  >;
+
 export interface PendingMaterialQuery {
   search?: string;
   poNumber?: string;
@@ -160,6 +199,10 @@ export interface PendingMaterialQuery {
   columnDeliveryDateTo?: string;
 
   columnAssignedDashboard?: string;
+
+  sortColumn?: PendingMaterialSortColumn;
+  sortDirection?: PendingMaterialSortDirection;
+  excelFilters?: string;
 
   page?: number;
   pageSize?: number;

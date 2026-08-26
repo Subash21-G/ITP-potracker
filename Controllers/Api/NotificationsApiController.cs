@@ -25,6 +25,20 @@ namespace POTracker.Controllers.Api
             _context = context;
         }
 
+        private static readonly HashSet<string>
+            NotificationExcelFilterColumns =
+                new(
+                    new[]
+                    {
+                        "type",
+                        "material",
+                        "message",
+                        "alertdate",
+                        "mobile",
+                        "status"
+                    },
+                    StringComparer.OrdinalIgnoreCase);
+
         [HttpGet]
         [ProducesResponseType(
             typeof(NotificationsPagedResponseDto),
@@ -41,6 +55,9 @@ namespace POTracker.Controllers.Api
                 DateTime? alertDateTo,
                 string? mobileStatus,
                 string? columnStatus,
+                string? sortColumn,
+                string? sortDirection,
+                string? excelFilters,
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
@@ -58,9 +75,231 @@ namespace POTracker.Controllers.Api
                     pageSize);
 
             var query =
-                _context.Alerts
-                    .AsNoTracking();
+                ApplyNotificationFilters(
+                    _context.Alerts
+                        .AsNoTracking(),
+                    search,
+                    status,
+                    alertType,
+                    material,
+                    message,
+                    alertDateFrom,
+                    alertDateTo,
+                    mobileStatus,
+                    columnStatus);
 
+            var rows =
+                await ProjectNotificationRows(
+                        query)
+                    .ToListAsync(
+                        cancellationToken);
+
+            var selections =
+                ParseNotificationExcelFilters(
+                    excelFilters);
+
+            var filteredRows =
+                rows
+                    .Where(item =>
+                        MatchesNotificationExcelFilters(
+                            item,
+                            selections))
+                    .ToList();
+
+            var summary =
+                new NotificationSummaryDto
+                {
+                    TotalAlerts =
+                        filteredRows.Count,
+
+                    UnreadCount =
+                        filteredRows.Count(item =>
+                            !item.IsRead),
+
+                    MobileQueue =
+                        filteredRows.Count(item =>
+                            !item.IsSentToMobile),
+
+                    DueToday =
+                        filteredRows.Count(item =>
+                            item.AlertDate.Date <=
+                            today)
+                };
+
+            var totalCount =
+                summary.TotalAlerts;
+
+            var totalPages =
+                Math.Max(
+                    1,
+                    (int)Math.Ceiling(
+                        totalCount /
+                        (double)pageSize));
+
+            if (page > totalPages)
+            {
+                page =
+                    totalPages;
+            }
+
+            var items =
+                ApplyNotificationSort(
+                        filteredRows,
+                        sortColumn,
+                        sortDirection)
+                    .Skip(
+                        (page - 1) *
+                        pageSize)
+                    .Take(
+                        pageSize)
+                    .ToList();
+
+            return Ok(
+                new NotificationsPagedResponseDto
+                {
+                    GeneratedAt =
+                        DateTime.Now,
+
+                    Summary =
+                        summary,
+
+                    Items =
+                        items,
+
+                    Page =
+                        page,
+
+                    PageSize =
+                        pageSize,
+
+                    TotalCount =
+                        totalCount,
+
+                    TotalPages =
+                        totalPages
+                });
+        }
+
+        [HttpGet("excel-filter-values")]
+        [ProducesResponseType(
+            typeof(
+                IReadOnlyList<
+                    ExcelFilterValueDto>),
+            StatusCodes.Status200OK)]
+        public async Task<
+            ActionResult<
+                IReadOnlyList<
+                    ExcelFilterValueDto>>>
+            GetExcelFilterValues(
+                string column,
+                string? search,
+                string? status,
+                string? alertType,
+                string? material,
+                string? message,
+                DateTime? alertDateFrom,
+                DateTime? alertDateTo,
+                string? mobileStatus,
+                string? columnStatus,
+                string? excelFilters,
+                CancellationToken cancellationToken = default)
+        {
+            var normalizedColumn =
+                NormalizeNotificationColumn(
+                    column);
+
+            if (
+                !NotificationExcelFilterColumns
+                    .Contains(
+                        normalizedColumn)
+            )
+            {
+                return BadRequest(
+                    new
+                    {
+                        error =
+                            "Unsupported Notification Excel filter column."
+                    });
+            }
+
+            var query =
+                ApplyNotificationFilters(
+                    _context.Alerts
+                        .AsNoTracking(),
+                    search,
+                    status,
+                    alertType,
+                    material,
+                    message,
+                    alertDateFrom,
+                    alertDateTo,
+                    mobileStatus,
+                    columnStatus);
+
+            var rows =
+                await ProjectNotificationRows(
+                        query)
+                    .ToListAsync(
+                        cancellationToken);
+
+            var selections =
+                ParseNotificationExcelFilters(
+                    excelFilters);
+
+            selections.Remove(
+                normalizedColumn);
+
+            var values =
+                rows
+                    .Where(item =>
+                        MatchesNotificationExcelFilters(
+                            item,
+                            selections))
+                    .Select(item =>
+                        GetNotificationExcelCellValue(
+                            item,
+                            normalizedColumn))
+                    .GroupBy(
+                        value =>
+                            value,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group =>
+                        new ExcelFilterValueDto
+                        {
+                            Value =
+                                group.Key,
+
+                            Label =
+                                string.IsNullOrEmpty(
+                                    group.Key)
+                                    ? "(Blank)"
+                                    : group.Key,
+
+                            Count =
+                                group.Count()
+                        })
+                    .OrderBy(
+                        item =>
+                            item.Label,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            return Ok(values);
+        }
+
+        private static IQueryable<POTracker.Models.Alert>
+            ApplyNotificationFilters(
+                IQueryable<POTracker.Models.Alert> query,
+                string? search,
+                string? status,
+                string? alertType,
+                string? material,
+                string? message,
+                DateTime? alertDateFrom,
+                DateTime? alertDateTo,
+                string? mobileStatus,
+                string? columnStatus)
+        {
             var normalizedStatus =
                 Clean(status);
 
@@ -227,120 +466,317 @@ namespace POTracker.Controllers.Api
                 }
             }
 
-            var summary =
-                new NotificationSummaryDto
-                {
-                    TotalAlerts =
-                        await query.CountAsync(
-                            cancellationToken),
+            return query;
+        }
 
-                    UnreadCount =
-                        await query.CountAsync(
-                            alert =>
-                                !alert.IsRead,
-                            cancellationToken),
+        private static IQueryable<NotificationItemDto>
+            ProjectNotificationRows(
+                IQueryable<POTracker.Models.Alert> query)
+        {
+            return query.Select(
+                alert =>
+                    new NotificationItemDto
+                    {
+                        Id =
+                            alert.Id,
 
-                    MobileQueue =
-                        await query.CountAsync(
-                            alert =>
-                                !alert.IsSentToMobile,
-                            cancellationToken),
+                        MaterialId =
+                            alert.MaterialId,
 
-                    DueToday =
-                        await query.CountAsync(
-                            alert =>
-                                alert.AlertDate.Date <=
-                                today,
-                            cancellationToken)
-                };
+                        MaterialNo =
+                            alert.Material != null
+                                ? alert.Material.MaterialNo ??
+                                  string.Empty
+                                : string.Empty,
 
-            var totalCount =
-                summary.TotalAlerts;
+                        AlertType =
+                            alert.AlertType,
 
-            var totalPages =
-                Math.Max(
-                    1,
-                    (int)Math.Ceiling(
-                        totalCount /
-                        (double)pageSize));
+                        Message =
+                            alert.Message,
 
-            if (page > totalPages)
+                        AlertDate =
+                            alert.AlertDate,
+
+                        IsRead =
+                            alert.IsRead,
+
+                        IsSentToMobile =
+                            alert.IsSentToMobile
+                    });
+        }
+
+        private static Dictionary<
+            string,
+            string[]>
+            ParseNotificationExcelFilters(
+                string? excelFilters)
+        {
+            if (
+                string.IsNullOrWhiteSpace(
+                    excelFilters)
+            )
             {
-                page =
-                    totalPages;
+                return new Dictionary<
+                    string,
+                    string[]>(
+                    StringComparer.OrdinalIgnoreCase);
             }
 
-            var items =
-                await query
-                    .OrderByDescending(
-                        alert =>
-                            alert.AlertDate)
-                    .ThenByDescending(
-                        alert =>
-                            alert.Id)
-                    .Skip(
-                        (page - 1) *
-                        pageSize)
-                    .Take(
-                        pageSize)
-                    .Select(
-                        alert =>
-                            new NotificationItemDto
-                            {
-                                Id =
-                                    alert.Id,
+            try
+            {
+                var parsed =
+                    System.Text.Json.JsonSerializer
+                        .Deserialize<
+                            Dictionary<
+                                string,
+                                string[]>>(
+                            excelFilters)
+                    ?? new Dictionary<
+                        string,
+                        string[]>();
 
-                                MaterialId =
-                                    alert.MaterialId,
+                return parsed
+                    .Where(pair =>
+                        NotificationExcelFilterColumns
+                            .Contains(
+                                NormalizeNotificationColumn(
+                                    pair.Key)))
+                    .ToDictionary(
+                        pair =>
+                            NormalizeNotificationColumn(
+                                pair.Key),
+                        pair =>
+                            pair.Value ??
+                            Array.Empty<string>(),
+                        StringComparer.OrdinalIgnoreCase);
+            }
+            catch (
+                System.Text.Json.JsonException)
+            {
+                return new Dictionary<
+                    string,
+                    string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
 
-                                MaterialNo =
-                                    alert.Material != null
-                                        ? alert.Material.MaterialNo ??
-                                          string.Empty
-                                        : string.Empty,
+        private static bool
+            MatchesNotificationExcelFilters(
+                NotificationItemDto item,
+                IReadOnlyDictionary<
+                    string,
+                    string[]> selections)
+        {
+            foreach (
+                var pair in selections)
+            {
+                var selectedValues =
+                    pair.Value ??
+                    Array.Empty<string>();
 
-                                AlertType =
-                                    alert.AlertType,
-
-                                Message =
-                                    alert.Message,
-
-                                AlertDate =
-                                    alert.AlertDate,
-
-                                IsRead =
-                                    alert.IsRead,
-
-                                IsSentToMobile =
-                                    alert.IsSentToMobile
-                            })
-                    .ToListAsync(
-                        cancellationToken);
-
-            return Ok(
-                new NotificationsPagedResponseDto
+                if (
+                    selectedValues.Length ==
+                    0
+                )
                 {
-                    GeneratedAt =
-                        DateTime.Now,
+                    return false;
+                }
 
-                    Summary =
-                        summary,
+                var cellValue =
+                    GetNotificationExcelCellValue(
+                        item,
+                        pair.Key);
 
-                    Items =
-                        items,
+                if (
+                    !selectedValues.Any(
+                        selected =>
+                            string.Equals(
+                                selected,
+                                cellValue,
+                                StringComparison.OrdinalIgnoreCase))
+                )
+                {
+                    return false;
+                }
+            }
 
-                    Page =
-                        page,
+            return true;
+        }
 
-                    PageSize =
-                        pageSize,
+        private static string
+            GetNotificationExcelCellValue(
+                NotificationItemDto item,
+                string column)
+        {
+            return NormalizeNotificationColumn(
+                    column)
+                switch
+                {
+                    "type" =>
+                        item.AlertType,
 
-                    TotalCount =
-                        totalCount,
+                    "material" =>
+                        item.MaterialNo,
 
-                    TotalPages =
-                        totalPages
-                });
+                    "message" =>
+                        item.Message,
+
+                    "alertdate" =>
+                        item.AlertDate.ToString(
+                            "yyyy-MM-dd HH:mm"),
+
+                    "mobile" =>
+                        item.IsSentToMobile
+                            ? "Sent"
+                            : "Queued",
+
+                    "status" =>
+                        item.IsRead
+                            ? "Read"
+                            : "Unread",
+
+                    _ =>
+                        string.Empty
+                };
+        }
+
+        private static IEnumerable<
+            NotificationItemDto>
+            ApplyNotificationSort(
+                IEnumerable<
+                    NotificationItemDto> items,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column =
+                NormalizeNotificationColumn(
+                    sortColumn);
+
+            var descending =
+                string.Equals(
+                    sortDirection?.Trim(),
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+            if (
+                string.IsNullOrEmpty(
+                    column)
+            )
+            {
+                return items
+                    .OrderByDescending(item =>
+                        item.AlertDate)
+                    .ThenByDescending(item =>
+                        item.Id);
+            }
+
+            return (
+                column,
+                descending
+            ) switch
+            {
+                ("type", true) =>
+                    items
+                        .OrderByDescending(item =>
+                            item.AlertType)
+                        .ThenByDescending(item =>
+                            item.Id),
+
+                ("type", false) =>
+                    items
+                        .OrderBy(item =>
+                            item.AlertType)
+                        .ThenBy(item =>
+                            item.Id),
+
+                ("material", true) =>
+                    items
+                        .OrderByDescending(item =>
+                            item.MaterialNo)
+                        .ThenByDescending(item =>
+                            item.Id),
+
+                ("material", false) =>
+                    items
+                        .OrderBy(item =>
+                            item.MaterialNo)
+                        .ThenBy(item =>
+                            item.Id),
+
+                ("message", true) =>
+                    items
+                        .OrderByDescending(item =>
+                            item.Message)
+                        .ThenByDescending(item =>
+                            item.Id),
+
+                ("message", false) =>
+                    items
+                        .OrderBy(item =>
+                            item.Message)
+                        .ThenBy(item =>
+                            item.Id),
+
+                ("alertdate", true) =>
+                    items
+                        .OrderByDescending(item =>
+                            item.AlertDate)
+                        .ThenByDescending(item =>
+                            item.Id),
+
+                ("alertdate", false) =>
+                    items
+                        .OrderBy(item =>
+                            item.AlertDate)
+                        .ThenBy(item =>
+                            item.Id),
+
+                ("mobile", true) =>
+                    items
+                        .OrderByDescending(item =>
+                            item.IsSentToMobile)
+                        .ThenByDescending(item =>
+                            item.Id),
+
+                ("mobile", false) =>
+                    items
+                        .OrderBy(item =>
+                            item.IsSentToMobile)
+                        .ThenBy(item =>
+                            item.Id),
+
+                ("status", true) =>
+                    items
+                        .OrderByDescending(item =>
+                            item.IsRead)
+                        .ThenByDescending(item =>
+                            item.Id),
+
+                ("status", false) =>
+                    items
+                        .OrderBy(item =>
+                            item.IsRead)
+                        .ThenBy(item =>
+                            item.Id),
+
+                _ =>
+                    items
+                        .OrderByDescending(item =>
+                            item.AlertDate)
+                        .ThenByDescending(item =>
+                            item.Id)
+            };
+        }
+
+        private static string
+            NormalizeNotificationColumn(
+                string? column)
+        {
+            return column?
+                .Trim()
+                .ToLowerInvariant() ??
+                string.Empty;
         }
 
         [HttpPost("{id:int}/read")]

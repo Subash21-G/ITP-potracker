@@ -256,377 +256,139 @@
     } @else if (items().length > 0) {
       <div class="table-scroll audit-table-scroll">
         <table class="audit-table">
-                    <thead>
+          <thead>
             <tr>
               <th>
                 <div class="server-table-heading">
                   <span>Date</span>
 
-                  <details
-                    #auditDateFilter
-                    class="server-column-filter"
-                    [class.server-column-filter--active]="
-                      columnFilterActive('date')
-                    ">
-                    <summary title="Filter Date">▾</summary>
-
-                    <div class="server-column-filter__menu">
-                      <div class="server-column-filter__range">
-                        <label>
-                          <span>From</span>
-                          <input
-                            type="date"
-                            [formControl]="
-                              columnFilters.controls.createdDateFrom
-                            ">
-                        </label>
-
-                        <label>
-                          <span>To</span>
-                          <input
-                            type="date"
-                            [formControl]="
-                              columnFilters.controls.createdDateTo
-                            ">
-                        </label>
-                      </div>
-
-                      <div class="server-column-filter__actions">
-                        <button
-                          type="button"
-                          (click)="
-                            clearColumnFilter(
-                              'date',
-                              auditDateFilter
-                            )
-                          ">
-                          Clear
-                        </button>
-
-                        <button
-                          type="button"
-                          (click)="
-                            applyColumnFilter(
-                              auditDateFilter
-                            )
-                          ">
-                          Apply
-                        </button>
-                      </div>
-                    </div>
-                  </details>
+                  <app-server-excel-filter
+                    title="Date"
+                    [options]="excelFilterOptionsFor('date')"
+                    [loading]="excelFilterLoading('date')"
+                    [active]="excelFilterActive('date')"
+                    [selectionActive]="excelFilterActive('date')"
+                    [selectedValues]="excelFilterSelectedValues('date')"
+                    [sortDirection]="excelSortDirection('date')"
+                    (opened)="loadExcelFilterValues('date')"
+                    (sortRequested)="applyExcelSort('date', $event)"
+                    (applyValues)="applyExcelFilter('date', $event)"
+                    (clearRequested)="clearExcelFilter('date')"
+                  />
                 </div>
               </th>
-
               <th>
                 <div class="server-table-heading">
                   <span>Material</span>
 
-                  <details
-                    #auditMaterialFilter
-                    class="server-column-filter"
-                    [class.server-column-filter--active]="
-                      columnFilterActive('material')
-                    ">
-                    <summary title="Filter Material">▾</summary>
-
-                    <div class="server-column-filter__menu">
-                      <label>
-                        <span>Material number</span>
-                        <input
-                          type="search"
-                          [formControl]="
-                            columnFilters.controls.materialNo
-                          "
-                          placeholder="Contains">
-                      </label>
-
-                      <div class="server-column-filter__actions">
-                        <button
-                          type="button"
-                          (click)="
-                            clearColumnFilter(
-                              'material',
-                              auditMaterialFilter
-                            )
-                          ">
-                          Clear
-                        </button>
-
-                        <button
-                          type="button"
-                          (click)="
-                            applyColumnFilter(
-                              auditMaterialFilter
-                            )
-                          ">
-                          Apply
-                        </button>
-                      </div>
-                    </div>
-                  </details>
+                  <app-server-excel-filter
+                    title="Material"
+                    [options]="excelFilterOptionsFor('material')"
+                    [loading]="excelFilterLoading('material')"
+                    [active]="excelFilterActive('material')"
+                    [selectionActive]="excelFilterActive('material')"
+                    [selectedValues]="excelFilterSelectedValues('material')"
+                    [sortDirection]="excelSortDirection('material')"
+                    (opened)="loadExcelFilterValues('material')"
+                    (sortRequested)="applyExcelSort('material', $event)"
+                    (applyValues)="applyExcelFilter('material', $event)"
+                    (clearRequested)="clearExcelFilter('material')"
+                  />
                 </div>
               </th>
-
               <th>
                 <div class="server-table-heading">
                   <span>PO</span>
 
-                  <details
-                    #auditPoFilter
-                    class="server-column-filter"
-                    [class.server-column-filter--active]="
-                      columnFilterActive('po')
-                    ">
-                    <summary title="Filter PO">▾</summary>
-
-                    <div class="server-column-filter__menu">
-                      <label>
-                        <span>PO number</span>
-                        <input
-                          type="search"
-                          [formControl]="
-                            columnFilters.controls.poNumber
-                          "
-                          placeholder="Contains">
-                      </label>
-
-                      <div class="server-column-filter__actions">
-                        <button
-                          type="button"
-                          (click)="
-                            clearColumnFilter(
-                              'po',
-                              auditPoFilter
-                            )
-                          ">
-                          Clear
-                        </button>
-
-                        <button
-                          type="button"
-                          (click)="
-                            applyColumnFilter(
-                              auditPoFilter
-                            )
-                          ">
-                          Apply
-                        </button>
-                      </div>
-                    </div>
-                  </details>
+                  <app-server-excel-filter
+                    title="PO"
+                    [options]="excelFilterOptionsFor('po')"
+                    [loading]="excelFilterLoading('po')"
+                    [active]="excelFilterActive('po')"
+                    [selectionActive]="excelFilterActive('po')"
+                    [selectedValues]="excelFilterSelectedValues('po')"
+                    [sortDirection]="excelSortDirection('po')"
+                    (opened)="loadExcelFilterValues('po')"
+                    (sortRequested)="applyExcelSort('po', $event)"
+                    (applyValues)="applyExcelFilter('po', $event)"
+                    (clearRequested)="clearExcelFilter('po')"
+                  />
                 </div>
               </th>
-
               <th>
                 <div class="server-table-heading">
                   <span>Action</span>
 
-                  <details
-                    #auditActionFilter
-                    class="server-column-filter"
-                    [class.server-column-filter--active]="
-                      columnFilterActive('action')
-                    ">
-                    <summary title="Filter Action">▾</summary>
-
-                    <div class="server-column-filter__menu">
-                      <label>
-                        <span>Action contains</span>
-                        <input
-                          type="search"
-                          [formControl]="
-                            columnFilters.controls.action
-                          "
-                          placeholder="Contains">
-                      </label>
-
-                      <div class="server-column-filter__actions">
-                        <button
-                          type="button"
-                          (click)="
-                            clearColumnFilter(
-                              'action',
-                              auditActionFilter
-                            )
-                          ">
-                          Clear
-                        </button>
-
-                        <button
-                          type="button"
-                          (click)="
-                            applyColumnFilter(
-                              auditActionFilter
-                            )
-                          ">
-                          Apply
-                        </button>
-                      </div>
-                    </div>
-                  </details>
+                  <app-server-excel-filter
+                    title="Action"
+                    [options]="excelFilterOptionsFor('action')"
+                    [loading]="excelFilterLoading('action')"
+                    [active]="excelFilterActive('action')"
+                    [selectionActive]="excelFilterActive('action')"
+                    [selectedValues]="excelFilterSelectedValues('action')"
+                    [sortDirection]="excelSortDirection('action')"
+                    (opened)="loadExcelFilterValues('action')"
+                    (sortRequested)="applyExcelSort('action', $event)"
+                    (applyValues)="applyExcelFilter('action', $event)"
+                    (clearRequested)="clearExcelFilter('action')"
+                  />
                 </div>
               </th>
-
               <th>
                 <div class="server-table-heading">
                   <span>Process</span>
 
-                  <details
-                    #auditProcessFilter
-                    class="server-column-filter"
-                    [class.server-column-filter--active]="
-                      columnFilterActive('process')
-                    ">
-                    <summary title="Filter Process">▾</summary>
-
-                    <div class="server-column-filter__menu">
-                      <label>
-                        <span>Process status</span>
-                        <select
-                          [formControl]="
-                            columnFilters.controls.columnProcessStatus
-                          ">
-                          <option value="">All</option>
-                          <option value="Pending">Pending</option>
-                          <option value="In Progress">In Progress</option>
-                          <option value="Completed">Completed</option>
-                        </select>
-                      </label>
-
-                      <div class="server-column-filter__actions">
-                        <button
-                          type="button"
-                          (click)="
-                            clearColumnFilter(
-                              'process',
-                              auditProcessFilter
-                            )
-                          ">
-                          Clear
-                        </button>
-
-                        <button
-                          type="button"
-                          (click)="
-                            applyColumnFilter(
-                              auditProcessFilter
-                            )
-                          ">
-                          Apply
-                        </button>
-                      </div>
-                    </div>
-                  </details>
+                  <app-server-excel-filter
+                    title="Process"
+                    [options]="excelFilterOptionsFor('process')"
+                    [loading]="excelFilterLoading('process')"
+                    [active]="excelFilterActive('process')"
+                    [selectionActive]="excelFilterActive('process')"
+                    [selectedValues]="excelFilterSelectedValues('process')"
+                    [sortDirection]="excelSortDirection('process')"
+                    (opened)="loadExcelFilterValues('process')"
+                    (sortRequested)="applyExcelSort('process', $event)"
+                    (applyValues)="applyExcelFilter('process', $event)"
+                    (clearRequested)="clearExcelFilter('process')"
+                  />
                 </div>
               </th>
-
               <th>
                 <div class="server-table-heading">
                   <span>Dispatch</span>
 
-                  <details
-                    #auditDispatchFilter
-                    class="server-column-filter"
-                    [class.server-column-filter--active]="
-                      columnFilterActive('dispatch')
-                    ">
-                    <summary title="Filter Dispatch">▾</summary>
-
-                    <div class="server-column-filter__menu">
-                      <label>
-                        <span>Dispatch status</span>
-                        <select
-                          [formControl]="
-                            columnFilters.controls.columnDispatchStatus
-                          ">
-                          <option value="">All</option>
-                          <option value="Pending">Pending</option>
-                          <option value="Partially Dispatched">
-                            Partially Dispatched
-                          </option>
-                          <option value="Dispatched">Dispatched</option>
-                        </select>
-                      </label>
-
-                      <div class="server-column-filter__actions">
-                        <button
-                          type="button"
-                          (click)="
-                            clearColumnFilter(
-                              'dispatch',
-                              auditDispatchFilter
-                            )
-                          ">
-                          Clear
-                        </button>
-
-                        <button
-                          type="button"
-                          (click)="
-                            applyColumnFilter(
-                              auditDispatchFilter
-                            )
-                          ">
-                          Apply
-                        </button>
-                      </div>
-                    </div>
-                  </details>
+                  <app-server-excel-filter
+                    title="Dispatch"
+                    [options]="excelFilterOptionsFor('dispatch')"
+                    [loading]="excelFilterLoading('dispatch')"
+                    [active]="excelFilterActive('dispatch')"
+                    [selectionActive]="excelFilterActive('dispatch')"
+                    [selectedValues]="excelFilterSelectedValues('dispatch')"
+                    [sortDirection]="excelSortDirection('dispatch')"
+                    (opened)="loadExcelFilterValues('dispatch')"
+                    (sortRequested)="applyExcelSort('dispatch', $event)"
+                    (applyValues)="applyExcelFilter('dispatch', $event)"
+                    (clearRequested)="clearExcelFilter('dispatch')"
+                  />
                 </div>
               </th>
-
               <th>
                 <div class="server-table-heading">
                   <span>Owner</span>
 
-                  <details
-                    #auditOwnerFilter
-                    class="server-column-filter"
-                    [class.server-column-filter--active]="
-                      columnFilterActive('owner')
-                    ">
-                    <summary title="Filter Owner">▾</summary>
-
-                    <div
-                      class="
-                        server-column-filter__menu
-                        server-column-filter__menu--right
-                      ">
-                      <label>
-                        <span>Owner contains</span>
-                        <input
-                          type="search"
-                          [formControl]="
-                            columnFilters.controls.columnOwner
-                          "
-                          placeholder="Contains">
-                      </label>
-
-                      <div class="server-column-filter__actions">
-                        <button
-                          type="button"
-                          (click)="
-                            clearColumnFilter(
-                              'owner',
-                              auditOwnerFilter
-                            )
-                          ">
-                          Clear
-                        </button>
-
-                        <button
-                          type="button"
-                          (click)="
-                            applyColumnFilter(
-                              auditOwnerFilter
-                            )
-                          ">
-                          Apply
-                        </button>
-                      </div>
-                    </div>
-                  </details>
+                  <app-server-excel-filter
+                    title="Owner"
+                    [options]="excelFilterOptionsFor('owner')"
+                    [loading]="excelFilterLoading('owner')"
+                    [active]="excelFilterActive('owner')"
+                    [selectionActive]="excelFilterActive('owner')"
+                    [selectedValues]="excelFilterSelectedValues('owner')"
+                    [sortDirection]="excelSortDirection('owner')"
+                    (opened)="loadExcelFilterValues('owner')"
+                    (sortRequested)="applyExcelSort('owner', $event)"
+                    (applyValues)="applyExcelFilter('owner', $event)"
+                    (clearRequested)="clearExcelFilter('owner')"
+                  />
                 </div>
               </th>
             </tr>

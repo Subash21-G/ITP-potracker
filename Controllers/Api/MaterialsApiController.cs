@@ -5,7 +5,9 @@ using POTracker.Contracts.Api;
 using POTracker.Data;
 using POTracker.Models;
 using POTracker.Services;
+using System.Globalization;
 using System.Linq.Expressions;
+using System.Text.Json;
 
 namespace POTracker.Controllers.Api
 {
@@ -20,6 +22,29 @@ namespace POTracker.Controllers.Api
     {
         private const int DefaultPageSize = 25;
         private const int MaximumPageSize = 100;
+
+        private static readonly HashSet<string>
+            MaterialExcelFilterColumns =
+                new(
+                    new[]
+                    {
+                        "po",
+                        "line",
+                        "material",
+                        "description",
+                        "ordered",
+                        "unitprice",
+                        "materialvalue",
+                        "dispatched",
+                        "pending",
+                        "allocatedlive",
+                        "shortage",
+                        "stock",
+                        "process",
+                        "dispatch",
+                        "delivery"
+                    },
+                    StringComparer.OrdinalIgnoreCase);
 
         private const long MaximumPdfFileSize =
             50L * 1024L * 1024L;
@@ -467,6 +492,7 @@ namespace POTracker.Controllers.Api
                 DateTime? columnDeliveryDateFrom,
                 DateTime? columnDeliveryDateTo,
 
+                string? excelFilters,
                 string? sortColumn,
                 string? sortDirection,
 
@@ -519,6 +545,10 @@ namespace POTracker.Controllers.Api
                     columnDeliveryDateFrom,
                     columnDeliveryDateTo);
 
+            var excelFilterSelections =
+                ParseMaterialExcelFilters(
+                    excelFilters);
+
             var requiresStockDerivedFiltering =
                 !string.IsNullOrWhiteSpace(
                     stockStatus) ||
@@ -531,11 +561,23 @@ namespace POTracker.Controllers.Api
                 minShortageQty.HasValue ||
                 maxShortageQty.HasValue;
 
+            var requiresExcelFiltering =
+                excelFilterSelections.Count >
+                0;
+
+            var requiresExcelDerivedSort =
+                RequiresMaterialExcelDerivedSort(
+                    sortColumn);
+
             List<MaterialListItemDto> items;
             int totalRecords;
             decimal totalValue;
 
-            if (!requiresStockDerivedFiltering)
+            if (
+                !requiresStockDerivedFiltering &&
+                !requiresExcelFiltering &&
+                !requiresExcelDerivedSort
+            )
             {
                 totalRecords =
                     await query.CountAsync(
@@ -580,10 +622,7 @@ namespace POTracker.Controllers.Api
             else
             {
                 var allItems =
-                    await ApplyMaterialSort(
-                            query,
-                            sortColumn,
-                            sortDirection)
+                    await query
                         .Select(
                             MaterialListProjection)
                         .ToListAsync(
@@ -606,7 +645,17 @@ namespace POTracker.Controllers.Api
                                 maxLiveStockQty,
                                 minShortageQty,
                                 maxShortageQty))
+                        .Where(item =>
+                            MatchesMaterialExcelFilters(
+                                item,
+                                excelFilterSelections))
                         .ToList();
+
+                filteredItems =
+                    ApplyMaterialDtoSort(
+                        filteredItems,
+                        sortColumn,
+                        sortDirection);
 
                 totalRecords =
                     filteredItems.Count;
@@ -656,6 +705,160 @@ namespace POTracker.Controllers.Api
                     TotalValue =
                         totalValue
                 });
+        }
+
+        // ============================================================
+        // EXCEL FILTER VALUES
+        // ============================================================
+
+        [HttpGet("excel-filter-values")]
+        [ProducesResponseType(
+            typeof(
+                IReadOnlyList<
+                    ExcelFilterValueDto>),
+            StatusCodes.Status200OK)]
+        public async Task<
+            ActionResult<
+                IReadOnlyList<
+                    ExcelFilterValueDto>>>
+            GetExcelFilterValues(
+                string column,
+                string? search,
+                string? poNumber,
+                string? handler,
+                DateTime? poDateFrom,
+                DateTime? poDateTo,
+                DateTime? poReceivedDateFrom,
+                DateTime? poReceivedDateTo,
+                string? invoiceStatus,
+                string? dispatchStatus,
+                string? stockStatus,
+                DateTime? deliveryDateFrom,
+                DateTime? deliveryDateTo,
+                string? excelFilters,
+                CancellationToken cancellationToken = default)
+        {
+            var normalizedColumn =
+                column?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            if (
+                !MaterialExcelFilterColumns
+                    .Contains(
+                        normalizedColumn)
+            )
+            {
+                return BadRequest(
+                    new
+                    {
+                        error =
+                            "Unsupported material Excel filter column."
+                    });
+            }
+
+            var query =
+                ApplyFilters(
+                    _context.Materials
+                        .AsNoTracking(),
+                    search,
+                    poNumber,
+                    handler,
+                    poDateFrom,
+                    poDateTo,
+                    poReceivedDateFrom,
+                    poReceivedDateTo,
+                    invoiceStatus,
+                    dispatchStatus,
+                    deliveryDateFrom,
+                    deliveryDateTo,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+
+            var items =
+                await query
+                    .Select(
+                        MaterialListProjection)
+                    .ToListAsync(
+                        cancellationToken);
+
+            await PopulateExportStockAsync(
+                items,
+                cancellationToken);
+
+            var excelFilterSelections =
+                ParseMaterialExcelFilters(
+                    excelFilters);
+
+            excelFilterSelections.Remove(
+                normalizedColumn);
+
+            var values =
+                items
+                    .Where(item =>
+                        MatchesStockDerivedFilters(
+                            item,
+                            stockStatus,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null))
+                    .Where(item =>
+                        MatchesMaterialExcelFilters(
+                            item,
+                            excelFilterSelections))
+                    .Select(item =>
+                        GetMaterialExcelCellValue(
+                            item,
+                            normalizedColumn))
+                    .GroupBy(
+                        value =>
+                            value,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group =>
+                        new ExcelFilterValueDto
+                        {
+                            Value =
+                                group.Key,
+
+                            Label =
+                                string.IsNullOrEmpty(
+                                    group.Key)
+                                    ? "(Blank)"
+                                    : group.Key,
+
+                            Count =
+                                group.Count()
+                        })
+                    .OrderBy(
+                        item =>
+                            item.Label,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            return Ok(values);
         }
 
         // ============================================================
@@ -1285,6 +1488,7 @@ namespace POTracker.Controllers.Api
             DateTime? columnDeliveryDateFrom,
             DateTime? columnDeliveryDateTo,
 
+            string? excelFilters,
             string? sortColumn,
             string? sortDirection,
 
@@ -1364,6 +1568,24 @@ namespace POTracker.Controllers.Api
                                 maxLiveStockQty,
                                 minShortageQty,
                                 maxShortageQty))
+                        .ToList();
+            }
+
+            var excelFilterSelections =
+                ParseMaterialExcelFilters(
+                    excelFilters);
+
+            if (
+                excelFilterSelections.Count >
+                0
+            )
+            {
+                items =
+                    items
+                        .Where(item =>
+                            MatchesMaterialExcelFilters(
+                                item,
+                                excelFilterSelections))
                         .ToList();
             }
 
@@ -2825,6 +3047,74 @@ namespace POTracker.Controllers.Api
                                 item.Id)
                         .ToList(),
 
+                "allocatedlive" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.AllocatedStockQuantity)
+                        .ThenByDescending(
+                            item =>
+                                item.LiveStockQuantity)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "allocatedlive" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.AllocatedStockQuantity)
+                        .ThenBy(
+                            item =>
+                                item.LiveStockQuantity)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "shortage" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.StockShortageQuantity)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "shortage" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.StockShortageQuantity)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "stock" when descending =>
+                    items
+                        .OrderByDescending(
+                            item =>
+                                item.StockStatus,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
+                "stock" =>
+                    items
+                        .OrderBy(
+                            item =>
+                                item.StockStatus,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(
+                            item =>
+                                item.Id)
+                        .ToList(),
+
                 "process" when descending =>
                     items
                         .OrderByDescending(
@@ -2902,6 +3192,240 @@ namespace POTracker.Controllers.Api
                                 item.Id)
                         .ToList()
             };
+        }
+
+
+        private static bool
+            RequiresMaterialExcelDerivedSort(
+                string? sortColumn)
+        {
+            var normalized =
+                sortColumn?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            return
+                normalized ==
+                    "allocatedlive" ||
+                normalized ==
+                    "shortage" ||
+                normalized ==
+                    "stock";
+        }
+
+        private static Dictionary<
+            string,
+            HashSet<string>>
+            ParseMaterialExcelFilters(
+                string? excelFilters)
+        {
+            var result =
+                new Dictionary<
+                    string,
+                    HashSet<string>>(
+                    StringComparer.OrdinalIgnoreCase);
+
+            if (
+                string.IsNullOrWhiteSpace(
+                    excelFilters)
+            )
+            {
+                return result;
+            }
+
+            try
+            {
+                var parsed =
+                    JsonSerializer
+                        .Deserialize<
+                            Dictionary<
+                                string,
+                                string[]>>(
+                            excelFilters);
+
+                if (parsed == null)
+                {
+                    return result;
+                }
+
+                foreach (
+                    var pair in parsed)
+                {
+                    var column =
+                        pair.Key?
+                            .Trim()
+                            .ToLowerInvariant();
+
+                    if (
+                        string.IsNullOrWhiteSpace(
+                            column) ||
+                        !MaterialExcelFilterColumns
+                            .Contains(
+                                column)
+                    )
+                    {
+                        continue;
+                    }
+
+                    result[column] =
+                        new HashSet<string>(
+                            pair.Value ??
+                                Array.Empty<string>(),
+                            StringComparer.OrdinalIgnoreCase);
+                }
+            }
+            catch (JsonException)
+            {
+                // Invalid Excel-filter JSON is ignored so legacy
+                // list filtering continues to work unchanged.
+            }
+
+            return result;
+        }
+
+        private static bool
+            MatchesMaterialExcelFilters(
+                MaterialListItemDto item,
+                IReadOnlyDictionary<
+                    string,
+                    HashSet<string>>
+                    selections)
+        {
+            foreach (
+                var selection in
+                selections)
+            {
+                if (
+                    selection.Value.Count ==
+                    0
+                )
+                {
+                    return false;
+                }
+
+                var cellValue =
+                    GetMaterialExcelCellValue(
+                        item,
+                        selection.Key);
+
+                if (
+                    !selection.Value
+                        .Contains(
+                            cellValue)
+                )
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string
+            GetMaterialExcelCellValue(
+                MaterialListItemDto item,
+                string column)
+        {
+            static string FormatDecimal(
+                decimal value) =>
+                    value.ToString(
+                        "0.####",
+                        CultureInfo.InvariantCulture);
+
+            static string JoinValues(
+                params string?[] values) =>
+                    string.Join(
+                        " | ",
+                        values
+                            .Where(value =>
+                                !string.IsNullOrWhiteSpace(
+                                    value))
+                            .Select(value =>
+                                value!.Trim()));
+
+            return
+                column
+                    .Trim()
+                    .ToLowerInvariant()
+                switch
+                {
+                    "po" =>
+                        JoinValues(
+                            item.PONumber,
+                            item.PurchaserName,
+                            item.Handler),
+
+                    "line" =>
+                        item.LineItem ??
+                        string.Empty,
+
+                    "material" =>
+                        JoinValues(
+                            item.MaterialNo,
+                            item.HsnSacCode),
+
+                    "description" =>
+                        item.Description ??
+                        string.Empty,
+
+                    "ordered" =>
+                        FormatDecimal(
+                            item.Quantity),
+
+                    "unitprice" =>
+                        FormatDecimal(
+                            item.UnitPrice),
+
+                    "materialvalue" =>
+                        FormatDecimal(
+                            item.TotalValue),
+
+                    "dispatched" =>
+                        FormatDecimal(
+                            item.DispatchQuantity),
+
+                    "pending" =>
+                        FormatDecimal(
+                            item.PendingQuantity),
+
+                    "allocatedlive" =>
+                        string.Concat(
+                            FormatDecimal(
+                                item.AllocatedStockQuantity),
+                            " / ",
+                            FormatDecimal(
+                                item.LiveStockQuantity)),
+
+                    "shortage" =>
+                        FormatDecimal(
+                            item.StockShortageQuantity),
+
+                    "stock" =>
+                        item.StockStatus ??
+                        string.Empty,
+
+                    "process" =>
+                        item.ProcessStatus ??
+                        string.Empty,
+
+                    "dispatch" =>
+                        item.DispatchStatus ??
+                        string.Empty,
+
+                    "delivery" =>
+                        item.DeliveryDate
+                            .HasValue
+                            ? item.DeliveryDate
+                                .Value
+                                .ToString(
+                                    "yyyy-MM-dd",
+                                    CultureInfo.InvariantCulture)
+                            : string.Empty,
+
+                    _ =>
+                        string.Empty
+                };
         }
 
 

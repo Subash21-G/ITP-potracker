@@ -1,4 +1,4 @@
-﻿import { DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -20,11 +20,18 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import {
+  ProcessQueueExcelFilterColumn,
+  ProcessQueueExcelFilterSelections,
+  ProcessQueueExcelFilterValue,
   ProcessQueueResponse,
+  ProcessQueueSortDirection,
 } from '../../core/models/production-api.model';
 import {
   ProductionApiService,
 } from '../../core/services/production-api.service';
+import {
+  ServerExcelFilter,
+} from '../../shared/server-excel-filter/server-excel-filter';
 
 const EMPTY_QUEUE: ProcessQueueResponse = {
   summary: {
@@ -51,6 +58,7 @@ const EMPTY_QUEUE: ProcessQueueResponse = {
     DatePipe,
     ReactiveFormsModule,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl: './process-queue-page.html',
   styleUrls: [
@@ -138,6 +146,43 @@ export class ProcessQueuePage {
 
   readonly page = signal(1);
   readonly pageSize = signal(50);
+
+  readonly sortColumn =
+    signal<
+      ProcessQueueExcelFilterColumn | null
+    >(null);
+
+  readonly sortDirection =
+    signal<
+      ProcessQueueSortDirection | null
+    >(null);
+
+  readonly excelFilterSelections =
+    signal<ProcessQueueExcelFilterSelections>(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          ProcessQueueExcelFilterColumn,
+          readonly ProcessQueueExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        ProcessQueueExcelFilterColumn
+      >
+    >(
+      new Set<
+        ProcessQueueExcelFilterColumn
+      >(),
+    );
+
   readonly loading = signal(false);
   readonly errorMessage = signal('');
 
@@ -162,6 +207,10 @@ export class ProcessQueuePage {
     this.filters.reset({
       search: '',
     });
+
+    this.excelFilterSelections.set(
+      {},
+    );
 
     this.columnFilters.reset({
       material: '',
@@ -316,6 +365,228 @@ export class ProcessQueuePage {
     return false;
   }
 
+  excelFilterOptionsFor(
+    column: ProcessQueueExcelFilterColumn,
+  ): readonly ProcessQueueExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column: ProcessQueueExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column: ProcessQueueExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column: ProcessQueueExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column: ProcessQueueExcelFilterColumn,
+  ): ProcessQueueSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column: ProcessQueueExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    this.productionApi
+      .getProcessQueueExcelFilterValues(
+        this.buildQueueQuery(
+          false,
+        ),
+        column,
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeError(
+              error,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column: ProcessQueueExcelFilterColumn,
+    direction: ProcessQueueSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.page.set(1);
+    this.loadQueue();
+  }
+
+  applyExcelFilter(
+    column: ProcessQueueExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.loadQueue();
+  }
+
+  clearExcelFilter(
+    column: ProcessQueueExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.loadQueue();
+  }
+
   changePageSize(event: Event): void {
     const value = Number(
       (event.target as HTMLSelectElement)
@@ -368,6 +639,87 @@ export class ProcessQueuePage {
     this.loadQueue();
   }
 
+  private buildQueueQuery(
+    includePaging: boolean,
+  ) {
+    const filters =
+      this.filters.getRawValue();
+
+    const columnFilters =
+      this.columnFilters.getRawValue();
+
+    return {
+      search:
+        filters.search,
+
+      material:
+        columnFilters.material,
+
+      description:
+        columnFilters.description,
+
+      poNumber:
+        columnFilters.poNumber,
+
+      purchaser:
+        columnFilters.purchaser,
+
+      processStartFrom:
+        columnFilters.processStartFrom,
+
+      processStartTo:
+        columnFilters.processStartTo,
+
+      deliveryFrom:
+        columnFilters.deliveryFrom,
+
+      deliveryTo:
+        columnFilters.deliveryTo,
+
+      owner:
+        columnFilters.owner,
+
+      processStatus:
+        columnFilters.processStatus,
+
+      dispatchStatus:
+        columnFilters.dispatchStatus,
+
+      sortColumn:
+        this.sortColumn() ??
+        undefined,
+
+      sortDirection:
+        this.sortDirection() ??
+        undefined,
+
+      excelFilters:
+        this.serializeExcelFilters(),
+
+      page:
+        includePaging
+          ? this.page()
+          : 1,
+
+      pageSize:
+        this.pageSize(),
+    };
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
+  }
+
   private loadQueue(): void {
     if (this.loading()) {
       return;
@@ -376,56 +728,12 @@ export class ProcessQueuePage {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    const filters =
-      this.filters.getRawValue();
-
-    const columnFilters =
-      this.columnFilters.getRawValue();
-
     this.productionApi
-      .getProcessQueue({
-        search:
-          filters.search,
-
-        material:
-          columnFilters.material,
-
-        description:
-          columnFilters.description,
-
-        poNumber:
-          columnFilters.poNumber,
-
-        purchaser:
-          columnFilters.purchaser,
-
-        processStartFrom:
-          columnFilters.processStartFrom,
-
-        processStartTo:
-          columnFilters.processStartTo,
-
-        deliveryFrom:
-          columnFilters.deliveryFrom,
-
-        deliveryTo:
-          columnFilters.deliveryTo,
-
-        owner:
-          columnFilters.owner,
-
-        processStatus:
-          columnFilters.processStatus,
-
-        dispatchStatus:
-          columnFilters.dispatchStatus,
-
-        page:
-          this.page(),
-
-        pageSize:
-          this.pageSize(),
-      })
+      .getProcessQueue(
+        this.buildQueueQuery(
+          true,
+        ),
+      )
       .pipe(
         takeUntilDestroyed(this.destroyRef),
 

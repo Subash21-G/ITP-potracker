@@ -21,6 +21,8 @@ import {
 import {
   PurchaseOrderBulkDeleteRequest,
   PurchaseOrderBulkDeleteResponse,
+  PurchaseOrderExcelFilterColumn,
+  PurchaseOrderExcelFilterValue,
   PurchaseOrderListResponse,
   PurchaseOrderQuery,
 } from '../models/purchase-order.model';
@@ -75,6 +77,13 @@ export class PurchaseOrdersApiService {
         params,
         'sortDirection',
         query.sortDirection,
+      );
+
+    params =
+      this.setOptional(
+        params,
+        'excelFilters',
+        query.excelFilters,
       );
 
     params =
@@ -227,6 +236,105 @@ export class PurchaseOrdersApiService {
         ),
       10_000,
       forceRefresh,
+    );
+  }
+
+  getExcelFilterValues(
+    query: PurchaseOrderQuery,
+    column: PurchaseOrderExcelFilterColumn,
+  ): Observable<
+    readonly PurchaseOrderExcelFilterValue[]
+  > {
+    let params =
+      new HttpParams()
+        .set(
+          'page',
+          1,
+        )
+        .set(
+          'pageSize',
+          query.pageSize,
+        )
+        .set(
+          'column',
+          column,
+        );
+
+    const values:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['sortColumn', query.sortColumn],
+        ['sortDirection', query.sortDirection],
+        ['excelFilters', query.excelFilters],
+        ['search', query.search],
+        ['handler', query.handler],
+        ['poDateFrom', query.poDateFrom],
+        ['poDateTo', query.poDateTo],
+        [
+          'poReceivedDateFrom',
+          query.poReceivedDateFrom,
+        ],
+        [
+          'poReceivedDateTo',
+          query.poReceivedDateTo,
+        ],
+        ['status', query.status],
+        [
+          'materialStatus',
+          query.materialStatus,
+        ],
+        ['minMaterials', query.minMaterials],
+        ['maxMaterials', query.maxMaterials],
+        ['minPoQuantity', query.minPoQuantity],
+        ['maxPoQuantity', query.maxPoQuantity],
+        ['minPoValue', query.minPoValue],
+        ['maxPoValue', query.maxPoValue],
+        [
+          'minDispatchBalance',
+          query.minDispatchBalance,
+        ],
+        [
+          'maxDispatchBalance',
+          query.maxDispatchBalance,
+        ],
+        [
+          'deliveryDateFrom',
+          query.deliveryDateFrom,
+        ],
+        [
+          'deliveryDateTo',
+          query.deliveryDateTo,
+        ],
+        [
+          'pdfAvailability',
+          query.pdfAvailability,
+        ],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of values
+    ) {
+      params =
+        this.setOptional(
+          params,
+          name,
+          value,
+        );
+    }
+
+    return this.http.get<
+      readonly PurchaseOrderExcelFilterValue[]
+    >(
+      '/api/purchase-orders/excel-filter-values',
+      {
+        params,
+        withCredentials: true,
+      },
     );
   }
 

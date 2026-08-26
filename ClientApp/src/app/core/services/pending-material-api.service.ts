@@ -11,6 +11,8 @@ import {
 } from 'rxjs';
 
 import {
+  PendingMaterialExcelFilterColumn,
+  PendingMaterialExcelFilterValue,
   PendingMaterialQuery,
   PendingMaterialsResponse,
 } from '../models/pending-material-api.model';
@@ -149,6 +151,18 @@ export class PendingMaterialApiService {
           'columnAssignedDashboard',
           query.columnAssignedDashboard,
         ],
+        [
+          'sortColumn',
+          query.sortColumn,
+        ],
+        [
+          'sortDirection',
+          query.sortDirection,
+        ],
+        [
+          'excelFilters',
+          query.excelFilters,
+        ],
       ];
 
     for (
@@ -194,6 +208,186 @@ export class PendingMaterialApiService {
 
     return this.http.get<PendingMaterialsResponse>(
       '/api/pending-materials',
+      {
+        params,
+        withCredentials: true,
+      },
+    );
+  }
+
+  getExcelFilterValues(
+    query: PendingMaterialQuery,
+    column: PendingMaterialExcelFilterColumn,
+  ): Observable<
+    readonly PendingMaterialExcelFilterValue[]
+  > {
+    let params =
+      new HttpParams()
+        .set(
+          'column',
+          column,
+        );
+
+    const textValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['poNumber', query.poNumber],
+        ['handler', query.handler],
+        [
+          'assignedDashboard',
+          query.assignedDashboard,
+        ],
+        ['processStatus', query.processStatus],
+        ['invoiceStatus', query.invoiceStatus],
+        ['dispatchStatus', query.dispatchStatus],
+        ['poDateFrom', query.poDateFrom],
+        ['poDateTo', query.poDateTo],
+        [
+          'poReceivedDateFrom',
+          query.poReceivedDateFrom,
+        ],
+        [
+          'poReceivedDateTo',
+          query.poReceivedDateTo,
+        ],
+        [
+          'deliveryDateFrom',
+          query.deliveryDateFrom,
+        ],
+        [
+          'deliveryDateTo',
+          query.deliveryDateTo,
+        ],
+        ['dueStatus', query.dueStatus],
+        [
+          'columnPoNumber',
+          query.columnPoNumber,
+        ],
+        [
+          'columnHandler',
+          query.columnHandler,
+        ],
+        [
+          'columnMaterialNo',
+          query.columnMaterialNo,
+        ],
+        [
+          'columnLineItem',
+          query.columnLineItem,
+        ],
+        [
+          'columnDescription',
+          query.columnDescription,
+        ],
+        ['minPoQuantity', query.minPoQuantity],
+        ['maxPoQuantity', query.maxPoQuantity],
+        [
+          'minInvoiceQuantity',
+          query.minInvoiceQuantity,
+        ],
+        [
+          'maxInvoiceQuantity',
+          query.maxInvoiceQuantity,
+        ],
+        [
+          'minInvoiceBalanceQuantity',
+          query.minInvoiceBalanceQuantity,
+        ],
+        [
+          'maxInvoiceBalanceQuantity',
+          query.maxInvoiceBalanceQuantity,
+        ],
+        [
+          'minDispatchQuantity',
+          query.minDispatchQuantity,
+        ],
+        [
+          'maxDispatchQuantity',
+          query.maxDispatchQuantity,
+        ],
+        [
+          'minPendingDispatchQuantity',
+          query.minPendingDispatchQuantity,
+        ],
+        [
+          'maxPendingDispatchQuantity',
+          query.maxPendingDispatchQuantity,
+        ],
+        [
+          'minCompletionPercentage',
+          query.minCompletionPercentage,
+        ],
+        [
+          'maxCompletionPercentage',
+          query.maxCompletionPercentage,
+        ],
+        [
+          'columnProcessStatus',
+          query.columnProcessStatus,
+        ],
+        [
+          'columnInvoiceStatus',
+          query.columnInvoiceStatus,
+        ],
+        [
+          'columnDispatchStatus',
+          query.columnDispatchStatus,
+        ],
+        [
+          'columnDeliveryDateFrom',
+          query.columnDeliveryDateFrom,
+        ],
+        [
+          'columnDeliveryDateTo',
+          query.columnDeliveryDateTo,
+        ],
+        [
+          'columnAssignedDashboard',
+          query.columnAssignedDashboard,
+        ],
+        [
+          'excelFilters',
+          query.excelFilters,
+        ],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of textValues
+    ) {
+      params =
+        this.appendText(
+          params,
+          name,
+          value,
+        );
+    }
+
+    if (query.overdueOnly === true) {
+      params =
+        params.set(
+          'overdueOnly',
+          'true',
+        );
+    }
+
+    if (query.dueThisWeekOnly === true) {
+      params =
+        params.set(
+          'dueThisWeekOnly',
+          'true',
+        );
+    }
+
+    return this.http.get<
+      readonly PendingMaterialExcelFilterValue[]
+    >(
+      '/api/pending-materials/excel-filter-values',
       {
         params,
         withCredentials: true,
@@ -327,6 +521,18 @@ export class PendingMaterialApiService {
         [
           'columnAssignedDashboard',
           query.columnAssignedDashboard,
+        ],
+        [
+          'sortColumn',
+          query.sortColumn,
+        ],
+        [
+          'sortDirection',
+          query.sortDirection,
+        ],
+        [
+          'excelFilters',
+          query.excelFilters,
         ],
       ];
 

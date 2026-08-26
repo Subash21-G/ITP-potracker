@@ -1,4 +1,4 @@
-﻿<section class="page-heading">
+<section class="page-heading">
   <div>
     <p class="eyebrow">
       PRODUCTION MANAGEMENT
@@ -361,346 +361,153 @@
           <th>
             <div class="server-table-heading">
               <span>Material</span>
-              <details
-                #queueMaterialFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('material')
-                ">
-                <summary title="Filter Material">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Material contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.material
-                      "
-                      placeholder="Material number">
-                  </label>
 
-                  <label>
-                    <span>Description contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.description
-                      "
-                      placeholder="Description">
-                  </label>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="clearColumnFilter('material', queueMaterialFilter)">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="applyColumnFilter(queueMaterialFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Material"
+                [options]="excelFilterOptionsFor('material')"
+                [loading]="excelFilterLoading('material')"
+                [active]="excelFilterActive('material')"
+                [selectionActive]="excelFilterActive('material')"
+                [selectedValues]="excelFilterSelectedValues('material')"
+                [sortDirection]="excelSortDirection('material')"
+                (opened)="loadExcelFilterValues('material')"
+                (sortRequested)="applyExcelSort('material', $event)"
+                (applyValues)="applyExcelFilter('material', $event)"
+                (clearRequested)="clearExcelFilter('material')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>PO</span>
-              <details
-                #queuePoFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('po')
-                ">
-                <summary title="Filter PO">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>PO contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.poNumber
-                      "
-                      placeholder="PO number">
-                  </label>
 
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="clearColumnFilter('po', queuePoFilter)">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="applyColumnFilter(queuePoFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="PO"
+                [options]="excelFilterOptionsFor('po')"
+                [loading]="excelFilterLoading('po')"
+                [active]="excelFilterActive('po')"
+                [selectionActive]="excelFilterActive('po')"
+                [selectedValues]="excelFilterSelectedValues('po')"
+                [sortDirection]="excelSortDirection('po')"
+                (opened)="loadExcelFilterValues('po')"
+                (sortRequested)="applyExcelSort('po', $event)"
+                (applyValues)="applyExcelFilter('po', $event)"
+                (clearRequested)="clearExcelFilter('po')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Purchaser</span>
-              <details
-                #queuePurchaserFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('purchaser')
-                ">
-                <summary title="Filter Purchaser">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Purchaser contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.purchaser
-                      "
-                      placeholder="Purchaser">
-                  </label>
 
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="clearColumnFilter('purchaser', queuePurchaserFilter)">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="applyColumnFilter(queuePurchaserFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Purchaser"
+                [options]="excelFilterOptionsFor('purchaser')"
+                [loading]="excelFilterLoading('purchaser')"
+                [active]="excelFilterActive('purchaser')"
+                [selectionActive]="excelFilterActive('purchaser')"
+                [selectedValues]="excelFilterSelectedValues('purchaser')"
+                [sortDirection]="excelSortDirection('purchaser')"
+                (opened)="loadExcelFilterValues('purchaser')"
+                (sortRequested)="applyExcelSort('purchaser', $event)"
+                (applyValues)="applyExcelFilter('purchaser', $event)"
+                (clearRequested)="clearExcelFilter('purchaser')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Process Start</span>
-              <details
-                #queueProcessStartFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('processStart')
-                ">
-                <summary title="Filter Process Start">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label>
-                      <span>From</span>
-                      <input
-                        type="date"
-                        [formControl]="
-                          columnFilters.controls.processStartFrom
-                        ">
-                    </label>
 
-                    <label>
-                      <span>To</span>
-                      <input
-                        type="date"
-                        [formControl]="
-                          columnFilters.controls.processStartTo
-                        ">
-                    </label>
-                  </div>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="clearColumnFilter('processStart', queueProcessStartFilter)">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="applyColumnFilter(queueProcessStartFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Process Start"
+                [options]="excelFilterOptionsFor('processStart')"
+                [loading]="excelFilterLoading('processStart')"
+                [active]="excelFilterActive('processStart')"
+                [selectionActive]="excelFilterActive('processStart')"
+                [selectedValues]="excelFilterSelectedValues('processStart')"
+                [sortDirection]="excelSortDirection('processStart')"
+                (opened)="loadExcelFilterValues('processStart')"
+                (sortRequested)="applyExcelSort('processStart', $event)"
+                (applyValues)="applyExcelFilter('processStart', $event)"
+                (clearRequested)="clearExcelFilter('processStart')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Delivery</span>
-              <details
-                #queueDeliveryFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('delivery')
-                ">
-                <summary title="Filter Delivery">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label>
-                      <span>From</span>
-                      <input
-                        type="date"
-                        [formControl]="
-                          columnFilters.controls.deliveryFrom
-                        ">
-                    </label>
 
-                    <label>
-                      <span>To</span>
-                      <input
-                        type="date"
-                        [formControl]="
-                          columnFilters.controls.deliveryTo
-                        ">
-                    </label>
-                  </div>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="clearColumnFilter('delivery', queueDeliveryFilter)">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="applyColumnFilter(queueDeliveryFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Delivery"
+                [options]="excelFilterOptionsFor('delivery')"
+                [loading]="excelFilterLoading('delivery')"
+                [active]="excelFilterActive('delivery')"
+                [selectionActive]="excelFilterActive('delivery')"
+                [selectedValues]="excelFilterSelectedValues('delivery')"
+                [sortDirection]="excelSortDirection('delivery')"
+                (opened)="loadExcelFilterValues('delivery')"
+                (sortRequested)="applyExcelSort('delivery', $event)"
+                (applyValues)="applyExcelFilter('delivery', $event)"
+                (clearRequested)="clearExcelFilter('delivery')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Owner</span>
-              <details
-                #queueOwnerFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('owner')
-                ">
-                <summary title="Filter Owner">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Owner contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.owner
-                      "
-                      placeholder="Assigned owner">
-                  </label>
 
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="clearColumnFilter('owner', queueOwnerFilter)">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="applyColumnFilter(queueOwnerFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Owner"
+                [options]="excelFilterOptionsFor('owner')"
+                [loading]="excelFilterLoading('owner')"
+                [active]="excelFilterActive('owner')"
+                [selectionActive]="excelFilterActive('owner')"
+                [selectedValues]="excelFilterSelectedValues('owner')"
+                [sortDirection]="excelSortDirection('owner')"
+                (opened)="loadExcelFilterValues('owner')"
+                (sortRequested)="applyExcelSort('owner', $event)"
+                (applyValues)="applyExcelFilter('owner', $event)"
+                (clearRequested)="clearExcelFilter('owner')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Process</span>
-              <details
-                #queueProcessFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('process')
-                ">
-                <summary title="Filter Process Status">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Process status contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.processStatus
-                      "
-                      placeholder="Process status">
-                  </label>
 
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="clearColumnFilter('process', queueProcessFilter)">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="applyColumnFilter(queueProcessFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Process"
+                [options]="excelFilterOptionsFor('process')"
+                [loading]="excelFilterLoading('process')"
+                [active]="excelFilterActive('process')"
+                [selectionActive]="excelFilterActive('process')"
+                [selectedValues]="excelFilterSelectedValues('process')"
+                [sortDirection]="excelSortDirection('process')"
+                (opened)="loadExcelFilterValues('process')"
+                (sortRequested)="applyExcelSort('process', $event)"
+                (applyValues)="applyExcelFilter('process', $event)"
+                (clearRequested)="clearExcelFilter('process')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Dispatch</span>
-              <details
-                #queueDispatchFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('dispatch')
-                ">
-                <summary title="Filter Dispatch Status">▾</summary>
-                <div
-                  class="
-                    server-column-filter__menu
-                    server-column-filter__menu--right
-                  ">
-                  <label>
-                    <span>Dispatch status contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.dispatchStatus
-                      "
-                      placeholder="Dispatch status">
-                  </label>
 
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="clearColumnFilter('dispatch', queueDispatchFilter)">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="applyColumnFilter(queueDispatchFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Dispatch"
+                [options]="excelFilterOptionsFor('dispatch')"
+                [loading]="excelFilterLoading('dispatch')"
+                [active]="excelFilterActive('dispatch')"
+                [selectionActive]="excelFilterActive('dispatch')"
+                [selectedValues]="excelFilterSelectedValues('dispatch')"
+                [sortDirection]="excelSortDirection('dispatch')"
+                (opened)="loadExcelFilterValues('dispatch')"
+                (sortRequested)="applyExcelSort('dispatch', $event)"
+                (applyValues)="applyExcelFilter('dispatch', $event)"
+                (clearRequested)="clearExcelFilter('dispatch')"
+              />
             </div>
           </th>
         </tr>

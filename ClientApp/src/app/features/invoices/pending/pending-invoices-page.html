@@ -147,21 +147,219 @@
   </div>
 
   <div class="table-wrap" [class.table-wrap--loading]="loading()">
-    <table data-excel-filter-mode="local">
-      <thead>
+    <table>
+            <thead>
         <tr>
           <th>#</th>
-          <th>Invoice</th>
-          <th>Invoice Date</th>
-          <th>PO Number</th>
-          <th>Line Item</th>
-          <th>Material Number</th>
-          <th class="number-cell">Quantity</th>
-          <th class="number-cell">Price Unit</th>
-          <th class="number-cell">GST</th>
-          <th class="number-cell">Amount</th>
-          <th>Mismatch Reason</th>
-          <th>Imported</th>
+          <th>
+            <div class="server-table-heading">
+              <span>Invoice</span>
+
+              <app-server-excel-filter
+                title="Invoice"
+                [options]="excelFilterOptionsFor('invoice')"
+                [loading]="excelFilterLoading('invoice')"
+                [active]="excelFilterActive('invoice')"
+                [selectionActive]="excelFilterActive('invoice')"
+                [selectedValues]="excelFilterSelectedValues('invoice')"
+                [sortDirection]="excelSortDirection('invoice')"
+                (opened)="loadExcelFilterValues('invoice')"
+                (sortRequested)="applyExcelSort('invoice', $event)"
+                (applyValues)="applyExcelFilter('invoice', $event)"
+                (clearRequested)="clearExcelFilter('invoice')"
+              />
+            </div>
+          </th>
+          <th>
+            <div class="server-table-heading">
+              <span>Invoice Date</span>
+
+              <app-server-excel-filter
+                title="Invoice Date"
+                [options]="excelFilterOptionsFor('invoiceDate')"
+                [loading]="excelFilterLoading('invoiceDate')"
+                [active]="excelFilterActive('invoiceDate')"
+                [selectionActive]="excelFilterActive('invoiceDate')"
+                [selectedValues]="excelFilterSelectedValues('invoiceDate')"
+                [sortDirection]="excelSortDirection('invoiceDate')"
+                (opened)="loadExcelFilterValues('invoiceDate')"
+                (sortRequested)="applyExcelSort('invoiceDate', $event)"
+                (applyValues)="applyExcelFilter('invoiceDate', $event)"
+                (clearRequested)="clearExcelFilter('invoiceDate')"
+              />
+            </div>
+          </th>
+          <th>
+            <div class="server-table-heading">
+              <span>PO Number</span>
+
+              <app-server-excel-filter
+                title="PO Number"
+                [options]="excelFilterOptionsFor('po')"
+                [loading]="excelFilterLoading('po')"
+                [active]="excelFilterActive('po')"
+                [selectionActive]="excelFilterActive('po')"
+                [selectedValues]="excelFilterSelectedValues('po')"
+                [sortDirection]="excelSortDirection('po')"
+                (opened)="loadExcelFilterValues('po')"
+                (sortRequested)="applyExcelSort('po', $event)"
+                (applyValues)="applyExcelFilter('po', $event)"
+                (clearRequested)="clearExcelFilter('po')"
+              />
+            </div>
+          </th>
+          <th>
+            <div class="server-table-heading">
+              <span>Line Item</span>
+
+              <app-server-excel-filter
+                title="Line Item"
+                [options]="excelFilterOptionsFor('lineItem')"
+                [loading]="excelFilterLoading('lineItem')"
+                [active]="excelFilterActive('lineItem')"
+                [selectionActive]="excelFilterActive('lineItem')"
+                [selectedValues]="excelFilterSelectedValues('lineItem')"
+                [sortDirection]="excelSortDirection('lineItem')"
+                (opened)="loadExcelFilterValues('lineItem')"
+                (sortRequested)="applyExcelSort('lineItem', $event)"
+                (applyValues)="applyExcelFilter('lineItem', $event)"
+                (clearRequested)="clearExcelFilter('lineItem')"
+              />
+            </div>
+          </th>
+          <th>
+            <div class="server-table-heading">
+              <span>Material Number</span>
+
+              <app-server-excel-filter
+                title="Material Number"
+                [options]="excelFilterOptionsFor('material')"
+                [loading]="excelFilterLoading('material')"
+                [active]="excelFilterActive('material')"
+                [selectionActive]="excelFilterActive('material')"
+                [selectedValues]="excelFilterSelectedValues('material')"
+                [sortDirection]="excelSortDirection('material')"
+                (opened)="loadExcelFilterValues('material')"
+                (sortRequested)="applyExcelSort('material', $event)"
+                (applyValues)="applyExcelFilter('material', $event)"
+                (clearRequested)="clearExcelFilter('material')"
+              />
+            </div>
+          </th>
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Quantity</span>
+
+              <app-server-excel-filter
+                title="Quantity"
+                [options]="excelFilterOptionsFor('quantity')"
+                [loading]="excelFilterLoading('quantity')"
+                [active]="excelFilterActive('quantity')"
+                [selectionActive]="excelFilterActive('quantity')"
+                [selectedValues]="excelFilterSelectedValues('quantity')"
+                [sortDirection]="excelSortDirection('quantity')"
+                (opened)="loadExcelFilterValues('quantity')"
+                (sortRequested)="applyExcelSort('quantity', $event)"
+                (applyValues)="applyExcelFilter('quantity', $event)"
+                (clearRequested)="clearExcelFilter('quantity')"
+              />
+            </div>
+          </th>
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Price Unit</span>
+
+              <app-server-excel-filter
+                title="Price Unit"
+                [options]="excelFilterOptionsFor('priceUnit')"
+                [loading]="excelFilterLoading('priceUnit')"
+                [active]="excelFilterActive('priceUnit')"
+                [selectionActive]="excelFilterActive('priceUnit')"
+                [selectedValues]="excelFilterSelectedValues('priceUnit')"
+                [sortDirection]="excelSortDirection('priceUnit')"
+                (opened)="loadExcelFilterValues('priceUnit')"
+                (sortRequested)="applyExcelSort('priceUnit', $event)"
+                (applyValues)="applyExcelFilter('priceUnit', $event)"
+                (clearRequested)="clearExcelFilter('priceUnit')"
+              />
+            </div>
+          </th>
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>GST</span>
+
+              <app-server-excel-filter
+                title="GST"
+                [options]="excelFilterOptionsFor('gst')"
+                [loading]="excelFilterLoading('gst')"
+                [active]="excelFilterActive('gst')"
+                [selectionActive]="excelFilterActive('gst')"
+                [selectedValues]="excelFilterSelectedValues('gst')"
+                [sortDirection]="excelSortDirection('gst')"
+                (opened)="loadExcelFilterValues('gst')"
+                (sortRequested)="applyExcelSort('gst', $event)"
+                (applyValues)="applyExcelFilter('gst', $event)"
+                (clearRequested)="clearExcelFilter('gst')"
+              />
+            </div>
+          </th>
+          <th class="number-cell">
+            <div class="server-table-heading">
+              <span>Amount</span>
+
+              <app-server-excel-filter
+                title="Amount"
+                [options]="excelFilterOptionsFor('amount')"
+                [loading]="excelFilterLoading('amount')"
+                [active]="excelFilterActive('amount')"
+                [selectionActive]="excelFilterActive('amount')"
+                [selectedValues]="excelFilterSelectedValues('amount')"
+                [sortDirection]="excelSortDirection('amount')"
+                (opened)="loadExcelFilterValues('amount')"
+                (sortRequested)="applyExcelSort('amount', $event)"
+                (applyValues)="applyExcelFilter('amount', $event)"
+                (clearRequested)="clearExcelFilter('amount')"
+              />
+            </div>
+          </th>
+          <th>
+            <div class="server-table-heading">
+              <span>Mismatch Reason</span>
+
+              <app-server-excel-filter
+                title="Mismatch Reason"
+                [options]="excelFilterOptionsFor('reason')"
+                [loading]="excelFilterLoading('reason')"
+                [active]="excelFilterActive('reason')"
+                [selectionActive]="excelFilterActive('reason')"
+                [selectedValues]="excelFilterSelectedValues('reason')"
+                [sortDirection]="excelSortDirection('reason')"
+                (opened)="loadExcelFilterValues('reason')"
+                (sortRequested)="applyExcelSort('reason', $event)"
+                (applyValues)="applyExcelFilter('reason', $event)"
+                (clearRequested)="clearExcelFilter('reason')"
+              />
+            </div>
+          </th>
+          <th>
+            <div class="server-table-heading">
+              <span>Imported</span>
+
+              <app-server-excel-filter
+                title="Imported"
+                [options]="excelFilterOptionsFor('imported')"
+                [loading]="excelFilterLoading('imported')"
+                [active]="excelFilterActive('imported')"
+                [selectionActive]="excelFilterActive('imported')"
+                [selectedValues]="excelFilterSelectedValues('imported')"
+                [sortDirection]="excelSortDirection('imported')"
+                (opened)="loadExcelFilterValues('imported')"
+                (sortRequested)="applyExcelSort('imported', $event)"
+                (applyValues)="applyExcelFilter('imported', $event)"
+                (clearRequested)="clearExcelFilter('imported')"
+              />
+            </div>
+          </th>
           <th>Actions</th>
         </tr>
       </thead>

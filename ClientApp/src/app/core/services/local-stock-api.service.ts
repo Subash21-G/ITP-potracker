@@ -13,6 +13,8 @@ import {
 
 import {
   LocalStockDeleteResponse,
+  LocalStockExcelFilterColumn,
+  LocalStockExcelFilterValue,
   LocalStockListQuery,
   LocalStockListResponse,
   LocalStockSaveResponse,
@@ -74,6 +76,9 @@ export class LocalStockApiService {
         ['status', query.status],
         ['updatedFrom', query.updatedFrom],
         ['updatedTo', query.updatedTo],
+        ['sortColumn', query.sortColumn],
+        ['sortDirection', query.sortDirection],
+        ['excelFilters', query.excelFilters],
       ];
 
     for (
@@ -96,6 +101,79 @@ export class LocalStockApiService {
 
     return this.http.get<LocalStockListResponse>(
       '/api/local-stocks',
+      {
+        params,
+        withCredentials: true,
+      },
+    );
+  }
+
+  getExcelFilterValues(
+    query: LocalStockListQuery,
+    column: LocalStockExcelFilterColumn,
+  ): Observable<
+    readonly LocalStockExcelFilterValue[]
+  > {
+    let params =
+      new HttpParams()
+        .set(
+          'column',
+          column,
+        );
+
+    const optionalValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['material', query.material],
+        ['rmGrade', query.rmGrade],
+        ['location', query.location],
+        [
+          'minAvailableQty',
+          query.minAvailableQty,
+        ],
+        [
+          'maxAvailableQty',
+          query.maxAvailableQty,
+        ],
+        [
+          'minMinimumQty',
+          query.minMinimumQty,
+        ],
+        [
+          'maxMinimumQty',
+          query.maxMinimumQty,
+        ],
+        ['status', query.status],
+        ['updatedFrom', query.updatedFrom],
+        ['updatedTo', query.updatedTo],
+        ['excelFilters', query.excelFilters],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      const cleaned =
+        value?.trim();
+
+      if (cleaned) {
+        params =
+          params.set(
+            name,
+            cleaned,
+          );
+      }
+    }
+
+    return this.http.get<
+      readonly LocalStockExcelFilterValue[]
+    >(
+      '/api/local-stocks/excel-filter-values',
       {
         params,
         withCredentials: true,

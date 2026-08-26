@@ -11,6 +11,37 @@ export interface LocalStockListItem {
   readonly updatedDate: string;
 }
 
+export type LocalStockSortColumn =
+  | 'material'
+  | 'grade'
+  | 'location'
+  | 'available'
+  | 'minimum'
+  | 'status'
+  | 'updated';
+
+export type LocalStockSortDirection =
+  | 'asc'
+  | 'desc';
+
+export type LocalStockExcelFilterColumn =
+  LocalStockSortColumn;
+
+export interface LocalStockExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type LocalStockExcelFilterSelections =
+  Partial<
+    Record<
+      LocalStockExcelFilterColumn,
+      readonly string[]
+    >
+  >;
+
 export interface LocalStockSummary {
   readonly totalItems: number;
   readonly lowStockItems: number;
@@ -44,6 +75,10 @@ export interface LocalStockListQuery {
 
   readonly updatedFrom?: string;
   readonly updatedTo?: string;
+
+  readonly sortColumn?: LocalStockSortColumn;
+  readonly sortDirection?: LocalStockSortDirection;
+  readonly excelFilters?: string;
 
   readonly page: number;
   readonly pageSize: number;

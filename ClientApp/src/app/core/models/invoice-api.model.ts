@@ -44,9 +44,30 @@ export type InvoiceSortDirection =
   | 'asc'
   | 'desc';
 
+
+export type InvoiceExcelFilterColumn =
+  InvoiceSortColumn;
+
+export interface InvoiceExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type InvoiceExcelFilterSelections =
+  Partial<
+    Record<
+      InvoiceExcelFilterColumn,
+      readonly string[]
+    >
+  >;
+
 export interface InvoiceListQuery {
   sortColumn?: InvoiceSortColumn;
   sortDirection?: InvoiceSortDirection;
+
+  excelFilters?: string;
 
   search?: string;
   dateFrom?: string | null;
@@ -132,6 +153,41 @@ export interface PendingInvoiceItem {
   errorMessage: string;
   createdDate: string;
 }
+
+export type PendingInvoiceSortColumn =
+  | 'invoice'
+  | 'invoiceDate'
+  | 'po'
+  | 'lineItem'
+  | 'material'
+  | 'quantity'
+  | 'priceUnit'
+  | 'gst'
+  | 'amount'
+  | 'reason'
+  | 'imported';
+
+export type PendingInvoiceSortDirection =
+  | 'asc'
+  | 'desc';
+
+export type PendingInvoiceExcelFilterColumn =
+  PendingInvoiceSortColumn;
+
+export interface PendingInvoiceExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type PendingInvoiceExcelFilterSelections =
+  Partial<
+    Record<
+      PendingInvoiceExcelFilterColumn,
+      readonly string[]
+    >
+  >;
 
 export interface InvoiceImportResponse {
   success: boolean;

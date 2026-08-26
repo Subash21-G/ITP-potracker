@@ -13,7 +13,7 @@ namespace POTracker.Controllers.Api
         Duration = 0,
         Location = ResponseCacheLocation.None,
         NoStore = true)]
-    public sealed class AlertsApiController :
+    public sealed partial class AlertsApiController :
         ControllerBase
     {
         private const int DefaultPageSize = 25;
@@ -60,6 +60,7 @@ namespace POTracker.Controllers.Api
                 decimal? minLiveStock,
                 decimal? maxLiveStock,
                 string? stockStatus,
+                string? excelFilters,
 
                 string? sortColumn,
                 string? sortDirection,
@@ -424,6 +425,12 @@ namespace POTracker.Controllers.Api
             {
                 categoryItems = categoryItems.Where(item => Contains(item.StockStatus, normalizedStockStatus)).ToList();
             }
+            categoryItems =
+                ApplyAlertExcelFilters(
+                    categoryItems,
+                    normalizedCategory,
+                    excelFilters);
+
             categoryItems =
                 ApplyAlertSort(
                     categoryItems,

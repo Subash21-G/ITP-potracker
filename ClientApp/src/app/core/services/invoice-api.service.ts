@@ -18,10 +18,16 @@ import {
   InvoiceDetails,
   InvoiceImportBatch,
   InvoiceImportBatchDeleteResponse,
+  InvoiceExcelFilterColumn,
+  InvoiceExcelFilterValue,
   InvoiceListQuery,
   InvoiceListResponse,
+  PendingInvoiceExcelFilterColumn,
+  PendingInvoiceExcelFilterValue,
   PendingInvoiceItem,
   PendingInvoiceManualMatchRequest,
+  PendingInvoiceSortColumn,
+  PendingInvoiceSortDirection,
   PendingInvoiceManualMatchResponse,
   PendingInvoiceMatchCandidatesResponse,
   PendingInvoiceRetryResponse,
@@ -61,6 +67,7 @@ export class InvoiceApiService {
       ][] = [
         ['sortColumn', query.sortColumn],
         ['sortDirection', query.sortDirection],
+        ['excelFilters', query.excelFilters],
         ['search', query.search],
         ['dateFrom', query.dateFrom],
         ['dateTo', query.dateTo],
@@ -141,6 +148,107 @@ export class InvoiceApiService {
     );
   }
 
+  getExcelFilterValues(
+    query: InvoiceListQuery,
+    column: InvoiceExcelFilterColumn,
+  ): Observable<
+    readonly InvoiceExcelFilterValue[]
+  > {
+    let params =
+      new HttpParams()
+        .set(
+          'column',
+          column,
+        );
+
+    const optionalValues:
+      readonly [
+        string,
+        string | null | undefined,
+      ][] = [
+        ['excelFilters', query.excelFilters],
+        ['search', query.search],
+        ['dateFrom', query.dateFrom],
+        ['dateTo', query.dateTo],
+        ['invoiceNumber', query.invoiceNumber],
+        [
+          'columnInvoiceDateFrom',
+          query.columnInvoiceDateFrom,
+        ],
+        [
+          'columnInvoiceDateTo',
+          query.columnInvoiceDateTo,
+        ],
+        ['customerName', query.customerName],
+        ['minItemCount', query.minItemCount],
+        ['maxItemCount', query.maxItemCount],
+        [
+          'minTotalQuantity',
+          query.minTotalQuantity,
+        ],
+        [
+          'maxTotalQuantity',
+          query.maxTotalQuantity,
+        ],
+        [
+          'minTotalGstAmount',
+          query.minTotalGstAmount,
+        ],
+        [
+          'maxTotalGstAmount',
+          query.maxTotalGstAmount,
+        ],
+        [
+          'minTotalAmount',
+          query.minTotalAmount,
+        ],
+        [
+          'maxTotalAmount',
+          query.maxTotalAmount,
+        ],
+        [
+          'uploadedFileName',
+          query.uploadedFileName,
+        ],
+        [
+          'importedDateFrom',
+          query.importedDateFrom,
+        ],
+        [
+          'importedDateTo',
+          query.importedDateTo,
+        ],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      const cleaned =
+        value?.trim();
+
+      if (cleaned) {
+        params =
+          params.set(
+            name,
+            cleaned,
+          );
+      }
+    }
+
+    return this.http.get<
+      readonly InvoiceExcelFilterValue[]
+    >(
+      '/api/invoices/excel-filter-values',
+      {
+        params,
+        withCredentials: true,
+      },
+    );
+  }
+
   getDetails(id: number): Observable<InvoiceDetails> {
     return this.http.get<InvoiceDetails>(
       `/api/invoices/${id}`,
@@ -175,18 +283,95 @@ export class InvoiceApiService {
   getPendingItems(
     search = '',
     take = 500,
+    sortColumn?: PendingInvoiceSortColumn,
+    sortDirection?: PendingInvoiceSortDirection,
+    excelFilters?: string,
   ): Observable<PendingInvoiceItem[]> {
-    let params = new HttpParams().set(
-      'take',
-      String(take),
-    );
+    let params =
+      new HttpParams()
+        .set(
+          'take',
+          String(take),
+        );
 
-    if (search.trim()) {
-      params = params.set('search', search.trim());
+    const optionalValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', search],
+        ['sortColumn', sortColumn],
+        ['sortDirection', sortDirection],
+        ['excelFilters', excelFilters],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      const cleaned =
+        value?.trim();
+
+      if (cleaned) {
+        params =
+          params.set(
+            name,
+            cleaned,
+          );
+      }
     }
 
     return this.http.get<PendingInvoiceItem[]>(
-      '/api/invoices/pending',
+      '/api/invoices/pending/excel',
+      {
+        params,
+        withCredentials: true,
+      },
+    );
+  }
+
+  getPendingExcelFilterValues(
+    search: string,
+    column: PendingInvoiceExcelFilterColumn,
+    excelFilters?: string,
+  ): Observable<
+    readonly PendingInvoiceExcelFilterValue[]
+  > {
+    let params =
+      new HttpParams()
+        .set(
+          'column',
+          column,
+        );
+
+    const cleanedSearch =
+      search.trim();
+
+    if (cleanedSearch) {
+      params =
+        params.set(
+          'search',
+          cleanedSearch,
+        );
+    }
+
+    const cleanedExcelFilters =
+      excelFilters?.trim();
+
+    if (cleanedExcelFilters) {
+      params =
+        params.set(
+          'excelFilters',
+          cleanedExcelFilters,
+        );
+    }
+
+    return this.http.get<
+      readonly PendingInvoiceExcelFilterValue[]
+    >(
+      '/api/invoices/pending/excel-filter-values',
       {
         params,
         withCredentials: true,
@@ -264,10 +449,93 @@ export class InvoiceApiService {
     );
   }
 
-  downloadInvoicesExcel(): Observable<Blob> {
+  downloadInvoicesExcel(
+    query: InvoiceListQuery = {},
+  ): Observable<Blob> {
+    let params =
+      new HttpParams();
+
+    const optionalValues:
+      readonly [
+        string,
+        string | null | undefined,
+      ][] = [
+        ['excelFilters', query.excelFilters],
+        ['search', query.search],
+        ['dateFrom', query.dateFrom],
+        ['dateTo', query.dateTo],
+        ['invoiceNumber', query.invoiceNumber],
+        [
+          'columnInvoiceDateFrom',
+          query.columnInvoiceDateFrom,
+        ],
+        [
+          'columnInvoiceDateTo',
+          query.columnInvoiceDateTo,
+        ],
+        ['customerName', query.customerName],
+        ['minItemCount', query.minItemCount],
+        ['maxItemCount', query.maxItemCount],
+        [
+          'minTotalQuantity',
+          query.minTotalQuantity,
+        ],
+        [
+          'maxTotalQuantity',
+          query.maxTotalQuantity,
+        ],
+        [
+          'minTotalGstAmount',
+          query.minTotalGstAmount,
+        ],
+        [
+          'maxTotalGstAmount',
+          query.maxTotalGstAmount,
+        ],
+        [
+          'minTotalAmount',
+          query.minTotalAmount,
+        ],
+        [
+          'maxTotalAmount',
+          query.maxTotalAmount,
+        ],
+        [
+          'uploadedFileName',
+          query.uploadedFileName,
+        ],
+        [
+          'importedDateFrom',
+          query.importedDateFrom,
+        ],
+        [
+          'importedDateTo',
+          query.importedDateTo,
+        ],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      const cleaned =
+        value?.trim();
+
+      if (cleaned) {
+        params =
+          params.set(
+            name,
+            cleaned,
+          );
+      }
+    }
+
     return this.http.get(
       '/api/invoices/export-excel',
       {
+        params,
         responseType: 'blob',
         withCredentials: true,
       },

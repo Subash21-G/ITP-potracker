@@ -57,3 +57,5 @@ App_Data/private-uploads/
 .security-backups/
 
 App_Data/private-uploads-staging-*/
+
+.excel-filter-backups/

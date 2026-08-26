@@ -18,12 +18,18 @@ import {
 import { finalize } from 'rxjs';
 
 import {
+  PurchaseOrderExcelFilterColumn,
+  PurchaseOrderExcelFilterSelections,
+  PurchaseOrderExcelFilterValue,
   PurchaseOrderListItem,
   PurchaseOrderListSummary,
   PurchaseOrderSortColumn,
   PurchaseOrderSortDirection,
 } from '../../core/models/purchase-order.model';
 import { PurchaseOrdersApiService } from '../../core/services/purchase-orders-api.service';
+import {
+  ServerExcelFilter,
+} from '../../shared/server-excel-filter/server-excel-filter';
 
 const EMPTY_SUMMARY: PurchaseOrderListSummary = {
   totalPurchaseOrders: 0,
@@ -40,7 +46,14 @@ const EMPTY_SUMMARY: PurchaseOrderListSummary = {
 
 @Component({
   selector: 'app-purchase-orders-page',
-  imports: [ManageOnlyDirective, DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink],
+  imports: [
+    ManageOnlyDirective,
+    DatePipe,
+    DecimalPipe,
+    ReactiveFormsModule,
+    RouterLink,
+    ServerExcelFilter,
+  ],
   templateUrl: './purchase-orders-page.html',
   styleUrl: './purchase-orders-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -86,6 +99,32 @@ export class PurchaseOrdersPage {
   readonly sortDirection =
     signal<PurchaseOrderSortDirection | null>(
       null,
+    );
+
+  readonly excelFilterSelections =
+    signal<PurchaseOrderExcelFilterSelections>(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          PurchaseOrderExcelFilterColumn,
+          readonly PurchaseOrderExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        PurchaseOrderExcelFilterColumn
+      >
+    >(
+      new Set<
+        PurchaseOrderExcelFilterColumn
+      >(),
     );
 
   readonly totalRecords = signal(0);
@@ -196,6 +235,254 @@ export class PurchaseOrdersPage {
         .setValue(linkedPersonName);
     }
 
+    this.loadPurchaseOrders();
+  }
+
+  excelFilterOptionsFor(
+    column: PurchaseOrderExcelFilterColumn,
+  ): readonly PurchaseOrderExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column: PurchaseOrderExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column: PurchaseOrderExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column: PurchaseOrderExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column: PurchaseOrderExcelFilterColumn,
+  ): PurchaseOrderSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column: PurchaseOrderExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    const filterValues =
+      this.filters.getRawValue();
+
+    this.purchaseOrdersApi
+      .getExcelFilterValues(
+        {
+          page: 1,
+          pageSize:
+            this.pageSize(),
+
+          sortColumn:
+            this.sortColumn() ??
+            undefined,
+
+          sortDirection:
+            this.sortDirection() ??
+            undefined,
+
+          excelFilters:
+            this.serializeExcelFilters(),
+
+          ...filterValues,
+        },
+        column,
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeMutationError(
+              error,
+              `Excel filter values for ${column} could not be loaded.`,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column: PurchaseOrderExcelFilterColumn,
+    direction:
+      PurchaseOrderSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+    this.loadPurchaseOrders();
+  }
+
+  applyExcelFilter(
+    column: PurchaseOrderExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+    this.loadPurchaseOrders();
+  }
+
+  clearExcelFilter(
+    column: PurchaseOrderExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
     this.loadPurchaseOrders();
   }
 
@@ -436,6 +723,9 @@ export class PurchaseOrdersPage {
 
   clearFilters(): void {
     this.filters.reset();
+    this.excelFilterSelections.set(
+      {},
+    );
     this.page.set(1);
     this.clearSelection();
     this.successMessage.set('');
@@ -732,9 +1022,33 @@ export class PurchaseOrdersPage {
     this.appendQueryValue(params, 'poReceivedDateFrom', values.poReceivedDateFrom);
     this.appendQueryValue(params, 'poReceivedDateTo', values.poReceivedDateTo);
 
+    const excelFilters =
+      this.serializeExcelFilters();
+
+    if (excelFilters) {
+      params.set(
+        'excelFilters',
+        excelFilters,
+      );
+    }
+
     const queryString = params.toString();
 
     return queryString ? `/api/purchase-orders/export-excel?${queryString}` : '/api/purchase-orders/export-excel';
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
   }
 
   private clearSelection(): void {
@@ -766,6 +1080,9 @@ export class PurchaseOrdersPage {
         sortDirection:
           this.sortDirection() ??
           undefined,
+
+        excelFilters:
+          this.serializeExcelFilters(),
 
         ...filterValues,
       })

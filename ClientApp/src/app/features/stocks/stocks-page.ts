@@ -1,4 +1,4 @@
-﻿import {
+import {
   DatePipe,
   DecimalPipe,
 } from '@angular/common';
@@ -25,12 +25,19 @@ import {
 } from 'rxjs';
 
 import {
+  StockExcelFilterColumn,
+  StockExcelFilterSelections,
+  StockExcelFilterValue,
   StockListItem,
+  StockSortDirection,
   StockSummary,
 } from '../../core/models/stock-api.model';
 import {
   StockApiService,
 } from '../../core/services/stock-api.service';
+import {
+  ServerExcelFilter,
+} from '../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-stocks-page',
@@ -38,6 +45,7 @@ import {
     DatePipe,
     DecimalPipe,
     ReactiveFormsModule,
+    ServerExcelFilter,
   ],
   templateUrl: './stocks-page.html',
   styleUrl: './stocks-page.css',
@@ -152,6 +160,43 @@ export class StocksPage {
   readonly pageSize = signal(25);
   readonly totalRecords = signal(0);
   readonly totalPages = signal(1);
+
+  readonly sortColumn =
+    signal<
+      StockExcelFilterColumn | null
+    >(null);
+
+  readonly sortDirection =
+    signal<
+      StockSortDirection | null
+    >(null);
+
+  readonly excelFilterSelections =
+    signal<StockExcelFilterSelections>(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          StockExcelFilterColumn,
+          readonly StockExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        StockExcelFilterColumn
+      >
+    >(
+      new Set<
+        StockExcelFilterColumn
+      >(),
+    );
+
   readonly loading = signal(false);
   readonly errorMessage = signal('');
 
@@ -353,6 +398,228 @@ export class StocksPage {
     return false;
   }
 
+  excelFilterOptionsFor(
+    column: StockExcelFilterColumn,
+  ): readonly StockExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column: StockExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column: StockExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column: StockExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column: StockExcelFilterColumn,
+  ): StockSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column: StockExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    this.stockApi
+      .getExcelFilterValues(
+        this.buildStockQuery(
+          false,
+        ),
+        column,
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeError(
+              error,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column: StockExcelFilterColumn,
+    direction: StockSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.page.set(1);
+    this.loadStocks();
+  }
+
+  applyExcelFilter(
+    column: StockExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.loadStocks();
+  }
+
+  clearExcelFilter(
+    column: StockExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.loadStocks();
+  }
+
   refresh(): void {
     this.loadStocks(true);
   }
@@ -416,6 +683,97 @@ export class StocksPage {
     this.loadStocks();
   }
 
+  private buildStockQuery(
+    includePaging: boolean,
+    forceRefresh = false,
+  ) {
+    return {
+      search:
+        this.searchControl.value,
+
+      material:
+        this.materialControl.value,
+
+      description:
+        this.descriptionControl.value,
+
+      supplier:
+        this.supplierControl.value,
+
+      location:
+        this.locationControl.value,
+
+      minCurrentStock:
+        this.minCurrentStockControl.value,
+
+      maxCurrentStock:
+        this.maxCurrentStockControl.value,
+
+      minMinimumStock:
+        this.minMinimumStockControl.value,
+
+      maxMinimumStock:
+        this.maxMinimumStockControl.value,
+
+      minUnitPrice:
+        this.minUnitPriceControl.value,
+
+      maxUnitPrice:
+        this.maxUnitPriceControl.value,
+
+      minTotalValue:
+        this.minTotalValueControl.value,
+
+      maxTotalValue:
+        this.maxTotalValueControl.value,
+
+      status:
+        this.statusControl.value,
+
+      updatedFrom:
+        this.updatedFromControl.value,
+
+      updatedTo:
+        this.updatedToControl.value,
+
+      sortColumn:
+        this.sortColumn() ??
+        undefined,
+
+      sortDirection:
+        this.sortDirection() ??
+        undefined,
+
+      excelFilters:
+        this.serializeExcelFilters(),
+
+      page:
+        includePaging
+          ? this.page()
+          : 1,
+
+      pageSize:
+        this.pageSize(),
+
+      refresh:
+        forceRefresh,
+    };
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
+  }
+
   private loadStocks(
     forceRefresh = false,
   ): void {
@@ -427,64 +785,12 @@ export class StocksPage {
     this.errorMessage.set('');
 
     this.stockApi
-      .getStocks({
-        search:
-          this.searchControl.value,
-
-        material:
-          this.materialControl.value,
-
-        description:
-          this.descriptionControl.value,
-
-        supplier:
-          this.supplierControl.value,
-
-        location:
-          this.locationControl.value,
-
-        minCurrentStock:
-          this.minCurrentStockControl.value,
-
-        maxCurrentStock:
-          this.maxCurrentStockControl.value,
-
-        minMinimumStock:
-          this.minMinimumStockControl.value,
-
-        maxMinimumStock:
-          this.maxMinimumStockControl.value,
-
-        minUnitPrice:
-          this.minUnitPriceControl.value,
-
-        maxUnitPrice:
-          this.maxUnitPriceControl.value,
-
-        minTotalValue:
-          this.minTotalValueControl.value,
-
-        maxTotalValue:
-          this.maxTotalValueControl.value,
-
-        status:
-          this.statusControl.value,
-
-        updatedFrom:
-          this.updatedFromControl.value,
-
-        updatedTo:
-          this.updatedToControl.value,
-
-        page:
-          this.page(),
-
-        pageSize:
-          this.pageSize(),
-
-        refresh:
+      .getStocks(
+        this.buildStockQuery(
+          true,
           forceRefresh,
-      })
+        ),
+      )
       .pipe(
         takeUntilDestroyed(
           this.destroyRef,

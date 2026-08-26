@@ -15,12 +15,18 @@ import { finalize } from 'rxjs';
 
 import { ManageOnlyDirective } from '../../core/directives/manage-only.directive';
 import {
+  InvoiceExcelFilterColumn,
+  InvoiceExcelFilterSelections,
+  InvoiceExcelFilterValue,
   InvoiceListItem,
   InvoiceListSummary,
   InvoiceSortColumn,
   InvoiceSortDirection,
 } from '../../core/models/invoice-api.model';
 import { InvoiceApiService } from '../../core/services/invoice-api.service';
+import {
+  ServerExcelFilter,
+} from '../../shared/server-excel-filter/server-excel-filter';
 
 const EMPTY_SUMMARY: InvoiceListSummary = {
   totalInvoices: 0,
@@ -39,6 +45,7 @@ const EMPTY_SUMMARY: InvoiceListSummary = {
     ManageOnlyDirective,
     ReactiveFormsModule,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl: './invoices-page.html',
   styleUrl: './invoices-page.css',
@@ -147,6 +154,32 @@ export class InvoicesPage {
       null,
     );
 
+  readonly excelFilterSelections =
+    signal<InvoiceExcelFilterSelections>(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          InvoiceExcelFilterColumn,
+          readonly InvoiceExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        InvoiceExcelFilterColumn
+      >
+    >(
+      new Set<
+        InvoiceExcelFilterColumn
+      >(),
+    );
+
   readonly totalCount = signal(0);
   readonly totalPages = signal(1);
   readonly loading = signal(false);
@@ -193,6 +226,235 @@ export class InvoicesPage {
 
   applyFilters(): void {
     this.page.set(1);
+    this.loadInvoices();
+  }
+
+  excelFilterOptionsFor(
+    column: InvoiceExcelFilterColumn,
+  ): readonly InvoiceExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column: InvoiceExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column: InvoiceExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column: InvoiceExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column: InvoiceExcelFilterColumn,
+  ): InvoiceSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column: InvoiceExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    this.invoiceApi
+      .getExcelFilterValues(
+        this.buildInvoiceQuery(
+          false,
+        ),
+        column,
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeExportError(
+              error,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column: InvoiceExcelFilterColumn,
+    direction:
+      InvoiceSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+    this.loadInvoices();
+  }
+
+  applyExcelFilter(
+    column: InvoiceExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+    this.loadInvoices();
+  }
+
+  clearExcelFilter(
+    column: InvoiceExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
     this.loadInvoices();
   }
 
@@ -423,6 +685,9 @@ export class InvoicesPage {
   clearFilters(): void {
     this.filters.reset();
     this.columnFilters.reset();
+    this.excelFilterSelections.set(
+      {},
+    );
     this.page.set(1);
     this.loadInvoices();
   }
@@ -520,7 +785,11 @@ export class InvoicesPage {
     this.successMessage.set('');
 
     this.invoiceApi
-      .downloadInvoicesExcel()
+      .downloadInvoicesExcel(
+        this.buildInvoiceQuery(
+          false,
+        ),
+      )
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() =>
@@ -721,16 +990,117 @@ export class InvoicesPage {
       });
   }
 
-  private loadInvoices(clearMessages = true): void {
-    if (this.loading()) {
-      return;
-    }
-
+  private buildInvoiceQuery(
+    includePaging: boolean,
+  ) {
     const filterValues =
       this.filters.getRawValue();
 
     const columnValues =
       this.columnFilters.getRawValue();
+
+    return {
+      search:
+        filterValues.search,
+
+      dateFrom:
+        filterValues.dateFrom ||
+        null,
+
+      dateTo:
+        filterValues.dateTo ||
+        null,
+
+      invoiceNumber:
+        columnValues.invoiceNumber,
+
+      columnInvoiceDateFrom:
+        columnValues.invoiceDateFrom ||
+        null,
+
+      columnInvoiceDateTo:
+        columnValues.invoiceDateTo ||
+        null,
+
+      customerName:
+        columnValues.customerName,
+
+      minItemCount:
+        columnValues.minItemCount,
+
+      maxItemCount:
+        columnValues.maxItemCount,
+
+      minTotalQuantity:
+        columnValues.minTotalQuantity,
+
+      maxTotalQuantity:
+        columnValues.maxTotalQuantity,
+
+      minTotalGstAmount:
+        columnValues.minTotalGstAmount,
+
+      maxTotalGstAmount:
+        columnValues.maxTotalGstAmount,
+
+      minTotalAmount:
+        columnValues.minTotalAmount,
+
+      maxTotalAmount:
+        columnValues.maxTotalAmount,
+
+      uploadedFileName:
+        columnValues.uploadedFileName,
+
+      importedDateFrom:
+        columnValues.importedDateFrom ||
+        null,
+
+      importedDateTo:
+        columnValues.importedDateTo ||
+        null,
+
+      sortColumn:
+        this.sortColumn() ??
+        undefined,
+
+      sortDirection:
+        this.sortDirection() ??
+        undefined,
+
+      excelFilters:
+        this.serializeExcelFilters(),
+
+      page:
+        includePaging
+          ? this.page()
+          : undefined,
+
+      pageSize:
+        includePaging
+          ? this.pageSize()
+          : undefined,
+    };
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
+  }
+
+  private loadInvoices(clearMessages = true): void {
+    if (this.loading()) {
+      return;
+    }
 
     this.loading.set(true);
 
@@ -740,73 +1110,11 @@ export class InvoicesPage {
     }
 
     this.invoiceApi
-      .getInvoices({
-        search:
-          filterValues.search,
-        dateFrom:
-          filterValues.dateFrom || null,
-        dateTo:
-          filterValues.dateTo || null,
-
-        invoiceNumber:
-          columnValues.invoiceNumber,
-
-        columnInvoiceDateFrom:
-          columnValues.invoiceDateFrom || null,
-
-        columnInvoiceDateTo:
-          columnValues.invoiceDateTo || null,
-
-        customerName:
-          columnValues.customerName,
-
-        minItemCount:
-          columnValues.minItemCount,
-
-        maxItemCount:
-          columnValues.maxItemCount,
-
-        minTotalQuantity:
-          columnValues.minTotalQuantity,
-
-        maxTotalQuantity:
-          columnValues.maxTotalQuantity,
-
-        minTotalGstAmount:
-          columnValues.minTotalGstAmount,
-
-        maxTotalGstAmount:
-          columnValues.maxTotalGstAmount,
-
-        minTotalAmount:
-          columnValues.minTotalAmount,
-
-        maxTotalAmount:
-          columnValues.maxTotalAmount,
-
-        uploadedFileName:
-          columnValues.uploadedFileName,
-
-        importedDateFrom:
-          columnValues.importedDateFrom || null,
-
-        importedDateTo:
-          columnValues.importedDateTo || null,
-
-        sortColumn:
-          this.sortColumn() ??
-          undefined,
-
-        sortDirection:
-          this.sortDirection() ??
-          undefined,
-
-        page:
-          this.page(),
-
-        pageSize:
-          this.pageSize(),
-      })
+      .getInvoices(
+        this.buildInvoiceQuery(
+          true,
+        ),
+      )
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loading.set(false)),

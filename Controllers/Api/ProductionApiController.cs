@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
@@ -21,6 +22,22 @@ namespace POTracker.Controllers.Api
         // PROCESS QUEUE
         // ============================================================
 
+        private static readonly HashSet<string>
+            ProcessQueueExcelFilterColumns =
+                new(
+                    new[]
+                    {
+                        "material",
+                        "po",
+                        "purchaser",
+                        "processstart",
+                        "delivery",
+                        "owner",
+                        "process",
+                        "dispatch"
+                    },
+                    StringComparer.OrdinalIgnoreCase);
+
         [HttpGet("process-queue")]
         public async Task<ActionResult<ProcessQueueResponseDto>>
             ProcessQueue(
@@ -36,6 +53,9 @@ namespace POTracker.Controllers.Api
                 string? owner,
                 string? processStatus,
                 string? dispatchStatus,
+                string? sortColumn,
+                string? sortDirection,
+                string? excelFilters,
                 int page = 1,
                 int pageSize = 50)
         {
@@ -69,50 +89,8 @@ namespace POTracker.Controllers.Api
                 today.AddDays(8);
 
             var baseQuery =
-                _context.Materials
-                    .AsNoTracking()
-                    .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var searchValue =
-                    search.Trim();
-
-                baseQuery =
-                    baseQuery.Where(materialRow =>
-                        (
-                            materialRow.MaterialNo != null &&
-                            materialRow.MaterialNo.Contains(
-                                searchValue)
-                        ) ||
-                        (
-                            materialRow.ShortDescription != null &&
-                            materialRow.ShortDescription.Contains(
-                                searchValue)
-                        ) ||
-                        (
-                            materialRow.AssignedDashboard != null &&
-                            materialRow.AssignedDashboard.Contains(
-                                searchValue)
-                        ) ||
-                        (
-                            materialRow.PurchaseOrder != null &&
-                            materialRow.PurchaseOrder.PONumber.Contains(
-                                searchValue)
-                        ) ||
-                        (
-                            materialRow.PurchaseOrder != null &&
-                            materialRow.PurchaseOrder.Purchaser != null &&
-                            materialRow.PurchaseOrder.Purchaser
-                                .PurchaserName
-                                .Contains(
-                                    searchValue)
-                        ));
-            }
-
-            baseQuery =
-                ApplyProcessQueueColumnFilters(
-                    baseQuery,
+                BuildProcessQueueQuery(
+                    search,
                     material,
                     description,
                     poNumber,
@@ -125,39 +103,55 @@ namespace POTracker.Controllers.Api
                     processStatus,
                     dispatchStatus);
 
+            var rows =
+                await MapQueueItems(
+                    baseQuery);
+
+            var selections =
+                ParseProcessQueueExcelFilters(
+                    excelFilters);
+
+            var filteredRows =
+                rows
+                    .Where(row =>
+                        MatchesProcessQueueExcelFilters(
+                            row,
+                            selections))
+                    .ToList();
+
             var summary =
                 new ProcessQueueSummaryDto
                 {
                     TotalMaterials =
-                        await baseQuery.CountAsync(),
+                        filteredRows.Count,
 
                     Overdue =
-                        await baseQuery.CountAsync(materialRow =>
-                            materialRow.DeliveryDate != null &&
-                            materialRow.DeliveryDate < today &&
-                            materialRow.ProcessStatus != "Completed" &&
-                            materialRow.DispatchStatus != "Dispatched"),
+                        filteredRows.Count(row =>
+                            row.DeliveryDate.HasValue &&
+                            row.DeliveryDate.Value < today &&
+                            row.ProcessStatus != "Completed" &&
+                            row.DispatchStatus != "Dispatched"),
 
                     StartToday =
-                        await baseQuery.CountAsync(materialRow =>
-                            materialRow.ProcessStartDate != null &&
-                            materialRow.ProcessStartDate < tomorrow &&
-                            materialRow.ProcessStatus == "Pending"),
+                        filteredRows.Count(row =>
+                            row.ProcessStartDate.HasValue &&
+                            row.ProcessStartDate.Value < tomorrow &&
+                            row.ProcessStatus == "Pending"),
 
                     ThisWeek =
-                        await baseQuery.CountAsync(materialRow =>
-                            materialRow.ProcessStartDate != null &&
-                            materialRow.ProcessStartDate >= tomorrow &&
-                            materialRow.ProcessStartDate <
+                        filteredRows.Count(row =>
+                            row.ProcessStartDate.HasValue &&
+                            row.ProcessStartDate.Value >= tomorrow &&
+                            row.ProcessStartDate.Value <
                                 weekEndExclusive &&
-                            materialRow.ProcessStatus != "Completed"),
+                            row.ProcessStatus != "Completed"),
 
                     Future =
-                        await baseQuery.CountAsync(materialRow =>
-                            materialRow.ProcessStartDate != null &&
-                            materialRow.ProcessStartDate >=
+                        filteredRows.Count(row =>
+                            row.ProcessStartDate.HasValue &&
+                            row.ProcessStartDate.Value >=
                                 weekEndExclusive &&
-                            materialRow.ProcessStatus != "Completed")
+                            row.ProcessStatus != "Completed")
                 };
 
             var totalPages =
@@ -174,65 +168,64 @@ namespace POTracker.Controllers.Api
             }
 
             var overdue =
-                await MapQueueItems(
-                    baseQuery
-                        .Where(materialRow =>
-                            materialRow.DeliveryDate != null &&
-                            materialRow.DeliveryDate < today &&
-                            materialRow.ProcessStatus != "Completed" &&
-                            materialRow.DispatchStatus != "Dispatched")
-                        .OrderBy(materialRow =>
-                            materialRow.DeliveryDate)
-                        .Take(6));
+                filteredRows
+                    .Where(row =>
+                        row.DeliveryDate.HasValue &&
+                        row.DeliveryDate.Value < today &&
+                        row.ProcessStatus != "Completed" &&
+                        row.DispatchStatus != "Dispatched")
+                    .OrderBy(row =>
+                        row.DeliveryDate)
+                    .Take(6)
+                    .ToList();
 
             var startToday =
-                await MapQueueItems(
-                    baseQuery
-                        .Where(materialRow =>
-                            materialRow.ProcessStartDate != null &&
-                            materialRow.ProcessStartDate < tomorrow &&
-                            materialRow.ProcessStatus == "Pending")
-                        .OrderBy(materialRow =>
-                            materialRow.ProcessStartDate)
-                        .Take(6));
+                filteredRows
+                    .Where(row =>
+                        row.ProcessStartDate.HasValue &&
+                        row.ProcessStartDate.Value < tomorrow &&
+                        row.ProcessStatus == "Pending")
+                    .OrderBy(row =>
+                        row.ProcessStartDate)
+                    .Take(6)
+                    .ToList();
 
             var thisWeek =
-                await MapQueueItems(
-                    baseQuery
-                        .Where(materialRow =>
-                            materialRow.ProcessStartDate != null &&
-                            materialRow.ProcessStartDate >= tomorrow &&
-                            materialRow.ProcessStartDate <
-                                weekEndExclusive &&
-                            materialRow.ProcessStatus != "Completed")
-                        .OrderBy(materialRow =>
-                            materialRow.ProcessStartDate)
-                        .Take(6));
+                filteredRows
+                    .Where(row =>
+                        row.ProcessStartDate.HasValue &&
+                        row.ProcessStartDate.Value >= tomorrow &&
+                        row.ProcessStartDate.Value <
+                            weekEndExclusive &&
+                        row.ProcessStatus != "Completed")
+                    .OrderBy(row =>
+                        row.ProcessStartDate)
+                    .Take(6)
+                    .ToList();
 
             var future =
-                await MapQueueItems(
-                    baseQuery
-                        .Where(materialRow =>
-                            materialRow.ProcessStartDate != null &&
-                            materialRow.ProcessStartDate >=
-                                weekEndExclusive &&
-                            materialRow.ProcessStatus != "Completed")
-                        .OrderBy(materialRow =>
-                            materialRow.ProcessStartDate)
-                        .Take(6));
+                filteredRows
+                    .Where(row =>
+                        row.ProcessStartDate.HasValue &&
+                        row.ProcessStartDate.Value >=
+                            weekEndExclusive &&
+                        row.ProcessStatus != "Completed")
+                    .OrderBy(row =>
+                        row.ProcessStartDate)
+                    .Take(6)
+                    .ToList();
 
             var items =
-                await MapQueueItems(
-                    baseQuery
-                        .OrderBy(materialRow =>
-                            materialRow.ProcessStartDate ??
-                            materialRow.DeliveryDate)
-                        .ThenByDescending(materialRow =>
-                            materialRow.Id)
-                        .Skip(
-                            (page - 1) *
-                            pageSize)
-                        .Take(pageSize));
+                ApplyProcessQueueSort(
+                        filteredRows,
+                        sortColumn,
+                        sortDirection)
+                    .Skip(
+                        (page - 1) *
+                        pageSize)
+                    .Take(
+                        pageSize)
+                    .ToList();
 
             return Ok(
                 new ProcessQueueResponseDto
@@ -267,6 +260,183 @@ namespace POTracker.Controllers.Api
                     TotalPages =
                         totalPages
                 });
+        }
+
+        [HttpGet("process-queue/excel-filter-values")]
+        [ProducesResponseType(
+            typeof(
+                IReadOnlyList<
+                    ExcelFilterValueDto>),
+            StatusCodes.Status200OK)]
+        public async Task<
+            ActionResult<
+                IReadOnlyList<
+                    ExcelFilterValueDto>>>
+            ProcessQueueExcelFilterValues(
+                string column,
+                string? search,
+                string? material,
+                string? description,
+                string? poNumber,
+                string? purchaser,
+                DateTime? processStartFrom,
+                DateTime? processStartTo,
+                DateTime? deliveryFrom,
+                DateTime? deliveryTo,
+                string? owner,
+                string? processStatus,
+                string? dispatchStatus,
+                string? excelFilters)
+        {
+            var normalizedColumn =
+                NormalizeProcessQueueColumn(
+                    column);
+
+            if (
+                !ProcessQueueExcelFilterColumns
+                    .Contains(
+                        normalizedColumn)
+            )
+            {
+                return BadRequest(
+                    new
+                    {
+                        error =
+                            "Unsupported Process Queue Excel filter column."
+                    });
+            }
+
+            var rows =
+                await MapQueueItems(
+                    BuildProcessQueueQuery(
+                        search,
+                        material,
+                        description,
+                        poNumber,
+                        purchaser,
+                        processStartFrom,
+                        processStartTo,
+                        deliveryFrom,
+                        deliveryTo,
+                        owner,
+                        processStatus,
+                        dispatchStatus));
+
+            var selections =
+                ParseProcessQueueExcelFilters(
+                    excelFilters);
+
+            selections.Remove(
+                normalizedColumn);
+
+            var values =
+                rows
+                    .Where(row =>
+                        MatchesProcessQueueExcelFilters(
+                            row,
+                            selections))
+                    .Select(row =>
+                        GetProcessQueueExcelCellValue(
+                            row,
+                            normalizedColumn))
+                    .GroupBy(
+                        value =>
+                            value,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group =>
+                        new ExcelFilterValueDto
+                        {
+                            Value =
+                                group.Key,
+
+                            Label =
+                                string.IsNullOrEmpty(
+                                    group.Key)
+                                    ? "(Blank)"
+                                    : group.Key,
+
+                            Count =
+                                group.Count()
+                        })
+                    .OrderBy(
+                        item =>
+                            item.Label,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            return Ok(values);
+        }
+
+        private IQueryable<POTracker.Models.Material>
+            BuildProcessQueueQuery(
+                string? search,
+                string? material,
+                string? description,
+                string? poNumber,
+                string? purchaser,
+                DateTime? processStartFrom,
+                DateTime? processStartTo,
+                DateTime? deliveryFrom,
+                DateTime? deliveryTo,
+                string? owner,
+                string? processStatus,
+                string? dispatchStatus)
+        {
+            var query =
+                _context.Materials
+                    .AsNoTracking()
+                    .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchValue =
+                    search.Trim();
+
+                query =
+                    query.Where(materialRow =>
+                        (
+                            materialRow.MaterialNo != null &&
+                            materialRow.MaterialNo.Contains(
+                                searchValue)
+                        ) ||
+                        (
+                            materialRow.ShortDescription != null &&
+                            materialRow.ShortDescription.Contains(
+                                searchValue)
+                        ) ||
+                        (
+                            materialRow.AssignedDashboard != null &&
+                            materialRow.AssignedDashboard.Contains(
+                                searchValue)
+                        ) ||
+                        (
+                            materialRow.PurchaseOrder != null &&
+                            materialRow.PurchaseOrder.PONumber.Contains(
+                                searchValue)
+                        ) ||
+                        (
+                            materialRow.PurchaseOrder != null &&
+                            materialRow.PurchaseOrder.Purchaser != null &&
+                            materialRow.PurchaseOrder.Purchaser
+                                .PurchaserName
+                                .Contains(
+                                    searchValue)
+                        ));
+            }
+
+            return ApplyProcessQueueColumnFilters(
+                query,
+                material,
+                description,
+                poNumber,
+                purchaser,
+                processStartFrom,
+                processStartTo,
+                deliveryFrom,
+                deliveryTo,
+                owner,
+                processStatus,
+                dispatchStatus);
         }
 
         private static IQueryable<POTracker.Models.Material>
@@ -431,6 +601,327 @@ namespace POTracker.Controllers.Api
             }
 
             return query;
+        }
+
+        private static Dictionary<
+            string,
+            string[]>
+            ParseProcessQueueExcelFilters(
+                string? excelFilters)
+        {
+            if (
+                string.IsNullOrWhiteSpace(
+                    excelFilters)
+            )
+            {
+                return new Dictionary<
+                    string,
+                    string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+
+            try
+            {
+                var parsed =
+                    System.Text.Json.JsonSerializer
+                        .Deserialize<
+                            Dictionary<
+                                string,
+                                string[]>>(
+                            excelFilters)
+                    ?? new Dictionary<
+                        string,
+                        string[]>();
+
+                return parsed
+                    .Where(pair =>
+                        ProcessQueueExcelFilterColumns
+                            .Contains(
+                                NormalizeProcessQueueColumn(
+                                    pair.Key)))
+                    .ToDictionary(
+                        pair =>
+                            NormalizeProcessQueueColumn(
+                                pair.Key),
+                        pair =>
+                            pair.Value ??
+                            Array.Empty<string>(),
+                        StringComparer.OrdinalIgnoreCase);
+            }
+            catch (
+                System.Text.Json.JsonException)
+            {
+                return new Dictionary<
+                    string,
+                    string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private static bool
+            MatchesProcessQueueExcelFilters(
+                ProcessQueueItemDto row,
+                IReadOnlyDictionary<
+                    string,
+                    string[]> selections)
+        {
+            foreach (
+                var pair in selections)
+            {
+                var selectedValues =
+                    pair.Value ??
+                    Array.Empty<string>();
+
+                if (
+                    selectedValues.Length ==
+                    0
+                )
+                {
+                    return false;
+                }
+
+                var cellValue =
+                    GetProcessQueueExcelCellValue(
+                        row,
+                        pair.Key);
+
+                if (
+                    !selectedValues.Any(
+                        selected =>
+                            string.Equals(
+                                selected,
+                                cellValue,
+                                StringComparison.OrdinalIgnoreCase))
+                )
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string
+            GetProcessQueueExcelCellValue(
+                ProcessQueueItemDto row,
+                string column)
+        {
+            return NormalizeProcessQueueColumn(
+                    column)
+                switch
+                {
+                    "material" =>
+                        string.Join(
+                            " | ",
+                            new[]
+                            {
+                                row.MaterialNo,
+                                row.Description
+                            }
+                            .Where(value =>
+                                !string.IsNullOrWhiteSpace(
+                                    value))),
+
+                    "po" =>
+                        row.PONumber,
+
+                    "purchaser" =>
+                        row.PurchaserName,
+
+                    "processstart" =>
+                        row.ProcessStartDate
+                            ?.ToString(
+                                "yyyy-MM-dd",
+                                CultureInfo.InvariantCulture)
+                        ?? string.Empty,
+
+                    "delivery" =>
+                        row.DeliveryDate
+                            ?.ToString(
+                                "yyyy-MM-dd",
+                                CultureInfo.InvariantCulture)
+                        ?? string.Empty,
+
+                    "owner" =>
+                        row.AssignedDashboard,
+
+                    "process" =>
+                        row.ProcessStatus,
+
+                    "dispatch" =>
+                        row.DispatchStatus,
+
+                    _ =>
+                        string.Empty
+                };
+        }
+
+        private static IEnumerable<
+            ProcessQueueItemDto>
+            ApplyProcessQueueSort(
+                IEnumerable<
+                    ProcessQueueItemDto> rows,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column =
+                NormalizeProcessQueueColumn(
+                    sortColumn);
+
+            var descending =
+                string.Equals(
+                    sortDirection?.Trim(),
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+            if (
+                string.IsNullOrEmpty(
+                    column)
+            )
+            {
+                return rows
+                    .OrderBy(row =>
+                        row.ProcessStartDate ??
+                        row.DeliveryDate)
+                    .ThenByDescending(row =>
+                        row.MaterialId);
+            }
+
+            return (
+                column,
+                descending
+            ) switch
+            {
+                ("material", true) =>
+                    rows
+                        .OrderByDescending(row =>
+                            row.MaterialNo)
+                        .ThenByDescending(row =>
+                            row.MaterialId),
+
+                ("material", false) =>
+                    rows
+                        .OrderBy(row =>
+                            row.MaterialNo)
+                        .ThenBy(row =>
+                            row.MaterialId),
+
+                ("po", true) =>
+                    rows
+                        .OrderByDescending(row =>
+                            row.PONumber)
+                        .ThenByDescending(row =>
+                            row.MaterialId),
+
+                ("po", false) =>
+                    rows
+                        .OrderBy(row =>
+                            row.PONumber)
+                        .ThenBy(row =>
+                            row.MaterialId),
+
+                ("purchaser", true) =>
+                    rows
+                        .OrderByDescending(row =>
+                            row.PurchaserName)
+                        .ThenByDescending(row =>
+                            row.MaterialId),
+
+                ("purchaser", false) =>
+                    rows
+                        .OrderBy(row =>
+                            row.PurchaserName)
+                        .ThenBy(row =>
+                            row.MaterialId),
+
+                ("processstart", true) =>
+                    rows
+                        .OrderByDescending(row =>
+                            row.ProcessStartDate)
+                        .ThenByDescending(row =>
+                            row.MaterialId),
+
+                ("processstart", false) =>
+                    rows
+                        .OrderBy(row =>
+                            row.ProcessStartDate)
+                        .ThenBy(row =>
+                            row.MaterialId),
+
+                ("delivery", true) =>
+                    rows
+                        .OrderByDescending(row =>
+                            row.DeliveryDate)
+                        .ThenByDescending(row =>
+                            row.MaterialId),
+
+                ("delivery", false) =>
+                    rows
+                        .OrderBy(row =>
+                            row.DeliveryDate)
+                        .ThenBy(row =>
+                            row.MaterialId),
+
+                ("owner", true) =>
+                    rows
+                        .OrderByDescending(row =>
+                            row.AssignedDashboard)
+                        .ThenByDescending(row =>
+                            row.MaterialId),
+
+                ("owner", false) =>
+                    rows
+                        .OrderBy(row =>
+                            row.AssignedDashboard)
+                        .ThenBy(row =>
+                            row.MaterialId),
+
+                ("process", true) =>
+                    rows
+                        .OrderByDescending(row =>
+                            row.ProcessStatus)
+                        .ThenByDescending(row =>
+                            row.MaterialId),
+
+                ("process", false) =>
+                    rows
+                        .OrderBy(row =>
+                            row.ProcessStatus)
+                        .ThenBy(row =>
+                            row.MaterialId),
+
+                ("dispatch", true) =>
+                    rows
+                        .OrderByDescending(row =>
+                            row.DispatchStatus)
+                        .ThenByDescending(row =>
+                            row.MaterialId),
+
+                ("dispatch", false) =>
+                    rows
+                        .OrderBy(row =>
+                            row.DispatchStatus)
+                        .ThenBy(row =>
+                            row.MaterialId),
+
+                _ =>
+                    rows
+                        .OrderBy(row =>
+                            row.ProcessStartDate ??
+                            row.DeliveryDate)
+                        .ThenByDescending(row =>
+                            row.MaterialId)
+            };
+        }
+
+        private static string
+            NormalizeProcessQueueColumn(
+                string? column)
+        {
+            return column?
+                .Trim()
+                .ToLowerInvariant() ??
+                string.Empty;
         }
 
         // ============================================================

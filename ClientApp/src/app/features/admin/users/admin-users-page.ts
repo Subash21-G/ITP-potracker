@@ -29,18 +29,26 @@ import {
 import {
   AdminRole,
   AdminUser,
+  AdminUserExcelFilterColumn,
+  AdminUserExcelFilterSelections,
+  AdminUserExcelFilterValue,
+  AdminUserSortDirection,
   AdminUserSummary,
 } from '../../../core/models/admin-api.model';
 
 import {
   AdminApiService,
 } from '../../../core/services/admin-api.service';
+import {
+  ServerExcelFilter,
+} from '../../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-admin-users-page',
   imports: [
     DecimalPipe,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl: './admin-users-page.html',
   styleUrl: '../admin-page.css',
@@ -90,6 +98,48 @@ export class AdminUsersPage {
 
   readonly successMessage =
     signal('');
+
+  readonly sortColumn =
+    signal<
+      AdminUserExcelFilterColumn | null
+    >(
+      null,
+    );
+
+  readonly sortDirection =
+    signal<
+      AdminUserSortDirection | null
+    >(
+      null,
+    );
+
+  readonly excelFilterSelections =
+    signal<
+      AdminUserExcelFilterSelections
+    >(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          AdminUserExcelFilterColumn,
+          readonly AdminUserExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        AdminUserExcelFilterColumn
+      >
+    >(
+      new Set<
+        AdminUserExcelFilterColumn
+      >(),
+    );
 
   constructor() {
     this.load();
@@ -212,6 +262,238 @@ export class AdminUsersPage {
     this.load();
   }
 
+  excelFilterOptionsFor(
+    column:
+      AdminUserExcelFilterColumn,
+  ): readonly AdminUserExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column:
+      AdminUserExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column:
+      AdminUserExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column:
+      AdminUserExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column:
+      AdminUserExcelFilterColumn,
+  ): AdminUserSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column:
+      AdminUserExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    this.api
+      .getUserExcelFilterValues(
+        column,
+        this.serializeExcelFilters(),
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeError(
+              error,
+              'User filter values could not be loaded.',
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column:
+      AdminUserExcelFilterColumn,
+    direction:
+      AdminUserSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.successMessage.set('');
+    this.load();
+  }
+
+  applyExcelFilter(
+    column:
+      AdminUserExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.successMessage.set('');
+    this.load();
+  }
+
+  clearExcelFilter(
+    column:
+      AdminUserExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.successMessage.set('');
+    this.load();
+  }
+
   private load(
     clearMessages = true,
   ): void {
@@ -228,7 +510,13 @@ export class AdminUsersPage {
     }
 
     this.api
-      .getUsers()
+      .getExcelUsers(
+        this.sortColumn() ??
+          undefined,
+        this.sortDirection() ??
+          undefined,
+        this.serializeExcelFilters(),
+      )
       .pipe(
         takeUntilDestroyed(
           this.destroyRef,
@@ -279,6 +567,20 @@ export class AdminUsersPage {
           );
         },
       });
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
   }
 
   private describeError(

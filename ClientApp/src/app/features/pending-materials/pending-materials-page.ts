@@ -1,4 +1,4 @@
-﻿import {
+import {
   DatePipe,
   DecimalPipe,
 } from '@angular/common';
@@ -27,12 +27,19 @@ import {
 } from 'rxjs';
 
 import {
+  PendingMaterialExcelFilterColumn,
+  PendingMaterialExcelFilterSelections,
+  PendingMaterialExcelFilterValue,
   PendingMaterialQuery,
+  PendingMaterialSortDirection,
   PendingMaterialsResponse,
 } from '../../core/models/pending-material-api.model';
 import {
   PendingMaterialApiService,
 } from '../../core/services/pending-material-api.service';
+import {
+  ServerExcelFilter,
+} from '../../shared/server-excel-filter/server-excel-filter';
 
 const EMPTY_RESPONSE: PendingMaterialsResponse = {
   items: [],
@@ -70,6 +77,7 @@ const EMPTY_RESPONSE: PendingMaterialsResponse = {
     DecimalPipe,
     FormsModule,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl:
     './pending-materials-page.html',
@@ -154,6 +162,48 @@ export class PendingMaterialsPage {
 
   columnAssignedDashboard = '';
 
+  readonly sortColumn =
+    signal<
+      PendingMaterialExcelFilterColumn | null
+    >(
+      null,
+    );
+
+  readonly sortDirection =
+    signal<
+      PendingMaterialSortDirection | null
+    >(
+      null,
+    );
+
+  readonly excelFilterSelections =
+    signal<
+      PendingMaterialExcelFilterSelections
+    >(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          PendingMaterialExcelFilterColumn,
+          readonly PendingMaterialExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        PendingMaterialExcelFilterColumn
+      >
+    >(
+      new Set<
+        PendingMaterialExcelFilterColumn
+      >(),
+    );
+
   page = 1;
   pageSize = 25;
 
@@ -227,6 +277,226 @@ export class PendingMaterialsPage {
           );
         },
       });
+  }
+
+  excelFilterOptionsFor(
+    column: PendingMaterialExcelFilterColumn,
+  ): readonly PendingMaterialExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column: PendingMaterialExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column: PendingMaterialExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column: PendingMaterialExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column: PendingMaterialExcelFilterColumn,
+  ): PendingMaterialSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column: PendingMaterialExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    this.api
+      .getExcelFilterValues(
+        this.buildQuery(
+          false,
+        ),
+        column,
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeError(
+              error,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column: PendingMaterialExcelFilterColumn,
+    direction:
+      PendingMaterialSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.load(1);
+  }
+
+  applyExcelFilter(
+    column: PendingMaterialExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.load(1);
+  }
+
+  clearExcelFilter(
+    column: PendingMaterialExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.load(1);
   }
 
   applyFilters(): void {
@@ -485,6 +755,18 @@ export class PendingMaterialsPage {
     this.columnDeliveryDateTo = '';
     this.columnAssignedDashboard = '';
 
+    this.excelFilterSelections.set(
+      {},
+    );
+
+    this.sortColumn.set(
+      null,
+    );
+
+    this.sortDirection.set(
+      null,
+    );
+
     this.load(1);
   }
 
@@ -579,8 +861,9 @@ export class PendingMaterialsPage {
     return 'status status--warning';
   }
 
-  private buildQuery():
-    PendingMaterialQuery {
+  private buildQuery(
+    includePaging = true,
+  ): PendingMaterialQuery {
     return {
       search: this.search,
       poNumber: this.poNumber,
@@ -675,9 +958,41 @@ export class PendingMaterialsPage {
       columnAssignedDashboard:
         this.columnAssignedDashboard,
 
-      page: this.page,
-      pageSize: this.pageSize,
+      sortColumn:
+        this.sortColumn() ??
+        undefined,
+
+      sortDirection:
+        this.sortDirection() ??
+        undefined,
+
+      excelFilters:
+        this.serializeExcelFilters(),
+
+      page:
+        includePaging
+          ? this.page
+          : undefined,
+
+      pageSize:
+        includePaging
+          ? this.pageSize
+          : undefined,
     };
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
   }
 
   private describeError(

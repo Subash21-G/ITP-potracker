@@ -68,12 +68,32 @@ export type PurchaseOrderSortDirection =
   | 'asc'
   | 'desc';
 
+
+export type PurchaseOrderExcelFilterColumn =
+  PurchaseOrderSortColumn;
+
+export interface PurchaseOrderExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type PurchaseOrderExcelFilterSelections =
+  Partial<
+    Record<
+      PurchaseOrderExcelFilterColumn,
+      readonly string[]
+    >
+  >;
+
 export interface PurchaseOrderQuery {
   readonly page: number;
   readonly pageSize: number;
 
   readonly sortColumn?: PurchaseOrderSortColumn;
   readonly sortDirection?: PurchaseOrderSortDirection;
+  readonly excelFilters?: string;
   readonly search?: string;
   readonly handler?: string;
   readonly poDateFrom?: string;

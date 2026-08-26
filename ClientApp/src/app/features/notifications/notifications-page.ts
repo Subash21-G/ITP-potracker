@@ -46,9 +46,13 @@ import {
 } from 'rxjs';
 
 import {
+  NotificationExcelFilterColumn,
+  NotificationExcelFilterSelections,
+  NotificationExcelFilterValue,
   NotificationItem,
   NotificationsPagedResponse,
   NotificationsQuery,
+  NotificationSortDirection,
 } from '../../core/models/notification-api.model';
 
 import {
@@ -58,6 +62,10 @@ import {
 import {
   NotificationApiService,
 } from '../../core/services/notification-api.service';
+
+import {
+  ServerExcelFilter,
+} from '../../shared/server-excel-filter/server-excel-filter';
 
 import {
   ToastService,
@@ -93,6 +101,7 @@ const EMPTY_RESPONSE:
     DecimalPipe,
     ReactiveFormsModule,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl:
     './notifications-page.html',
@@ -227,6 +236,42 @@ export class NotificationsPage {
           'pageSize',
         ),
       ),
+    );
+
+  readonly sortColumn =
+    signal<
+      NotificationExcelFilterColumn | null
+    >(null);
+
+  readonly sortDirection =
+    signal<
+      NotificationSortDirection | null
+    >(null);
+
+  readonly excelFilterSelections =
+    signal<NotificationExcelFilterSelections>(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          NotificationExcelFilterColumn,
+          readonly NotificationExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        NotificationExcelFilterColumn
+      >
+    >(
+      new Set<
+        NotificationExcelFilterColumn
+      >(),
     );
 
   readonly loading =
@@ -403,6 +448,226 @@ export class NotificationsPage {
     this.load();
   }
 
+  excelFilterOptionsFor(
+    column: NotificationExcelFilterColumn,
+  ): readonly NotificationExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column: NotificationExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column: NotificationExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column: NotificationExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column: NotificationExcelFilterColumn,
+  ): NotificationSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column: NotificationExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    this.api
+      .getExcelFilterValues(
+        this.buildQuery(),
+        column,
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeError(
+              error,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column: NotificationExcelFilterColumn,
+    direction: NotificationSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.page.set(1);
+    this.load();
+  }
+
+  applyExcelFilter(
+    column: NotificationExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.load();
+  }
+
+  clearExcelFilter(
+    column: NotificationExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.load();
+  }
+
   load(): void {
     this.requestNotifications.next();
   }
@@ -422,6 +687,10 @@ export class NotificationsPage {
       mobileStatus: 'all',
       columnStatus: 'all',
     });
+
+    this.excelFilterSelections.set(
+      {},
+    );
 
     this.page.set(1);
   }
@@ -729,12 +998,37 @@ export class NotificationsPage {
       columnStatus:
         columnFilters.columnStatus,
 
+      sortColumn:
+        this.sortColumn() ??
+        undefined,
+
+      sortDirection:
+        this.sortDirection() ??
+        undefined,
+
+      excelFilters:
+        this.serializeExcelFilters(),
+
       page:
         this.page(),
 
       pageSize:
         this.pageSize(),
     };
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
   }
 
   private replaceUrlState(): void {

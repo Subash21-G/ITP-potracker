@@ -4,6 +4,7 @@ using POTracker.Contracts.Api;
 using POTracker.Data;
 using POTracker.Models;
 using POTracker.Services;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace POTracker.Controllers.Api
@@ -16,6 +17,23 @@ namespace POTracker.Controllers.Api
         private readonly PendingInvoiceMatcher _pendingInvoiceMatcher;
 
         private readonly PrivateDocumentReferenceService _documentReferences;
+
+        private static readonly HashSet<string>
+            InvoiceExcelFilterColumns =
+                new(
+                    new[]
+                    {
+                        "invoice",
+                        "invoicedate",
+                        "customer",
+                        "items",
+                        "quantity",
+                        "gst",
+                        "amount",
+                        "uploadedfile",
+                        "imported"
+                    },
+                    StringComparer.OrdinalIgnoreCase);
 
         public InvoicesApiController(
             ApplicationDbContext context,
@@ -53,6 +71,7 @@ namespace POTracker.Controllers.Api
             string? uploadedFileName,
             DateTime? importedDateFrom,
             DateTime? importedDateTo,
+            string? excelFilters,
 
             string? sortColumn,
             string? sortDirection,
@@ -63,217 +82,65 @@ namespace POTracker.Controllers.Api
             page = Math.Max(1, page);
             pageSize = Math.Clamp(pageSize, 10, 200);
 
-            var query = _context.Invoices
-                .AsNoTracking()
-                .AsQueryable();
+            var query =
+                ApplyInvoiceFilters(
+                    _context.Invoices
+                        .AsNoTracking()
+                        .AsQueryable(),
+                    search,
+                    dateFrom,
+                    dateTo,
+                    invoiceNumber,
+                    columnInvoiceDateFrom,
+                    columnInvoiceDateTo,
+                    customerName,
+                    minItemCount,
+                    maxItemCount,
+                    minTotalQuantity,
+                    maxTotalQuantity,
+                    minTotalGstAmount,
+                    maxTotalGstAmount,
+                    minTotalAmount,
+                    maxTotalAmount,
+                    uploadedFileName,
+                    importedDateFrom,
+                    importedDateTo);
 
-            if (!string.IsNullOrWhiteSpace(search))
+            var excelFilterSelections =
+                ParseInvoiceExcelFilters(
+                    excelFilters);
+
+            List<InvoiceListItemDto>?
+                excelFilteredRows =
+                    null;
+
+            int totalCount;
+
+            if (
+                excelFilterSelections.Count ==
+                0
+            )
             {
-                var searchValue = search.Trim();
-
-                query = query.Where(invoice =>
-                    invoice.InvoiceNumber.Contains(searchValue) ||
-                    (invoice.CustomerName != null &&
-                     invoice.CustomerName.Contains(searchValue)) ||
-                    (invoice.UploadedFileName != null &&
-                     invoice.UploadedFileName.Contains(searchValue)));
+                totalCount =
+                    await query.CountAsync();
             }
-
-            if (dateFrom.HasValue)
+            else
             {
-                var fromDate = dateFrom.Value.Date;
-
-                query = query.Where(invoice =>
-                    invoice.InvoiceDate.HasValue &&
-                    invoice.InvoiceDate.Value >= fromDate);
-            }
-
-            if (dateTo.HasValue)
-            {
-                var nextDate = dateTo.Value.Date.AddDays(1);
-
-                query = query.Where(invoice =>
-                    invoice.InvoiceDate.HasValue &&
-                    invoice.InvoiceDate.Value < nextDate);
-            }
-
-            if (!string.IsNullOrWhiteSpace(invoiceNumber))
-            {
-                var value = invoiceNumber.Trim();
-
-                query = query.Where(invoice =>
-                    invoice.InvoiceNumber.Contains(value));
-            }
-
-            if (columnInvoiceDateFrom.HasValue)
-            {
-                var fromDate =
-                    columnInvoiceDateFrom.Value.Date;
-
-                query = query.Where(invoice =>
-                    invoice.InvoiceDate.HasValue &&
-                    invoice.InvoiceDate.Value >= fromDate);
-            }
-
-            if (columnInvoiceDateTo.HasValue)
-            {
-                var nextDate =
-                    columnInvoiceDateTo.Value.Date.AddDays(1);
-
-                query = query.Where(invoice =>
-                    invoice.InvoiceDate.HasValue &&
-                    invoice.InvoiceDate.Value < nextDate);
-            }
-
-            if (!string.IsNullOrWhiteSpace(customerName))
-            {
-                var value = customerName.Trim();
-
-                query = query.Where(invoice =>
-                    invoice.CustomerName != null &&
-                    invoice.CustomerName.Contains(value));
-            }
-
-            if (minItemCount.HasValue)
-            {
-                var value =
-                    Math.Max(
-                        0,
-                        minItemCount.Value);
-
-                query = query.Where(invoice =>
-                    invoice.Items.Count >= value);
-            }
-
-            if (maxItemCount.HasValue)
-            {
-                var value =
-                    Math.Max(
-                        0,
-                        maxItemCount.Value);
-
-                query = query.Where(invoice =>
-                    invoice.Items.Count <= value);
-            }
-
-            if (minTotalQuantity.HasValue)
-            {
-                var value =
-                    Math.Max(
-                        0m,
-                        minTotalQuantity.Value);
-
-                query = query.Where(invoice =>
+                excelFilteredRows =
                     (
-                        invoice.Items.Sum(item =>
-                            (decimal?)item.InvoiceQty) ??
-                        0m
-                    ) >= value);
+                        await ProjectInvoiceRows(
+                                query)
+                            .ToListAsync()
+                    )
+                    .Where(row =>
+                        MatchesInvoiceExcelFilters(
+                            row,
+                            excelFilterSelections))
+                    .ToList();
+
+                totalCount =
+                    excelFilteredRows.Count;
             }
-
-            if (maxTotalQuantity.HasValue)
-            {
-                var value =
-                    Math.Max(
-                        0m,
-                        maxTotalQuantity.Value);
-
-                query = query.Where(invoice =>
-                    (
-                        invoice.Items.Sum(item =>
-                            (decimal?)item.InvoiceQty) ??
-                        0m
-                    ) <= value);
-            }
-
-            if (minTotalGstAmount.HasValue)
-            {
-                var value =
-                    Math.Max(
-                        0m,
-                        minTotalGstAmount.Value);
-
-                query = query.Where(invoice =>
-                    (
-                        invoice.Items.Sum(item =>
-                            (decimal?)item.GstAmount) ??
-                        0m
-                    ) >= value);
-            }
-
-            if (maxTotalGstAmount.HasValue)
-            {
-                var value =
-                    Math.Max(
-                        0m,
-                        maxTotalGstAmount.Value);
-
-                query = query.Where(invoice =>
-                    (
-                        invoice.Items.Sum(item =>
-                            (decimal?)item.GstAmount) ??
-                        0m
-                    ) <= value);
-            }
-
-            if (minTotalAmount.HasValue)
-            {
-                var value =
-                    Math.Max(
-                        0m,
-                        minTotalAmount.Value);
-
-                query = query.Where(invoice =>
-                    (
-                        invoice.Items.Sum(item =>
-                            (decimal?)item.Amount) ??
-                        0m
-                    ) >= value);
-            }
-
-            if (maxTotalAmount.HasValue)
-            {
-                var value =
-                    Math.Max(
-                        0m,
-                        maxTotalAmount.Value);
-
-                query = query.Where(invoice =>
-                    (
-                        invoice.Items.Sum(item =>
-                            (decimal?)item.Amount) ??
-                        0m
-                    ) <= value);
-            }
-
-            if (!string.IsNullOrWhiteSpace(uploadedFileName))
-            {
-                var value = uploadedFileName.Trim();
-
-                query = query.Where(invoice =>
-                    invoice.UploadedFileName != null &&
-                    invoice.UploadedFileName.Contains(value));
-            }
-
-            if (importedDateFrom.HasValue)
-            {
-                var fromDate =
-                    importedDateFrom.Value.Date;
-
-                query = query.Where(invoice =>
-                    invoice.CreatedDate >= fromDate);
-            }
-
-            if (importedDateTo.HasValue)
-            {
-                var nextDate =
-                    importedDateTo.Value.Date.AddDays(1);
-
-                query = query.Where(invoice =>
-                    invoice.CreatedDate < nextDate);
-            }
-
-            var totalCount = await query.CountAsync();
 
             var totalPages = Math.Max(
                 1,
@@ -285,35 +152,38 @@ namespace POTracker.Controllers.Api
                 page = totalPages;
             }
 
-            var items =
-                await ApplyInvoiceSort(
-                        query,
-                        sortColumn,
-                        sortDirection)
-                    .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(invoice => new InvoiceListItemDto
-                {
-                    Id = invoice.Id,
-                    InvoiceNumber = invoice.InvoiceNumber,
-                    InvoiceDate = invoice.InvoiceDate,
-                    CustomerName =
-                        invoice.CustomerName ?? string.Empty,
-                    UploadedFileName =
-                        invoice.UploadedFileName ?? string.Empty,
-                    CreatedDate = invoice.CreatedDate,
-                    ItemCount = invoice.Items.Count,
-                    TotalQuantity = invoice.Items
-                        .Sum(item =>
-                            (decimal?)item.InvoiceQty) ?? 0m,
-                    TotalGstAmount = invoice.Items
-                        .Sum(item =>
-                            (decimal?)item.GstAmount) ?? 0m,
-                    TotalAmount = invoice.Items
-                        .Sum(item =>
-                            (decimal?)item.Amount) ?? 0m
-                })
-                .ToListAsync();
+            List<InvoiceListItemDto>
+                items;
+
+            if (excelFilteredRows is null)
+            {
+                items =
+                    await ProjectInvoiceRows(
+                            ApplyInvoiceSort(
+                                query,
+                                sortColumn,
+                                sortDirection))
+                        .Skip(
+                            (page - 1) *
+                            pageSize)
+                        .Take(
+                            pageSize)
+                        .ToListAsync();
+            }
+            else
+            {
+                items =
+                    ApplyInvoiceSortInMemory(
+                            excelFilteredRows,
+                            sortColumn,
+                            sortDirection)
+                        .Skip(
+                            (page - 1) *
+                            pageSize)
+                        .Take(
+                            pageSize)
+                        .ToList();
+            }
 
             var summary = new InvoiceListSummaryDto
             {
@@ -355,6 +225,791 @@ namespace POTracker.Controllers.Api
                 TotalCount = totalCount,
                 TotalPages = totalPages
             });
+        }
+
+        // ============================================================
+        // EXCEL FILTER VALUES
+        // ============================================================
+
+        [HttpGet("excel-filter-values")]
+        [ProducesResponseType(
+            typeof(
+                IReadOnlyList<
+                    ExcelFilterValueDto>),
+            StatusCodes.Status200OK)]
+        public async Task<
+            ActionResult<
+                IReadOnlyList<
+                    ExcelFilterValueDto>>>
+            GetExcelFilterValues(
+                string column,
+                string? search,
+                DateTime? dateFrom,
+                DateTime? dateTo,
+                string? invoiceNumber,
+                DateTime? columnInvoiceDateFrom,
+                DateTime? columnInvoiceDateTo,
+                string? customerName,
+                int? minItemCount,
+                int? maxItemCount,
+                decimal? minTotalQuantity,
+                decimal? maxTotalQuantity,
+                decimal? minTotalGstAmount,
+                decimal? maxTotalGstAmount,
+                decimal? minTotalAmount,
+                decimal? maxTotalAmount,
+                string? uploadedFileName,
+                DateTime? importedDateFrom,
+                DateTime? importedDateTo,
+                string? excelFilters)
+        {
+            var normalizedColumn =
+                column?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            if (
+                !InvoiceExcelFilterColumns
+                    .Contains(
+                        normalizedColumn)
+            )
+            {
+                return BadRequest(
+                    new
+                    {
+                        error =
+                            "Unsupported Invoice Excel filter column."
+                    });
+            }
+
+            var query =
+                ApplyInvoiceFilters(
+                    _context.Invoices
+                        .AsNoTracking()
+                        .AsQueryable(),
+                    search,
+                    dateFrom,
+                    dateTo,
+                    invoiceNumber,
+                    columnInvoiceDateFrom,
+                    columnInvoiceDateTo,
+                    customerName,
+                    minItemCount,
+                    maxItemCount,
+                    minTotalQuantity,
+                    maxTotalQuantity,
+                    minTotalGstAmount,
+                    maxTotalGstAmount,
+                    minTotalAmount,
+                    maxTotalAmount,
+                    uploadedFileName,
+                    importedDateFrom,
+                    importedDateTo);
+
+            var rows =
+                await ProjectInvoiceRows(
+                        query)
+                    .ToListAsync();
+
+            var selections =
+                ParseInvoiceExcelFilters(
+                    excelFilters);
+
+            selections.Remove(
+                normalizedColumn);
+
+            var values =
+                rows
+                    .Where(row =>
+                        MatchesInvoiceExcelFilters(
+                            row,
+                            selections))
+                    .Select(row =>
+                        GetInvoiceExcelCellValue(
+                            row,
+                            normalizedColumn))
+                    .GroupBy(
+                        value =>
+                            value,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group =>
+                        new ExcelFilterValueDto
+                        {
+                            Value =
+                                group.Key,
+
+                            Label =
+                                string.IsNullOrEmpty(
+                                    group.Key)
+                                    ? "(Blank)"
+                                    : group.Key,
+
+                            Count =
+                                group.Count()
+                        })
+                    .OrderBy(
+                        item =>
+                            item.Label,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            return Ok(values);
+        }
+
+        private static IQueryable<Invoice>
+            ApplyInvoiceFilters(
+                IQueryable<Invoice> query,
+                string? search,
+                DateTime? dateFrom,
+                DateTime? dateTo,
+                string? invoiceNumber,
+                DateTime? columnInvoiceDateFrom,
+                DateTime? columnInvoiceDateTo,
+                string? customerName,
+                int? minItemCount,
+                int? maxItemCount,
+                decimal? minTotalQuantity,
+                decimal? maxTotalQuantity,
+                decimal? minTotalGstAmount,
+                decimal? maxTotalGstAmount,
+                decimal? minTotalAmount,
+                decimal? maxTotalAmount,
+                string? uploadedFileName,
+                DateTime? importedDateFrom,
+                DateTime? importedDateTo)
+        {
+            if (
+                !string.IsNullOrWhiteSpace(
+                    search)
+            )
+            {
+                var searchValue =
+                    search.Trim();
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.InvoiceNumber.Contains(
+                                searchValue) ||
+                            (
+                                invoice.CustomerName != null &&
+                                invoice.CustomerName.Contains(
+                                    searchValue)
+                            ) ||
+                            (
+                                invoice.UploadedFileName != null &&
+                                invoice.UploadedFileName.Contains(
+                                    searchValue)
+                            ));
+            }
+
+            if (dateFrom.HasValue)
+            {
+                var fromDate =
+                    dateFrom.Value.Date;
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.InvoiceDate.HasValue &&
+                            invoice.InvoiceDate.Value >=
+                                fromDate);
+            }
+
+            if (dateTo.HasValue)
+            {
+                var nextDate =
+                    dateTo.Value.Date.AddDays(
+                        1);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.InvoiceDate.HasValue &&
+                            invoice.InvoiceDate.Value <
+                                nextDate);
+            }
+
+            if (
+                !string.IsNullOrWhiteSpace(
+                    invoiceNumber)
+            )
+            {
+                var value =
+                    invoiceNumber.Trim();
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.InvoiceNumber.Contains(
+                                value));
+            }
+
+            if (
+                columnInvoiceDateFrom
+                    .HasValue
+            )
+            {
+                var fromDate =
+                    columnInvoiceDateFrom
+                        .Value
+                        .Date;
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.InvoiceDate.HasValue &&
+                            invoice.InvoiceDate.Value >=
+                                fromDate);
+            }
+
+            if (
+                columnInvoiceDateTo
+                    .HasValue
+            )
+            {
+                var nextDate =
+                    columnInvoiceDateTo
+                        .Value
+                        .Date
+                        .AddDays(
+                            1);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.InvoiceDate.HasValue &&
+                            invoice.InvoiceDate.Value <
+                                nextDate);
+            }
+
+            if (
+                !string.IsNullOrWhiteSpace(
+                    customerName)
+            )
+            {
+                var value =
+                    customerName.Trim();
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.CustomerName != null &&
+                            invoice.CustomerName.Contains(
+                                value));
+            }
+
+            if (minItemCount.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0,
+                        minItemCount.Value);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.Items.Count >=
+                                value);
+            }
+
+            if (maxItemCount.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0,
+                        maxItemCount.Value);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.Items.Count <=
+                                value);
+            }
+
+            if (
+                minTotalQuantity.HasValue
+            )
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        minTotalQuantity.Value);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            (
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.InvoiceQty) ??
+                                0m
+                            ) >= value);
+            }
+
+            if (
+                maxTotalQuantity.HasValue
+            )
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        maxTotalQuantity.Value);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            (
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.InvoiceQty) ??
+                                0m
+                            ) <= value);
+            }
+
+            if (
+                minTotalGstAmount.HasValue
+            )
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        minTotalGstAmount.Value);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            (
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.GstAmount) ??
+                                0m
+                            ) >= value);
+            }
+
+            if (
+                maxTotalGstAmount.HasValue
+            )
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        maxTotalGstAmount.Value);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            (
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.GstAmount) ??
+                                0m
+                            ) <= value);
+            }
+
+            if (minTotalAmount.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        minTotalAmount.Value);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            (
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.Amount) ??
+                                0m
+                            ) >= value);
+            }
+
+            if (maxTotalAmount.HasValue)
+            {
+                var value =
+                    Math.Max(
+                        0m,
+                        maxTotalAmount.Value);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            (
+                                invoice.Items.Sum(
+                                    item =>
+                                        (decimal?)
+                                        item.Amount) ??
+                                0m
+                            ) <= value);
+            }
+
+            if (
+                !string.IsNullOrWhiteSpace(
+                    uploadedFileName)
+            )
+            {
+                var value =
+                    uploadedFileName.Trim();
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.UploadedFileName != null &&
+                            invoice.UploadedFileName.Contains(
+                                value));
+            }
+
+            if (importedDateFrom.HasValue)
+            {
+                var fromDate =
+                    importedDateFrom
+                        .Value
+                        .Date;
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.CreatedDate >=
+                                fromDate);
+            }
+
+            if (importedDateTo.HasValue)
+            {
+                var nextDate =
+                    importedDateTo
+                        .Value
+                        .Date
+                        .AddDays(
+                            1);
+
+                query =
+                    query.Where(
+                        invoice =>
+                            invoice.CreatedDate <
+                                nextDate);
+            }
+
+            return query;
+        }
+
+        private static IQueryable<
+            InvoiceListItemDto>
+            ProjectInvoiceRows(
+                IQueryable<Invoice> query)
+        {
+            return query.Select(
+                invoice =>
+                    new InvoiceListItemDto
+                    {
+                        Id =
+                            invoice.Id,
+
+                        InvoiceNumber =
+                            invoice.InvoiceNumber,
+
+                        InvoiceDate =
+                            invoice.InvoiceDate,
+
+                        CustomerName =
+                            invoice.CustomerName ??
+                            string.Empty,
+
+                        UploadedFileName =
+                            invoice.UploadedFileName ??
+                            string.Empty,
+
+                        CreatedDate =
+                            invoice.CreatedDate,
+
+                        ItemCount =
+                            invoice.Items.Count,
+
+                        TotalQuantity =
+                            invoice.Items.Sum(
+                                item =>
+                                    (decimal?)
+                                    item.InvoiceQty) ??
+                            0m,
+
+                        TotalGstAmount =
+                            invoice.Items.Sum(
+                                item =>
+                                    (decimal?)
+                                    item.GstAmount) ??
+                            0m,
+
+                        TotalAmount =
+                            invoice.Items.Sum(
+                                item =>
+                                    (decimal?)
+                                    item.Amount) ??
+                            0m
+                    });
+        }
+
+        private static Dictionary<
+            string,
+            string[]>
+            ParseInvoiceExcelFilters(
+                string? excelFilters)
+        {
+            if (
+                string.IsNullOrWhiteSpace(
+                    excelFilters)
+            )
+            {
+                return new Dictionary<
+                    string,
+                    string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+
+            try
+            {
+                var parsed =
+                    System.Text.Json.JsonSerializer
+                        .Deserialize<
+                            Dictionary<
+                                string,
+                                string[]>>(
+                            excelFilters)
+                    ?? new Dictionary<
+                        string,
+                        string[]>();
+
+                return parsed
+                    .Where(pair =>
+                        InvoiceExcelFilterColumns
+                            .Contains(
+                                pair.Key))
+                    .ToDictionary(
+                        pair =>
+                            pair.Key
+                                .Trim()
+                                .ToLowerInvariant(),
+                        pair =>
+                            pair.Value ??
+                            Array.Empty<string>(),
+                        StringComparer.OrdinalIgnoreCase);
+            }
+            catch (
+                System.Text.Json.JsonException)
+            {
+                return new Dictionary<
+                    string,
+                    string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private static bool
+            MatchesInvoiceExcelFilters(
+                InvoiceListItemDto row,
+                IReadOnlyDictionary<
+                    string,
+                    string[]> selections)
+        {
+            foreach (
+                var pair in selections)
+            {
+                var selectedValues =
+                    pair.Value ??
+                    Array.Empty<string>();
+
+                if (
+                    selectedValues.Length ==
+                    0
+                )
+                {
+                    return false;
+                }
+
+                var cellValue =
+                    GetInvoiceExcelCellValue(
+                        row,
+                        pair.Key);
+
+                if (
+                    !selectedValues.Any(
+                        selected =>
+                            string.Equals(
+                                selected,
+                                cellValue,
+                                StringComparison.OrdinalIgnoreCase))
+                )
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string
+            GetInvoiceExcelCellValue(
+                InvoiceListItemDto row,
+                string column)
+        {
+            var normalized =
+                column
+                    .Trim()
+                    .ToLowerInvariant();
+
+            return normalized switch
+            {
+                "invoice" =>
+                    row.InvoiceNumber,
+
+                "invoicedate" =>
+                    row.InvoiceDate
+                        ?.ToString(
+                            "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture)
+                    ?? string.Empty,
+
+                "customer" =>
+                    row.CustomerName,
+
+                "items" =>
+                    row.ItemCount
+                        .ToString(
+                            CultureInfo.InvariantCulture),
+
+                "quantity" =>
+                    row.TotalQuantity
+                        .ToString(
+                            "0.###",
+                            CultureInfo.InvariantCulture),
+
+                "gst" =>
+                    row.TotalGstAmount
+                        .ToString(
+                            "0.##",
+                            CultureInfo.InvariantCulture),
+
+                "amount" =>
+                    row.TotalAmount
+                        .ToString(
+                            "0.##",
+                            CultureInfo.InvariantCulture),
+
+                "uploadedfile" =>
+                    row.UploadedFileName,
+
+                "imported" =>
+                    row.CreatedDate
+                        .ToString(
+                            "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture),
+
+                _ =>
+                    string.Empty
+            };
+        }
+
+        private static IOrderedEnumerable<
+            InvoiceListItemDto>
+            ApplyInvoiceSortInMemory(
+                IEnumerable<
+                    InvoiceListItemDto> rows,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column =
+                sortColumn?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            var descending =
+                string.Equals(
+                    sortDirection?.Trim(),
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+            if (
+                string.IsNullOrEmpty(
+                    column)
+            )
+            {
+                return rows
+                    .OrderByDescending(
+                        row =>
+                            row.InvoiceDate)
+                    .ThenByDescending(
+                        row =>
+                            row.CreatedDate)
+                    .ThenByDescending(
+                        row =>
+                            row.Id);
+            }
+
+            Func<
+                InvoiceListItemDto,
+                object?> selector =
+                column switch
+                {
+                    "invoice" =>
+                        row =>
+                            row.InvoiceNumber,
+
+                    "invoicedate" =>
+                        row =>
+                            row.InvoiceDate,
+
+                    "customer" =>
+                        row =>
+                            row.CustomerName,
+
+                    "items" =>
+                        row =>
+                            row.ItemCount,
+
+                    "quantity" =>
+                        row =>
+                            row.TotalQuantity,
+
+                    "gst" =>
+                        row =>
+                            row.TotalGstAmount,
+
+                    "amount" =>
+                        row =>
+                            row.TotalAmount,
+
+                    "uploadedfile" =>
+                        row =>
+                            row.UploadedFileName,
+
+                    "imported" =>
+                        row =>
+                            row.CreatedDate,
+
+                    _ =>
+                        row =>
+                            row.InvoiceDate
+                };
+
+            return descending
+                ? rows
+                    .OrderByDescending(
+                        selector)
+                    .ThenByDescending(
+                        row =>
+                            row.Id)
+                : rows
+                    .OrderBy(
+                        selector)
+                    .ThenBy(
+                        row =>
+                            row.Id);
         }
 
         private static IOrderedQueryable<Invoice>

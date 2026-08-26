@@ -8,10 +8,75 @@ namespace POTracker.Controllers.Api
     public sealed partial class InvoicesApiController
     {
         [HttpGet("export-excel")]
-        public async Task<IActionResult> ExportExcel()
+        public async Task<IActionResult> ExportExcel(
+            string? search,
+            DateTime? dateFrom,
+            DateTime? dateTo,
+            string? invoiceNumber,
+            DateTime? columnInvoiceDateFrom,
+            DateTime? columnInvoiceDateTo,
+            string? customerName,
+            int? minItemCount,
+            int? maxItemCount,
+            decimal? minTotalQuantity,
+            decimal? maxTotalQuantity,
+            decimal? minTotalGstAmount,
+            decimal? maxTotalGstAmount,
+            decimal? minTotalAmount,
+            decimal? maxTotalAmount,
+            string? uploadedFileName,
+            DateTime? importedDateFrom,
+            DateTime? importedDateTo,
+            string? excelFilters)
         {
+            var invoiceQuery =
+                ApplyInvoiceFilters(
+                    _context.Invoices
+                        .AsNoTracking()
+                        .AsQueryable(),
+                    search,
+                    dateFrom,
+                    dateTo,
+                    invoiceNumber,
+                    columnInvoiceDateFrom,
+                    columnInvoiceDateTo,
+                    customerName,
+                    minItemCount,
+                    maxItemCount,
+                    minTotalQuantity,
+                    maxTotalQuantity,
+                    minTotalGstAmount,
+                    maxTotalGstAmount,
+                    minTotalAmount,
+                    maxTotalAmount,
+                    uploadedFileName,
+                    importedDateFrom,
+                    importedDateTo);
+
+            var invoiceRows =
+                await ProjectInvoiceRows(
+                        invoiceQuery)
+                    .ToListAsync();
+
+            var excelFilterSelections =
+                ParseInvoiceExcelFilters(
+                    excelFilters);
+
+            var invoiceIds =
+                invoiceRows
+                    .Where(row =>
+                        MatchesInvoiceExcelFilters(
+                            row,
+                            excelFilterSelections))
+                    .Select(row =>
+                        row.Id)
+                    .ToHashSet();
+
             var invoices = await _context.Invoices
                 .AsNoTracking()
+                .Where(invoice =>
+                    invoiceIds.Contains(
+                        invoice.Id))
                 .OrderByDescending(x => x.InvoiceDate)
                 .ThenByDescending(x => x.CreatedDate)
                 .ToListAsync();
@@ -27,6 +92,9 @@ namespace POTracker.Controllers.Api
 
             var invoiceItems = await _context.InvoiceItems
                 .AsNoTracking()
+                .Where(item =>
+                    invoiceIds.Contains(
+                        item.InvoiceId))
                 .OrderBy(x => x.InvoiceId)
                 .ThenBy(x => x.PONumber)
                 .ThenBy(x => x.LineItem)
@@ -37,7 +105,9 @@ namespace POTracker.Controllers.Api
                 await _context.PendingInvoiceItems
                     .AsNoTracking()
                     .Where(x =>
-                        x.Status == "Pending")
+                        x.Status == "Pending" &&
+                        invoiceIds.Contains(
+                            x.InvoiceId))
                     .OrderBy(x =>
                         x.InvoiceId)
                     .ThenBy(x =>

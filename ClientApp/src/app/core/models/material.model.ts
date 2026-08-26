@@ -55,9 +55,30 @@ export type MaterialSortColumn =
   | 'materialValue'
   | 'dispatched'
   | 'pending'
+  | 'allocatedLive'
+  | 'shortage'
+  | 'stock'
   | 'process'
   | 'dispatch'
   | 'delivery';
+
+export type MaterialExcelFilterColumn =
+  MaterialSortColumn;
+
+export interface MaterialExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type MaterialExcelFilterSelections =
+  Partial<
+    Record<
+      MaterialExcelFilterColumn,
+      readonly string[]
+    >
+  >;
 
 export type MaterialSortDirection =
   | 'asc'
@@ -69,6 +90,7 @@ export interface MaterialQuery {
 
   readonly sortColumn?: MaterialSortColumn;
   readonly sortDirection?: MaterialSortDirection;
+  readonly excelFilters?: string;
 
   readonly search?: string;
   readonly poNumber?: string;

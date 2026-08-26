@@ -50,12 +50,21 @@ import {
 } from '../../core/models/insights-api.model';
 
 import {
+  AuditExcelFilterColumn,
+  AuditExcelFilterSelections,
+  AuditExcelFilterValue,
   AuditQuery,
+  AuditSortColumn,
+  AuditSortDirection,
 } from '../../core/models/audit-api.model';
 
 import {
   AuditApiService,
 } from '../../core/services/audit-api.service';
+
+import {
+  ServerExcelFilter,
+} from '../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-audit-page',
@@ -64,6 +73,7 @@ import {
     DecimalPipe,
     ReactiveFormsModule,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl:
     './audit-page.html',
@@ -160,6 +170,8 @@ export class AuditPage {
         ),
     });
 
+  // Preserve old deep-link query parameters even though the
+  // visible header menus now use the shared Excel component.
   readonly columnFilters =
     new FormGroup({
       createdDateFrom:
@@ -272,6 +284,58 @@ export class AuditPage {
       ),
     );
 
+  readonly sortColumn =
+    signal<
+      AuditSortColumn | null
+    >(
+      this.parseSortColumn(
+        this.initialParams.get(
+          'sortColumn',
+        ),
+      ),
+    );
+
+  readonly sortDirection =
+    signal<
+      AuditSortDirection | null
+    >(
+      this.parseSortDirection(
+        this.initialParams.get(
+          'sortDirection',
+        ),
+      ),
+    );
+
+  readonly excelFilterSelections =
+    signal<AuditExcelFilterSelections>(
+      this.parseExcelFilters(
+        this.initialParams.get(
+          'excelFilters',
+        ),
+      ),
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          AuditExcelFilterColumn,
+          readonly AuditExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        AuditExcelFilterColumn
+      >
+    >(
+      new Set<
+        AuditExcelFilterColumn
+      >(),
+    );
+
   readonly totalCount =
     signal(0);
 
@@ -378,7 +442,7 @@ export class AuditPage {
               )
               .pipe(
                 tap(
-                  (response) => {
+                  response => {
                     this.items.set(
                       response.items,
                     );
@@ -467,124 +531,220 @@ export class AuditPage {
     this.load();
   }
 
-  applyColumnFilter(
-    filter: HTMLDetailsElement,
-  ): void {
-    filter.open = false;
-    this.page.set(1);
-    this.load();
+  excelFilterOptionsFor(
+    column: AuditExcelFilterColumn,
+  ): readonly AuditExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
   }
 
-  clearColumnFilter(
-    column:
-      | 'date'
-      | 'material'
-      | 'po'
-      | 'action'
-      | 'process'
-      | 'dispatch'
-      | 'owner',
-    filter: HTMLDetailsElement,
-  ): void {
-    switch (column) {
-      case 'date':
-        this.columnFilters.patchValue({
-          createdDateFrom: '',
-          createdDateTo: '',
-        });
-        break;
-
-      case 'material':
-        this.columnFilters.controls
-          .materialNo.setValue('');
-        break;
-
-      case 'po':
-        this.columnFilters.controls
-          .poNumber.setValue('');
-        break;
-
-      case 'action':
-        this.columnFilters.controls
-          .action.setValue('');
-        break;
-
-      case 'process':
-        this.columnFilters.controls
-          .columnProcessStatus
-          .setValue('');
-        break;
-
-      case 'dispatch':
-        this.columnFilters.controls
-          .columnDispatchStatus
-          .setValue('');
-        break;
-
-      case 'owner':
-        this.columnFilters.controls
-          .columnOwner.setValue('');
-        break;
-    }
-
-    filter.open = false;
-    this.page.set(1);
-    this.load();
+  excelFilterSelectedValues(
+    column: AuditExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
   }
 
-  columnFilterActive(
-    column:
-      | 'date'
-      | 'material'
-      | 'po'
-      | 'action'
-      | 'process'
-      | 'dispatch'
-      | 'owner',
+  excelFilterActive(
+    column: AuditExcelFilterColumn,
   ): boolean {
-    const value =
-      this.columnFilters
-        .getRawValue();
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
 
-    switch (column) {
-      case 'date':
-        return Boolean(
-          value.createdDateFrom ||
-          value.createdDateTo,
-        );
+  excelFilterLoading(
+    column: AuditExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
 
-      case 'material':
-        return Boolean(
-          value.materialNo.trim(),
-        );
+  excelSortDirection(
+    column: AuditExcelFilterColumn,
+  ): AuditSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
 
-      case 'po':
-        return Boolean(
-          value.poNumber.trim(),
-        );
-
-      case 'action':
-        return Boolean(
-          value.action.trim(),
-        );
-
-      case 'process':
-        return Boolean(
-          value.columnProcessStatus,
-        );
-
-      case 'dispatch':
-        return Boolean(
-          value.columnDispatchStatus,
-        );
-
-      case 'owner':
-        return Boolean(
-          value.columnOwner.trim(),
-        );
+  loadExcelFilterValues(
+    column: AuditExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
     }
 
-    return false;
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    this.api
+      .getAuditExcelFilterValues(
+        this.buildQuery(),
+        column,
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeError(
+              error,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column: AuditExcelFilterColumn,
+    direction: AuditSortDirection,
+  ): void {
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.page.set(1);
+    this.load();
+  }
+
+  applyExcelFilter(
+    column: AuditExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.load();
+  }
+
+  clearExcelFilter(
+    column: AuditExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.load();
   }
 
   refresh(): void {
@@ -616,6 +776,18 @@ export class AuditPage {
       {
         emitEvent: false,
       },
+    );
+
+    this.sortColumn.set(
+      null,
+    );
+
+    this.sortDirection.set(
+      null,
+    );
+
+    this.excelFilterSelections.set(
+      {},
     );
 
     this.page.set(1);
@@ -701,11 +873,36 @@ export class AuditPage {
 
       ...columnValue,
 
+      sortColumn:
+        this.sortColumn() ??
+        undefined,
+
+      sortDirection:
+        this.sortDirection() ??
+        undefined,
+
+      excelFilters:
+        this.serializeExcelFilters(),
+
       page:
         this.page(),
       pageSize:
         this.pageSize(),
     };
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
   }
 
   private replaceUrlState(): void {
@@ -776,6 +973,18 @@ export class AuditPage {
               query.createdDateTo ||
               null,
 
+            sortColumn:
+              query.sortColumn ||
+              null,
+
+            sortDirection:
+              query.sortDirection ||
+              null,
+
+            excelFilters:
+              query.excelFilters ||
+              null,
+
             page:
               query.page > 1
                 ? query.page
@@ -825,6 +1034,109 @@ export class AuditPage {
       parsed === 100
       ? parsed
       : 25;
+  }
+
+  private parseSortColumn(
+    value:
+      | string
+      | null,
+  ): AuditSortColumn | null {
+    return this.isExcelColumn(
+      value,
+    )
+      ? value
+      : null;
+  }
+
+  private parseSortDirection(
+    value:
+      | string
+      | null,
+  ): AuditSortDirection | null {
+    return value === 'asc' ||
+      value === 'desc'
+      ? value
+      : null;
+  }
+
+  private parseExcelFilters(
+    value:
+      | string
+      | null,
+  ): AuditExcelFilterSelections {
+    if (!value) {
+      return {};
+    }
+
+    try {
+      const parsed:
+        unknown =
+        JSON.parse(
+          value,
+        );
+
+      if (
+        typeof parsed !==
+          'object' ||
+        parsed === null ||
+        Array.isArray(
+          parsed,
+        )
+      ) {
+        return {};
+      }
+
+      const selections:
+        AuditExcelFilterSelections =
+        {};
+
+      for (
+        const [
+          key,
+          rawValues,
+        ] of Object.entries(
+          parsed,
+        )
+      ) {
+        if (
+          !this.isExcelColumn(
+            key,
+          ) ||
+          !Array.isArray(
+            rawValues,
+          )
+        ) {
+          continue;
+        }
+
+        selections[key] =
+          rawValues.filter(
+            (
+              item,
+            ): item is string =>
+              typeof item ===
+              'string',
+          );
+      }
+
+      return selections;
+    } catch {
+      return {};
+    }
+  }
+
+  private isExcelColumn(
+    value:
+      | string
+      | null,
+  ): value is AuditExcelFilterColumn {
+    return value === 'date' ||
+      value === 'material' ||
+      value === 'po' ||
+      value === 'action' ||
+      value === 'process' ||
+      value === 'dispatch' ||
+      value === 'owner';
   }
 
   private describeError(

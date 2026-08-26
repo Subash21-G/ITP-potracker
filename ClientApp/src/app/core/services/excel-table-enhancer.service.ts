@@ -56,6 +56,19 @@ export class ExcelTableEnhancerService
     HTMLDivElement | null =
       null;
 
+  private activeMenuButton:
+    HTMLButtonElement | null =
+      null;
+
+  private positionFrame:
+    number | null =
+      null;
+
+  private readonly viewportChangeHandler =
+    (): void => {
+      this.scheduleActiveMenuPosition();
+    };
+
   private readonly states =
     new WeakMap<
       HTMLTableElement,
@@ -115,6 +128,18 @@ export class ExcelTableEnhancerService
       this.documentClickHandler,
       true,
     );
+
+    this.document.addEventListener(
+      'scroll',
+      this.viewportChangeHandler,
+      true,
+    );
+
+    this.document.defaultView
+      ?.addEventListener(
+        'resize',
+        this.viewportChangeHandler,
+      );
   }
 
   ngOnDestroy(): void {
@@ -126,6 +151,18 @@ export class ExcelTableEnhancerService
       this.documentClickHandler,
       true,
     );
+
+    this.document.removeEventListener(
+      'scroll',
+      this.viewportChangeHandler,
+      true,
+    );
+
+    this.document.defaultView
+      ?.removeEventListener(
+        'resize',
+        this.viewportChangeHandler,
+      );
 
     this.closeMenu();
   }
@@ -587,7 +624,7 @@ export class ExcelTableEnhancerService
       'po-excel-filter-sort-button po-excel-filter-sort-asc';
 
     ascending.textContent =
-      `â†‘ ${sortLabels.ascending}`;
+      `\u2191 ${sortLabels.ascending}`;
 
     ascending.classList.toggle(
       'po-excel-filter-sort-button--active',
@@ -626,7 +663,7 @@ export class ExcelTableEnhancerService
       'po-excel-filter-sort-button po-excel-filter-sort-desc';
 
     descending.textContent =
-      `â†“ ${sortLabels.descending}`;
+      `\u2193 ${sortLabels.descending}`;
 
     descending.classList.toggle(
       'po-excel-filter-sort-button--active',
@@ -1063,15 +1100,75 @@ export class ExcelTableEnhancerService
       menu,
     );
 
+    this.activeMenu =
+      menu;
+
+    this.activeMenuButton =
+      button;
+
     this.positionMenu(
       menu,
       button,
     );
 
-    this.activeMenu =
-      menu;
-
     search.focus();
+  }
+
+  private scheduleActiveMenuPosition(): void {
+    const menu =
+      this.activeMenu;
+
+    const button =
+      this.activeMenuButton;
+
+    if (
+      !menu ||
+      !button
+    ) {
+      return;
+    }
+
+    const ownerWindow =
+      this.document.defaultView;
+
+    if (
+      !ownerWindow ||
+      typeof ownerWindow
+        .requestAnimationFrame !==
+        'function'
+    ) {
+      this.positionMenu(
+        menu,
+        button,
+      );
+      return;
+    }
+
+    if (
+      this.positionFrame !==
+      null
+    ) {
+      return;
+    }
+
+    this.positionFrame =
+      ownerWindow
+        .requestAnimationFrame(
+          () => {
+            this.positionFrame =
+              null;
+
+            if (
+              this.activeMenu &&
+              this.activeMenuButton
+            ) {
+              this.positionMenu(
+                this.activeMenu,
+                this.activeMenuButton,
+              );
+            }
+          },
+        );
   }
 
   private positionMenu(
@@ -1081,59 +1178,179 @@ export class ExcelTableEnhancerService
     const rect =
       button.getBoundingClientRect();
 
-    const menuWidth =
-      320;
+    const documentElement =
+      this.document
+        .documentElement;
 
-    const menuHeight =
-      500;
+    const ownerWindow =
+      this.document
+        .defaultView;
 
     const viewportWidth =
-      this.document
-        .documentElement
-        .clientWidth;
+      ownerWindow?.innerWidth ??
+      documentElement.clientWidth;
 
     const viewportHeight =
-      this.document
-        .documentElement
-        .clientHeight;
+      ownerWindow?.innerHeight ??
+      documentElement.clientHeight;
 
-    const left =
+    const margin = 10;
+    const gap = 7;
+    const preferredMaximumHeight =
+      500;
+
+    /*
+     * Clear the previous inline limit before measuring.
+     * CSS still provides the normal 500px upper bound.
+     */
+    menu.style.maxHeight =
+      '';
+
+    const initialRect =
+      menu.getBoundingClientRect();
+
+    const menuWidth =
+      initialRect.width > 0
+        ? initialRect.width
+        : 320;
+
+    /*
+     * Horizontal behavior:
+     * - open from the trigger's left edge
+     * - flip left near the right viewport edge
+     * - clamp both sides inside the viewport
+     */
+    const maximumLeft =
       Math.max(
-        10,
-        Math.min(
-          rect.left,
-          viewportWidth -
-            menuWidth -
-            10,
-        ),
+        margin,
+        viewportWidth -
+          margin -
+          menuWidth,
       );
 
-    const preferredTop =
-      rect.bottom +
-      7;
+    let left =
+      rect.left;
+
+    if (
+      left + menuWidth >
+      viewportWidth - margin
+    ) {
+      left =
+        rect.right -
+        menuWidth;
+    }
+
+    left =
+      Math.min(
+        Math.max(
+          margin,
+          left,
+        ),
+        maximumLeft,
+      );
+
+    /*
+     * Measure the real popup content.
+     * The old implementation always assumed 500px,
+     * even when padding / borders made the popup taller.
+     */
+    const naturalHeight =
+      Math.min(
+        Math.max(
+          menu.scrollHeight,
+          initialRect.height,
+        ),
+        preferredMaximumHeight,
+      );
+
+    const spaceBelow =
+      Math.max(
+        0,
+        viewportHeight -
+          rect.bottom -
+          gap -
+          margin,
+      );
+
+    const spaceAbove =
+      Math.max(
+        0,
+        rect.top -
+          gap -
+          margin,
+      );
+
+    /*
+     * Prefer downward when it fits.
+     * Otherwise use whichever side has more room.
+     */
+    const openBelow =
+      spaceBelow >= naturalHeight ||
+      spaceBelow >= spaceAbove;
+
+    const availableSpace =
+      Math.max(
+        1,
+        openBelow
+          ? spaceBelow
+          : spaceAbove,
+      );
+
+    const maxHeight =
+      Math.min(
+        preferredMaximumHeight,
+        availableSpace,
+      );
+
+    /*
+     * The popup itself becomes scrollable when space
+     * is limited, keeping Clear / Apply reachable.
+     */
+    menu.style.maxHeight =
+      String(
+        Math.floor(maxHeight),
+      ) + 'px';
+
+    const renderedHeight =
+      Math.min(
+        menu.getBoundingClientRect()
+          .height,
+        maxHeight,
+      );
+
+    let top =
+      openBelow
+        ? rect.bottom + gap
+        : rect.top -
+          gap -
+          renderedHeight;
 
     const maximumTop =
       Math.max(
-        10,
+        margin,
         viewportHeight -
-          menuHeight -
-          10,
+          margin -
+          renderedHeight,
       );
 
-    const top =
-      Math.max(
-        10,
-        Math.min(
-          preferredTop,
-          maximumTop,
+    top =
+      Math.min(
+        Math.max(
+          margin,
+          top,
         ),
+        maximumTop,
       );
 
     menu.style.left =
-      `${left}px`;
+      String(
+        Math.round(left),
+      ) + 'px';
 
     menu.style.top =
-      `${top}px`;
+      String(
+        Math.round(top),
+      ) + 'px';
   }
 
   private detectSortKind(
@@ -1847,7 +2064,32 @@ button.setAttribute(
   }
 
   private closeMenu(): void {
+    const ownerWindow =
+      this.document.defaultView;
+
+    if (
+      this.positionFrame !==
+      null &&
+      ownerWindow &&
+      typeof ownerWindow
+        .cancelAnimationFrame ===
+        'function'
+    ) {
+      ownerWindow
+        .cancelAnimationFrame(
+          this.positionFrame,
+        );
+    }
+
+    this.positionFrame =
+      null;
+
     this.activeMenu?.remove();
-    this.activeMenu = null;
+
+    this.activeMenu =
+      null;
+
+    this.activeMenuButton =
+      null;
   }
 }

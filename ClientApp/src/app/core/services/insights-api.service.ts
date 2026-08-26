@@ -13,6 +13,8 @@ import {
 import {
   AnalyticsResponse,
   AuditResponse,
+  DrawingExcelFilterColumn,
+  DrawingExcelFilterValue,
   DrawingListQuery,
   DrawingListResponse,
 } from '../models/insights-api.model';
@@ -71,6 +73,18 @@ export class InsightsApiService {
           'columnStatus',
           query.columnStatus,
         ],
+        [
+          'sortColumn',
+          query.sortColumn,
+        ],
+        [
+          'sortDirection',
+          query.sortDirection,
+        ],
+        [
+          'excelFilters',
+          query.excelFilters,
+        ],
       ];
 
     for (
@@ -93,6 +107,87 @@ export class InsightsApiService {
 
     return this.http.get<DrawingListResponse>(
       '/api/drawings',
+      {
+        params,
+        withCredentials: true,
+      },
+    );
+  }
+
+  getDrawingExcelFilterValues(
+    query: DrawingListQuery,
+    column: DrawingExcelFilterColumn,
+  ): Observable<
+    readonly DrawingExcelFilterValue[]
+  > {
+    let params =
+      new HttpParams()
+        .set(
+          'column',
+          column,
+        );
+
+    const optionalValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['status', query.status],
+        ['material', query.material],
+        ['poNumber', query.poNumber],
+        [
+          'drawingVersion',
+          query.drawingVersion,
+        ],
+        [
+          'updatedDateFrom',
+          query.updatedDateFrom,
+        ],
+        [
+          'updatedDateTo',
+          query.updatedDateTo,
+        ],
+        [
+          'drawingAvailability',
+          query.drawingAvailability,
+        ],
+        [
+          'pdfAvailability',
+          query.pdfAvailability,
+        ],
+        [
+          'columnStatus',
+          query.columnStatus,
+        ],
+        [
+          'excelFilters',
+          query.excelFilters,
+        ],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      const cleaned =
+        value?.trim();
+
+      if (cleaned) {
+        params =
+          params.set(
+            name,
+            cleaned,
+          );
+      }
+    }
+
+    return this.http.get<
+      readonly DrawingExcelFilterValue[]
+    >(
+      '/api/drawings/excel-filter-values',
       {
         params,
         withCredentials: true,

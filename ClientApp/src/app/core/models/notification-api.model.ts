@@ -11,6 +11,36 @@ export interface NotificationItem {
   readonly isSentToMobile: boolean;
 }
 
+export type NotificationSortColumn =
+  | 'type'
+  | 'material'
+  | 'message'
+  | 'alertDate'
+  | 'mobile'
+  | 'status';
+
+export type NotificationSortDirection =
+  | 'asc'
+  | 'desc';
+
+export type NotificationExcelFilterColumn =
+  NotificationSortColumn;
+
+export interface NotificationExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type NotificationExcelFilterSelections =
+  Partial<
+    Record<
+      NotificationExcelFilterColumn,
+      readonly string[]
+    >
+  >;
+
 export interface NotificationSummary {
   readonly totalAlerts: number;
   readonly unreadCount: number;
@@ -42,6 +72,10 @@ export interface NotificationsQuery {
     | 'all'
     | 'unread'
     | 'read';
+
+  readonly sortColumn?: NotificationSortColumn;
+  readonly sortDirection?: NotificationSortDirection;
+  readonly excelFilters?: string;
 
   readonly page: number;
   readonly pageSize: number;

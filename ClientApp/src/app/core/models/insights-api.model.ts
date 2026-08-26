@@ -26,6 +26,37 @@ export interface DrawingListResponse {
   readonly totalPages: number;
 }
 
+export type DrawingSortColumn =
+  | 'material'
+  | 'po'
+  | 'version'
+  | 'updated'
+  | 'drawing'
+  | 'pdf'
+  | 'status';
+
+export type DrawingSortDirection =
+  | 'asc'
+  | 'desc';
+
+export type DrawingExcelFilterColumn =
+  DrawingSortColumn;
+
+export interface DrawingExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type DrawingExcelFilterSelections =
+  Partial<
+    Record<
+      DrawingExcelFilterColumn,
+      readonly string[]
+    >
+  >;
+
 export interface DrawingListQuery {
   readonly search: string;
   readonly status: string;
@@ -40,6 +71,10 @@ export interface DrawingListQuery {
   readonly drawingAvailability?: string;
   readonly pdfAvailability?: string;
   readonly columnStatus?: string;
+
+  readonly sortColumn?: DrawingSortColumn;
+  readonly sortDirection?: DrawingSortDirection;
+  readonly excelFilters?: string;
 
   readonly page: number;
   readonly pageSize: number;

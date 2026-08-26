@@ -1,7 +1,12 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { AlertsPagedResponse, AlertsQuery } from '../models/alert-api.model';
+import {
+  AlertExcelFilterColumn,
+  AlertExcelFilterValue,
+  AlertsPagedResponse,
+  AlertsQuery,
+} from '../models/alert-api.model';
 
 @Injectable({ providedIn: 'root' })
 export class AlertApiService {
@@ -30,6 +35,7 @@ export class AlertApiService {
       ['minLiveStock', query.minLiveStock],
       ['maxLiveStock', query.maxLiveStock],
       ['stockStatus', query.stockStatus],
+      ['excelFilters', query.excelFilters],
     ];
 
     for (const [name, value] of values) {
@@ -43,5 +49,104 @@ export class AlertApiService {
       params,
       withCredentials: true,
     });
+  }
+
+
+  getExcelFilterValues(
+    query: AlertsQuery,
+    column: AlertExcelFilterColumn,
+  ): Observable<
+    readonly AlertExcelFilterValue[]
+  > {
+    let params =
+      new HttpParams()
+        .set(
+          'category',
+          query.category,
+        )
+        .set(
+          'column',
+          column,
+        );
+
+    const values:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['material', query.material],
+        ['description', query.description],
+        [
+          'priorityDateFrom',
+          query.priorityDateFrom,
+        ],
+        [
+          'priorityDateTo',
+          query.priorityDateTo,
+        ],
+        [
+          'deliveryDateFrom',
+          query.deliveryDateFrom,
+        ],
+        [
+          'deliveryDateTo',
+          query.deliveryDateTo,
+        ],
+        [
+          'processStatus',
+          query.processStatus,
+        ],
+        [
+          'dispatchStatus',
+          query.dispatchStatus,
+        ],
+        [
+          'minAllocatedStock',
+          query.minAllocatedStock,
+        ],
+        [
+          'maxAllocatedStock',
+          query.maxAllocatedStock,
+        ],
+        [
+          'minLiveStock',
+          query.minLiveStock,
+        ],
+        [
+          'maxLiveStock',
+          query.maxLiveStock,
+        ],
+        ['stockStatus', query.stockStatus],
+        ['excelFilters', query.excelFilters],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of values
+    ) {
+      const cleaned =
+        value?.trim();
+
+      if (cleaned) {
+        params =
+          params.set(
+            name,
+            cleaned,
+          );
+      }
+    }
+
+    return this.http.get<
+      readonly AlertExcelFilterValue[]
+    >(
+      '/api/alerts/excel-filter-values',
+      {
+        params,
+        withCredentials: true,
+      },
+    );
   }
 }

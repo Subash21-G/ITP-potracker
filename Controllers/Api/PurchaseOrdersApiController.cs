@@ -1,3 +1,4 @@
+using System.Globalization;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,25 @@ namespace POTracker.Controllers.Api
             50,
             100
         };
+
+        private static readonly HashSet<string>
+            PurchaseOrderExcelFilterColumns =
+                new(
+                    new[]
+                    {
+                        "po",
+                        "podate",
+                        "received",
+                        "status",
+                        "materialprogress",
+                        "materials",
+                        "quantity",
+                        "value",
+                        "dispatchbalance",
+                        "delivery",
+                        "pdf"
+                    },
+                    StringComparer.OrdinalIgnoreCase);
 
         private readonly ApplicationDbContext _context;
 
@@ -67,6 +87,7 @@ namespace POTracker.Controllers.Api
                 DateTime? deliveryDateFrom,
                 DateTime? deliveryDateTo,
                 string? pdfAvailability,
+                string? excelFilters,
 
                 string? sortColumn,
                 string? sortDirection,
@@ -121,7 +142,21 @@ namespace POTracker.Controllers.Api
             var summaryRows = await aggregateQuery
                 .ToListAsync(cancellationToken);
 
-            var totalRecords = summaryRows.Count;
+            var excelFilterSelections =
+                ParsePurchaseOrderExcelFilters(
+                    excelFilters);
+
+            var filteredSummaryRows =
+                summaryRows
+                    .Where(row =>
+                        MatchesPurchaseOrderExcelFilters(
+                            row,
+                            excelFilterSelections))
+                    .ToList();
+
+            var totalRecords =
+                filteredSummaryRows.Count;
+
             var totalPages = Math.Max(
                 1,
                 (int)Math.Ceiling(
@@ -132,26 +167,187 @@ namespace POTracker.Controllers.Api
                 page = totalPages;
             }
 
-            var aggregateRows =
-                await ApplyPurchaseOrderSort(
-                        aggregateQuery,
-                        sortColumn,
-                        sortDirection)
-                    .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(cancellationToken);
+            List<PurchaseOrderAggregateRow>
+                aggregateRows;
+
+            if (
+                excelFilterSelections.Count ==
+                0
+            )
+            {
+                aggregateRows =
+                    await ApplyPurchaseOrderSort(
+                            aggregateQuery,
+                            sortColumn,
+                            sortDirection)
+                        .Skip(
+                            (page - 1) *
+                            pageSize)
+                        .Take(
+                            pageSize)
+                        .ToListAsync(
+                            cancellationToken);
+            }
+            else
+            {
+                aggregateRows =
+                    ApplyPurchaseOrderSortInMemory(
+                            filteredSummaryRows,
+                            sortColumn,
+                            sortDirection)
+                        .Skip(
+                            (page - 1) *
+                            pageSize)
+                        .Take(
+                            pageSize)
+                        .ToList();
+            }
 
             return Ok(new PurchaseOrderListResponseDto
             {
                 Items = aggregateRows
                     .Select(MapListItem)
                     .ToList(),
-                Summary = BuildSummary(summaryRows),
+                Summary = BuildSummary(filteredSummaryRows),
                 Handlers = handlers,
                 Page = page,
                 PageSize = pageSize,
                 TotalRecords = totalRecords
             });
+        }
+
+        // ============================================================
+        // EXCEL FILTER VALUES
+        // ============================================================
+
+        [HttpGet("excel-filter-values")]
+        [ProducesResponseType(
+            typeof(
+                IReadOnlyList<
+                    ExcelFilterValueDto>),
+            StatusCodes.Status200OK)]
+        public async Task<
+            ActionResult<
+                IReadOnlyList<
+                    ExcelFilterValueDto>>>
+            GetExcelFilterValues(
+                string column,
+                string? search,
+                string? handler,
+                DateTime? poDateFrom,
+                DateTime? poDateTo,
+                DateTime? poReceivedDateFrom,
+                DateTime? poReceivedDateTo,
+                string? status,
+                string? materialStatus,
+                int? minMaterials,
+                int? maxMaterials,
+                decimal? minPoQuantity,
+                decimal? maxPoQuantity,
+                decimal? minPoValue,
+                decimal? maxPoValue,
+                decimal? minDispatchBalance,
+                decimal? maxDispatchBalance,
+                DateTime? deliveryDateFrom,
+                DateTime? deliveryDateTo,
+                string? pdfAvailability,
+                string? excelFilters,
+                CancellationToken cancellationToken = default)
+        {
+            var normalizedColumn =
+                column?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            if (
+                !PurchaseOrderExcelFilterColumns
+                    .Contains(
+                        normalizedColumn)
+            )
+            {
+                return BadRequest(
+                    new
+                    {
+                        error =
+                            "Unsupported Purchase Order Excel filter column."
+                    });
+            }
+
+            var purchaseOrders =
+                ApplyPurchaseOrderFilters(
+                    _context.PurchaseOrders
+                        .AsNoTracking(),
+                    search,
+                    handler,
+                    poDateFrom,
+                    poDateTo,
+                    poReceivedDateFrom,
+                    poReceivedDateTo);
+
+            var aggregateRows =
+                await ApplyAggregateFilters(
+                        CreateAggregateQuery(
+                            purchaseOrders),
+                        status,
+                        materialStatus,
+                        minMaterials,
+                        maxMaterials,
+                        minPoQuantity,
+                        maxPoQuantity,
+                        minPoValue,
+                        maxPoValue,
+                        minDispatchBalance,
+                        maxDispatchBalance,
+                        deliveryDateFrom,
+                        deliveryDateTo,
+                        pdfAvailability)
+                    .ToListAsync(
+                        cancellationToken);
+
+            var selections =
+                ParsePurchaseOrderExcelFilters(
+                    excelFilters);
+
+            selections.Remove(
+                normalizedColumn);
+
+            var values =
+                aggregateRows
+                    .Where(row =>
+                        MatchesPurchaseOrderExcelFilters(
+                            row,
+                            selections))
+                    .Select(row =>
+                        GetPurchaseOrderExcelCellValue(
+                            row,
+                            normalizedColumn))
+                    .GroupBy(
+                        value =>
+                            value,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group =>
+                        new ExcelFilterValueDto
+                        {
+                            Value =
+                                group.Key,
+
+                            Label =
+                                string.IsNullOrEmpty(
+                                    group.Key)
+                                    ? "(Blank)"
+                                    : group.Key,
+
+                            Count =
+                                group.Count()
+                        })
+                    .OrderBy(
+                        item =>
+                            item.Label,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            return Ok(values);
         }
 
         /// <summary>
@@ -183,6 +379,7 @@ namespace POTracker.Controllers.Api
             DateTime? deliveryDateFrom,
             DateTime? deliveryDateTo,
             string? pdfAvailability,
+            string? excelFilters,
 
             string? sortColumn,
             string? sortDirection,
@@ -221,7 +418,15 @@ namespace POTracker.Controllers.Api
                         sortDirection)
                     .ToListAsync(cancellationToken);
 
+            var excelFilterSelections =
+                ParsePurchaseOrderExcelFilters(
+                    excelFilters);
+
             var rows = aggregateRows
+                .Where(row =>
+                    MatchesPurchaseOrderExcelFilters(
+                        row,
+                        excelFilterSelections))
                 .Select(MapListItem)
                 .ToList();
 
@@ -2075,6 +2280,319 @@ namespace POTracker.Controllers.Api
 
                 overdueCell.Style.Font.Bold = true;
             }
+        }
+
+        private static Dictionary<
+            string,
+            string[]>
+            ParsePurchaseOrderExcelFilters(
+                string? excelFilters)
+        {
+            if (
+                string.IsNullOrWhiteSpace(
+                    excelFilters)
+            )
+            {
+                return new Dictionary<
+                    string,
+                    string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+
+            try
+            {
+                var parsed =
+                    System.Text.Json.JsonSerializer
+                        .Deserialize<
+                            Dictionary<
+                                string,
+                                string[]>>(
+                            excelFilters)
+                    ?? new Dictionary<
+                        string,
+                        string[]>();
+
+                return parsed
+                    .Where(pair =>
+                        PurchaseOrderExcelFilterColumns
+                            .Contains(
+                                pair.Key))
+                    .ToDictionary(
+                        pair =>
+                            pair.Key
+                                .Trim()
+                                .ToLowerInvariant(),
+                        pair =>
+                            pair.Value ??
+                            Array.Empty<string>(),
+                        StringComparer.OrdinalIgnoreCase);
+            }
+            catch (
+                System.Text.Json.JsonException)
+            {
+                return new Dictionary<
+                    string,
+                    string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private static bool
+            MatchesPurchaseOrderExcelFilters(
+                PurchaseOrderAggregateRow row,
+                IReadOnlyDictionary<
+                    string,
+                    string[]> selections)
+        {
+            foreach (
+                var pair in selections)
+            {
+                var selectedValues =
+                    pair.Value ??
+                    Array.Empty<string>();
+
+                if (
+                    selectedValues.Length ==
+                    0
+                )
+                {
+                    return false;
+                }
+
+                var cellValue =
+                    GetPurchaseOrderExcelCellValue(
+                        row,
+                        pair.Key);
+
+                if (
+                    !selectedValues.Any(
+                        selected =>
+                            string.Equals(
+                                selected,
+                                cellValue,
+                                StringComparison.OrdinalIgnoreCase))
+                )
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string
+            GetPurchaseOrderExcelCellValue(
+                PurchaseOrderAggregateRow row,
+                string column)
+        {
+            var normalized =
+                column
+                    .Trim()
+                    .ToLowerInvariant();
+
+            return normalized switch
+            {
+                "po" =>
+                    string.Join(
+                        " | ",
+                        new[]
+                        {
+                            row.PONumber,
+                            row.PurchaserName,
+                            row.Handler
+                        }
+                        .Where(value =>
+                            !string.IsNullOrWhiteSpace(
+                                value))),
+
+                "podate" =>
+                    row.PODate
+                        ?.ToString(
+                            "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture)
+                    ?? string.Empty,
+
+                "received" =>
+                    row.POReceivedDate
+                        ?.ToString(
+                            "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture)
+                    ?? string.Empty,
+
+                "status" =>
+                    GetPurchaseOrderStatus(
+                        row),
+
+                "materialprogress" =>
+                    GetMaterialStatus(
+                        row),
+
+                "materials" =>
+                    row.TotalMaterials
+                        .ToString(
+                            CultureInfo.InvariantCulture),
+
+                "quantity" =>
+                    row.TotalPOQuantity
+                        .ToString(
+                            "0.###",
+                            CultureInfo.InvariantCulture),
+
+                "value" =>
+                    row.TotalMaterialValue
+                        .ToString(
+                            "0.##",
+                            CultureInfo.InvariantCulture),
+
+                "dispatchbalance" =>
+                    row.TotalPendingDispatchQuantity
+                        .ToString(
+                            "0.###",
+                            CultureInfo.InvariantCulture),
+
+                "delivery" =>
+                    GetDeliveryRangeExcelValue(
+                        row),
+
+                "pdf" =>
+                    string.IsNullOrWhiteSpace(
+                        row.PdfFilePath)
+                        ? "Missing"
+                        : "Available",
+
+                _ =>
+                    string.Empty
+            };
+        }
+
+        private static string
+            GetDeliveryRangeExcelValue(
+                PurchaseOrderAggregateRow row)
+        {
+            if (
+                !row.EarliestDeliveryDate
+                    .HasValue &&
+                !row.LatestDeliveryDate
+                    .HasValue
+            )
+            {
+                return string.Empty;
+            }
+
+            var earliest =
+                row.EarliestDeliveryDate
+                    ?.ToString(
+                        "yyyy-MM-dd",
+                        CultureInfo.InvariantCulture)
+                ?? string.Empty;
+
+            var latest =
+                row.LatestDeliveryDate
+                    ?.ToString(
+                        "yyyy-MM-dd",
+                        CultureInfo.InvariantCulture)
+                ?? string.Empty;
+
+            return string.Equals(
+                    earliest,
+                    latest,
+                    StringComparison.Ordinal)
+                ? earliest
+                : $"{earliest} - {latest}";
+        }
+
+        private static IOrderedEnumerable<
+            PurchaseOrderAggregateRow>
+            ApplyPurchaseOrderSortInMemory(
+                IEnumerable<
+                    PurchaseOrderAggregateRow> rows,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column =
+                sortColumn?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            var descending =
+                string.Equals(
+                    sortDirection?.Trim(),
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+            Func<
+                PurchaseOrderAggregateRow,
+                object?> selector =
+                column switch
+                {
+                    "po" =>
+                        row =>
+                            row.PONumber,
+
+                    "podate" =>
+                        row =>
+                            row.PODate,
+
+                    "received" =>
+                        row =>
+                            row.POReceivedDate,
+
+                    "status" =>
+                        row =>
+                            GetPurchaseOrderStatus(
+                                row),
+
+                    "materialprogress" =>
+                        row =>
+                            GetMaterialStatus(
+                                row),
+
+                    "materials" =>
+                        row =>
+                            row.TotalMaterials,
+
+                    "quantity" =>
+                        row =>
+                            row.TotalPOQuantity,
+
+                    "value" =>
+                        row =>
+                            row.TotalMaterialValue,
+
+                    "dispatchbalance" =>
+                        row =>
+                            row.TotalPendingDispatchQuantity,
+
+                    "delivery" =>
+                        row =>
+                            row.EarliestDeliveryDate,
+
+                    "pdf" =>
+                        row =>
+                            string.IsNullOrWhiteSpace(
+                                row.PdfFilePath)
+                                ? 0
+                                : 1,
+
+                    _ =>
+                        row =>
+                            row.PurchaseOrderId
+                };
+
+            return descending
+                ? rows
+                    .OrderByDescending(
+                        selector)
+                    .ThenByDescending(
+                        row =>
+                            row.PurchaseOrderId)
+                : rows
+                    .OrderBy(
+                        selector)
+                    .ThenBy(
+                        row =>
+                            row.PurchaseOrderId);
         }
 
         private static int NormalizePageSize(int pageSize)

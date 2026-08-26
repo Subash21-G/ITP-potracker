@@ -13,6 +13,8 @@ import {
 } from 'rxjs';
 
 import {
+  AuditExcelFilterColumn,
+  AuditExcelFilterValue,
   AuditPagedResponse,
   AuditQuery,
 } from '../models/audit-api.model';
@@ -43,6 +45,8 @@ export class AuditApiService {
         string,
         string | undefined,
       ][] = [
+        ['sortColumn', query.sortColumn],
+        ['sortDirection', query.sortDirection],
         ['search', query.search],
         ['owner', query.owner],
         ['processStatus', query.processStatus],
@@ -69,6 +73,7 @@ export class AuditApiService {
           'createdDateTo',
           query.createdDateTo,
         ],
+        ['excelFilters', query.excelFilters],
       ];
 
     for (
@@ -89,6 +94,86 @@ export class AuditApiService {
       AuditPagedResponse
     >(
       '/api/audit',
+      {
+        params,
+      },
+    );
+  }
+
+  getAuditExcelFilterValues(
+    query: AuditQuery,
+    column: AuditExcelFilterColumn,
+  ): Observable<
+    readonly AuditExcelFilterValue[]
+  > {
+    let params =
+      new HttpParams()
+        .set(
+          'column',
+          column,
+        );
+
+    const optionalValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['owner', query.owner],
+        ['processStatus', query.processStatus],
+        [
+          'dispatchStatus',
+          query.dispatchStatus,
+        ],
+        ['dateFrom', query.dateFrom],
+        ['dateTo', query.dateTo],
+        ['materialNo', query.materialNo],
+        ['poNumber', query.poNumber],
+        ['action', query.action],
+        [
+          'columnProcessStatus',
+          query.columnProcessStatus,
+        ],
+        [
+          'columnDispatchStatus',
+          query.columnDispatchStatus,
+        ],
+        [
+          'columnOwner',
+          query.columnOwner,
+        ],
+        [
+          'createdDateFrom',
+          query.createdDateFrom,
+        ],
+        [
+          'createdDateTo',
+          query.createdDateTo,
+        ],
+        [
+          'excelFilters',
+          query.excelFilters,
+        ],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of optionalValues
+    ) {
+      params =
+        this.addOptional(
+          params,
+          name,
+          value,
+        );
+    }
+
+    return this.http.get<
+      readonly AuditExcelFilterValue[]
+    >(
+      '/api/audit/excel-filter-values',
       {
         params,
       },

@@ -1,4 +1,4 @@
-﻿export interface StockListItem {
+export interface StockListItem {
   readonly id: number;
   readonly materialCode: string;
   readonly materialNo: string;
@@ -13,6 +13,40 @@
   readonly status: string;
   readonly lastUpdated: string | null;
 }
+
+export type StockSortColumn =
+  | 'material'
+  | 'description'
+  | 'supplier'
+  | 'location'
+  | 'current'
+  | 'minimum'
+  | 'unitPrice'
+  | 'totalValue'
+  | 'status'
+  | 'updated';
+
+export type StockSortDirection =
+  | 'asc'
+  | 'desc';
+
+export type StockExcelFilterColumn =
+  StockSortColumn;
+
+export interface StockExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type StockExcelFilterSelections =
+  Partial<
+    Record<
+      StockExcelFilterColumn,
+      readonly string[]
+    >
+  >;
 
 export interface StockSummary {
   readonly totalRecords: number;
@@ -60,6 +94,10 @@ export interface StockListQuery {
 
   readonly updatedFrom?: string;
   readonly updatedTo?: string;
+
+  readonly sortColumn?: StockSortColumn;
+  readonly sortDirection?: StockSortDirection;
+  readonly excelFilters?: string;
 
   readonly page: number;
   readonly pageSize: number;

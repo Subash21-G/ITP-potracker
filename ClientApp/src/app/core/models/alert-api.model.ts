@@ -52,6 +52,24 @@ export type AlertSortDirection =
   | 'asc'
   | 'desc';
 
+export type AlertExcelFilterColumn =
+  AlertSortColumn;
+
+export interface AlertExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type AlertExcelFilterSelections =
+  Partial<
+    Record<
+      AlertExcelFilterColumn,
+      readonly string[]
+    >
+  >;
+
 export interface AlertsQuery {
   readonly category: AlertCategory;
 
@@ -71,6 +89,7 @@ export interface AlertsQuery {
   readonly minLiveStock?: string;
   readonly maxLiveStock?: string;
   readonly stockStatus?: string;
+  readonly excelFilters?: string;
   readonly page: number;
   readonly pageSize: number;
 }

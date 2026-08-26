@@ -126,12 +126,66 @@
       </div>
     } @else if (users().length > 0) {
       <div class="table-scroll">
-        <table data-excel-filter-mode="local">
-          <thead>
+        <table>
+                    <thead>
             <tr>
-              <th>Full name</th>
-              <th>Username</th>
-              <th>Current role</th>
+              <th>
+                <div class="server-table-heading">
+                  <span>Full name</span>
+
+                  <app-server-excel-filter
+                    title="Full name"
+                    [options]="excelFilterOptionsFor('fullName')"
+                    [loading]="excelFilterLoading('fullName')"
+                    [active]="excelFilterActive('fullName')"
+                    [selectionActive]="excelFilterActive('fullName')"
+                    [selectedValues]="excelFilterSelectedValues('fullName')"
+                    [sortDirection]="excelSortDirection('fullName')"
+                    (opened)="loadExcelFilterValues('fullName')"
+                    (sortRequested)="applyExcelSort('fullName', $event)"
+                    (applyValues)="applyExcelFilter('fullName', $event)"
+                    (clearRequested)="clearExcelFilter('fullName')"
+                  />
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading">
+                  <span>Username</span>
+
+                  <app-server-excel-filter
+                    title="Username"
+                    [options]="excelFilterOptionsFor('userName')"
+                    [loading]="excelFilterLoading('userName')"
+                    [active]="excelFilterActive('userName')"
+                    [selectionActive]="excelFilterActive('userName')"
+                    [selectedValues]="excelFilterSelectedValues('userName')"
+                    [sortDirection]="excelSortDirection('userName')"
+                    (opened)="loadExcelFilterValues('userName')"
+                    (sortRequested)="applyExcelSort('userName', $event)"
+                    (applyValues)="applyExcelFilter('userName', $event)"
+                    (clearRequested)="clearExcelFilter('userName')"
+                  />
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading">
+                  <span>Current role</span>
+
+                  <app-server-excel-filter
+                    title="Current role"
+                    [options]="excelFilterOptionsFor('role')"
+                    [loading]="excelFilterLoading('role')"
+                    [active]="excelFilterActive('role')"
+                    [selectionActive]="excelFilterActive('role')"
+                    [selectedValues]="excelFilterSelectedValues('role')"
+                    [sortDirection]="excelSortDirection('role')"
+                    (opened)="loadExcelFilterValues('role')"
+                    (sortRequested)="applyExcelSort('role', $event)"
+                    (applyValues)="applyExcelFilter('role', $event)"
+                    (clearRequested)="clearExcelFilter('role')"
+                  />
+                </div>
+              </th>
               <th>Change role</th>
             </tr>
           </thead>

@@ -332,78 +332,19 @@
             <div class="server-table-heading">
               <span>PO / Purchaser / Handler</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'po'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('po', 'PO number')
-                "
-                [title]="
-                  sortTitle('po', 'PO number')
-                "
-                (click)="toggleSort('po')"
-              >
-                {{ sortIndicator('po') }}
-              </button>
-
-              <details
-                #materialPoFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('po')
-                ">
-                <summary title="Filter PO / Purchaser / Handler">▾</summary>
-
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>PO number contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.columnPoNumber
-                      "
-                      placeholder="PO number">
-                  </label>
-
-                  <label>
-                    <span>Purchaser contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.columnPurchaser
-                      "
-                      placeholder="Purchaser">
-                  </label>
-
-                  <label>
-                    <span>Handler contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.columnHandler
-                      "
-                      placeholder="Handler">
-                  </label>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="clearColumnFilter('po', materialPoFilter)">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="applyColumnFilter(materialPoFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="PO / Purchaser / Handler"
+                [options]="excelFilterOptionsFor('po')"
+                [loading]="excelFilterLoading('po')"
+                [active]="excelFilterActive('po')"
+                [selectionActive]="excelFilterActive('po')"
+                [selectedValues]="excelFilterSelectedValues('po')"
+                [sortDirection]="excelSortDirection('po')"
+                (opened)="loadExcelFilterValues('po')"
+                (sortRequested)="applyExcelSort('po', $event)"
+                (applyValues)="applyExcelFilter('po', $event)"
+                (clearRequested)="clearExcelFilter('po')"
+              />
             </div>
           </th>
 
@@ -411,50 +352,19 @@
             <div class="server-table-heading">
               <span>Line</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'line'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('line', 'Line')
-                "
-                [title]="
-                  sortTitle('line', 'Line')
-                "
-                (click)="toggleSort('line')"
-              >
-                {{ sortIndicator('line') }}
-              </button>
-              <details
-                #materialLineFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('line')
-                ">
-                <summary title="Filter Line">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Line contains</span>
-                    <input
-                      type="search"
-                      [formControl]="columnFilters.controls.lineItem"
-                      placeholder="Line">
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('line', materialLineFilter)">
-                      Clear
-                    </button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialLineFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Line"
+                [options]="excelFilterOptionsFor('line')"
+                [loading]="excelFilterLoading('line')"
+                [active]="excelFilterActive('line')"
+                [selectionActive]="excelFilterActive('line')"
+                [selectedValues]="excelFilterSelectedValues('line')"
+                [sortDirection]="excelSortDirection('line')"
+                (opened)="loadExcelFilterValues('line')"
+                (sortRequested)="applyExcelSort('line', $event)"
+                (applyValues)="applyExcelFilter('line', $event)"
+                (clearRequested)="clearExcelFilter('line')"
+              />
             </div>
           </th>
 
@@ -462,50 +372,19 @@
             <div class="server-table-heading">
               <span>Material</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'material'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('material', 'Material')
-                "
-                [title]="
-                  sortTitle('material', 'Material')
-                "
-                (click)="toggleSort('material')"
-              >
-                {{ sortIndicator('material') }}
-              </button>
-              <details
-                #materialNumberFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('material')
-                ">
-                <summary title="Filter Material">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Material / HSN contains</span>
-                    <input
-                      type="search"
-                      [formControl]="columnFilters.controls.materialNo"
-                      placeholder="Material or HSN">
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('material', materialNumberFilter)">
-                      Clear
-                    </button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialNumberFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Material"
+                [options]="excelFilterOptionsFor('material')"
+                [loading]="excelFilterLoading('material')"
+                [active]="excelFilterActive('material')"
+                [selectionActive]="excelFilterActive('material')"
+                [selectedValues]="excelFilterSelectedValues('material')"
+                [sortDirection]="excelSortDirection('material')"
+                (opened)="loadExcelFilterValues('material')"
+                (sortRequested)="applyExcelSort('material', $event)"
+                (applyValues)="applyExcelFilter('material', $event)"
+                (clearRequested)="clearExcelFilter('material')"
+              />
             </div>
           </th>
 
@@ -513,50 +392,19 @@
             <div class="server-table-heading">
               <span>Description</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'description'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('description', 'Description')
-                "
-                [title]="
-                  sortTitle('description', 'Description')
-                "
-                (click)="toggleSort('description')"
-              >
-                {{ sortIndicator('description') }}
-              </button>
-              <details
-                #materialDescriptionFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('description')
-                ">
-                <summary title="Filter Description">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Description contains</span>
-                    <input
-                      type="search"
-                      [formControl]="columnFilters.controls.description"
-                      placeholder="Description">
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('description', materialDescriptionFilter)">
-                      Clear
-                    </button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialDescriptionFilter)">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Description"
+                [options]="excelFilterOptionsFor('description')"
+                [loading]="excelFilterLoading('description')"
+                [active]="excelFilterActive('description')"
+                [selectionActive]="excelFilterActive('description')"
+                [selectedValues]="excelFilterSelectedValues('description')"
+                [sortDirection]="excelSortDirection('description')"
+                (opened)="loadExcelFilterValues('description')"
+                (sortRequested)="applyExcelSort('description', $event)"
+                (applyValues)="applyExcelFilter('description', $event)"
+                (clearRequested)="clearExcelFilter('description')"
+              />
             </div>
           </th>
 
@@ -564,43 +412,19 @@
             <div class="server-table-heading">
               <span>Ordered</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'ordered'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('ordered', 'Ordered quantity')
-                "
-                [title]="
-                  sortTitle('ordered', 'Ordered quantity')
-                "
-                (click)="toggleSort('ordered')"
-              >
-                {{ sortIndicator('ordered') }}
-              </button>
-              <details
-                #materialOrderedFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('ordered')">
-                <summary title="Filter Ordered Quantity">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.minOrderedQty"></label>
-                    <label><span>Max</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.maxOrderedQty"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('ordered', materialOrderedFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialOrderedFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Ordered"
+                [options]="excelFilterOptionsFor('ordered')"
+                [loading]="excelFilterLoading('ordered')"
+                [active]="excelFilterActive('ordered')"
+                [selectionActive]="excelFilterActive('ordered')"
+                [selectedValues]="excelFilterSelectedValues('ordered')"
+                [sortDirection]="excelSortDirection('ordered')"
+                (opened)="loadExcelFilterValues('ordered')"
+                (sortRequested)="applyExcelSort('ordered', $event)"
+                (applyValues)="applyExcelFilter('ordered', $event)"
+                (clearRequested)="clearExcelFilter('ordered')"
+              />
             </div>
           </th>
 
@@ -608,43 +432,19 @@
             <div class="server-table-heading">
               <span>Unit Price</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'unitPrice'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('unitPrice', 'Unit price')
-                "
-                [title]="
-                  sortTitle('unitPrice', 'Unit price')
-                "
-                (click)="toggleSort('unitPrice')"
-              >
-                {{ sortIndicator('unitPrice') }}
-              </button>
-              <details
-                #materialUnitPriceFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('unitPrice')">
-                <summary title="Filter Unit Price">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.minUnitPrice"></label>
-                    <label><span>Max</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.maxUnitPrice"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('unitPrice', materialUnitPriceFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialUnitPriceFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Unit Price"
+                [options]="excelFilterOptionsFor('unitPrice')"
+                [loading]="excelFilterLoading('unitPrice')"
+                [active]="excelFilterActive('unitPrice')"
+                [selectionActive]="excelFilterActive('unitPrice')"
+                [selectedValues]="excelFilterSelectedValues('unitPrice')"
+                [sortDirection]="excelSortDirection('unitPrice')"
+                (opened)="loadExcelFilterValues('unitPrice')"
+                (sortRequested)="applyExcelSort('unitPrice', $event)"
+                (applyValues)="applyExcelFilter('unitPrice', $event)"
+                (clearRequested)="clearExcelFilter('unitPrice')"
+              />
             </div>
           </th>
 
@@ -652,43 +452,19 @@
             <div class="server-table-heading">
               <span>Material Value</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'materialValue'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('materialValue', 'Material value')
-                "
-                [title]="
-                  sortTitle('materialValue', 'Material value')
-                "
-                (click)="toggleSort('materialValue')"
-              >
-                {{ sortIndicator('materialValue') }}
-              </button>
-              <details
-                #materialValueFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('materialValue')">
-                <summary title="Filter Material Value">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.minMaterialValue"></label>
-                    <label><span>Max</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.maxMaterialValue"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('materialValue', materialValueFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialValueFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Material Value"
+                [options]="excelFilterOptionsFor('materialValue')"
+                [loading]="excelFilterLoading('materialValue')"
+                [active]="excelFilterActive('materialValue')"
+                [selectionActive]="excelFilterActive('materialValue')"
+                [selectedValues]="excelFilterSelectedValues('materialValue')"
+                [sortDirection]="excelSortDirection('materialValue')"
+                (opened)="loadExcelFilterValues('materialValue')"
+                (sortRequested)="applyExcelSort('materialValue', $event)"
+                (applyValues)="applyExcelFilter('materialValue', $event)"
+                (clearRequested)="clearExcelFilter('materialValue')"
+              />
             </div>
           </th>
 
@@ -696,43 +472,19 @@
             <div class="server-table-heading">
               <span>Dispatched</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'dispatched'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('dispatched', 'Dispatched quantity')
-                "
-                [title]="
-                  sortTitle('dispatched', 'Dispatched quantity')
-                "
-                (click)="toggleSort('dispatched')"
-              >
-                {{ sortIndicator('dispatched') }}
-              </button>
-              <details
-                #materialDispatchedFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('dispatched')">
-                <summary title="Filter Dispatched Quantity">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.minDispatchQty"></label>
-                    <label><span>Max</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.maxDispatchQty"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('dispatched', materialDispatchedFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialDispatchedFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Dispatched"
+                [options]="excelFilterOptionsFor('dispatched')"
+                [loading]="excelFilterLoading('dispatched')"
+                [active]="excelFilterActive('dispatched')"
+                [selectionActive]="excelFilterActive('dispatched')"
+                [selectedValues]="excelFilterSelectedValues('dispatched')"
+                [sortDirection]="excelSortDirection('dispatched')"
+                (opened)="loadExcelFilterValues('dispatched')"
+                (sortRequested)="applyExcelSort('dispatched', $event)"
+                (applyValues)="applyExcelFilter('dispatched', $event)"
+                (clearRequested)="clearExcelFilter('dispatched')"
+              />
             </div>
           </th>
 
@@ -740,134 +492,79 @@
             <div class="server-table-heading">
               <span>Pending</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'pending'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('pending', 'Pending quantity')
-                "
-                [title]="
-                  sortTitle('pending', 'Pending quantity')
-                "
-                (click)="toggleSort('pending')"
-              >
-                {{ sortIndicator('pending') }}
-              </button>
-              <details
-                #materialPendingFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('pending')">
-                <summary title="Filter Pending Quantity">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.minPendingQty"></label>
-                    <label><span>Max</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.maxPendingQty"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('pending', materialPendingFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialPendingFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Pending"
+                [options]="excelFilterOptionsFor('pending')"
+                [loading]="excelFilterLoading('pending')"
+                [active]="excelFilterActive('pending')"
+                [selectionActive]="excelFilterActive('pending')"
+                [selectedValues]="excelFilterSelectedValues('pending')"
+                [sortDirection]="excelSortDirection('pending')"
+                (opened)="loadExcelFilterValues('pending')"
+                (sortRequested)="applyExcelSort('pending', $event)"
+                (applyValues)="applyExcelFilter('pending', $event)"
+                (clearRequested)="clearExcelFilter('pending')"
+              />
             </div>
           </th>
 
           <th class="number-cell">
             <div class="server-table-heading">
               <span>Allocated / Live</span>
-              <details
-                #materialAllocatedFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('allocatedLive')">
-                <summary title="Filter Allocated / Live Stock">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Allocated min</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.minAllocatedQty"></label>
-                    <label><span>Allocated max</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.maxAllocatedQty"></label>
-                  </div>
-                  <div class="server-column-filter__range">
-                    <label><span>Live min</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.minLiveStockQty"></label>
-                    <label><span>Live max</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.maxLiveStockQty"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('allocatedLive', materialAllocatedFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialAllocatedFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Allocated / Live"
+                [options]="excelFilterOptionsFor('allocatedLive')"
+                [loading]="excelFilterLoading('allocatedLive')"
+                [active]="excelFilterActive('allocatedLive')"
+                [selectionActive]="excelFilterActive('allocatedLive')"
+                [selectedValues]="excelFilterSelectedValues('allocatedLive')"
+                [sortDirection]="excelSortDirection('allocatedLive')"
+                (opened)="loadExcelFilterValues('allocatedLive')"
+                (sortRequested)="applyExcelSort('allocatedLive', $event)"
+                (applyValues)="applyExcelFilter('allocatedLive', $event)"
+                (clearRequested)="clearExcelFilter('allocatedLive')"
+              />
             </div>
           </th>
 
           <th class="number-cell">
             <div class="server-table-heading">
               <span>Shortage</span>
-              <details
-                #materialShortageFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('shortage')">
-                <summary title="Filter Shortage">▾</summary>
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label><span>Min</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.minShortageQty"></label>
-                    <label><span>Max</span><input type="number" step="0.01"
-                      [formControl]="columnFilters.controls.maxShortageQty"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('shortage', materialShortageFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialShortageFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Shortage"
+                [options]="excelFilterOptionsFor('shortage')"
+                [loading]="excelFilterLoading('shortage')"
+                [active]="excelFilterActive('shortage')"
+                [selectionActive]="excelFilterActive('shortage')"
+                [selectedValues]="excelFilterSelectedValues('shortage')"
+                [sortDirection]="excelSortDirection('shortage')"
+                (opened)="loadExcelFilterValues('shortage')"
+                (sortRequested)="applyExcelSort('shortage', $event)"
+                (applyValues)="applyExcelFilter('shortage', $event)"
+                (clearRequested)="clearExcelFilter('shortage')"
+              />
             </div>
           </th>
 
           <th>
             <div class="server-table-heading">
               <span>Stock</span>
-              <details
-                #materialStockFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('stock')">
-                <summary title="Filter Stock Status">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Stock status</span>
-                    <select [formControl]="columnFilters.controls.columnStockStatus">
-                      <option value="">All</option>
-                      <option value="Available">Available</option>
-                      <option value="No Pending">No Pending</option>
-                      <option value="Partial Stock">Partial Stock</option>
-                      <option value="Shortage">Shortage</option>
-                      <option value="Out of Stock">Out of Stock</option>
-                      <option value="Not Found">Not Found</option>
-                      <option value="Stock API Offline">Stock API Offline</option>
-                    </select>
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('stock', materialStockFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialStockFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+
+              <app-server-excel-filter
+                title="Stock"
+                [options]="excelFilterOptionsFor('stock')"
+                [loading]="excelFilterLoading('stock')"
+                [active]="excelFilterActive('stock')"
+                [selectionActive]="excelFilterActive('stock')"
+                [selectedValues]="excelFilterSelectedValues('stock')"
+                [sortDirection]="excelSortDirection('stock')"
+                (opened)="loadExcelFilterValues('stock')"
+                (sortRequested)="applyExcelSort('stock', $event)"
+                (applyValues)="applyExcelFilter('stock', $event)"
+                (clearRequested)="clearExcelFilter('stock')"
+              />
             </div>
           </th>
 
@@ -875,43 +572,19 @@
             <div class="server-table-heading">
               <span>Process</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'process'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('process', 'Process status')
-                "
-                [title]="
-                  sortTitle('process', 'Process status')
-                "
-                (click)="toggleSort('process')"
-              >
-                {{ sortIndicator('process') }}
-              </button>
-              <details
-                #materialProcessFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('process')">
-                <summary title="Filter Process Status">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Process status contains</span>
-                    <input type="search"
-                      [formControl]="columnFilters.controls.processStatus"
-                      placeholder="Process status">
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('process', materialProcessFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialProcessFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Process"
+                [options]="excelFilterOptionsFor('process')"
+                [loading]="excelFilterLoading('process')"
+                [active]="excelFilterActive('process')"
+                [selectionActive]="excelFilterActive('process')"
+                [selectedValues]="excelFilterSelectedValues('process')"
+                [sortDirection]="excelSortDirection('process')"
+                (opened)="loadExcelFilterValues('process')"
+                (sortRequested)="applyExcelSort('process', $event)"
+                (applyValues)="applyExcelFilter('process', $event)"
+                (clearRequested)="clearExcelFilter('process')"
+              />
             </div>
           </th>
 
@@ -919,43 +592,19 @@
             <div class="server-table-heading">
               <span>Dispatch</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'dispatch'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('dispatch', 'Dispatch status')
-                "
-                [title]="
-                  sortTitle('dispatch', 'Dispatch status')
-                "
-                (click)="toggleSort('dispatch')"
-              >
-                {{ sortIndicator('dispatch') }}
-              </button>
-              <details
-                #materialDispatchFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('dispatch')">
-                <summary title="Filter Dispatch Status">▾</summary>
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Dispatch status contains</span>
-                    <input type="search"
-                      [formControl]="columnFilters.controls.columnDispatchStatus"
-                      placeholder="Dispatch status">
-                  </label>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('dispatch', materialDispatchFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialDispatchFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Dispatch"
+                [options]="excelFilterOptionsFor('dispatch')"
+                [loading]="excelFilterLoading('dispatch')"
+                [active]="excelFilterActive('dispatch')"
+                [selectionActive]="excelFilterActive('dispatch')"
+                [selectedValues]="excelFilterSelectedValues('dispatch')"
+                [sortDirection]="excelSortDirection('dispatch')"
+                (opened)="loadExcelFilterValues('dispatch')"
+                (sortRequested)="applyExcelSort('dispatch', $event)"
+                (applyValues)="applyExcelFilter('dispatch', $event)"
+                (clearRequested)="clearExcelFilter('dispatch')"
+              />
             </div>
           </th>
 
@@ -963,43 +612,19 @@
             <div class="server-table-heading">
               <span>Delivery</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'delivery'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('delivery', 'Delivery date')
-                "
-                [title]="
-                  sortTitle('delivery', 'Delivery date')
-                "
-                (click)="toggleSort('delivery')"
-              >
-                {{ sortIndicator('delivery') }}
-              </button>
-              <details
-                #materialDeliveryFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="columnFilterActive('delivery')">
-                <summary title="Filter Delivery Date">▾</summary>
-                <div class="server-column-filter__menu server-column-filter__menu--right">
-                  <div class="server-column-filter__range">
-                    <label><span>From</span><input type="date"
-                      [formControl]="columnFilters.controls.columnDeliveryDateFrom"></label>
-                    <label><span>To</span><input type="date"
-                      [formControl]="columnFilters.controls.columnDeliveryDateTo"></label>
-                  </div>
-                  <div class="server-column-filter__actions">
-                    <button type="button"
-                      (click)="clearColumnFilter('delivery', materialDeliveryFilter)">Clear</button>
-                    <button type="button"
-                      (click)="applyColumnFilter(materialDeliveryFilter)">Apply</button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Delivery"
+                [options]="excelFilterOptionsFor('delivery')"
+                [loading]="excelFilterLoading('delivery')"
+                [active]="excelFilterActive('delivery')"
+                [selectionActive]="excelFilterActive('delivery')"
+                [selectedValues]="excelFilterSelectedValues('delivery')"
+                [sortDirection]="excelSortDirection('delivery')"
+                (opened)="loadExcelFilterValues('delivery')"
+                (sortRequested)="applyExcelSort('delivery', $event)"
+                (applyValues)="applyExcelFilter('delivery', $event)"
+                (clearRequested)="clearExcelFilter('delivery')"
+              />
             </div>
           </th>
 

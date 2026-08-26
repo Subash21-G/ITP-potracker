@@ -2,7 +2,42 @@ import {
   AuditItem,
 } from './insights-api.model';
 
+export type AuditSortColumn =
+  | 'date'
+  | 'material'
+  | 'po'
+  | 'action'
+  | 'process'
+  | 'dispatch'
+  | 'owner';
+
+export type AuditSortDirection =
+  | 'asc'
+  | 'desc';
+
+export type AuditExcelFilterColumn =
+  AuditSortColumn;
+
+export interface AuditExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type AuditExcelFilterSelections =
+  Partial<
+    Record<
+      AuditExcelFilterColumn,
+      readonly string[]
+    >
+  >;
+
 export interface AuditQuery {
+  readonly sortColumn?: AuditSortColumn;
+  readonly sortDirection?: AuditSortDirection;
+  readonly excelFilters?: string;
+
   readonly search?: string;
   readonly owner?: string;
   readonly processStatus?: string;

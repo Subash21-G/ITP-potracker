@@ -34,14 +34,21 @@ import {
   ManageOnlyDirective,
 } from '../../core/directives/manage-only.directive';
 import {
+  LocalStockExcelFilterColumn,
+  LocalStockExcelFilterSelections,
+  LocalStockExcelFilterValue,
   LocalStockListItem,
   LocalStockSaveResponse,
+  LocalStockSortDirection,
   LocalStockSummary,
   LocalStockUpsertRequest,
 } from '../../core/models/local-stock-api.model';
 import {
   LocalStockApiService,
 } from '../../core/services/local-stock-api.service';
+import {
+  ServerExcelFilter,
+} from '../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-local-stocks-page',
@@ -51,6 +58,7 @@ import {
     ManageOnlyDirective,
     ReactiveFormsModule,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl: './local-stocks-page.html',
   styleUrl: './local-stocks-page.css',
@@ -224,6 +232,42 @@ export class LocalStocksPage {
   readonly pageSize = signal(25);
   readonly totalRecords = signal(0);
   readonly totalPages = signal(1);
+
+  readonly sortColumn =
+    signal<
+      LocalStockExcelFilterColumn | null
+    >(null);
+
+  readonly sortDirection =
+    signal<
+      LocalStockSortDirection | null
+    >(null);
+
+  readonly excelFilterSelections =
+    signal<LocalStockExcelFilterSelections>(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          LocalStockExcelFilterColumn,
+          readonly LocalStockExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        LocalStockExcelFilterColumn
+      >
+    >(
+      new Set<
+        LocalStockExcelFilterColumn
+      >(),
+    );
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -510,6 +554,231 @@ export class LocalStocksPage {
       });
   }
 
+  excelFilterOptionsFor(
+    column: LocalStockExcelFilterColumn,
+  ): readonly LocalStockExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column: LocalStockExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column: LocalStockExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column: LocalStockExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column: LocalStockExcelFilterColumn,
+  ): LocalStockSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column: LocalStockExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    this.api
+      .getExcelFilterValues(
+        this.buildListQuery(),
+        column,
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeError(
+              error,
+              `Excel filter values for ${column} could not be loaded.`,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column: LocalStockExcelFilterColumn,
+    direction:
+      LocalStockSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.page.set(1);
+    this.successMessage.set('');
+    this.load();
+  }
+
+  applyExcelFilter(
+    column: LocalStockExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.successMessage.set('');
+    this.load();
+  }
+
+  clearExcelFilter(
+    column: LocalStockExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.successMessage.set('');
+    this.load();
+  }
+
   applySearch(): void {
     this.page.set(1);
     this.successMessage.set('');
@@ -711,58 +980,89 @@ export class LocalStocksPage {
     this.load();
   }
 
+  private buildListQuery() {
+    const columnValues =
+      this.columnFilters.getRawValue();
+
+    return {
+      search:
+        this.searchControl.value,
+
+      material:
+        columnValues.material,
+
+      rmGrade:
+        columnValues.rmGrade,
+
+      location:
+        columnValues.location,
+
+      minAvailableQty:
+        columnValues.minAvailableQty,
+
+      maxAvailableQty:
+        columnValues.maxAvailableQty,
+
+      minMinimumQty:
+        columnValues.minMinimumQty,
+
+      maxMinimumQty:
+        columnValues.maxMinimumQty,
+
+      status:
+        columnValues.status,
+
+      updatedFrom:
+        columnValues.updatedFrom,
+
+      updatedTo:
+        columnValues.updatedTo,
+
+      sortColumn:
+        this.sortColumn() ??
+        undefined,
+
+      sortDirection:
+        this.sortDirection() ??
+        undefined,
+
+      excelFilters:
+        this.serializeExcelFilters(),
+
+      page:
+        this.page(),
+
+      pageSize:
+        this.pageSize(),
+    };
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
+  }
+
   private load(): void {
     if (this.loading()) {
       return;
     }
 
-    const columnValues =
-      this.columnFilters.getRawValue();
-
     this.loading.set(true);
     this.errorMessage.set('');
 
     this.api
-      .getStocks({
-        search:
-          this.searchControl.value,
-
-        material:
-          columnValues.material,
-
-        rmGrade:
-          columnValues.rmGrade,
-
-        location:
-          columnValues.location,
-
-        minAvailableQty:
-          columnValues.minAvailableQty,
-
-        maxAvailableQty:
-          columnValues.maxAvailableQty,
-
-        minMinimumQty:
-          columnValues.minMinimumQty,
-
-        maxMinimumQty:
-          columnValues.maxMinimumQty,
-
-        status:
-          columnValues.status,
-
-        updatedFrom:
-          columnValues.updatedFrom,
-
-        updatedTo:
-          columnValues.updatedTo,
-
-        page:
-          this.page(),
-
-        pageSize:
-          this.pageSize(),
-      })
+      .getStocks(
+        this.buildListQuery(),
+      )
       .pipe(
         takeUntilDestroyed(
           this.destroyRef,

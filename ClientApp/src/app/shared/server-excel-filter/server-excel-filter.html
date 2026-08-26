@@ -1,0 +1,168 @@
+<div
+  class="server-excel-filter"
+  [class.server-excel-filter--active]="active"
+>
+  <button
+    #trigger
+    type="button"
+    class="server-excel-filter__trigger"
+    [class.server-excel-filter__trigger--active]="active"
+    [attr.aria-label]="'Excel filter for ' + title"
+    [title]="'Filter ' + title"
+    (click)="toggleMenu($event)"
+  >
+    â–¾
+  </button>
+
+  <div
+    #menu
+    class="server-excel-filter__menu"
+    popover="auto"
+    role="dialog"
+    [attr.aria-label]="title + ' Excel filter'"
+    (toggle)="onMenuToggle($event)"
+  >
+    <section class="server-excel-filter__section">
+      <div class="server-excel-filter__section-title">
+        SORT
+      </div>
+
+      <button
+        type="button"
+        class="server-excel-filter__menu-action"
+        [class.server-excel-filter__menu-action--active]="
+          sortDirection === 'asc'
+        "
+        [disabled]="loading"
+        (click)="requestSort('asc')"
+      >
+        <span aria-hidden="true">&#8593;</span>
+        <span>Sort A to Z</span>
+      </button>
+
+      <button
+        type="button"
+        class="server-excel-filter__menu-action"
+        [class.server-excel-filter__menu-action--active]="
+          sortDirection === 'desc'
+        "
+        [disabled]="loading"
+        (click)="requestSort('desc')"
+      >
+        <span aria-hidden="true">&#8595;</span>
+        <span>Sort Z to A</span>
+      </button>
+    </section>
+
+    <section class="server-excel-filter__section">
+      <label class="server-excel-filter__search">
+        <span class="server-excel-filter__section-title">
+          SEARCH
+        </span>
+
+        <span class="server-excel-filter__search-box">
+          <span aria-hidden="true">âŒ•</span>
+
+          <input
+            #searchInput
+            type="search"
+            [value]="searchText"
+            [placeholder]="'Search ' + title"
+            autocomplete="off"
+            (input)="onSearchInput($event)"
+          />
+        </span>
+      </label>
+    </section>
+
+    <section
+      class="
+        server-excel-filter__section
+        server-excel-filter__section--values
+      "
+    >
+      <div class="server-excel-filter__selection-tools">
+        <button
+          type="button"
+          (click)="selectAllVisible()"
+        >
+          Select all
+        </button>
+
+        <button
+          type="button"
+          (click)="selectNoneVisible()"
+        >
+          Select none
+        </button>
+      </div>
+
+      <div
+        class="server-excel-filter__values"
+        role="group"
+        [attr.aria-label]="title + ' values'"
+      >
+        @if (loading) {
+          <div class="server-excel-filter__message">
+            Loading valuesâ€¦
+          </div>
+        } @else if (filteredOptions.length === 0) {
+          <div class="server-excel-filter__message">
+            No matching values
+          </div>
+        } @else {
+          @for (
+            option of filteredOptions;
+            track option.value
+          ) {
+            <label class="server-excel-filter__option">
+              <input
+                type="checkbox"
+                [checked]="isSelected(option.value)"
+                (change)="toggleValue(option.value, $event)"
+              />
+
+              <span class="server-excel-filter__option-label">
+                {{ option.label || '(Blank)' }}
+              </span>
+
+              @if (option.count !== undefined) {
+                <span class="server-excel-filter__option-count">
+                  {{ option.count }}
+                </span>
+              }
+            </label>
+          }
+        }
+      </div>
+    </section>
+
+    <footer class="server-excel-filter__footer">
+      <button
+        type="button"
+        class="server-excel-filter__button server-excel-filter__button--ghost"
+        [disabled]="loading"
+        (click)="clearFilter()"
+      >
+        Clear
+      </button>
+
+      <button
+        type="button"
+        class="server-excel-filter__button server-excel-filter__button--ghost"
+        (click)="cancel()"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="server-excel-filter__button server-excel-filter__button--primary"
+        [disabled]="loading"
+        (click)="apply()"
+      >
+        Apply
+      </button>
+    </footer>
+  </div>
+</div>

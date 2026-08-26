@@ -176,710 +176,183 @@
             <thead>
         <tr>
           <th appManageOnly>
-            <input type="checkbox"
-                   aria-label="Select all visible invoices"
-                   [checked]="allVisibleSelected()"
-                   [disabled]="loading() || bulkDeleting() || items().length === 0"
-                   (change)="toggleVisibleSelection($any($event.target).checked)" />
+            <input
+              type="checkbox"
+              aria-label="Select all visible invoices"
+              [checked]="allVisibleSelected()"
+              [disabled]="loading() || bulkDeleting() || items().length === 0"
+              (change)="toggleVisibleSelection($any($event.target).checked)"
+            />
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Invoice</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'invoice'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('invoice', 'invoice number')
-                "
-                [title]="
-                  sortTitle('invoice', 'invoice number')
-                "
-                (click)="toggleSort('invoice')"
-              >
-                {{ sortIndicator('invoice') }}
-              </button>
-
-              <details
-                #invoiceNumberFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('invoice')
-                ">
-                <summary title="Filter Invoice">▾</summary>
-
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Invoice number contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.invoiceNumber
-                      "
-                      placeholder="Contains">
-                  </label>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="
-                        clearColumnFilter(
-                          'invoice',
-                          invoiceNumberFilter
-                        )
-                      ">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="
-                        applyColumnFilter(
-                          invoiceNumberFilter
-                        )
-                      ">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Invoice"
+                [options]="excelFilterOptionsFor('invoice')"
+                [loading]="excelFilterLoading('invoice')"
+                [active]="excelFilterActive('invoice')"
+                [selectionActive]="excelFilterActive('invoice')"
+                [selectedValues]="excelFilterSelectedValues('invoice')"
+                [sortDirection]="excelSortDirection('invoice')"
+                (opened)="loadExcelFilterValues('invoice')"
+                (sortRequested)="applyExcelSort('invoice', $event)"
+                (applyValues)="applyExcelFilter('invoice', $event)"
+                (clearRequested)="clearExcelFilter('invoice')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Invoice Date</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'invoiceDate'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('invoiceDate', 'invoice date')
-                "
-                [title]="
-                  sortTitle('invoiceDate', 'invoice date')
-                "
-                (click)="toggleSort('invoiceDate')"
-              >
-                {{ sortIndicator('invoiceDate') }}
-              </button>
-
-              <details
-                #invoiceDateFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('invoiceDate')
-                ">
-                <summary title="Filter Invoice Date">▾</summary>
-
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label>
-                      <span>From</span>
-                      <input
-                        type="date"
-                        [formControl]="
-                          columnFilters.controls.invoiceDateFrom
-                        ">
-                    </label>
-
-                    <label>
-                      <span>To</span>
-                      <input
-                        type="date"
-                        [formControl]="
-                          columnFilters.controls.invoiceDateTo
-                        ">
-                    </label>
-                  </div>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="
-                        clearColumnFilter(
-                          'invoiceDate',
-                          invoiceDateFilter
-                        )
-                      ">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="
-                        applyColumnFilter(
-                          invoiceDateFilter
-                        )
-                      ">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Invoice Date"
+                [options]="excelFilterOptionsFor('invoiceDate')"
+                [loading]="excelFilterLoading('invoiceDate')"
+                [active]="excelFilterActive('invoiceDate')"
+                [selectionActive]="excelFilterActive('invoiceDate')"
+                [selectedValues]="excelFilterSelectedValues('invoiceDate')"
+                [sortDirection]="excelSortDirection('invoiceDate')"
+                (opened)="loadExcelFilterValues('invoiceDate')"
+                (sortRequested)="applyExcelSort('invoiceDate', $event)"
+                (applyValues)="applyExcelFilter('invoiceDate', $event)"
+                (clearRequested)="clearExcelFilter('invoiceDate')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Customer</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'customer'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('customer', 'customer')
-                "
-                [title]="
-                  sortTitle('customer', 'customer')
-                "
-                (click)="toggleSort('customer')"
-              >
-                {{ sortIndicator('customer') }}
-              </button>
-
-              <details
-                #invoiceCustomerFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('customer')
-                ">
-                <summary title="Filter Customer">▾</summary>
-
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>Customer contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.customerName
-                      "
-                      placeholder="Contains">
-                  </label>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="
-                        clearColumnFilter(
-                          'customer',
-                          invoiceCustomerFilter
-                        )
-                      ">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="
-                        applyColumnFilter(
-                          invoiceCustomerFilter
-                        )
-                      ">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Customer"
+                [options]="excelFilterOptionsFor('customer')"
+                [loading]="excelFilterLoading('customer')"
+                [active]="excelFilterActive('customer')"
+                [selectionActive]="excelFilterActive('customer')"
+                [selectedValues]="excelFilterSelectedValues('customer')"
+                [sortDirection]="excelSortDirection('customer')"
+                (opened)="loadExcelFilterValues('customer')"
+                (sortRequested)="applyExcelSort('customer', $event)"
+                (applyValues)="applyExcelFilter('customer', $event)"
+                (clearRequested)="clearExcelFilter('customer')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Items</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'items'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('items', 'item count')
-                "
-                [title]="
-                  sortTitle('items', 'item count')
-                "
-                (click)="toggleSort('items')"
-              >
-                {{ sortIndicator('items') }}
-              </button>
-
-              <details
-                #invoiceItemsFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('items')
-                ">
-                <summary title="Filter Item Count">▾</summary>
-
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label>
-                      <span>Minimum</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        [formControl]="
-                          columnFilters.controls.minItemCount
-                        "
-                        placeholder="Min">
-                    </label>
-
-                    <label>
-                      <span>Maximum</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        [formControl]="
-                          columnFilters.controls.maxItemCount
-                        "
-                        placeholder="Max">
-                    </label>
-                  </div>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="
-                        clearColumnFilter(
-                          'items',
-                          invoiceItemsFilter
-                        )
-                      ">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="
-                        applyColumnFilter(
-                          invoiceItemsFilter
-                        )
-                      ">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Items"
+                [options]="excelFilterOptionsFor('items')"
+                [loading]="excelFilterLoading('items')"
+                [active]="excelFilterActive('items')"
+                [selectionActive]="excelFilterActive('items')"
+                [selectedValues]="excelFilterSelectedValues('items')"
+                [sortDirection]="excelSortDirection('items')"
+                (opened)="loadExcelFilterValues('items')"
+                (sortRequested)="applyExcelSort('items', $event)"
+                (applyValues)="applyExcelFilter('items', $event)"
+                (clearRequested)="clearExcelFilter('items')"
+              />
             </div>
           </th>
-
-          <th class="number-cell">
+          <th>
             <div class="server-table-heading">
               <span>Quantity</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'quantity'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('quantity', 'total quantity')
-                "
-                [title]="
-                  sortTitle('quantity', 'total quantity')
-                "
-                (click)="toggleSort('quantity')"
-              >
-                {{ sortIndicator('quantity') }}
-              </button>
-
-              <details
-                #invoiceQuantityFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('quantity')
-                ">
-                <summary title="Filter Quantity">▾</summary>
-
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label>
-                      <span>Minimum</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        [formControl]="
-                          columnFilters.controls.minTotalQuantity
-                        "
-                        placeholder="Min">
-                    </label>
-
-                    <label>
-                      <span>Maximum</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        [formControl]="
-                          columnFilters.controls.maxTotalQuantity
-                        "
-                        placeholder="Max">
-                    </label>
-                  </div>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="
-                        clearColumnFilter(
-                          'quantity',
-                          invoiceQuantityFilter
-                        )
-                      ">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="
-                        applyColumnFilter(
-                          invoiceQuantityFilter
-                        )
-                      ">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Quantity"
+                [options]="excelFilterOptionsFor('quantity')"
+                [loading]="excelFilterLoading('quantity')"
+                [active]="excelFilterActive('quantity')"
+                [selectionActive]="excelFilterActive('quantity')"
+                [selectedValues]="excelFilterSelectedValues('quantity')"
+                [sortDirection]="excelSortDirection('quantity')"
+                (opened)="loadExcelFilterValues('quantity')"
+                (sortRequested)="applyExcelSort('quantity', $event)"
+                (applyValues)="applyExcelFilter('quantity', $event)"
+                (clearRequested)="clearExcelFilter('quantity')"
+              />
             </div>
           </th>
-
-          <th class="number-cell">
+          <th>
             <div class="server-table-heading">
               <span>GST</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'gst'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('gst', 'GST amount')
-                "
-                [title]="
-                  sortTitle('gst', 'GST amount')
-                "
-                (click)="toggleSort('gst')"
-              >
-                {{ sortIndicator('gst') }}
-              </button>
-
-              <details
-                #invoiceGstFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('gst')
-                ">
-                <summary title="Filter GST">▾</summary>
-
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label>
-                      <span>Minimum</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        [formControl]="
-                          columnFilters.controls.minTotalGstAmount
-                        "
-                        placeholder="Min">
-                    </label>
-
-                    <label>
-                      <span>Maximum</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        [formControl]="
-                          columnFilters.controls.maxTotalGstAmount
-                        "
-                        placeholder="Max">
-                    </label>
-                  </div>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="
-                        clearColumnFilter(
-                          'gst',
-                          invoiceGstFilter
-                        )
-                      ">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="
-                        applyColumnFilter(
-                          invoiceGstFilter
-                        )
-                      ">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="GST"
+                [options]="excelFilterOptionsFor('gst')"
+                [loading]="excelFilterLoading('gst')"
+                [active]="excelFilterActive('gst')"
+                [selectionActive]="excelFilterActive('gst')"
+                [selectedValues]="excelFilterSelectedValues('gst')"
+                [sortDirection]="excelSortDirection('gst')"
+                (opened)="loadExcelFilterValues('gst')"
+                (sortRequested)="applyExcelSort('gst', $event)"
+                (applyValues)="applyExcelFilter('gst', $event)"
+                (clearRequested)="clearExcelFilter('gst')"
+              />
             </div>
           </th>
-
-          <th class="number-cell">
+          <th>
             <div class="server-table-heading">
               <span>Amount</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'amount'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('amount', 'invoice amount')
-                "
-                [title]="
-                  sortTitle('amount', 'invoice amount')
-                "
-                (click)="toggleSort('amount')"
-              >
-                {{ sortIndicator('amount') }}
-              </button>
-
-              <details
-                #invoiceAmountFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('amount')
-                ">
-                <summary title="Filter Amount">▾</summary>
-
-                <div class="server-column-filter__menu">
-                  <div class="server-column-filter__range">
-                    <label>
-                      <span>Minimum</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        [formControl]="
-                          columnFilters.controls.minTotalAmount
-                        "
-                        placeholder="Min">
-                    </label>
-
-                    <label>
-                      <span>Maximum</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        [formControl]="
-                          columnFilters.controls.maxTotalAmount
-                        "
-                        placeholder="Max">
-                    </label>
-                  </div>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="
-                        clearColumnFilter(
-                          'amount',
-                          invoiceAmountFilter
-                        )
-                      ">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="
-                        applyColumnFilter(
-                          invoiceAmountFilter
-                        )
-                      ">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Amount"
+                [options]="excelFilterOptionsFor('amount')"
+                [loading]="excelFilterLoading('amount')"
+                [active]="excelFilterActive('amount')"
+                [selectionActive]="excelFilterActive('amount')"
+                [selectedValues]="excelFilterSelectedValues('amount')"
+                [sortDirection]="excelSortDirection('amount')"
+                (opened)="loadExcelFilterValues('amount')"
+                (sortRequested)="applyExcelSort('amount', $event)"
+                (applyValues)="applyExcelFilter('amount', $event)"
+                (clearRequested)="clearExcelFilter('amount')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Uploaded File</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'uploadedFile'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('uploadedFile', 'uploaded file')
-                "
-                [title]="
-                  sortTitle('uploadedFile', 'uploaded file')
-                "
-                (click)="toggleSort('uploadedFile')"
-              >
-                {{ sortIndicator('uploadedFile') }}
-              </button>
-
-              <details
-                #invoiceUploadedFileFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('uploadedFile')
-                ">
-                <summary title="Filter Uploaded File">▾</summary>
-
-                <div class="server-column-filter__menu">
-                  <label>
-                    <span>File name contains</span>
-                    <input
-                      type="search"
-                      [formControl]="
-                        columnFilters.controls.uploadedFileName
-                      "
-                      placeholder="Contains">
-                  </label>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="
-                        clearColumnFilter(
-                          'uploadedFile',
-                          invoiceUploadedFileFilter
-                        )
-                      ">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="
-                        applyColumnFilter(
-                          invoiceUploadedFileFilter
-                        )
-                      ">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Uploaded File"
+                [options]="excelFilterOptionsFor('uploadedFile')"
+                [loading]="excelFilterLoading('uploadedFile')"
+                [active]="excelFilterActive('uploadedFile')"
+                [selectionActive]="excelFilterActive('uploadedFile')"
+                [selectedValues]="excelFilterSelectedValues('uploadedFile')"
+                [sortDirection]="excelSortDirection('uploadedFile')"
+                (opened)="loadExcelFilterValues('uploadedFile')"
+                (sortRequested)="applyExcelSort('uploadedFile', $event)"
+                (applyValues)="applyExcelFilter('uploadedFile', $event)"
+                (clearRequested)="clearExcelFilter('uploadedFile')"
+              />
             </div>
           </th>
-
           <th>
             <div class="server-table-heading">
               <span>Imported</span>
 
-              <button
-                type="button"
-                class="server-sort-button"
-                [class.server-sort-button--active]="
-                  sortColumn() === 'imported'
-                "
-                [disabled]="loading()"
-                [attr.aria-label]="
-                  sortTitle('imported', 'imported date')
-                "
-                [title]="
-                  sortTitle('imported', 'imported date')
-                "
-                (click)="toggleSort('imported')"
-              >
-                {{ sortIndicator('imported') }}
-              </button>
-
-              <details
-                #invoiceImportedFilter
-                class="server-column-filter"
-                [class.server-column-filter--active]="
-                  columnFilterActive('imported')
-                ">
-                <summary title="Filter Imported Date">▾</summary>
-
-                <div
-                  class="
-                    server-column-filter__menu
-                    server-column-filter__menu--right
-                  ">
-                  <div class="server-column-filter__range">
-                    <label>
-                      <span>From</span>
-                      <input
-                        type="date"
-                        [formControl]="
-                          columnFilters.controls.importedDateFrom
-                        ">
-                    </label>
-
-                    <label>
-                      <span>To</span>
-                      <input
-                        type="date"
-                        [formControl]="
-                          columnFilters.controls.importedDateTo
-                        ">
-                    </label>
-                  </div>
-
-                  <div class="server-column-filter__actions">
-                    <button
-                      type="button"
-                      (click)="
-                        clearColumnFilter(
-                          'imported',
-                          invoiceImportedFilter
-                        )
-                      ">
-                      Clear
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="
-                        applyColumnFilter(
-                          invoiceImportedFilter
-                        )
-                      ">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </details>
+              <app-server-excel-filter
+                title="Imported"
+                [options]="excelFilterOptionsFor('imported')"
+                [loading]="excelFilterLoading('imported')"
+                [active]="excelFilterActive('imported')"
+                [selectionActive]="excelFilterActive('imported')"
+                [selectedValues]="excelFilterSelectedValues('imported')"
+                [sortDirection]="excelSortDirection('imported')"
+                (opened)="loadExcelFilterValues('imported')"
+                (sortRequested)="applyExcelSort('imported', $event)"
+                (applyValues)="applyExcelFilter('imported', $event)"
+                (clearRequested)="clearExcelFilter('imported')"
+              />
             </div>
           </th>
 

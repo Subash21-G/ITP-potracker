@@ -11,6 +11,33 @@ export interface AdminUser {
   readonly isCurrentUser: boolean;
 }
 
+export type AdminUserSortColumn =
+  | 'fullName'
+  | 'userName'
+  | 'role';
+
+export type AdminUserSortDirection =
+  | 'asc'
+  | 'desc';
+
+export type AdminUserExcelFilterColumn =
+  AdminUserSortColumn;
+
+export interface AdminUserExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type AdminUserExcelFilterSelections =
+  Partial<
+    Record<
+      AdminUserExcelFilterColumn,
+      readonly string[]
+    >
+  >;
+
 export interface AdminUserSummary {
   readonly totalUsers: number;
   readonly administrators: number;

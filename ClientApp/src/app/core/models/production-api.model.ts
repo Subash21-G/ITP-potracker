@@ -34,6 +34,38 @@ export interface ProcessQueueResponse {
   totalPages: number;
 }
 
+export type ProcessQueueSortColumn =
+  | 'material'
+  | 'po'
+  | 'purchaser'
+  | 'processStart'
+  | 'delivery'
+  | 'owner'
+  | 'process'
+  | 'dispatch';
+
+export type ProcessQueueSortDirection =
+  | 'asc'
+  | 'desc';
+
+export type ProcessQueueExcelFilterColumn =
+  ProcessQueueSortColumn;
+
+export interface ProcessQueueExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly selected?: boolean;
+}
+
+export type ProcessQueueExcelFilterSelections =
+  Partial<
+    Record<
+      ProcessQueueExcelFilterColumn,
+      readonly string[]
+    >
+  >;
+
 export interface ProcessQueueQuery {
   search?: string;
 
@@ -51,6 +83,10 @@ export interface ProcessQueueQuery {
   owner?: string;
   processStatus?: string;
   dispatchStatus?: string;
+
+  sortColumn?: ProcessQueueSortColumn;
+  sortDirection?: ProcessQueueSortDirection;
+  excelFilters?: string;
 
   page?: number;
   pageSize?: number;

@@ -12,7 +12,7 @@ namespace POTracker.Controllers.Api
         Duration = 0,
         Location = ResponseCacheLocation.None,
         NoStore = true)]
-    public sealed class AuditApiController :
+    public sealed partial class AuditApiController :
         ControllerBase
     {
         private const int DefaultPageSize = 25;
@@ -49,6 +49,9 @@ namespace POTracker.Controllers.Api
                 string? columnOwner,
                 DateTime? createdDateFrom,
                 DateTime? createdDateTo,
+                string? sortColumn,
+                string? sortDirection,
+                string? excelFilters,
                 int page = 1,
                 int pageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
@@ -246,6 +249,11 @@ namespace POTracker.Controllers.Api
                         material.CreatedDate <
                         columnEndDateExclusive);
             }
+            query =
+                ApplyAuditExcelFilters(
+                    query,
+                    excelFilters);
+
             var totalCount =
 
                 await query.CountAsync(
@@ -265,11 +273,10 @@ namespace POTracker.Controllers.Api
             }
 
             var items =
-                await query
-                    .OrderByDescending(material =>
-                        material.CreatedDate)
-                    .ThenByDescending(material =>
-                        material.Id)
+                await ApplyAuditSort(
+                        query,
+                        sortColumn,
+                        sortDirection)
                     .Skip(
                         (page - 1) *
                         pageSize)

@@ -1,4 +1,4 @@
-﻿import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -15,10 +15,17 @@ import { finalize } from 'rxjs';
 
 import { ManageOnlyDirective } from '../../../core/directives/manage-only.directive';
 import {
+  PendingInvoiceExcelFilterColumn,
+  PendingInvoiceExcelFilterSelections,
+  PendingInvoiceExcelFilterValue,
   PendingInvoiceItem,
   PendingInvoiceMatchCandidate,
+  PendingInvoiceSortDirection,
 } from '../../../core/models/invoice-api.model';
 import { InvoiceApiService } from '../../../core/services/invoice-api.service';
+import {
+  ServerExcelFilter,
+} from '../../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-pending-invoices-page',
@@ -28,6 +35,7 @@ import { InvoiceApiService } from '../../../core/services/invoice-api.service';
     ManageOnlyDirective,
     ReactiveFormsModule,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl: './pending-invoices-page.html',
   styleUrl: './pending-invoices-page.css',
@@ -54,6 +62,48 @@ export class PendingInvoicesPage {
   readonly candidateSearch = new FormControl('', { nonNullable: true });
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
+
+  readonly sortColumn =
+    signal<
+      PendingInvoiceExcelFilterColumn | null
+    >(
+      null,
+    );
+
+  readonly sortDirection =
+    signal<
+      PendingInvoiceSortDirection | null
+    >(
+      null,
+    );
+
+  readonly excelFilterSelections =
+    signal<
+      PendingInvoiceExcelFilterSelections
+    >(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          PendingInvoiceExcelFilterColumn,
+          readonly PendingInvoiceExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        PendingInvoiceExcelFilterColumn
+      >
+    >(
+      new Set<
+        PendingInvoiceExcelFilterColumn
+      >(),
+    );
 
   readonly rowCount = computed(() => this.items().length);
 
@@ -97,6 +147,238 @@ export class PendingInvoicesPage {
     this.loadPendingItems();
   }
 
+  excelFilterOptionsFor(
+    column:
+      PendingInvoiceExcelFilterColumn,
+  ): readonly PendingInvoiceExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column:
+      PendingInvoiceExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column:
+      PendingInvoiceExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column:
+      PendingInvoiceExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column:
+      PendingInvoiceExcelFilterColumn,
+  ): PendingInvoiceSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column:
+      PendingInvoiceExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    this.invoiceApi
+      .getPendingExcelFilterValues(
+        this.filters.controls.search.value,
+        column,
+        this.serializeExcelFilters(),
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeError(
+              error,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column:
+      PendingInvoiceExcelFilterColumn,
+    direction:
+      PendingInvoiceSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.successMessage.set('');
+    this.loadPendingItems();
+  }
+
+  applyExcelFilter(
+    column:
+      PendingInvoiceExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.successMessage.set('');
+    this.loadPendingItems();
+  }
+
+  clearExcelFilter(
+    column:
+      PendingInvoiceExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.successMessage.set('');
+    this.loadPendingItems();
+  }
+
+
   clearFilters(): void {
     this.successMessage.set('');
 
@@ -104,6 +386,10 @@ export class PendingInvoicesPage {
       search: '',
       take: 500,
     });
+
+    this.excelFilterSelections.set(
+      {},
+    );
 
     this.loadPendingItems();
   }
@@ -346,6 +632,11 @@ export class PendingInvoicesPage {
       .getPendingItems(
         values.search,
         values.take,
+        this.sortColumn() ??
+          undefined,
+        this.sortDirection() ??
+          undefined,
+        this.serializeExcelFilters(),
       )
       .pipe(
         takeUntilDestroyed(this.destroyRef),
@@ -360,6 +651,20 @@ export class PendingInvoicesPage {
           this.errorMessage.set(this.describeError(error));
         },
       });
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
   }
 
   private describeCandidateError(error: HttpErrorResponse): string {

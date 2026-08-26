@@ -9,6 +9,8 @@ import {
 import { Observable } from 'rxjs';
 
 import {
+  ProcessQueueExcelFilterColumn,
+  ProcessQueueExcelFilterValue,
   ProcessQueueQuery,
   ProcessQueueResponse,
   ProductionCalendarDashboard,
@@ -65,6 +67,12 @@ export class ProductionApiService {
           'dispatchStatus',
           query.dispatchStatus,
         ],
+        ['sortColumn', query.sortColumn],
+        [
+          'sortDirection',
+          query.sortDirection,
+        ],
+        ['excelFilters', query.excelFilters],
       ];
 
     for (
@@ -87,6 +95,80 @@ export class ProductionApiService {
 
     return this.http.get<ProcessQueueResponse>(
       '/api/production/process-queue',
+      {
+        params,
+        withCredentials: true,
+      },
+    );
+  }
+
+  getProcessQueueExcelFilterValues(
+    query: ProcessQueueQuery,
+    column: ProcessQueueExcelFilterColumn,
+  ): Observable<
+    readonly ProcessQueueExcelFilterValue[]
+  > {
+    let params =
+      new HttpParams()
+        .set(
+          'column',
+          column,
+        );
+
+    const values:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['material', query.material],
+        ['description', query.description],
+        ['poNumber', query.poNumber],
+        ['purchaser', query.purchaser],
+        [
+          'processStartFrom',
+          query.processStartFrom,
+        ],
+        [
+          'processStartTo',
+          query.processStartTo,
+        ],
+        ['deliveryFrom', query.deliveryFrom],
+        ['deliveryTo', query.deliveryTo],
+        ['owner', query.owner],
+        [
+          'processStatus',
+          query.processStatus,
+        ],
+        [
+          'dispatchStatus',
+          query.dispatchStatus,
+        ],
+        ['excelFilters', query.excelFilters],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of values
+    ) {
+      const normalized =
+        value?.trim();
+
+      if (normalized) {
+        params =
+          params.set(
+            name,
+            normalized,
+          );
+      }
+    }
+
+    return this.http.get<
+      readonly ProcessQueueExcelFilterValue[]
+    >(
+      '/api/production/process-queue/excel-filter-values',
       {
         params,
         withCredentials: true,

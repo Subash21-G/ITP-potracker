@@ -32,12 +32,19 @@ import {
   ManageOnlyDirective,
 } from '../../core/directives/manage-only.directive';
 import {
+  DrawingExcelFilterColumn,
+  DrawingExcelFilterSelections,
+  DrawingExcelFilterValue,
   DrawingListItem,
+  DrawingSortDirection,
   DrawingSummary,
 } from '../../core/models/insights-api.model';
 import {
   InsightsApiService,
 } from '../../core/services/insights-api.service';
+import {
+  ServerExcelFilter,
+} from '../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-drawings-page',
@@ -47,6 +54,7 @@ import {
     ManageOnlyDirective,
     ReactiveFormsModule,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl: './drawings-page.html',
   styleUrl: '../insights-page.css',
@@ -156,6 +164,43 @@ export class DrawingsPage {
 
   readonly page = signal(1);
   readonly pageSize = signal(25);
+
+  readonly sortColumn =
+    signal<
+      DrawingExcelFilterColumn | null
+    >(null);
+
+  readonly sortDirection =
+    signal<
+      DrawingSortDirection | null
+    >(null);
+
+  readonly excelFilterSelections =
+    signal<DrawingExcelFilterSelections>(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          DrawingExcelFilterColumn,
+          readonly DrawingExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        DrawingExcelFilterColumn
+      >
+    >(
+      new Set<
+        DrawingExcelFilterColumn
+      >(),
+    );
+
   readonly totalRecords = signal(0);
   readonly totalPages = signal(1);
   readonly loading = signal(false);
@@ -193,6 +238,228 @@ export class DrawingsPage {
     );
 
   constructor() {
+    this.load();
+  }
+
+  excelFilterOptionsFor(
+    column: DrawingExcelFilterColumn,
+  ): readonly DrawingExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column: DrawingExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column: DrawingExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column: DrawingExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column: DrawingExcelFilterColumn,
+  ): DrawingSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column: DrawingExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    this.api
+      .getDrawingExcelFilterValues(
+        this.buildDrawingQuery(
+          false,
+        ),
+        column,
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeError(
+              error,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column: DrawingExcelFilterColumn,
+    direction: DrawingSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.page.set(1);
+    this.load();
+  }
+
+  applyExcelFilter(
+    column: DrawingExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.load();
+  }
+
+  clearExcelFilter(
+    column: DrawingExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
     this.load();
   }
 
@@ -344,6 +611,10 @@ export class DrawingsPage {
       },
     );
 
+    this.excelFilterSelections.set(
+      {},
+    );
+
     this.page.set(1);
     this.load();
   }
@@ -411,6 +682,54 @@ export class DrawingsPage {
     this.load();
   }
 
+  private buildDrawingQuery(
+    includePaging: boolean,
+  ) {
+    return {
+      search:
+        this.searchControl.value,
+
+      status:
+        this.statusControl.value,
+
+      ...this.columnFilters
+        .getRawValue(),
+
+      sortColumn:
+        this.sortColumn() ??
+        undefined,
+
+      sortDirection:
+        this.sortDirection() ??
+        undefined,
+
+      excelFilters:
+        this.serializeExcelFilters(),
+
+      page:
+        includePaging
+          ? this.page()
+          : 1,
+
+      pageSize:
+        this.pageSize(),
+    };
+  }
+
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
+  }
+
   private load(): void {
     if (this.loading()) {
       return;
@@ -420,20 +739,11 @@ export class DrawingsPage {
     this.errorMessage.set('');
 
     this.api
-      .getDrawings({
-        search:
-          this.searchControl.value,
-        status:
-          this.statusControl.value,
-
-        ...this.columnFilters
-          .getRawValue(),
-
-        page:
-          this.page(),
-        pageSize:
-          this.pageSize(),
-      })
+      .getDrawings(
+        this.buildDrawingQuery(
+          true,
+        ),
+      )
       .pipe(
         takeUntilDestroyed(
           this.destroyRef,

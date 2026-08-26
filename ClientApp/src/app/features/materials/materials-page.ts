@@ -18,19 +18,27 @@ import {
 import { finalize } from 'rxjs';
 
 import {
+  MaterialExcelFilterColumn,
+  MaterialExcelFilterSelections,
+  MaterialExcelFilterValue,
   MaterialListItem,
   MaterialSortColumn,
   MaterialSortDirection,
 } from '../../core/models/material.model';
 import { MaterialsApiService } from '../../core/services/materials-api.service';
+import {
+  ServerExcelFilter,
+} from '../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-materials-page',
-  imports: [ManageOnlyDirective, 
+  imports: [
+    ManageOnlyDirective,
     DatePipe,
     DecimalPipe,
     ReactiveFormsModule,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl: './materials-page.html',
   styleUrl: './materials-page.css',
@@ -208,6 +216,32 @@ export class MaterialsPage {
       null,
     );
 
+  readonly excelFilterSelections =
+    signal<MaterialExcelFilterSelections>(
+      {},
+    );
+
+  readonly excelFilterOptions =
+    signal<
+      Partial<
+        Record<
+          MaterialExcelFilterColumn,
+          readonly MaterialExcelFilterValue[]
+        >
+      >
+    >({});
+
+  readonly excelFilterLoadingColumns =
+    signal<
+      ReadonlySet<
+        MaterialExcelFilterColumn
+      >
+    >(
+      new Set<
+        MaterialExcelFilterColumn
+      >(),
+    );
+
   readonly totalRecords = signal(0);
   readonly totalMaterialValue = signal(0);
   readonly totalPages = signal(1);
@@ -316,6 +350,259 @@ export class MaterialsPage {
       );
     }
 
+    this.loadMaterials();
+  }
+
+  excelFilterOptionsFor(
+    column: MaterialExcelFilterColumn,
+  ): readonly MaterialExcelFilterValue[] {
+    return (
+      this.excelFilterOptions()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterSelectedValues(
+    column: MaterialExcelFilterColumn,
+  ): readonly string[] {
+    return (
+      this.excelFilterSelections()[
+        column
+      ] ?? []
+    );
+  }
+
+  excelFilterActive(
+    column: MaterialExcelFilterColumn,
+  ): boolean {
+    return Object.prototype
+      .hasOwnProperty.call(
+        this.excelFilterSelections(),
+        column,
+      );
+  }
+
+  excelFilterLoading(
+    column: MaterialExcelFilterColumn,
+  ): boolean {
+    return this
+      .excelFilterLoadingColumns()
+      .has(
+        column,
+      );
+  }
+
+  excelSortDirection(
+    column: MaterialExcelFilterColumn,
+  ): MaterialSortDirection | null {
+    return this.sortColumn() ===
+      column
+      ? this.sortDirection()
+      : null;
+  }
+
+  loadExcelFilterValues(
+    column: MaterialExcelFilterColumn,
+  ): void {
+    if (
+      this.excelFilterLoading(
+        column,
+      )
+    ) {
+      return;
+    }
+
+    this.excelFilterLoadingColumns
+      .update(
+        columns => {
+          const updated =
+            new Set(
+              columns,
+            );
+
+          updated.add(
+            column,
+          );
+
+          return updated;
+        },
+      );
+
+    const filterValues =
+      this.filters.getRawValue();
+
+    const columnValues =
+      this.columnFilters
+        .getRawValue();
+
+    this.materialsApi
+      .getExcelFilterValues(
+        {
+          page: 1,
+          pageSize:
+            this.pageSize(),
+
+          sortColumn:
+            this.sortColumn() ??
+            undefined,
+
+          sortDirection:
+            this.sortDirection() ??
+            undefined,
+
+          excelFilters:
+            this.serializeExcelFilters(),
+
+          ...filterValues,
+          ...columnValues,
+        },
+        column,
+      )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef,
+        ),
+        finalize(
+          () =>
+            this.excelFilterLoadingColumns
+              .update(
+                columns => {
+                  const updated =
+                    new Set(
+                      columns,
+                    );
+
+                  updated.delete(
+                    column,
+                  );
+
+                  return updated;
+                },
+              ),
+        ),
+      )
+      .subscribe({
+        next: options => {
+          this.excelFilterOptions
+            .update(
+              current => ({
+                ...current,
+                [column]:
+                  options,
+              }),
+            );
+        },
+
+        error: (
+          error: HttpErrorResponse,
+        ) => {
+          this.errorMessage.set(
+            this.describeMutationError(
+              error,
+              `Excel filter values for ${column} could not be loaded.`,
+            ),
+          );
+        },
+      });
+  }
+
+  applyExcelSort(
+    column: MaterialExcelFilterColumn,
+    direction:
+      MaterialSortDirection,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.sortColumn.set(
+      column,
+    );
+
+    this.sortDirection.set(
+      direction,
+    );
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+    this.loadMaterials();
+  }
+
+  applyExcelFilter(
+    column: MaterialExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues =
+      this.excelFilterOptions()[
+        column
+      ] ?? [];
+
+    const selectedSet =
+      new Set(
+        values,
+      );
+
+    const selectsEverything =
+      availableValues.length >
+        0 &&
+      availableValues.length ===
+        selectedSet.size &&
+      availableValues.every(
+        option =>
+          selectedSet.has(
+            option.value,
+          ),
+      );
+
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          if (selectsEverything) {
+            delete updated[
+              column
+            ];
+          } else {
+            updated[column] =
+              [...values];
+          }
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
+    this.loadMaterials();
+  }
+
+  clearExcelFilter(
+    column: MaterialExcelFilterColumn,
+  ): void {
+    this.excelFilterSelections
+      .update(
+        current => {
+          const updated = {
+            ...current,
+          };
+
+          delete updated[
+            column
+          ];
+
+          return updated;
+        },
+      );
+
+    this.page.set(1);
+    this.clearSelection();
+    this.successMessage.set('');
     this.loadMaterials();
   }
 
@@ -661,6 +948,9 @@ export class MaterialsPage {
   clearFilters(): void {
     this.filters.reset();
     this.columnFilters.reset();
+    this.excelFilterSelections.set(
+      {},
+    );
     this.page.set(1);
     this.clearSelection();
     this.successMessage.set('');
@@ -820,6 +1110,9 @@ export class MaterialsPage {
         sortDirection:
           this.sortDirection() ??
           undefined,
+
+        excelFilters:
+          this.serializeExcelFilters(),
 
         ...filterValues,
         ...columnValues,
@@ -1028,6 +1321,20 @@ export class MaterialsPage {
       });
   }
 
+  private serializeExcelFilters():
+    string | undefined {
+    const selections =
+      this.excelFilterSelections();
+
+    return Object.keys(
+      selections,
+    ).length > 0
+      ? JSON.stringify(
+          selections,
+        )
+      : undefined;
+  }
+
   private clearSelection(): void {
     this.selectedIds.set(
       new Set<number>(),
@@ -1123,6 +1430,9 @@ export class MaterialsPage {
         sortDirection:
           this.sortDirection() ??
           undefined,
+
+        excelFilters:
+          this.serializeExcelFilters(),
 
         ...filterValues,
         ...columnValues,

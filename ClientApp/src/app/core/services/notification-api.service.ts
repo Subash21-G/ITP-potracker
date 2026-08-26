@@ -14,6 +14,8 @@ import {
 
 import {
   MarkNotificationReadResponse,
+  NotificationExcelFilterColumn,
+  NotificationExcelFilterValue,
   NotificationsPagedResponse,
   NotificationsQuery,
 } from '../models/notification-api.model';
@@ -50,6 +52,9 @@ export class NotificationApiService {
         ['message', query.message],
         ['alertDateFrom', query.alertDateFrom],
         ['alertDateTo', query.alertDateTo],
+        ['sortColumn', query.sortColumn],
+        ['sortDirection', query.sortDirection],
+        ['excelFilters', query.excelFilters],
       ];
 
     for (
@@ -107,6 +112,95 @@ export class NotificationApiService {
       NotificationsPagedResponse
     >(
       '/api/notifications',
+      {
+        params,
+        withCredentials: true,
+      },
+    );
+  }
+
+  getExcelFilterValues(
+    query: NotificationsQuery,
+    column: NotificationExcelFilterColumn,
+  ): Observable<
+    readonly NotificationExcelFilterValue[]
+  > {
+    let params =
+      new HttpParams()
+        .set(
+          'column',
+          column,
+        );
+
+    const textValues:
+      readonly [
+        string,
+        string | undefined,
+      ][] = [
+        ['search', query.search],
+        ['alertType', query.alertType],
+        ['material', query.material],
+        ['message', query.message],
+        ['alertDateFrom', query.alertDateFrom],
+        ['alertDateTo', query.alertDateTo],
+        ['excelFilters', query.excelFilters],
+      ];
+
+    for (
+      const [
+        name,
+        value,
+      ] of textValues
+    ) {
+      const normalized =
+        value?.trim();
+
+      if (normalized) {
+        params =
+          params.set(
+            name,
+            normalized,
+          );
+      }
+    }
+
+    if (
+      query.status &&
+      query.status !== 'all'
+    ) {
+      params =
+        params.set(
+          'status',
+          query.status,
+        );
+    }
+
+    if (
+      query.mobileStatus &&
+      query.mobileStatus !== 'all'
+    ) {
+      params =
+        params.set(
+          'mobileStatus',
+          query.mobileStatus,
+        );
+    }
+
+    if (
+      query.columnStatus &&
+      query.columnStatus !== 'all'
+    ) {
+      params =
+        params.set(
+          'columnStatus',
+          query.columnStatus,
+        );
+    }
+
+    return this.http.get<
+      readonly NotificationExcelFilterValue[]
+    >(
+      '/api/notifications/excel-filter-values',
       {
         params,
         withCredentials: true,

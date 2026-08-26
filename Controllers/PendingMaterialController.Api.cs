@@ -1,3 +1,4 @@
+using System.Globalization;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,29 @@ namespace POTracker.Controllers
 {
     public partial class PendingMaterialController
     {
+        private static readonly HashSet<string>
+            PendingMaterialExcelFilterColumns =
+                new(
+                    new[]
+                    {
+                        "due",
+                        "po",
+                        "material",
+                        "description",
+                        "poqty",
+                        "invoice",
+                        "invoicebalance",
+                        "dispatch",
+                        "pendingdispatch",
+                        "progress",
+                        "process",
+                        "invoicestatus",
+                        "dispatchstatus",
+                        "delivery",
+                        "assigned"
+                    },
+                    StringComparer.OrdinalIgnoreCase);
+
         [HttpGet("~/api/pending-materials")]
         public async Task<IActionResult> GetPendingMaterialsApi(
             string? search,
@@ -50,6 +74,9 @@ namespace POTracker.Controllers
             DateTime? columnDeliveryDateFrom = null,
             DateTime? columnDeliveryDateTo = null,
             string? columnAssignedDashboard = null,
+            string? excelFilters = null,
+            string? sortColumn = null,
+            string? sortDirection = null,
 
             int page = 1,
             int pageSize = 25)
@@ -119,49 +146,126 @@ namespace POTracker.Controllers
                     columnDeliveryDateTo,
                     columnAssignedDashboard);
 
-            var summary =
-                await BuildSummaryAsync(filteredQuery);
+            var excelFilterSelections =
+                ParsePendingMaterialExcelFilters(
+                    excelFilters);
 
-            var totalRecords =
-                summary.TotalPendingMaterials;
+            var requiresInMemory =
+                excelFilterSelections.Count >
+                    0 ||
+                !string.IsNullOrWhiteSpace(
+                    sortColumn);
 
-            var totalPages =
-                Math.Max(
-                    1,
-                    (int)Math.Ceiling(
-                        totalRecords /
-                        (double)pageSize));
+            PendingMaterialSummaryViewModel
+                summary;
 
-            if (page > totalPages)
+            List<PendingMaterialRowViewModel>
+                pageRows;
+
+            int totalRecords;
+
+            int totalPages;
+
+            if (!requiresInMemory)
             {
-                page = totalPages;
+                summary =
+                    await BuildSummaryAsync(
+                        filteredQuery);
+
+                totalRecords =
+                    summary.TotalPendingMaterials;
+
+                totalPages =
+                    Math.Max(
+                        1,
+                        (int)Math.Ceiling(
+                            totalRecords /
+                            (double)pageSize));
+
+                if (page > totalPages)
+                {
+                    page =
+                        totalPages;
+                }
+
+                var today =
+                    DateTime.Today;
+
+                var materials =
+                    await filteredQuery
+                        .OrderBy(material =>
+                            !material.DeliveryDate
+                                .HasValue
+                                ? 2
+                                : material.DeliveryDate <
+                                  today
+                                    ? 0
+                                    : 1)
+                        .ThenBy(material =>
+                            material.DeliveryDate)
+                        .ThenByDescending(material =>
+                            material.Id)
+                        .Skip(
+                            (page - 1) *
+                            pageSize)
+                        .Take(pageSize)
+                        .ToListAsync();
+
+                pageRows =
+                    materials
+                        .Select(MapRow)
+                        .ToList();
+            }
+            else
+            {
+                var allRows =
+                    (
+                        await filteredQuery
+                            .ToListAsync()
+                    )
+                    .Select(MapRow)
+                    .Where(row =>
+                        MatchesPendingMaterialExcelFilters(
+                            row,
+                            excelFilterSelections))
+                    .ToList();
+
+                summary =
+                    BuildSummary(
+                        allRows);
+
+                totalRecords =
+                    allRows.Count;
+
+                totalPages =
+                    Math.Max(
+                        1,
+                        (int)Math.Ceiling(
+                            totalRecords /
+                            (double)pageSize));
+
+                if (page > totalPages)
+                {
+                    page =
+                        totalPages;
+                }
+
+                pageRows =
+                    ApplyPendingMaterialSortInMemory(
+                            allRows,
+                            sortColumn,
+                            sortDirection)
+                        .Skip(
+                            (page - 1) *
+                            pageSize)
+                        .Take(pageSize)
+                        .ToList();
             }
 
-            var today =
-                DateTime.Today;
-
-            var materials =
-                await filteredQuery
-                    .OrderBy(material =>
-                        !material.DeliveryDate.HasValue
-                            ? 2
-                            : material.DeliveryDate < today
-                                ? 0
-                                : 1)
-                    .ThenBy(material =>
-                        material.DeliveryDate)
-                    .ThenByDescending(material =>
-                        material.Id)
-                    .Skip(
-                        (page - 1) *
-                        pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
             var items =
-                materials
-                    .Select(MapRow)
-                    .Select(MapPendingMaterialApiItem)
+                pageRows
+                    .Select(
+                        MapPendingMaterialApiItem)
                     .ToList();
 
             return Ok(
@@ -238,6 +342,186 @@ namespace POTracker.Controllers
                 });
         }
 
+        [HttpGet("~/api/pending-materials/excel-filter-values")]
+        [ProducesResponseType(
+            typeof(
+                IReadOnlyList<
+                    ExcelFilterValueDto>),
+            StatusCodes.Status200OK)]
+        public async Task<
+            ActionResult<
+                IReadOnlyList<
+                    ExcelFilterValueDto>>>
+            GetPendingMaterialExcelFilterValues(
+                string column,
+                string? search,
+                string? poNumber,
+                string? handler,
+                string? assignedDashboard,
+                string? processStatus,
+                string? invoiceStatus,
+                string? dispatchStatus,
+                DateTime? poDateFrom,
+                DateTime? poDateTo,
+                DateTime? poReceivedDateFrom,
+                DateTime? poReceivedDateTo,
+                DateTime? deliveryDateFrom,
+                DateTime? deliveryDateTo,
+                bool overdueOnly = false,
+                bool dueThisWeekOnly = false,
+                string? dueStatus = null,
+                string? columnPoNumber = null,
+                string? columnHandler = null,
+                string? columnMaterialNo = null,
+                string? columnLineItem = null,
+                string? columnDescription = null,
+                decimal? minPoQuantity = null,
+                decimal? maxPoQuantity = null,
+                decimal? minInvoiceQuantity = null,
+                decimal? maxInvoiceQuantity = null,
+                decimal? minInvoiceBalanceQuantity = null,
+                decimal? maxInvoiceBalanceQuantity = null,
+                decimal? minDispatchQuantity = null,
+                decimal? maxDispatchQuantity = null,
+                decimal? minPendingDispatchQuantity = null,
+                decimal? maxPendingDispatchQuantity = null,
+                decimal? minCompletionPercentage = null,
+                decimal? maxCompletionPercentage = null,
+                string? columnProcessStatus = null,
+                string? columnInvoiceStatus = null,
+                string? columnDispatchStatus = null,
+                DateTime? columnDeliveryDateFrom = null,
+                DateTime? columnDeliveryDateTo = null,
+                string? columnAssignedDashboard = null,
+                string? excelFilters = null,
+                CancellationToken cancellationToken = default)
+        {
+            if (!IsLoggedIn())
+            {
+                return Unauthorized();
+            }
+
+            var normalizedColumn =
+                column?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            if (
+                !PendingMaterialExcelFilterColumns
+                    .Contains(
+                        normalizedColumn)
+            )
+            {
+                return BadRequest(
+                    new
+                    {
+                        error =
+                            "Unsupported Pending Materials Excel filter column."
+                    });
+            }
+
+            var filteredQuery =
+                ApplyFilters(
+                    CreatePendingQuery(),
+                    search,
+                    poNumber,
+                    handler,
+                    assignedDashboard,
+                    processStatus,
+                    invoiceStatus,
+                    dispatchStatus,
+                    poDateFrom,
+                    poDateTo,
+                    poReceivedDateFrom,
+                    poReceivedDateTo,
+                    deliveryDateFrom,
+                    deliveryDateTo,
+                    overdueOnly,
+                    dueThisWeekOnly);
+
+            filteredQuery =
+                ApplyHeaderFilters(
+                    filteredQuery,
+                    dueStatus,
+                    columnPoNumber,
+                    columnHandler,
+                    columnMaterialNo,
+                    columnLineItem,
+                    columnDescription,
+                    minPoQuantity,
+                    maxPoQuantity,
+                    minInvoiceQuantity,
+                    maxInvoiceQuantity,
+                    minInvoiceBalanceQuantity,
+                    maxInvoiceBalanceQuantity,
+                    minDispatchQuantity,
+                    maxDispatchQuantity,
+                    minPendingDispatchQuantity,
+                    maxPendingDispatchQuantity,
+                    minCompletionPercentage,
+                    maxCompletionPercentage,
+                    columnProcessStatus,
+                    columnInvoiceStatus,
+                    columnDispatchStatus,
+                    columnDeliveryDateFrom,
+                    columnDeliveryDateTo,
+                    columnAssignedDashboard);
+
+            var rows =
+                (
+                    await filteredQuery
+                        .ToListAsync(
+                            cancellationToken)
+                )
+                .Select(MapRow)
+                .ToList();
+
+            var selections =
+                ParsePendingMaterialExcelFilters(
+                    excelFilters);
+
+            selections.Remove(
+                normalizedColumn);
+
+            var values =
+                rows
+                    .Where(row =>
+                        MatchesPendingMaterialExcelFilters(
+                            row,
+                            selections))
+                    .Select(row =>
+                        GetPendingMaterialExcelCellValue(
+                            row,
+                            normalizedColumn))
+                    .GroupBy(
+                        value =>
+                            value,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group =>
+                        new ExcelFilterValueDto
+                        {
+                            Value =
+                                group.Key,
+
+                            Label =
+                                string.IsNullOrEmpty(
+                                    group.Key)
+                                    ? "(Blank)"
+                                    : group.Key,
+
+                            Count =
+                                group.Count()
+                        })
+                    .OrderBy(
+                        item =>
+                            item.Label,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            return Ok(values);
+        }
+
         /// <summary>
         /// Exports all filtered Pending Materials used by the Angular screen.
         /// </summary>
@@ -289,6 +573,9 @@ namespace POTracker.Controllers
                 DateTime? columnDeliveryDateFrom = null,
                 DateTime? columnDeliveryDateTo = null,
                 string? columnAssignedDashboard = null,
+                string? excelFilters = null,
+                string? sortColumn = null,
+                string? sortDirection = null,
 
                 CancellationToken cancellationToken = default)
         {
@@ -363,10 +650,21 @@ namespace POTracker.Controllers
                         material.Id)
                     .ToListAsync(cancellationToken);
 
+            var excelFilterSelections =
+                ParsePendingMaterialExcelFilters(
+                    excelFilters);
+
             var rows =
-                materials
-                    .Select(MapRow)
-                    .ToList();
+                ApplyPendingMaterialSortInMemory(
+                    materials
+                        .Select(MapRow)
+                        .Where(row =>
+                            MatchesPendingMaterialExcelFilters(
+                                row,
+                                excelFilterSelections)),
+                    sortColumn,
+                    sortDirection)
+                .ToList();
 
             using var workbook =
                 new XLWorkbook();
@@ -388,6 +686,372 @@ namespace POTracker.Controllers
                 stream.ToArray(),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"Pending_Materials_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+        }
+
+        private static Dictionary<
+            string,
+            string[]>
+            ParsePendingMaterialExcelFilters(
+                string? excelFilters)
+        {
+            if (
+                string.IsNullOrWhiteSpace(
+                    excelFilters)
+            )
+            {
+                return new Dictionary<
+                    string,
+                    string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+
+            try
+            {
+                var parsed =
+                    System.Text.Json.JsonSerializer
+                        .Deserialize<
+                            Dictionary<
+                                string,
+                                string[]>>(
+                            excelFilters)
+                    ?? new Dictionary<
+                        string,
+                        string[]>();
+
+                return parsed
+                    .Where(pair =>
+                        PendingMaterialExcelFilterColumns
+                            .Contains(
+                                pair.Key))
+                    .ToDictionary(
+                        pair =>
+                            pair.Key
+                                .Trim()
+                                .ToLowerInvariant(),
+                        pair =>
+                            pair.Value ??
+                            Array.Empty<string>(),
+                        StringComparer.OrdinalIgnoreCase);
+            }
+            catch (
+                System.Text.Json.JsonException)
+            {
+                return new Dictionary<
+                    string,
+                    string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private static bool
+            MatchesPendingMaterialExcelFilters(
+                PendingMaterialRowViewModel row,
+                IReadOnlyDictionary<
+                    string,
+                    string[]> selections)
+        {
+            foreach (
+                var pair in selections)
+            {
+                var selectedValues =
+                    pair.Value ??
+                    Array.Empty<string>();
+
+                if (
+                    selectedValues.Length ==
+                    0
+                )
+                {
+                    return false;
+                }
+
+                var cellValue =
+                    GetPendingMaterialExcelCellValue(
+                        row,
+                        pair.Key);
+
+                if (
+                    !selectedValues.Any(
+                        selected =>
+                            string.Equals(
+                                selected,
+                                cellValue,
+                                StringComparison.OrdinalIgnoreCase))
+                )
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string
+            GetPendingMaterialExcelCellValue(
+                PendingMaterialRowViewModel row,
+                string column)
+        {
+            var normalized =
+                column
+                    .Trim()
+                    .ToLowerInvariant();
+
+            return normalized switch
+            {
+                "due" =>
+                    row.DueStatus,
+
+                "po" =>
+                    string.Join(
+                        " | ",
+                        new[]
+                        {
+                            row.PONumber,
+                            string.IsNullOrWhiteSpace(
+                                row.Handler)
+                                ? "Unassigned"
+                                : row.Handler
+                        }),
+
+                "material" =>
+                    string.Join(
+                        " | ",
+                        new[]
+                        {
+                            row.MaterialNo,
+                            "Line " +
+                            (
+                                string.IsNullOrWhiteSpace(
+                                    row.LineItem)
+                                    ? "—"
+                                    : row.LineItem
+                            )
+                        }),
+
+                "description" =>
+                    GetPendingDescriptionExcelValue(
+                        row),
+
+                "poqty" =>
+                    row.POQuantity
+                        .ToString(
+                            "0.###",
+                            CultureInfo.InvariantCulture),
+
+                "invoice" =>
+                    row.InvoiceQuantity
+                        .ToString(
+                            "0.###",
+                            CultureInfo.InvariantCulture),
+
+                "invoicebalance" =>
+                    row.InvoiceBalanceQuantity
+                        .ToString(
+                            "0.###",
+                            CultureInfo.InvariantCulture),
+
+                "dispatch" =>
+                    row.DispatchQuantity
+                        .ToString(
+                            "0.###",
+                            CultureInfo.InvariantCulture),
+
+                "pendingdispatch" =>
+                    row.PendingDispatchQuantity
+                        .ToString(
+                            "0.###",
+                            CultureInfo.InvariantCulture),
+
+                "progress" =>
+                    row.CompletionPercentage
+                        .ToString(
+                            "0",
+                            CultureInfo.InvariantCulture) +
+                    "%",
+
+                "process" =>
+                    row.ProcessStatus,
+
+                "invoicestatus" =>
+                    row.InvoiceStatus,
+
+                "dispatchstatus" =>
+                    row.DispatchStatus,
+
+                "delivery" =>
+                    row.DeliveryDate
+                        ?.ToString(
+                            "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture)
+                    ?? string.Empty,
+
+                "assigned" =>
+                    string.IsNullOrWhiteSpace(
+                        row.AssignedDashboard)
+                        ? "Unassigned"
+                        : row.AssignedDashboard,
+
+                _ =>
+                    string.Empty
+            };
+        }
+
+        private static string
+            GetPendingDescriptionExcelValue(
+                PendingMaterialRowViewModel row)
+        {
+            var description =
+                !string.IsNullOrWhiteSpace(
+                    row.ShortDescription)
+                    ? row.ShortDescription
+                    : row.BriefDescription ??
+                      string.Empty;
+
+            if (
+                string.IsNullOrWhiteSpace(
+                    row.DrawingNo)
+            )
+            {
+                return description;
+            }
+
+            return string.IsNullOrWhiteSpace(
+                    description)
+                ? "Drawing: " +
+                  row.DrawingNo
+                : description +
+                  " | Drawing: " +
+                  row.DrawingNo;
+        }
+
+        private static IOrderedEnumerable<
+            PendingMaterialRowViewModel>
+            ApplyPendingMaterialSortInMemory(
+                IEnumerable<
+                    PendingMaterialRowViewModel> rows,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column =
+                sortColumn?
+                    .Trim()
+                    .ToLowerInvariant() ??
+                string.Empty;
+
+            var descending =
+                string.Equals(
+                    sortDirection?.Trim(),
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+            if (
+                string.IsNullOrEmpty(
+                    column)
+            )
+            {
+                var today =
+                    DateTime.Today;
+
+                return rows
+                    .OrderBy(row =>
+                        !row.DeliveryDate.HasValue
+                            ? 2
+                            : row.DeliveryDate.Value.Date <
+                              today
+                                ? 0
+                                : 1)
+                    .ThenBy(row =>
+                        row.DeliveryDate)
+                    .ThenByDescending(row =>
+                        row.MaterialId);
+            }
+
+            Func<
+                PendingMaterialRowViewModel,
+                object?> selector =
+                column switch
+                {
+                    "due" =>
+                        row =>
+                            row.DueStatus,
+
+                    "po" =>
+                        row =>
+                            row.PONumber,
+
+                    "material" =>
+                        row =>
+                            row.MaterialNo,
+
+                    "description" =>
+                        row =>
+                            !string.IsNullOrWhiteSpace(
+                                row.ShortDescription)
+                                ? row.ShortDescription
+                                : row.BriefDescription,
+
+                    "poqty" =>
+                        row =>
+                            row.POQuantity,
+
+                    "invoice" =>
+                        row =>
+                            row.InvoiceQuantity,
+
+                    "invoicebalance" =>
+                        row =>
+                            row.InvoiceBalanceQuantity,
+
+                    "dispatch" =>
+                        row =>
+                            row.DispatchQuantity,
+
+                    "pendingdispatch" =>
+                        row =>
+                            row.PendingDispatchQuantity,
+
+                    "progress" =>
+                        row =>
+                            row.CompletionPercentage,
+
+                    "process" =>
+                        row =>
+                            row.ProcessStatus,
+
+                    "invoicestatus" =>
+                        row =>
+                            row.InvoiceStatus,
+
+                    "dispatchstatus" =>
+                        row =>
+                            row.DispatchStatus,
+
+                    "delivery" =>
+                        row =>
+                            row.DeliveryDate,
+
+                    "assigned" =>
+                        row =>
+                            row.AssignedDashboard,
+
+                    _ =>
+                        row =>
+                            row.MaterialId
+                };
+
+            return descending
+                ? rows
+                    .OrderByDescending(
+                        selector)
+                    .ThenByDescending(
+                        row =>
+                            row.MaterialId)
+                : rows
+                    .OrderBy(
+                        selector)
+                    .ThenBy(
+                        row =>
+                            row.MaterialId);
         }
 
         private static IQueryable<POTracker.Models.Material>

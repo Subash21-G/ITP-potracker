@@ -16,6 +16,8 @@ import {
 import {
   MaterialBulkDeleteRequest,
   MaterialBulkDeleteResponse,
+  MaterialExcelFilterColumn,
+  MaterialExcelFilterValue,
   MaterialListItem,
   MaterialQuery,
   PagedResult,
@@ -79,6 +81,31 @@ export class MaterialsApiService {
     );
   }
 
+  getExcelFilterValues(
+    query: MaterialQuery,
+    column: MaterialExcelFilterColumn,
+  ): Observable<
+    readonly MaterialExcelFilterValue[]
+  > {
+    const params =
+      this.buildFilterParams(
+        query,
+      ).set(
+        'column',
+        column,
+      );
+
+    return this.http.get<
+      readonly MaterialExcelFilterValue[]
+    >(
+      '/api/materials/excel-filter-values',
+      {
+        params,
+        withCredentials: true,
+      },
+    );
+  }
+
   downloadExcel(
     query: MaterialQuery,
   ): Observable<Blob> {
@@ -129,6 +156,7 @@ export class MaterialsApiService {
       ][] = [
         ['sortColumn', query.sortColumn],
         ['sortDirection', query.sortDirection],
+        ['excelFilters', query.excelFilters],
         ['search', query.search],
         ['poNumber', query.poNumber],
         ['handler', query.handler],
