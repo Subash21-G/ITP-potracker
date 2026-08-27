@@ -108,7 +108,7 @@
     }
 
     /// <summary>
-    /// Latest material rows displayed in the Angular dashboard.
+    /// Material rows displayed in the Angular dashboard.
     /// </summary>
     public sealed class DashboardRecentMaterialDto
     {

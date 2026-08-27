@@ -533,6 +533,37 @@
   animation: none;
 }
 
+/* ============================================================
+   RESPONSIVE DATA TABLES
+   ============================================================ */
+
+.po-excel-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.po-excel-table th,
+.po-excel-table td {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.po-excel-table th {
+  white-space: normal;
+}
+
+.po-excel-table td {
+  white-space: normal;
+}
+
+.po-excel-table .description-cell {
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mobile-menu-button {
   display: none;
   width: 42px;

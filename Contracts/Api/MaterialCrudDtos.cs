@@ -20,6 +20,22 @@ namespace POTracker.Contracts.Api
     }
 
     /// <summary>
+    /// Purchase order containing the material number shown on a material detail page.
+    /// </summary>
+    public sealed class RelatedMaterialPurchaseOrderDto
+    {
+        public int PurchaseOrderId { get; init; }
+
+        public string PONumber { get; init; } = string.Empty;
+
+        public string Handler { get; init; } = string.Empty;
+
+        public string PurchaserName { get; init; } = string.Empty;
+
+        public int MaterialCount { get; init; }
+    }
+
+    /// <summary>
     /// Complete material details returned to Angular.
     /// Invoice and dispatch quantities are read-only because they are
     /// controlled by invoice import and dispatch modules.

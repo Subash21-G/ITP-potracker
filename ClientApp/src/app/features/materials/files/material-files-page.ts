@@ -108,6 +108,10 @@ export class MaterialFilesPage implements OnInit {
       '.stp',
       '.iges',
       '.igs',
+      '.png',
+      '.jpg',
+      '.jpeg',
+      '.webp',
       '.zip',
     ];
 
@@ -115,7 +119,7 @@ export class MaterialFilesPage implements OnInit {
       this.selectedDrawing.set(null);
       input.value = '';
       this.errorMessage.set(
-        'Allowed drawing files: PDF, DWG, DXF, STEP, STP, IGES, IGS or ZIP.',
+        'Allowed drawing files: PDF, PNG, JPG, WebP, DWG, DXF, STEP, STP, IGES, IGS or ZIP.',
       );
       return;
     }
@@ -304,6 +308,14 @@ export class MaterialFilesPage implements OnInit {
 
     if (error.status === 404) {
       return 'Material was not found.';
+    }
+
+    if (error.status === 413) {
+      return 'The selected upload is too large. The PDF limit is 50 MB and the drawing limit is 100 MB.';
+    }
+
+    if (error.status === 415) {
+      return 'The selected drawing format is not supported.';
     }
 
     const apiMessage =

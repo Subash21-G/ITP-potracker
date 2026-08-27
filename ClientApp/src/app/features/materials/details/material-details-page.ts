@@ -3,10 +3,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
+  computed,
   inject,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+  DomSanitizer,
+  SafeResourceUrl,
+} from '@angular/platform-browser';
 import {
   ActivatedRoute,
   Router,
@@ -16,10 +21,23 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { finalize } from 'rxjs';
 import {
   MaterialDetails,
+  RelatedMaterialPurchaseOrder,
 } from '../../../core/models/material-crud.model';
 import {
   MaterialCrudApiService,
 } from '../../../core/services/material-crud-api.service';
+import {
+  MaterialsApiService,
+} from '../../../core/services/materials-api.service';
+import {
+  findRelatedMaterial,
+} from './related-material-selection';
+
+interface DocumentPreview {
+  readonly path: string;
+  readonly name: string;
+  readonly safeUrl: SafeResourceUrl;
+}
 
 @Component({
   selector: 'app-material-details-page',
@@ -36,29 +54,73 @@ export class MaterialDetailsPage implements OnInit {
   private readonly router = inject(Router);
   private readonly materialApi =
     inject(MaterialCrudApiService);
+  private readonly materialsApi =
+    inject(MaterialsApiService);
+  private readonly sanitizer =
+    inject(DomSanitizer);
 
   readonly material =
     signal<MaterialDetails | null>(null);
+
+  readonly documentPreview = computed<DocumentPreview | null>(
+    () => {
+      const item = this.material();
+
+      if (!item) {
+        return null;
+      }
+
+      const path = [
+        item.drawingFilePath,
+        item.pdfFilePath,
+      ].find((candidate) =>
+        this.canPreviewDocument(candidate),
+      );
+
+      if (!path) {
+        return null;
+      }
+
+      return {
+        path,
+        name: this.fileName(path),
+        safeUrl:
+          this.sanitizer.bypassSecurityTrustResourceUrl(
+            this.inlinePreviewPath(path),
+          ),
+      };
+    },
+  );
 
   readonly isLoading = signal(true);
   readonly isDeleting = signal(false);
   readonly errorMessage = signal('');
   readonly actionMessage = signal('');
+  readonly relatedPurchaseOrders =
+    signal<RelatedMaterialPurchaseOrder[]>([]);
+  readonly relatedPurchaseOrdersLoading = signal(false);
+  readonly relatedPurchaseOrdersError = signal('');
+  readonly selectingPurchaseOrderId =
+    signal<number | null>(null);
+  readonly relatedPurchaseOrderNavigationError = signal('');
 
   ngOnInit(): void {
-    const id = Number(
-      this.route.snapshot.paramMap.get('id'),
-    );
-
-    if (!Number.isInteger(id) || id <= 0) {
-      this.errorMessage.set(
-        'Invalid material number.',
+    this.route.paramMap.subscribe((params) => {
+      const id = Number(
+        params.get('id'),
       );
-      this.isLoading.set(false);
-      return;
-    }
 
-    this.loadMaterial(id);
+      if (!Number.isInteger(id) || id <= 0) {
+        this.material.set(null);
+        this.errorMessage.set(
+          'Invalid material number.',
+        );
+        this.isLoading.set(false);
+        return;
+      }
+
+      this.loadMaterial(id);
+    });
   }
 
   loadMaterial(id?: number): void {
@@ -83,6 +145,7 @@ export class MaterialDetailsPage implements OnInit {
       .subscribe({
         next: (response) => {
           this.material.set(response);
+          this.loadRelatedPurchaseOrders(response.id);
         },
         error: (error: HttpErrorResponse) => {
           if (error.status === 404) {
@@ -108,6 +171,105 @@ export class MaterialDetailsPage implements OnInit {
 
           this.errorMessage.set(
             'Material details could not be loaded.',
+          );
+        },
+      });
+  }
+
+  private loadRelatedPurchaseOrders(
+    materialId: number,
+  ): void {
+    this.relatedPurchaseOrdersLoading.set(true);
+    this.relatedPurchaseOrdersError.set('');
+
+    this.materialApi
+      .getRelatedPurchaseOrders(materialId)
+      .pipe(
+        finalize(() => {
+          this.relatedPurchaseOrdersLoading.set(false);
+        }),
+      )
+      .subscribe({
+        next: (purchaseOrders) => {
+          this.relatedPurchaseOrders.set(purchaseOrders);
+        },
+        error: () => {
+          this.relatedPurchaseOrders.set([]);
+          this.relatedPurchaseOrdersError.set(
+            'Related purchase orders could not be loaded.',
+          );
+        },
+      });
+  }
+
+  openRelatedPurchaseOrder(
+    purchaseOrder: RelatedMaterialPurchaseOrder,
+  ): void {
+    const current = this.material();
+
+    if (
+      !current ||
+      this.selectingPurchaseOrderId() !== null ||
+      purchaseOrder.purchaseOrderId ===
+        current.purchaseOrderId
+    ) {
+      return;
+    }
+
+    this.selectingPurchaseOrderId.set(
+      purchaseOrder.purchaseOrderId,
+    );
+    this.relatedPurchaseOrderNavigationError.set('');
+
+    this.materialsApi
+      .getMaterials(
+        {
+          page: 1,
+          pageSize: Math.min(
+            200,
+            Math.max(
+              20,
+              purchaseOrder.materialCount,
+            ),
+          ),
+          sortColumn: 'line',
+          sortDirection: 'asc',
+          columnPoNumber:
+            purchaseOrder.poNumber ||
+            undefined,
+          materialNo: current.materialNo,
+        },
+        true,
+      )
+      .pipe(
+        finalize(() => {
+          this.selectingPurchaseOrderId.set(null);
+        }),
+      )
+      .subscribe({
+        next: (response) => {
+          const targetMaterial =
+            findRelatedMaterial(
+              response.items,
+              purchaseOrder.purchaseOrderId,
+              current.materialNo,
+            );
+
+          if (!targetMaterial) {
+            this.relatedPurchaseOrderNavigationError.set(
+              'The matching material line could not be found for this purchase order.',
+            );
+            return;
+          }
+
+          void this.router.navigate([
+            '/materials',
+            targetMaterial.id,
+          ]);
+        },
+        error: () => {
+          this.relatedPurchaseOrderNavigationError.set(
+            'The selected purchase order could not be opened here. Please try again.',
           );
         },
       });
@@ -197,5 +359,28 @@ export class MaterialDetailsPage implements OnInit {
 
     return parts[parts.length - 1] || path;
   }
-}
 
+  private canPreviewDocument(
+    path: string | null | undefined,
+  ): path is string {
+    if (!path) {
+      return false;
+    }
+
+    const cleanPath = path
+      .split(/[?#]/, 1)[0]
+      .toLowerCase();
+
+    return /\.(pdf|png|jpe?g|webp|gif|bmp|svg)$/.test(
+      cleanPath,
+    );
+  }
+
+  private inlinePreviewPath(path: string): string {
+    const separator = path.includes('?')
+      ? '&'
+      : '?';
+
+    return `${path}${separator}inline=true`;
+  }
+}

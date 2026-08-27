@@ -1,10 +1,19 @@
-﻿export interface MaterialPurchaseOrderOption {
+export interface MaterialPurchaseOrderOption {
   id: number;
   poNumber: string;
   handler: string;
   poDate: string | null;
   receivedDate: string | null;
 }
+
+export interface RelatedMaterialPurchaseOrder {
+  purchaseOrderId: number;
+  poNumber: string;
+  handler: string;
+  purchaserName: string;
+  materialCount: number;
+}
+
 export interface MaterialDetails {
   id: number;
   purchaseOrderId: number;

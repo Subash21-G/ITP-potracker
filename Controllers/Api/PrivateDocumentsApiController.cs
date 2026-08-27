@@ -42,7 +42,9 @@ public sealed class PrivateDocumentsApiController :
         StatusCodes.Status404NotFound)]
     public IActionResult Download(
         string category,
-        string storedFileName)
+        string storedFileName,
+        [FromQuery]
+        bool inline = false)
     {
         category =
             category?.Trim() ??
@@ -104,6 +106,24 @@ public sealed class PrivateDocumentsApiController :
 
             var stream =
                 _storage.OpenRead(relativePath);
+
+            if (
+                inline &&
+                (
+                    contentType.Equals(
+                        "application/pdf",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    contentType.StartsWith(
+                        "image/",
+                        StringComparison.OrdinalIgnoreCase)
+                )
+            )
+            {
+                return File(
+                    stream,
+                    contentType,
+                    enableRangeProcessing: true);
+            }
 
             return File(
                 stream,

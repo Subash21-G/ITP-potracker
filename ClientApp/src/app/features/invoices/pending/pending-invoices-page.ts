@@ -23,9 +23,7 @@ import {
   PendingInvoiceSortDirection,
 } from '../../../core/models/invoice-api.model';
 import { InvoiceApiService } from '../../../core/services/invoice-api.service';
-import {
-  ServerExcelFilter,
-} from '../../../shared/server-excel-filter/server-excel-filter';
+import { ServerExcelFilter } from '../../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-pending-invoices-page',
@@ -63,78 +61,46 @@ export class PendingInvoicesPage {
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
 
-  readonly sortColumn =
-    signal<
-      PendingInvoiceExcelFilterColumn | null
-    >(
-      null,
-    );
+  readonly sortColumn = signal<PendingInvoiceExcelFilterColumn | null>(null);
 
-  readonly sortDirection =
-    signal<
-      PendingInvoiceSortDirection | null
-    >(
-      null,
-    );
+  readonly sortDirection = signal<PendingInvoiceSortDirection | null>(null);
 
-  readonly excelFilterSelections =
-    signal<
-      PendingInvoiceExcelFilterSelections
-    >(
-      {},
-    );
+  readonly excelFilterSelections = signal<PendingInvoiceExcelFilterSelections>({});
 
-  readonly excelFilterOptions =
-    signal<
-      Partial<
-        Record<
-          PendingInvoiceExcelFilterColumn,
-          readonly PendingInvoiceExcelFilterValue[]
-        >
-      >
-    >({});
+  readonly excelFilterOptions = signal<
+    Partial<Record<PendingInvoiceExcelFilterColumn, readonly PendingInvoiceExcelFilterValue[]>>
+  >({});
 
-  readonly excelFilterLoadingColumns =
-    signal<
-      ReadonlySet<
-        PendingInvoiceExcelFilterColumn
-      >
-    >(
-      new Set<
-        PendingInvoiceExcelFilterColumn
-      >(),
-    );
+  readonly excelFilterLoadingColumns = signal<ReadonlySet<PendingInvoiceExcelFilterColumn>>(
+    new Set<PendingInvoiceExcelFilterColumn>(),
+  );
 
   readonly rowCount = computed(() => this.items().length);
 
-  readonly invoiceCount = computed(() =>
-    new Set(
-      this.items()
-        .map((item) => item.invoiceNumber.trim())
-        .filter(Boolean),
-    ).size,
+  readonly invoiceCount = computed(
+    () =>
+      new Set(
+        this.items()
+          .map((item) => item.invoiceNumber.trim())
+          .filter(Boolean),
+      ).size,
   );
 
-  readonly purchaseOrderCount = computed(() =>
-    new Set(
-      this.items()
-        .map((item) => item.poNumber.trim())
-        .filter(Boolean),
-    ).size,
+  readonly purchaseOrderCount = computed(
+    () =>
+      new Set(
+        this.items()
+          .map((item) => item.poNumber.trim())
+          .filter(Boolean),
+      ).size,
   );
 
   readonly totalQuantity = computed(() =>
-    this.items().reduce(
-      (total, item) => total + Number(item.qty || 0),
-      0,
-    ),
+    this.items().reduce((total, item) => total + Number(item.qty || 0), 0),
   );
 
   readonly totalAmount = computed(() =>
-    this.items().reduce(
-      (total, item) => total + Number(item.amount || 0),
-      0,
-    ),
+    this.items().reduce((total, item) => total + Number(item.amount || 0), 0),
   );
 
   constructor() {
@@ -148,86 +114,39 @@ export class PendingInvoicesPage {
   }
 
   excelFilterOptionsFor(
-    column:
-      PendingInvoiceExcelFilterColumn,
+    column: PendingInvoiceExcelFilterColumn,
   ): readonly PendingInvoiceExcelFilterValue[] {
-    return (
-      this.excelFilterOptions()[
-        column
-      ] ?? []
-    );
+    return this.excelFilterOptions()[column] ?? [];
   }
 
-  excelFilterSelectedValues(
-    column:
-      PendingInvoiceExcelFilterColumn,
-  ): readonly string[] {
-    return (
-      this.excelFilterSelections()[
-        column
-      ] ?? []
-    );
+  excelFilterSelectedValues(column: PendingInvoiceExcelFilterColumn): readonly string[] {
+    return this.excelFilterSelections()[column] ?? [];
   }
 
-  excelFilterActive(
-    column:
-      PendingInvoiceExcelFilterColumn,
-  ): boolean {
-    return Object.prototype
-      .hasOwnProperty.call(
-        this.excelFilterSelections(),
-        column,
-      );
+  excelFilterActive(column: PendingInvoiceExcelFilterColumn): boolean {
+    return Object.prototype.hasOwnProperty.call(this.excelFilterSelections(), column);
   }
 
-  excelFilterLoading(
-    column:
-      PendingInvoiceExcelFilterColumn,
-  ): boolean {
-    return this
-      .excelFilterLoadingColumns()
-      .has(
-        column,
-      );
+  excelFilterLoading(column: PendingInvoiceExcelFilterColumn): boolean {
+    return this.excelFilterLoadingColumns().has(column);
   }
 
-  excelSortDirection(
-    column:
-      PendingInvoiceExcelFilterColumn,
-  ): PendingInvoiceSortDirection | null {
-    return this.sortColumn() ===
-      column
-      ? this.sortDirection()
-      : null;
+  excelSortDirection(column: PendingInvoiceExcelFilterColumn): PendingInvoiceSortDirection | null {
+    return this.sortColumn() === column ? this.sortDirection() : null;
   }
 
-  loadExcelFilterValues(
-    column:
-      PendingInvoiceExcelFilterColumn,
-  ): void {
-    if (
-      this.excelFilterLoading(
-        column,
-      )
-    ) {
+  loadExcelFilterValues(column: PendingInvoiceExcelFilterColumn): void {
+    if (this.excelFilterLoading(column)) {
       return;
     }
 
-    this.excelFilterLoadingColumns
-      .update(
-        columns => {
-          const updated =
-            new Set(
-              columns,
-            );
+    this.excelFilterLoadingColumns.update((columns) => {
+      const updated = new Set(columns);
 
-          updated.add(
-            column,
-          );
+      updated.add(column);
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.invoiceApi
       .getPendingExcelFilterValues(
@@ -236,148 +155,89 @@ export class PendingInvoicesPage {
         this.serializeExcelFilters(),
       )
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(
-          () =>
-            this.excelFilterLoadingColumns
-              .update(
-                columns => {
-                  const updated =
-                    new Set(
-                      columns,
-                    );
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() =>
+          this.excelFilterLoadingColumns.update((columns) => {
+            const updated = new Set(columns);
 
-                  updated.delete(
-                    column,
-                  );
+            updated.delete(column);
 
-                  return updated;
-                },
-              ),
+            return updated;
+          }),
         ),
       )
       .subscribe({
-        next: options => {
-          this.excelFilterOptions
-            .update(
-              current => ({
-                ...current,
-                [column]:
-                  options,
-              }),
-            );
+        next: (options) => {
+          this.excelFilterOptions.update((current) => ({
+            ...current,
+            [column]: options,
+          }));
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
-          this.errorMessage.set(
-            this.describeError(
-              error,
-            ),
-          );
+        error: (error: HttpErrorResponse) => {
+          this.errorMessage.set(this.describeError(error));
         },
       });
   }
 
   applyExcelSort(
-    column:
-      PendingInvoiceExcelFilterColumn,
-    direction:
-      PendingInvoiceSortDirection,
+    column: PendingInvoiceExcelFilterColumn,
+    direction: PendingInvoiceSortDirection | null,
   ): void {
     if (this.loading()) {
       return;
     }
 
-    this.sortColumn.set(
-      column,
-    );
+    this.sortColumn.set(direction === null ? null : column);
 
-    this.sortDirection.set(
-      direction,
-    );
+    this.sortDirection.set(direction);
 
     this.successMessage.set('');
     this.loadPendingItems();
   }
 
-  applyExcelFilter(
-    column:
-      PendingInvoiceExcelFilterColumn,
-    values: readonly string[],
-  ): void {
-    const availableValues =
-      this.excelFilterOptions()[
-        column
-      ] ?? [];
+  applyExcelFilter(column: PendingInvoiceExcelFilterColumn, values: readonly string[]): void {
+    const availableValues = this.excelFilterOptions()[column] ?? [];
 
-    const selectedSet =
-      new Set(
-        values,
-      );
+    const selectedSet = new Set(values);
 
     const selectsEverything =
-      availableValues.length >
-        0 &&
-      availableValues.length ===
-        selectedSet.size &&
-      availableValues.every(
-        option =>
-          selectedSet.has(
-            option.value,
-          ),
-      );
+      availableValues.length > 0 &&
+      availableValues.length === selectedSet.size &&
+      availableValues.every((option) => selectedSet.has(option.value));
 
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          if (selectsEverything) {
-            delete updated[
-              column
-            ];
-          } else {
-            updated[column] =
-              [...values];
-          }
+      if (selectsEverything) {
+        delete updated[column];
+      } else {
+        updated[column] = [...values];
+      }
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.successMessage.set('');
     this.loadPendingItems();
   }
 
-  clearExcelFilter(
-    column:
-      PendingInvoiceExcelFilterColumn,
-  ): void {
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+  clearExcelFilter(column: PendingInvoiceExcelFilterColumn): void {
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          delete updated[
-            column
-          ];
+      delete updated[column];
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.successMessage.set('');
     this.loadPendingItems();
   }
-
 
   clearFilters(): void {
     this.successMessage.set('');
@@ -387,13 +247,10 @@ export class PendingInvoicesPage {
       take: 500,
     });
 
-    this.excelFilterSelections.set(
-      {},
-    );
+    this.excelFilterSelections.set({});
 
     this.loadPendingItems();
   }
-
 
   openManualMatch(item: PendingInvoiceItem): void {
     this.selectedPendingItem.set(item);
@@ -420,9 +277,7 @@ export class PendingInvoicesPage {
     const pending = this.selectedPendingItem();
 
     const isExactMatch =
-      candidate.isExactPO &&
-      candidate.isExactMaterial &&
-      candidate.isExactLineItem;
+      candidate.isExactPO && candidate.isExactMaterial && candidate.isExactLineItem;
 
     if (
       !pending ||
@@ -452,13 +307,10 @@ export class PendingInvoicesPage {
     this.successMessage.set('');
 
     this.invoiceApi
-      .matchPendingItemManually(
-        pending.id,
-        {
-          materialId: candidate.materialId,
-          confirmMismatch: false,
-        },
-      )
+      .matchPendingItemManually(pending.id, {
+        materialId: candidate.materialId,
+        confirmMismatch: false,
+      })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.matchingMaterialId.set(null)),
@@ -475,31 +327,27 @@ export class PendingInvoicesPage {
       });
   }
 
-
   createMissingMaterial(item: PendingInvoiceItem): void {
     if (!item || item.id <= 0) {
       return;
     }
 
-    void this.router.navigate(
-      ['/materials/new'],
-      {
-        queryParams: {
-          source: 'pending-invoice',
-          pendingInvoiceId: item.id,
-          invoiceNumber: item.invoiceNumber,
-          invoiceDate: item.invoiceDate?.substring(0, 10) ?? '',
-          customerName: item.customerName,
-          poNumber: item.poNumber,
-          lineItem: item.lineItem,
-          materialNo: item.materialNo,
-          description: item.description,
-          hsnSacCode: item.hsnSacCode,
-          qty: item.qty,
-          returnUrl: '/invoices/pending',
-        },
+    void this.router.navigate(['/materials/new'], {
+      queryParams: {
+        source: 'pending-invoice',
+        pendingInvoiceId: item.id,
+        invoiceNumber: item.invoiceNumber,
+        invoiceDate: item.invoiceDate?.substring(0, 10) ?? '',
+        customerName: item.customerName,
+        poNumber: item.poNumber,
+        lineItem: item.lineItem,
+        materialNo: item.materialNo,
+        description: item.description,
+        hsnSacCode: item.hsnSacCode,
+        qty: item.qty,
+        returnUrl: '/invoices/pending',
       },
-    );
+    });
   }
 
   retryMatching(): void {
@@ -542,8 +390,6 @@ export class PendingInvoicesPage {
     this.loadPendingItems();
   }
 
-
-
   private readMaterialCreateResult(): void {
     const params = this.route.snapshot.queryParamMap;
 
@@ -551,12 +397,9 @@ export class PendingInvoicesPage {
       return;
     }
 
-    const matchedRows = Number(
-      params.get('matchedPendingInvoiceRows') ?? '0',
-    );
+    const matchedRows = Number(params.get('matchedPendingInvoiceRows') ?? '0');
 
-    const invoiceNumber =
-      params.get('invoiceNumber')?.trim() ?? '';
+    const invoiceNumber = params.get('invoiceNumber')?.trim() ?? '';
 
     if (Number.isFinite(matchedRows) && matchedRows > 0) {
       this.successMessage.set(
@@ -570,21 +413,18 @@ export class PendingInvoicesPage {
       );
     }
 
-    void this.router.navigate(
-      [],
-      {
-        relativeTo: this.route,
-        replaceUrl: true,
-        queryParamsHandling: 'merge',
-        queryParams: {
-          materialCreated: null,
-          materialId: null,
-          matchedPendingInvoiceRows: null,
-          invoiceNumber: null,
-          pendingInvoiceId: null,
-        },
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      replaceUrl: true,
+      queryParamsHandling: 'merge',
+      queryParams: {
+        materialCreated: null,
+        materialId: null,
+        matchedPendingInvoiceRows: null,
+        invoiceNumber: null,
+        pendingInvoiceId: null,
       },
-    );
+    });
   }
 
   private loadCandidates(): void {
@@ -598,11 +438,7 @@ export class PendingInvoicesPage {
     this.errorMessage.set('');
 
     this.invoiceApi
-      .getPendingMatchCandidates(
-        pending.id,
-        this.candidateSearch.value,
-        100,
-      )
+      .getPendingMatchCandidates(pending.id, this.candidateSearch.value, 100)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loadingCandidates.set(false)),
@@ -632,10 +468,8 @@ export class PendingInvoicesPage {
       .getPendingItems(
         values.search,
         values.take,
-        this.sortColumn() ??
-          undefined,
-        this.sortDirection() ??
-          undefined,
+        this.sortColumn() ?? undefined,
+        this.sortDirection() ?? undefined,
         this.serializeExcelFilters(),
       )
       .pipe(
@@ -653,18 +487,10 @@ export class PendingInvoicesPage {
       });
   }
 
-  private serializeExcelFilters():
-    string | undefined {
-    const selections =
-      this.excelFilterSelections();
+  private serializeExcelFilters(): string | undefined {
+    const selections = this.excelFilterSelections();
 
-    return Object.keys(
-      selections,
-    ).length > 0
-      ? JSON.stringify(
-          selections,
-        )
-      : undefined;
+    return Object.keys(selections).length > 0 ? JSON.stringify(selections) : undefined;
   }
 
   private describeCandidateError(error: HttpErrorResponse): string {
@@ -684,8 +510,7 @@ export class PendingInvoicesPage {
       return 'The pending row no longer exists or is already matched.';
     }
 
-    return this.readApiMessage(error) ||
-      'Manual match candidates could not be loaded.';
+    return this.readApiMessage(error) || 'Manual match candidates could not be loaded.';
   }
 
   private describeManualMatchError(error: HttpErrorResponse): string {
@@ -706,12 +531,10 @@ export class PendingInvoicesPage {
     }
 
     if (error.status === 400) {
-      return this.readApiMessage(error) ||
-        'The selected material failed validation.';
+      return this.readApiMessage(error) || 'The selected material failed validation.';
     }
 
-    return this.readApiMessage(error) ||
-      'The pending invoice row could not be matched.';
+    return this.readApiMessage(error) || 'The pending invoice row could not be matched.';
   }
 
   private describeRetryError(error: HttpErrorResponse): string {
@@ -728,12 +551,10 @@ export class PendingInvoicesPage {
     }
 
     if (error.status === 400) {
-      return this.readApiMessage(error) ||
-        'The retry matching request was rejected.';
+      return this.readApiMessage(error) || 'The retry matching request was rejected.';
     }
 
-    return this.readApiMessage(error) ||
-      'Pending invoice matching could not be retried.';
+    return this.readApiMessage(error) || 'Pending invoice matching could not be retried.';
   }
 
   private describeError(error: HttpErrorResponse): string {
@@ -753,8 +574,7 @@ export class PendingInvoicesPage {
       return 'The pending invoice API was not found. Rebuild the ASP.NET application.';
     }
 
-    return this.readApiMessage(error) ||
-      'Pending invoice rows could not be loaded.';
+    return this.readApiMessage(error) || 'Pending invoice rows could not be loaded.';
   }
 
   private readApiMessage(error: HttpErrorResponse): string {
@@ -763,4 +583,3 @@ export class PendingInvoicesPage {
     return typeof message === 'string' ? message : '';
   }
 }
-

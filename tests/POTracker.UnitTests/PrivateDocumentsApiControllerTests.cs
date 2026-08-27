@@ -73,6 +73,66 @@ public sealed class PrivateDocumentsApiControllerTests
         }
     }
 
+    [Theory]
+    [InlineData("drawing.pdf", "application/pdf")]
+    [InlineData("drawing.png", "image/png")]
+    public async Task Download_ReturnsInlinePreviewWhenRequested(
+        string fileName,
+        string expectedContentType)
+    {
+        var temporaryRoot =
+            CreateTemporaryRoot();
+
+        try
+        {
+            var storage =
+                CreateStorage(
+                    temporaryRoot);
+
+            await using var source =
+                new MemoryStream(
+                    Encoding.UTF8.GetBytes(
+                        "%PDF-1.7 drawing preview"));
+
+            var stored =
+                await storage.SaveAsync(
+                    source,
+                    "drawings",
+                    fileName);
+
+            var controller =
+                CreateController(storage);
+
+            var result =
+                controller.Download(
+                    "drawings",
+                    stored.StoredFileName,
+                    inline: true);
+
+            var fileResult =
+                Assert.IsType<FileStreamResult>(
+                    result);
+
+            Assert.Equal(
+                expectedContentType,
+                fileResult.ContentType);
+
+            Assert.True(
+                string.IsNullOrEmpty(
+                    fileResult.FileDownloadName));
+
+            Assert.True(
+                fileResult.EnableRangeProcessing);
+
+            await fileResult.FileStream.DisposeAsync();
+        }
+        finally
+        {
+            DeleteTemporaryRoot(
+                temporaryRoot);
+        }
+    }
+
     [Fact]
     public void Download_ReturnsNotFoundForMissingDocument()
     {

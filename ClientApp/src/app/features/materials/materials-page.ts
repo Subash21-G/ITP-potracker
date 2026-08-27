@@ -11,10 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import {
-  ActivatedRoute,
-  RouterLink,
-} from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import {
@@ -26,9 +23,7 @@ import {
   MaterialSortDirection,
 } from '../../core/models/material.model';
 import { MaterialsApiService } from '../../core/services/materials-api.service';
-import {
-  ServerExcelFilter,
-} from '../../shared/server-excel-filter/server-excel-filter';
+import { ServerExcelFilter } from '../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-materials-page',
@@ -64,183 +59,133 @@ export class MaterialsPage {
     deliveryDateTo: new FormControl('', { nonNullable: true }),
   });
 
-  readonly columnFilters =
-    new FormGroup({
-      columnPoNumber:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+  readonly columnFilters = new FormGroup({
+    columnPoNumber: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      columnPurchaser:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    columnPurchaser: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      columnHandler:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    columnHandler: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      lineItem:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    lineItem: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      materialNo:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    materialNo: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      description:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    description: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minOrderedQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minOrderedQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxOrderedQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxOrderedQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minUnitPrice:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minUnitPrice: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxUnitPrice:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxUnitPrice: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minMaterialValue:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minMaterialValue: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxMaterialValue:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxMaterialValue: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minDispatchQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minDispatchQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxDispatchQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxDispatchQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minPendingQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minPendingQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxPendingQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxPendingQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minAllocatedQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minAllocatedQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxAllocatedQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxAllocatedQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minLiveStockQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minLiveStockQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxLiveStockQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxLiveStockQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minShortageQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minShortageQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxShortageQty:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxShortageQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      columnStockStatus:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    columnStockStatus: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      processStatus:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    processStatus: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      columnDispatchStatus:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    columnDispatchStatus: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      columnDeliveryDateFrom:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    columnDeliveryDateFrom: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      columnDeliveryDateTo:
-        new FormControl('', {
-          nonNullable: true,
-        }),
-    });
+    columnDeliveryDateTo: new FormControl('', {
+      nonNullable: true,
+    }),
+  });
 
   readonly items = signal<readonly MaterialListItem[]>([]);
   readonly page = signal(1);
   readonly pageSize = signal(25);
 
-  readonly sortColumn =
-    signal<MaterialSortColumn | null>(
-      null,
-    );
+  readonly sortColumn = signal<MaterialSortColumn | null>(null);
 
-  readonly sortDirection =
-    signal<MaterialSortDirection | null>(
-      null,
-    );
+  readonly sortDirection = signal<MaterialSortDirection | null>(null);
 
-  readonly excelFilterSelections =
-    signal<MaterialExcelFilterSelections>(
-      {},
-    );
+  readonly excelFilterSelections = signal<MaterialExcelFilterSelections>({});
 
-  readonly excelFilterOptions =
-    signal<
-      Partial<
-        Record<
-          MaterialExcelFilterColumn,
-          readonly MaterialExcelFilterValue[]
-        >
-      >
-    >({});
+  readonly excelFilterOptions = signal<
+    Partial<Record<MaterialExcelFilterColumn, readonly MaterialExcelFilterValue[]>>
+  >({});
 
-  readonly excelFilterLoadingColumns =
-    signal<
-      ReadonlySet<
-        MaterialExcelFilterColumn
-      >
-    >(
-      new Set<
-        MaterialExcelFilterColumn
-      >(),
-    );
+  readonly excelFilterLoadingColumns = signal<ReadonlySet<MaterialExcelFilterColumn>>(
+    new Set<MaterialExcelFilterColumn>(),
+  );
 
   readonly totalRecords = signal(0);
   readonly totalMaterialValue = signal(0);
@@ -252,207 +197,102 @@ export class MaterialsPage {
   readonly downloadingExcel = signal(false);
   readonly bulkDeleting = signal(false);
 
-  readonly selectedIds =
-    signal<ReadonlySet<number>>(
-      new Set<number>(),
-    );
+  readonly selectedIds = signal<ReadonlySet<number>>(new Set<number>());
 
   readonly hasPreviousPage = computed(() => this.page() > 1);
-  readonly hasNextPage =
-    computed(
-      () =>
-        this.page() <
-        this.totalPages(),
+  readonly hasNextPage = computed(() => this.page() < this.totalPages());
+
+  readonly visiblePages = computed(() => {
+    const current = this.page();
+
+    const total = this.totalPages();
+
+    const first = Math.max(1, current - 2);
+
+    const last = Math.min(total, first + 4);
+
+    const adjustedFirst = Math.max(1, last - 4);
+
+    return Array.from(
+      {
+        length: last - adjustedFirst + 1,
+      },
+      (_, index) => adjustedFirst + index,
     );
+  });
 
-  readonly visiblePages =
-    computed(() => {
-      const current =
-        this.page();
+  readonly selectedCount = computed(() => this.selectedIds().size);
 
-      const total =
-        this.totalPages();
+  readonly allCurrentPageSelected = computed(() => {
+    const materials = this.items();
 
-      const first =
-        Math.max(
-          1,
-          current - 2,
-        );
+    const selected = this.selectedIds();
 
-      const last =
-        Math.min(
-          total,
-          first + 4,
-        );
-
-      const adjustedFirst =
-        Math.max(
-          1,
-          last - 4,
-        );
-
-      return Array.from(
-        {
-          length:
-            last -
-            adjustedFirst +
-            1,
-        },
-        (
-          _,
-          index,
-        ) =>
-          adjustedFirst +
-          index,
-      );
-    });
-
-  readonly selectedCount =
-    computed(
-      () =>
-        this.selectedIds().size,
-    );
-
-  readonly allCurrentPageSelected =
-    computed(() => {
-      const materials =
-        this.items();
-
-      const selected =
-        this.selectedIds();
-
-      return (
-        materials.length > 0 &&
-        materials.every(
-          (material) =>
-            selected.has(
-              material.id,
-            ),
-        )
-      );
-    });
+    return materials.length > 0 && materials.every((material) => selected.has(material.id));
+  });
   readonly showingFrom = computed(() =>
     this.totalRecords() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
   );
-  readonly showingTo = computed(() =>
-    Math.min(this.page() * this.pageSize(), this.totalRecords()),
-  );
+  readonly showingTo = computed(() => Math.min(this.page() * this.pageSize(), this.totalRecords()));
 
   constructor() {
-    const initialSearch =
-      this.route.snapshot.queryParamMap
-        .get('search')
-        ?.trim() ?? '';
+    const initialSearch = this.route.snapshot.queryParamMap.get('search')?.trim() ?? '';
 
     if (initialSearch) {
-      this.filters.controls.search.setValue(
-        initialSearch,
-      );
+      this.filters.controls.search.setValue(initialSearch);
     }
 
     this.loadMaterials();
   }
 
-  excelFilterOptionsFor(
-    column: MaterialExcelFilterColumn,
-  ): readonly MaterialExcelFilterValue[] {
-    return (
-      this.excelFilterOptions()[
-        column
-      ] ?? []
-    );
+  excelFilterOptionsFor(column: MaterialExcelFilterColumn): readonly MaterialExcelFilterValue[] {
+    return this.excelFilterOptions()[column] ?? [];
   }
 
-  excelFilterSelectedValues(
-    column: MaterialExcelFilterColumn,
-  ): readonly string[] {
-    return (
-      this.excelFilterSelections()[
-        column
-      ] ?? []
-    );
+  excelFilterSelectedValues(column: MaterialExcelFilterColumn): readonly string[] {
+    return this.excelFilterSelections()[column] ?? [];
   }
 
-  excelFilterActive(
-    column: MaterialExcelFilterColumn,
-  ): boolean {
-    return Object.prototype
-      .hasOwnProperty.call(
-        this.excelFilterSelections(),
-        column,
-      );
+  excelFilterActive(column: MaterialExcelFilterColumn): boolean {
+    return Object.prototype.hasOwnProperty.call(this.excelFilterSelections(), column);
   }
 
-  excelFilterLoading(
-    column: MaterialExcelFilterColumn,
-  ): boolean {
-    return this
-      .excelFilterLoadingColumns()
-      .has(
-        column,
-      );
+  excelFilterLoading(column: MaterialExcelFilterColumn): boolean {
+    return this.excelFilterLoadingColumns().has(column);
   }
 
-  excelSortDirection(
-    column: MaterialExcelFilterColumn,
-  ): MaterialSortDirection | null {
-    return this.sortColumn() ===
-      column
-      ? this.sortDirection()
-      : null;
+  excelSortDirection(column: MaterialExcelFilterColumn): MaterialSortDirection | null {
+    return this.sortColumn() === column ? this.sortDirection() : null;
   }
 
-  loadExcelFilterValues(
-    column: MaterialExcelFilterColumn,
-  ): void {
-    if (
-      this.excelFilterLoading(
-        column,
-      )
-    ) {
+  loadExcelFilterValues(column: MaterialExcelFilterColumn): void {
+    if (this.excelFilterLoading(column)) {
       return;
     }
 
-    this.excelFilterLoadingColumns
-      .update(
-        columns => {
-          const updated =
-            new Set(
-              columns,
-            );
+    this.excelFilterLoadingColumns.update((columns) => {
+      const updated = new Set(columns);
 
-          updated.add(
-            column,
-          );
+      updated.add(column);
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
-    const filterValues =
-      this.filters.getRawValue();
+    const filterValues = this.filters.getRawValue();
 
-    const columnValues =
-      this.columnFilters
-        .getRawValue();
+    const columnValues = this.columnFilters.getRawValue();
 
     this.materialsApi
       .getExcelFilterValues(
         {
           page: 1,
-          pageSize:
-            this.pageSize(),
+          pageSize: this.pageSize(),
 
-          sortColumn:
-            this.sortColumn() ??
-            undefined,
+          sortColumn: this.sortColumn() ?? undefined,
 
-          sortDirection:
-            this.sortDirection() ??
-            undefined,
+          sortDirection: this.sortDirection() ?? undefined,
 
-          excelFilters:
-            this.serializeExcelFilters(),
+          excelFilters: this.serializeExcelFilters(),
 
           ...filterValues,
           ...columnValues,
@@ -460,43 +300,26 @@ export class MaterialsPage {
         column,
       )
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(
-          () =>
-            this.excelFilterLoadingColumns
-              .update(
-                columns => {
-                  const updated =
-                    new Set(
-                      columns,
-                    );
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() =>
+          this.excelFilterLoadingColumns.update((columns) => {
+            const updated = new Set(columns);
 
-                  updated.delete(
-                    column,
-                  );
+            updated.delete(column);
 
-                  return updated;
-                },
-              ),
+            return updated;
+          }),
         ),
       )
       .subscribe({
-        next: options => {
-          this.excelFilterOptions
-            .update(
-              current => ({
-                ...current,
-                [column]:
-                  options,
-              }),
-            );
+        next: (options) => {
+          this.excelFilterOptions.update((current) => ({
+            ...current,
+            [column]: options,
+          }));
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
+        error: (error: HttpErrorResponse) => {
           this.errorMessage.set(
             this.describeMutationError(
               error,
@@ -507,22 +330,14 @@ export class MaterialsPage {
       });
   }
 
-  applyExcelSort(
-    column: MaterialExcelFilterColumn,
-    direction:
-      MaterialSortDirection,
-  ): void {
+  applyExcelSort(column: MaterialExcelFilterColumn, direction: MaterialSortDirection | null): void {
     if (this.loading()) {
       return;
     }
 
-    this.sortColumn.set(
-      column,
-    );
+    this.sortColumn.set(direction === null ? null : column);
 
-    this.sortDirection.set(
-      direction,
-    );
+    this.sortDirection.set(direction);
 
     this.page.set(1);
     this.clearSelection();
@@ -530,51 +345,29 @@ export class MaterialsPage {
     this.loadMaterials();
   }
 
-  applyExcelFilter(
-    column: MaterialExcelFilterColumn,
-    values: readonly string[],
-  ): void {
-    const availableValues =
-      this.excelFilterOptions()[
-        column
-      ] ?? [];
+  applyExcelFilter(column: MaterialExcelFilterColumn, values: readonly string[]): void {
+    const availableValues = this.excelFilterOptions()[column] ?? [];
 
-    const selectedSet =
-      new Set(
-        values,
-      );
+    const selectedSet = new Set(values);
 
     const selectsEverything =
-      availableValues.length >
-        0 &&
-      availableValues.length ===
-        selectedSet.size &&
-      availableValues.every(
-        option =>
-          selectedSet.has(
-            option.value,
-          ),
-      );
+      availableValues.length > 0 &&
+      availableValues.length === selectedSet.size &&
+      availableValues.every((option) => selectedSet.has(option.value));
 
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          if (selectsEverything) {
-            delete updated[
-              column
-            ];
-          } else {
-            updated[column] =
-              [...values];
-          }
+      if (selectsEverything) {
+        delete updated[column];
+      } else {
+        updated[column] = [...values];
+      }
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.page.set(1);
     this.clearSelection();
@@ -582,23 +375,16 @@ export class MaterialsPage {
     this.loadMaterials();
   }
 
-  clearExcelFilter(
-    column: MaterialExcelFilterColumn,
-  ): void {
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+  clearExcelFilter(column: MaterialExcelFilterColumn): void {
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          delete updated[
-            column
-          ];
+      delete updated[column];
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.page.set(1);
     this.clearSelection();
@@ -606,45 +392,25 @@ export class MaterialsPage {
     this.loadMaterials();
   }
 
-  toggleSort(
-    column: MaterialSortColumn,
-  ): void {
+  toggleSort(column: MaterialSortColumn): void {
     if (this.loading()) {
       return;
     }
 
-    const currentColumn =
-      this.sortColumn();
+    const currentColumn = this.sortColumn();
 
-    const currentDirection =
-      this.sortDirection();
+    const currentDirection = this.sortDirection();
 
-    if (
-      currentColumn !== column ||
-      currentDirection === null
-    ) {
-      this.sortColumn.set(
-        column,
-      );
+    if (currentColumn !== column || currentDirection === null) {
+      this.sortColumn.set(column);
 
-      this.sortDirection.set(
-        'asc',
-      );
-    } else if (
-      currentDirection ===
-      'asc'
-    ) {
-      this.sortDirection.set(
-        'desc',
-      );
+      this.sortDirection.set('asc');
+    } else if (currentDirection === 'asc') {
+      this.sortDirection.set('desc');
     } else {
-      this.sortColumn.set(
-        null,
-      );
+      this.sortColumn.set(null);
 
-      this.sortDirection.set(
-        null,
-      );
+      this.sortDirection.set(null);
     }
 
     this.page.set(1);
@@ -654,37 +420,20 @@ export class MaterialsPage {
     this.loadMaterials();
   }
 
-  sortIndicator(
-    column: MaterialSortColumn,
-  ): string {
-    if (
-      this.sortColumn() !==
-      column
-    ) {
+  sortIndicator(column: MaterialSortColumn): string {
+    if (this.sortColumn() !== column) {
       return '\u2195';
     }
 
-    return this.sortDirection() ===
-      'desc'
-      ? '\u2193'
-      : '\u2191';
+    return this.sortDirection() === 'desc' ? '\u2193' : '\u2191';
   }
 
-  sortTitle(
-    column: MaterialSortColumn,
-    label: string,
-  ): string {
-    if (
-      this.sortColumn() !==
-      column
-    ) {
+  sortTitle(column: MaterialSortColumn, label: string): string {
+    if (this.sortColumn() !== column) {
       return `Sort ${label} ascending`;
     }
 
-    if (
-      this.sortDirection() ===
-      'asc'
-    ) {
+    if (this.sortDirection() === 'asc') {
       return `Sort ${label} descending`;
     }
 
@@ -698,9 +447,7 @@ export class MaterialsPage {
     this.loadMaterials();
   }
 
-  applyColumnFilter(
-    filter: HTMLDetailsElement,
-  ): void {
+  applyColumnFilter(filter: HTMLDetailsElement): void {
     filter.open = false;
     this.page.set(1);
     this.clearSelection();
@@ -737,18 +484,15 @@ export class MaterialsPage {
         break;
 
       case 'line':
-        this.columnFilters.controls
-          .lineItem.setValue('');
+        this.columnFilters.controls.lineItem.setValue('');
         break;
 
       case 'material':
-        this.columnFilters.controls
-          .materialNo.setValue('');
+        this.columnFilters.controls.materialNo.setValue('');
         break;
 
       case 'description':
-        this.columnFilters.controls
-          .description.setValue('');
+        this.columnFilters.controls.description.setValue('');
         break;
 
       case 'ordered':
@@ -803,18 +547,15 @@ export class MaterialsPage {
         break;
 
       case 'stock':
-        this.columnFilters.controls
-          .columnStockStatus.setValue('');
+        this.columnFilters.controls.columnStockStatus.setValue('');
         break;
 
       case 'process':
-        this.columnFilters.controls
-          .processStatus.setValue('');
+        this.columnFilters.controls.processStatus.setValue('');
         break;
 
       case 'dispatch':
-        this.columnFilters.controls
-          .columnDispatchStatus.setValue('');
+        this.columnFilters.controls.columnDispatchStatus.setValue('');
         break;
 
       case 'delivery':
@@ -850,8 +591,7 @@ export class MaterialsPage {
       | 'dispatch'
       | 'delivery',
   ): boolean {
-    const values =
-      this.columnFilters.getRawValue();
+    const values = this.columnFilters.getRawValue();
 
     switch (column) {
       case 'po':
@@ -862,49 +602,28 @@ export class MaterialsPage {
         );
 
       case 'line':
-        return Boolean(
-          values.lineItem.trim(),
-        );
+        return Boolean(values.lineItem.trim());
 
       case 'material':
-        return Boolean(
-          values.materialNo.trim(),
-        );
+        return Boolean(values.materialNo.trim());
 
       case 'description':
-        return Boolean(
-          values.description.trim(),
-        );
+        return Boolean(values.description.trim());
 
       case 'ordered':
-        return Boolean(
-          values.minOrderedQty.trim() ||
-          values.maxOrderedQty.trim(),
-        );
+        return Boolean(values.minOrderedQty.trim() || values.maxOrderedQty.trim());
 
       case 'unitPrice':
-        return Boolean(
-          values.minUnitPrice.trim() ||
-          values.maxUnitPrice.trim(),
-        );
+        return Boolean(values.minUnitPrice.trim() || values.maxUnitPrice.trim());
 
       case 'materialValue':
-        return Boolean(
-          values.minMaterialValue.trim() ||
-          values.maxMaterialValue.trim(),
-        );
+        return Boolean(values.minMaterialValue.trim() || values.maxMaterialValue.trim());
 
       case 'dispatched':
-        return Boolean(
-          values.minDispatchQty.trim() ||
-          values.maxDispatchQty.trim(),
-        );
+        return Boolean(values.minDispatchQty.trim() || values.maxDispatchQty.trim());
 
       case 'pending':
-        return Boolean(
-          values.minPendingQty.trim() ||
-          values.maxPendingQty.trim(),
-        );
+        return Boolean(values.minPendingQty.trim() || values.maxPendingQty.trim());
 
       case 'allocatedLive':
         return Boolean(
@@ -915,31 +634,19 @@ export class MaterialsPage {
         );
 
       case 'shortage':
-        return Boolean(
-          values.minShortageQty.trim() ||
-          values.maxShortageQty.trim(),
-        );
+        return Boolean(values.minShortageQty.trim() || values.maxShortageQty.trim());
 
       case 'stock':
-        return Boolean(
-          values.columnStockStatus,
-        );
+        return Boolean(values.columnStockStatus);
 
       case 'process':
-        return Boolean(
-          values.processStatus.trim(),
-        );
+        return Boolean(values.processStatus.trim());
 
       case 'dispatch':
-        return Boolean(
-          values.columnDispatchStatus.trim(),
-        );
+        return Boolean(values.columnDispatchStatus.trim());
 
       case 'delivery':
-        return Boolean(
-          values.columnDeliveryDateFrom ||
-          values.columnDeliveryDateTo,
-        );
+        return Boolean(values.columnDeliveryDateFrom || values.columnDeliveryDateTo);
     }
 
     return false;
@@ -948,9 +655,7 @@ export class MaterialsPage {
   clearFilters(): void {
     this.filters.reset();
     this.columnFilters.reset();
-    this.excelFilterSelections.set(
-      {},
-    );
+    this.excelFilterSelections.set({});
     this.page.set(1);
     this.clearSelection();
     this.successMessage.set('');
@@ -970,32 +675,18 @@ export class MaterialsPage {
     this.loadMaterials();
   }
 
-  goToPage(
-    page: number,
-  ): void {
+  goToPage(page: number): void {
     if (this.loading()) {
       return;
     }
 
-    const normalizedPage =
-      Math.min(
-        Math.max(
-          page,
-          1,
-        ),
-        this.totalPages(),
-      );
+    const normalizedPage = Math.min(Math.max(page, 1), this.totalPages());
 
-    if (
-      normalizedPage ===
-      this.page()
-    ) {
+    if (normalizedPage === this.page()) {
       return;
     }
 
-    this.page.set(
-      normalizedPage,
-    );
+    this.page.set(normalizedPage);
 
     this.clearSelection();
     this.loadMaterials();
@@ -1006,9 +697,7 @@ export class MaterialsPage {
       return;
     }
 
-    this.goToPage(
-      this.page() - 1,
-    );
+    this.goToPage(this.page() - 1);
   }
 
   nextPage(): void {
@@ -1016,82 +705,46 @@ export class MaterialsPage {
       return;
     }
 
-    this.goToPage(
-      this.page() + 1,
-    );
+    this.goToPage(this.page() + 1);
   }
 
-  toggleMaterial(
-    materialId: number,
-    event: Event,
-  ): void {
-    const checked =
-      (
-        event.target as
-          HTMLInputElement
-      ).checked;
+  toggleMaterial(materialId: number, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
 
-    this.selectedIds.update(
-      (selectedIds) => {
-        const updated =
-          new Set(selectedIds);
+    this.selectedIds.update((selectedIds) => {
+      const updated = new Set(selectedIds);
 
-        if (checked) {
-          updated.add(
-            materialId,
-          );
-        } else {
-          updated.delete(
-            materialId,
-          );
-        }
+      if (checked) {
+        updated.add(materialId);
+      } else {
+        updated.delete(materialId);
+      }
 
-        return updated;
-      },
-    );
+      return updated;
+    });
   }
 
-  toggleCurrentPage(
-    event: Event,
-  ): void {
-    const checked =
-      (
-        event.target as
-          HTMLInputElement
-      ).checked;
+  toggleCurrentPage(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
 
     if (!checked) {
       this.clearSelection();
       return;
     }
 
-    this.selectedIds.set(
-      new Set(
-        this.items().map(
-          (material) =>
-            material.id,
-        ),
-      ),
-    );
+    this.selectedIds.set(new Set(this.items().map((material) => material.id)));
   }
 
   downloadExcel(): void {
-    if (
-      this.downloadingExcel() ||
-      this.loading()
-    ) {
+    if (this.downloadingExcel() || this.loading()) {
       return;
     }
 
-    const filterValues =
-      this.filters.getRawValue();
+    const filterValues = this.filters.getRawValue();
 
-    const columnValues =
-      this.columnFilters.getRawValue();
+    const columnValues = this.columnFilters.getRawValue();
 
-    this.downloadingExcel.set(
-      true,
-    );
+    this.downloadingExcel.set(true);
 
     this.errorMessage.set('');
     this.successMessage.set('');
@@ -1100,135 +753,79 @@ export class MaterialsPage {
       .downloadExcel({
         page: 1,
 
-        pageSize:
-          this.pageSize(),
+        pageSize: this.pageSize(),
 
-        sortColumn:
-          this.sortColumn() ??
-          undefined,
+        sortColumn: this.sortColumn() ?? undefined,
 
-        sortDirection:
-          this.sortDirection() ??
-          undefined,
+        sortDirection: this.sortDirection() ?? undefined,
 
-        excelFilters:
-          this.serializeExcelFilters(),
+        excelFilters: this.serializeExcelFilters(),
 
         ...filterValues,
         ...columnValues,
       })
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(() =>
-          this.downloadingExcel.set(
-            false,
-          ),
-        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.downloadingExcel.set(false)),
       )
       .subscribe({
         next: (file) => {
-          if (
-            !file ||
-            file.size === 0
-          ) {
-            this.errorMessage.set(
-              'The material Excel export was empty.',
-            );
+          if (!file || file.size === 0) {
+            this.errorMessage.set('The material Excel export was empty.');
 
             return;
           }
 
-          const downloadUrl =
-            URL.createObjectURL(
-              file,
-            );
+          const downloadUrl = URL.createObjectURL(file);
 
-          const downloadLink =
-            document.createElement(
-              'a',
-            );
+          const downloadLink = document.createElement('a');
 
-          const timestamp =
-            new Date()
-              .toISOString()
-              .slice(0, 19)
-              .replace(
-                'T',
-                '_',
-              )
-              .replaceAll(
-                ':',
-                '',
-              )
-              .replaceAll(
-                '-',
-                '',
-              );
+          const timestamp = new Date()
+            .toISOString()
+            .slice(0, 19)
+            .replace('T', '_')
+            .replaceAll(':', '')
+            .replaceAll('-', '');
 
-          downloadLink.href =
-            downloadUrl;
+          downloadLink.href = downloadUrl;
 
-          downloadLink.download =
-            `Materials_${timestamp}.xlsx`;
+          downloadLink.download = `Materials_${timestamp}.xlsx`;
 
-          document.body.appendChild(
-            downloadLink,
-          );
+          document.body.appendChild(downloadLink);
 
           downloadLink.click();
           downloadLink.remove();
 
-          URL.revokeObjectURL(
-            downloadUrl,
-          );
+          URL.revokeObjectURL(downloadUrl);
 
-          this.successMessage.set(
-            'Material Excel export downloaded successfully.',
-          );
+          this.successMessage.set('Material Excel export downloaded successfully.');
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
+        error: (error: HttpErrorResponse) => {
           this.errorMessage.set(
-            this.describeMutationError(
-              error,
-              'Material Excel export could not be downloaded.',
-            ),
+            this.describeMutationError(error, 'Material Excel export could not be downloaded.'),
           );
         },
       });
   }
 
   bulkDeleteMaterials(): void {
-    const materialIds =
-      Array.from(
-        this.selectedIds(),
-      );
+    const materialIds = Array.from(this.selectedIds());
 
-    if (
-      materialIds.length === 0 ||
-      this.bulkDeleting() ||
-      this.loading()
-    ) {
+    if (materialIds.length === 0 || this.bulkDeleting() || this.loading()) {
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        `Delete ${materialIds.length} selected material(s)?\n\n` +
-          'Materials linked to invoices or dispatch records will be safely skipped.',
-      );
+    const confirmed = window.confirm(
+      `Delete ${materialIds.length} selected material(s)?\n\n` +
+        'Materials linked to invoices or dispatch records will be safely skipped.',
+    );
 
     if (!confirmed) {
       return;
     }
 
-    this.bulkDeleting.set(
-      true,
-    );
+    this.bulkDeleting.set(true);
 
     this.errorMessage.set('');
     this.successMessage.set('');
@@ -1238,107 +835,52 @@ export class MaterialsPage {
         materialIds,
       })
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(() =>
-          this.bulkDeleting.set(
-            false,
-          ),
-        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.bulkDeleting.set(false)),
       )
       .subscribe({
         next: (response) => {
-          const deletedIds =
-            new Set(
-              response
-                .deletedMaterialIds,
-            );
+          const deletedIds = new Set(response.deletedMaterialIds);
 
           this.selectedIds.update(
             (selectedIds) =>
-              new Set(
-                Array.from(
-                  selectedIds,
-                ).filter(
-                  (materialId) =>
-                    !deletedIds.has(
-                      materialId,
-                    ),
-                ),
-              ),
+              new Set(Array.from(selectedIds).filter((materialId) => !deletedIds.has(materialId))),
           );
 
-          if (
-            response.deletedCount >
-            0
-          ) {
-            this.successMessage.set(
-              response.message ||
-                'Selected materials deleted successfully.',
-            );
+          if (response.deletedCount > 0) {
+            this.successMessage.set(response.message || 'Selected materials deleted successfully.');
 
             const currentPageDeleted =
-              this.items().length >
-                0 &&
-              this.items().every(
-                (material) =>
-                  deletedIds.has(
-                    material.id,
-                  ),
-              );
+              this.items().length > 0 &&
+              this.items().every((material) => deletedIds.has(material.id));
 
-            if (
-              currentPageDeleted &&
-              this.page() > 1
-            ) {
-              this.page.update(
-                (currentPage) =>
-                  currentPage - 1,
-              );
+            if (currentPageDeleted && this.page() > 1) {
+              this.page.update((currentPage) => currentPage - 1);
             }
 
             this.loadMaterials();
             return;
           }
 
-          this.errorMessage.set(
-            response.message ||
-              'No selected materials were deleted.',
-          );
+          this.errorMessage.set(response.message || 'No selected materials were deleted.');
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
+        error: (error: HttpErrorResponse) => {
           this.errorMessage.set(
-            this.describeMutationError(
-              error,
-              'The selected materials could not be deleted.',
-            ),
+            this.describeMutationError(error, 'The selected materials could not be deleted.'),
           );
         },
       });
   }
 
-  private serializeExcelFilters():
-    string | undefined {
-    const selections =
-      this.excelFilterSelections();
+  private serializeExcelFilters(): string | undefined {
+    const selections = this.excelFilterSelections();
 
-    return Object.keys(
-      selections,
-    ).length > 0
-      ? JSON.stringify(
-          selections,
-        )
-      : undefined;
+    return Object.keys(selections).length > 0 ? JSON.stringify(selections) : undefined;
   }
 
   private clearSelection(): void {
-    this.selectedIds.set(
-      new Set<number>(),
-    );
+    this.selectedIds.set(new Set<number>());
   }
   retry(): void {
     this.loadMaterials();
@@ -1355,10 +897,7 @@ export class MaterialsPage {
       return 'status status--warning';
     }
 
-    if (
-      normalizedStatus.includes('pending') ||
-      normalizedStatus.startsWith('not ')
-    ) {
+    if (normalizedStatus.includes('pending') || normalizedStatus.startsWith('not ')) {
       return 'status status--neutral';
     }
 
@@ -1373,28 +912,18 @@ export class MaterialsPage {
     return 'status status--neutral';
   }
 
-
   stockStatusClass(status: string): string {
-    const normalizedStatus =
-      status.toLowerCase();
+    const normalizedStatus = status.toLowerCase();
 
-    if (
-      normalizedStatus.includes('available')
-    ) {
+    if (normalizedStatus.includes('available')) {
       return 'status status--success';
     }
 
-    if (
-      normalizedStatus.includes('shortage') ||
-      normalizedStatus.includes('partial')
-    ) {
+    if (normalizedStatus.includes('shortage') || normalizedStatus.includes('partial')) {
       return 'status status--warning';
     }
 
-    if (
-      normalizedStatus.includes('out of stock') ||
-      normalizedStatus.includes('offline')
-    ) {
+    if (normalizedStatus.includes('out of stock') || normalizedStatus.includes('offline')) {
       return 'status status--danger';
     }
 
@@ -1405,11 +934,9 @@ export class MaterialsPage {
       return;
     }
 
-    const filterValues =
-      this.filters.getRawValue();
+    const filterValues = this.filters.getRawValue();
 
-    const columnValues =
-      this.columnFilters.getRawValue();
+    const columnValues = this.columnFilters.getRawValue();
 
     this.loading.set(true);
     this.errorMessage.set('');
@@ -1417,22 +944,15 @@ export class MaterialsPage {
 
     this.materialsApi
       .getMaterials({
-        page:
-          this.page(),
+        page: this.page(),
 
-        pageSize:
-          this.pageSize(),
+        pageSize: this.pageSize(),
 
-        sortColumn:
-          this.sortColumn() ??
-          undefined,
+        sortColumn: this.sortColumn() ?? undefined,
 
-        sortDirection:
-          this.sortDirection() ??
-          undefined,
+        sortDirection: this.sortDirection() ?? undefined,
 
-        excelFilters:
-          this.serializeExcelFilters(),
+        excelFilters: this.serializeExcelFilters(),
 
         ...filterValues,
         ...columnValues,
@@ -1447,34 +967,16 @@ export class MaterialsPage {
           this.page.set(response.page);
           this.pageSize.set(response.pageSize);
           this.totalRecords.set(response.totalRecords);
-          this.totalMaterialValue.set(
-            response.totalValue ?? 0,
-          );
-          this.totalPages.set(
-            response.totalPages,
-          );
+          this.totalMaterialValue.set(response.totalValue ?? 0);
+          this.totalPages.set(response.totalPages);
 
-          const visibleIds =
-            new Set(
-              response.items.map(
-                (material) =>
-                  material.id,
-              ),
-            );
+          const visibleIds = new Set(response.items.map((material) => material.id));
 
           this.selectedIds.update(
             (selectedIds) =>
-              new Set(
-                Array.from(
-                  selectedIds,
-                ).filter(
-                  (materialId) =>
-                    visibleIds.has(
-                      materialId,
-                    ),
-                ),
-              ),
-          );        },
+              new Set(Array.from(selectedIds).filter((materialId) => visibleIds.has(materialId))),
+          );
+        },
         error: (error: HttpErrorResponse) => {
           this.items.set([]);
           this.totalRecords.set(0);
@@ -1487,10 +989,7 @@ export class MaterialsPage {
       });
   }
 
-  private describeMutationError(
-    error: HttpErrorResponse,
-    fallbackMessage: string,
-  ): string {
+  private describeMutationError(error: HttpErrorResponse, fallbackMessage: string): string {
     if (error.status === 0) {
       return 'The PO Tracker API is unavailable.';
     }
@@ -1503,14 +1002,9 @@ export class MaterialsPage {
       return 'Your account does not have permission to perform this action.';
     }
 
-    const apiMessage =
-      error.error?.message ??
-      error.error?.error;
+    const apiMessage = error.error?.message ?? error.error?.error;
 
-    return typeof apiMessage ===
-      'string'
-      ? apiMessage
-      : fallbackMessage;
+    return typeof apiMessage === 'string' ? apiMessage : fallbackMessage;
   }
   private describeError(error: HttpErrorResponse): string {
     if (error.status === 0) {

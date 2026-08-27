@@ -17,6 +17,7 @@ import {
   MaterialDetails,
   MaterialFileUpload,
   MaterialPurchaseOrderOption,
+  RelatedMaterialPurchaseOrder,
   MaterialSaveResponse,
   MaterialUpsertRequest,
 } from '../models/material-crud.model';
@@ -77,6 +78,17 @@ export class MaterialCrudApiService {
           },
         ),
       20_000,
+    );
+  }
+
+  getRelatedPurchaseOrders(
+    materialId: number,
+  ): Observable<RelatedMaterialPurchaseOrder[]> {
+    return this.http.get<RelatedMaterialPurchaseOrder[]>(
+      `/api/materials/${materialId}/related-purchase-orders`,
+      {
+        withCredentials: true,
+      },
     );
   }
 

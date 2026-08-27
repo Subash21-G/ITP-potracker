@@ -24,9 +24,7 @@ import {
   InvoiceSortDirection,
 } from '../../core/models/invoice-api.model';
 import { InvoiceApiService } from '../../core/services/invoice-api.service';
-import {
-  ServerExcelFilter,
-} from '../../shared/server-excel-filter/server-excel-filter';
+import { ServerExcelFilter } from '../../shared/server-excel-filter/server-excel-filter';
 
 const EMPTY_SUMMARY: InvoiceListSummary = {
   totalInvoices: 0,
@@ -61,124 +59,86 @@ export class InvoicesPage {
     dateTo: new FormControl('', { nonNullable: true }),
   });
 
-  readonly columnFilters =
-    new FormGroup({
-      invoiceNumber:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+  readonly columnFilters = new FormGroup({
+    invoiceNumber: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      invoiceDateFrom:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    invoiceDateFrom: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      invoiceDateTo:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    invoiceDateTo: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      customerName:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    customerName: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minItemCount:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minItemCount: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxItemCount:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxItemCount: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minTotalQuantity:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minTotalQuantity: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxTotalQuantity:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxTotalQuantity: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minTotalGstAmount:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minTotalGstAmount: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxTotalGstAmount:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxTotalGstAmount: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minTotalAmount:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minTotalAmount: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxTotalAmount:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxTotalAmount: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      uploadedFileName:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    uploadedFileName: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      importedDateFrom:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    importedDateFrom: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      importedDateTo:
-        new FormControl('', {
-          nonNullable: true,
-        }),
-    });
+    importedDateTo: new FormControl('', {
+      nonNullable: true,
+    }),
+  });
 
   readonly items = signal<readonly InvoiceListItem[]>([]);
   readonly summary = signal<InvoiceListSummary>(EMPTY_SUMMARY);
   readonly page = signal(1);
   readonly pageSize = signal(25);
 
-  readonly sortColumn =
-    signal<InvoiceSortColumn | null>(
-      null,
-    );
+  readonly sortColumn = signal<InvoiceSortColumn | null>(null);
 
-  readonly sortDirection =
-    signal<InvoiceSortDirection | null>(
-      null,
-    );
+  readonly sortDirection = signal<InvoiceSortDirection | null>(null);
 
-  readonly excelFilterSelections =
-    signal<InvoiceExcelFilterSelections>(
-      {},
-    );
+  readonly excelFilterSelections = signal<InvoiceExcelFilterSelections>({});
 
-  readonly excelFilterOptions =
-    signal<
-      Partial<
-        Record<
-          InvoiceExcelFilterColumn,
-          readonly InvoiceExcelFilterValue[]
-        >
-      >
-    >({});
+  readonly excelFilterOptions = signal<
+    Partial<Record<InvoiceExcelFilterColumn, readonly InvoiceExcelFilterValue[]>>
+  >({});
 
-  readonly excelFilterLoadingColumns =
-    signal<
-      ReadonlySet<
-        InvoiceExcelFilterColumn
-      >
-    >(
-      new Set<
-        InvoiceExcelFilterColumn
-      >(),
-    );
+  readonly excelFilterLoadingColumns = signal<ReadonlySet<InvoiceExcelFilterColumn>>(
+    new Set<InvoiceExcelFilterColumn>(),
+  );
 
   readonly totalCount = signal(0);
   readonly totalPages = signal(1);
@@ -186,39 +146,25 @@ export class InvoicesPage {
   readonly deletingId = signal<number | null>(null);
   readonly bulkDeleting = signal(false);
   readonly downloadingExcel = signal(false);
-  readonly selectedInvoiceIds =
-    signal<ReadonlySet<number>>(
-      new Set<number>(),
-    );
+  readonly selectedInvoiceIds = signal<ReadonlySet<number>>(new Set<number>());
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
 
   readonly hasPreviousPage = computed(() => this.page() > 1);
   readonly hasNextPage = computed(() => this.page() < this.totalPages());
 
-  readonly selectedCount = computed(
-    () => this.selectedInvoiceIds().size,
-  );
+  readonly selectedCount = computed(() => this.selectedInvoiceIds().size);
 
   readonly allVisibleSelected = computed(() => {
     const invoices = this.items();
     const selectedIds = this.selectedInvoiceIds();
 
-    return (
-      invoices.length > 0 &&
-      invoices.every((invoice) =>
-        selectedIds.has(invoice.id),
-      )
-    );
+    return invoices.length > 0 && invoices.every((invoice) => selectedIds.has(invoice.id));
   });
   readonly showingFrom = computed(() =>
-    this.totalCount() === 0
-      ? 0
-      : (this.page() - 1) * this.pageSize() + 1,
+    this.totalCount() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
   );
-  readonly showingTo = computed(() =>
-    Math.min(this.page() * this.pageSize(), this.totalCount()),
-  );
+  readonly showingTo = computed(() => Math.min(this.page() * this.pageSize(), this.totalCount()));
 
   constructor() {
     this.loadInvoices();
@@ -229,152 +175,75 @@ export class InvoicesPage {
     this.loadInvoices();
   }
 
-  excelFilterOptionsFor(
-    column: InvoiceExcelFilterColumn,
-  ): readonly InvoiceExcelFilterValue[] {
-    return (
-      this.excelFilterOptions()[
-        column
-      ] ?? []
-    );
+  excelFilterOptionsFor(column: InvoiceExcelFilterColumn): readonly InvoiceExcelFilterValue[] {
+    return this.excelFilterOptions()[column] ?? [];
   }
 
-  excelFilterSelectedValues(
-    column: InvoiceExcelFilterColumn,
-  ): readonly string[] {
-    return (
-      this.excelFilterSelections()[
-        column
-      ] ?? []
-    );
+  excelFilterSelectedValues(column: InvoiceExcelFilterColumn): readonly string[] {
+    return this.excelFilterSelections()[column] ?? [];
   }
 
-  excelFilterActive(
-    column: InvoiceExcelFilterColumn,
-  ): boolean {
-    return Object.prototype
-      .hasOwnProperty.call(
-        this.excelFilterSelections(),
-        column,
-      );
+  excelFilterActive(column: InvoiceExcelFilterColumn): boolean {
+    return Object.prototype.hasOwnProperty.call(this.excelFilterSelections(), column);
   }
 
-  excelFilterLoading(
-    column: InvoiceExcelFilterColumn,
-  ): boolean {
-    return this
-      .excelFilterLoadingColumns()
-      .has(
-        column,
-      );
+  excelFilterLoading(column: InvoiceExcelFilterColumn): boolean {
+    return this.excelFilterLoadingColumns().has(column);
   }
 
-  excelSortDirection(
-    column: InvoiceExcelFilterColumn,
-  ): InvoiceSortDirection | null {
-    return this.sortColumn() ===
-      column
-      ? this.sortDirection()
-      : null;
+  excelSortDirection(column: InvoiceExcelFilterColumn): InvoiceSortDirection | null {
+    return this.sortColumn() === column ? this.sortDirection() : null;
   }
 
-  loadExcelFilterValues(
-    column: InvoiceExcelFilterColumn,
-  ): void {
-    if (
-      this.excelFilterLoading(
-        column,
-      )
-    ) {
+  loadExcelFilterValues(column: InvoiceExcelFilterColumn): void {
+    if (this.excelFilterLoading(column)) {
       return;
     }
 
-    this.excelFilterLoadingColumns
-      .update(
-        columns => {
-          const updated =
-            new Set(
-              columns,
-            );
+    this.excelFilterLoadingColumns.update((columns) => {
+      const updated = new Set(columns);
 
-          updated.add(
-            column,
-          );
+      updated.add(column);
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.invoiceApi
-      .getExcelFilterValues(
-        this.buildInvoiceQuery(
-          false,
-        ),
-        column,
-      )
+      .getExcelFilterValues(this.buildInvoiceQuery(false), column)
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(
-          () =>
-            this.excelFilterLoadingColumns
-              .update(
-                columns => {
-                  const updated =
-                    new Set(
-                      columns,
-                    );
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() =>
+          this.excelFilterLoadingColumns.update((columns) => {
+            const updated = new Set(columns);
 
-                  updated.delete(
-                    column,
-                  );
+            updated.delete(column);
 
-                  return updated;
-                },
-              ),
+            return updated;
+          }),
         ),
       )
       .subscribe({
-        next: options => {
-          this.excelFilterOptions
-            .update(
-              current => ({
-                ...current,
-                [column]:
-                  options,
-              }),
-            );
+        next: (options) => {
+          this.excelFilterOptions.update((current) => ({
+            ...current,
+            [column]: options,
+          }));
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
-          this.errorMessage.set(
-            this.describeExportError(
-              error,
-            ),
-          );
+        error: (error: HttpErrorResponse) => {
+          this.errorMessage.set(this.describeExportError(error));
         },
       });
   }
 
-  applyExcelSort(
-    column: InvoiceExcelFilterColumn,
-    direction:
-      InvoiceSortDirection,
-  ): void {
+  applyExcelSort(column: InvoiceExcelFilterColumn, direction: InvoiceSortDirection | null): void {
     if (this.loading()) {
       return;
     }
 
-    this.sortColumn.set(
-      column,
-    );
+    this.sortColumn.set(direction === null ? null : column);
 
-    this.sortDirection.set(
-      direction,
-    );
+    this.sortDirection.set(direction);
 
     this.page.set(1);
     this.clearSelection();
@@ -382,51 +251,29 @@ export class InvoicesPage {
     this.loadInvoices();
   }
 
-  applyExcelFilter(
-    column: InvoiceExcelFilterColumn,
-    values: readonly string[],
-  ): void {
-    const availableValues =
-      this.excelFilterOptions()[
-        column
-      ] ?? [];
+  applyExcelFilter(column: InvoiceExcelFilterColumn, values: readonly string[]): void {
+    const availableValues = this.excelFilterOptions()[column] ?? [];
 
-    const selectedSet =
-      new Set(
-        values,
-      );
+    const selectedSet = new Set(values);
 
     const selectsEverything =
-      availableValues.length >
-        0 &&
-      availableValues.length ===
-        selectedSet.size &&
-      availableValues.every(
-        option =>
-          selectedSet.has(
-            option.value,
-          ),
-      );
+      availableValues.length > 0 &&
+      availableValues.length === selectedSet.size &&
+      availableValues.every((option) => selectedSet.has(option.value));
 
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          if (selectsEverything) {
-            delete updated[
-              column
-            ];
-          } else {
-            updated[column] =
-              [...values];
-          }
+      if (selectsEverything) {
+        delete updated[column];
+      } else {
+        updated[column] = [...values];
+      }
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.page.set(1);
     this.clearSelection();
@@ -434,23 +281,16 @@ export class InvoicesPage {
     this.loadInvoices();
   }
 
-  clearExcelFilter(
-    column: InvoiceExcelFilterColumn,
-  ): void {
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+  clearExcelFilter(column: InvoiceExcelFilterColumn): void {
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          delete updated[
-            column
-          ];
+      delete updated[column];
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.page.set(1);
     this.clearSelection();
@@ -458,38 +298,21 @@ export class InvoicesPage {
     this.loadInvoices();
   }
 
-  toggleSort(
-    column: InvoiceSortColumn,
-  ): void {
+  toggleSort(column: InvoiceSortColumn): void {
     if (this.loading()) {
       return;
     }
 
-    if (
-      this.sortColumn() !== column ||
-      this.sortDirection() === null
-    ) {
-      this.sortColumn.set(
-        column,
-      );
+    if (this.sortColumn() !== column || this.sortDirection() === null) {
+      this.sortColumn.set(column);
 
-      this.sortDirection.set(
-        'asc',
-      );
-    } else if (
-      this.sortDirection() === 'asc'
-    ) {
-      this.sortDirection.set(
-        'desc',
-      );
+      this.sortDirection.set('asc');
+    } else if (this.sortDirection() === 'asc') {
+      this.sortDirection.set('desc');
     } else {
-      this.sortColumn.set(
-        null,
-      );
+      this.sortColumn.set(null);
 
-      this.sortDirection.set(
-        null,
-      );
+      this.sortDirection.set(null);
     }
 
     this.page.set(1);
@@ -499,22 +322,15 @@ export class InvoicesPage {
     this.loadInvoices();
   }
 
-  sortIndicator(
-    column: InvoiceSortColumn,
-  ): string {
+  sortIndicator(column: InvoiceSortColumn): string {
     if (this.sortColumn() !== column) {
       return '\u2195';
     }
 
-    return this.sortDirection() === 'desc'
-      ? '\u2193'
-      : '\u2191';
+    return this.sortDirection() === 'desc' ? '\u2193' : '\u2191';
   }
 
-  sortTitle(
-    column: InvoiceSortColumn,
-    label: string,
-  ): string {
+  sortTitle(column: InvoiceSortColumn, label: string): string {
     if (this.sortColumn() !== column) {
       return `Sort ${label} ascending`;
     }
@@ -526,9 +342,7 @@ export class InvoicesPage {
     return `Clear ${label} sort`;
   }
 
-  applyColumnFilter(
-    filter: HTMLDetailsElement,
-  ): void {
+  applyColumnFilter(filter: HTMLDetailsElement): void {
     filter.open = false;
     this.page.set(1);
     this.loadInvoices();
@@ -549,8 +363,7 @@ export class InvoicesPage {
   ): void {
     switch (column) {
       case 'invoice':
-        this.columnFilters.controls
-          .invoiceNumber.setValue('');
+        this.columnFilters.controls.invoiceNumber.setValue('');
         break;
 
       case 'invoiceDate':
@@ -561,8 +374,7 @@ export class InvoicesPage {
         break;
 
       case 'customer':
-        this.columnFilters.controls
-          .customerName.setValue('');
+        this.columnFilters.controls.customerName.setValue('');
         break;
 
       case 'items':
@@ -594,8 +406,7 @@ export class InvoicesPage {
         break;
 
       case 'uploadedFile':
-        this.columnFilters.controls
-          .uploadedFileName.setValue('');
+        this.columnFilters.controls.uploadedFileName.setValue('');
         break;
 
       case 'imported':
@@ -623,60 +434,35 @@ export class InvoicesPage {
       | 'uploadedFile'
       | 'imported',
   ): boolean {
-    const values =
-      this.columnFilters.getRawValue();
+    const values = this.columnFilters.getRawValue();
 
     switch (column) {
       case 'invoice':
-        return Boolean(
-          values.invoiceNumber.trim(),
-        );
+        return Boolean(values.invoiceNumber.trim());
 
       case 'invoiceDate':
-        return Boolean(
-          values.invoiceDateFrom ||
-          values.invoiceDateTo,
-        );
+        return Boolean(values.invoiceDateFrom || values.invoiceDateTo);
 
       case 'customer':
-        return Boolean(
-          values.customerName.trim(),
-        );
+        return Boolean(values.customerName.trim());
 
       case 'items':
-        return Boolean(
-          values.minItemCount.trim() ||
-          values.maxItemCount.trim(),
-        );
+        return Boolean(values.minItemCount.trim() || values.maxItemCount.trim());
 
       case 'quantity':
-        return Boolean(
-          values.minTotalQuantity.trim() ||
-          values.maxTotalQuantity.trim(),
-        );
+        return Boolean(values.minTotalQuantity.trim() || values.maxTotalQuantity.trim());
 
       case 'gst':
-        return Boolean(
-          values.minTotalGstAmount.trim() ||
-          values.maxTotalGstAmount.trim(),
-        );
+        return Boolean(values.minTotalGstAmount.trim() || values.maxTotalGstAmount.trim());
 
       case 'amount':
-        return Boolean(
-          values.minTotalAmount.trim() ||
-          values.maxTotalAmount.trim(),
-        );
+        return Boolean(values.minTotalAmount.trim() || values.maxTotalAmount.trim());
 
       case 'uploadedFile':
-        return Boolean(
-          values.uploadedFileName.trim(),
-        );
+        return Boolean(values.uploadedFileName.trim());
 
       case 'imported':
-        return Boolean(
-          values.importedDateFrom ||
-          values.importedDateTo,
-        );
+        return Boolean(values.importedDateFrom || values.importedDateTo);
     }
 
     return false;
@@ -685,9 +471,7 @@ export class InvoicesPage {
   clearFilters(): void {
     this.filters.reset();
     this.columnFilters.reset();
-    this.excelFilterSelections.set(
-      {},
-    );
+    this.excelFilterSelections.set({});
     this.page.set(1);
     this.loadInvoices();
   }
@@ -727,17 +511,11 @@ export class InvoicesPage {
   }
 
   isInvoiceSelected(invoiceId: number): boolean {
-    return this.selectedInvoiceIds().has(
-      invoiceId,
-    );
+    return this.selectedInvoiceIds().has(invoiceId);
   }
 
-  toggleInvoiceSelection(
-    invoiceId: number,
-    selected: boolean,
-  ): void {
-    const updatedIds =
-      new Set(this.selectedInvoiceIds());
+  toggleInvoiceSelection(invoiceId: number, selected: boolean): void {
+    const updatedIds = new Set(this.selectedInvoiceIds());
 
     if (selected) {
       updatedIds.add(invoiceId);
@@ -745,16 +523,11 @@ export class InvoicesPage {
       updatedIds.delete(invoiceId);
     }
 
-    this.selectedInvoiceIds.set(
-      updatedIds,
-    );
+    this.selectedInvoiceIds.set(updatedIds);
   }
 
-  toggleVisibleSelection(
-    selected: boolean,
-  ): void {
-    const updatedIds =
-      new Set(this.selectedInvoiceIds());
+  toggleVisibleSelection(selected: boolean): void {
+    const updatedIds = new Set(this.selectedInvoiceIds());
 
     for (const invoice of this.items()) {
       if (selected) {
@@ -764,15 +537,11 @@ export class InvoicesPage {
       }
     }
 
-    this.selectedInvoiceIds.set(
-      updatedIds,
-    );
+    this.selectedInvoiceIds.set(updatedIds);
   }
 
   clearSelection(): void {
-    this.selectedInvoiceIds.set(
-      new Set<number>(),
-    );
+    this.selectedInvoiceIds.set(new Set<number>());
   }
 
   downloadInvoicesExcel(): void {
@@ -785,89 +554,53 @@ export class InvoicesPage {
     this.successMessage.set('');
 
     this.invoiceApi
-      .downloadInvoicesExcel(
-        this.buildInvoiceQuery(
-          false,
-        ),
-      )
+      .downloadInvoicesExcel(this.buildInvoiceQuery(false))
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        finalize(() =>
-          this.downloadingExcel.set(false),
-        ),
+        finalize(() => this.downloadingExcel.set(false)),
       )
       .subscribe({
         next: (file) => {
           if (!file || file.size === 0) {
-            this.errorMessage.set(
-              'The invoice Excel export was empty.',
-            );
+            this.errorMessage.set('The invoice Excel export was empty.');
 
             return;
           }
 
-          const downloadUrl =
-            URL.createObjectURL(file);
+          const downloadUrl = URL.createObjectURL(file);
 
-          const downloadLink =
-            document.createElement('a');
+          const downloadLink = document.createElement('a');
 
-          const timestamp =
-            new Date()
-              .toISOString()
-              .slice(0, 19)
-              .replace('T', '_')
-              .replaceAll(':', '')
-              .replaceAll('-', '');
+          const timestamp = new Date()
+            .toISOString()
+            .slice(0, 19)
+            .replace('T', '_')
+            .replaceAll(':', '')
+            .replaceAll('-', '');
 
-          downloadLink.href =
-            downloadUrl;
+          downloadLink.href = downloadUrl;
 
-          downloadLink.download =
-            `Merged_All_Invoices_${timestamp}.xlsx`;
+          downloadLink.download = `Merged_All_Invoices_${timestamp}.xlsx`;
 
-          document.body.appendChild(
-            downloadLink,
-          );
+          document.body.appendChild(downloadLink);
 
           downloadLink.click();
           downloadLink.remove();
 
-          setTimeout(
-            () =>
-              URL.revokeObjectURL(
-                downloadUrl,
-              ),
-            0,
-          );
+          setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
 
-          this.successMessage.set(
-            'Invoice Excel export downloaded successfully.',
-          );
+          this.successMessage.set('Invoice Excel export downloaded successfully.');
         },
-        error: (
-          error: HttpErrorResponse,
-        ) => {
-          this.errorMessage.set(
-            this.describeExportError(
-              error,
-            ),
-          );
+        error: (error: HttpErrorResponse) => {
+          this.errorMessage.set(this.describeExportError(error));
         },
       });
   }
 
   bulkDeleteInvoices(): void {
-    const invoiceIds =
-      Array.from(
-        this.selectedInvoiceIds(),
-      );
+    const invoiceIds = Array.from(this.selectedInvoiceIds());
 
-    if (
-      invoiceIds.length === 0 ||
-      this.bulkDeleting() ||
-      this.deletingId() !== null
-    ) {
+    if (invoiceIds.length === 0 || this.bulkDeleting() || this.deletingId() !== null) {
       return;
     }
 
@@ -890,62 +623,31 @@ export class InvoicesPage {
       })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        finalize(() =>
-          this.bulkDeleting.set(false),
-        ),
+        finalize(() => this.bulkDeleting.set(false)),
       )
       .subscribe({
         next: (response) => {
-          this.successMessage.set(
-            response.message ||
-              'Selected invoices deleted successfully.',
+          this.successMessage.set(response.message || 'Selected invoices deleted successfully.');
+
+          const deletedIds = new Set(response.deletedInvoiceIds);
+
+          const remainingSelectedIds = new Set(
+            Array.from(this.selectedInvoiceIds()).filter((invoiceId) => !deletedIds.has(invoiceId)),
           );
 
-          const deletedIds =
-            new Set(
-              response.deletedInvoiceIds,
-            );
-
-          const remainingSelectedIds =
-            new Set(
-              Array.from(
-                this.selectedInvoiceIds(),
-              ).filter(
-                (invoiceId) =>
-                  !deletedIds.has(invoiceId),
-              ),
-            );
-
-          this.selectedInvoiceIds.set(
-            remainingSelectedIds,
-          );
+          this.selectedInvoiceIds.set(remainingSelectedIds);
 
           const currentPageWasDeleted =
-            this.items().length > 0 &&
-            this.items().every((invoice) =>
-              deletedIds.has(invoice.id),
-            );
+            this.items().length > 0 && this.items().every((invoice) => deletedIds.has(invoice.id));
 
-          if (
-            currentPageWasDeleted &&
-            this.page() > 1
-          ) {
-            this.page.update(
-              (currentPage) =>
-                currentPage - 1,
-            );
+          if (currentPageWasDeleted && this.page() > 1) {
+            this.page.update((currentPage) => currentPage - 1);
           }
 
           this.loadInvoices(false);
         },
-        error: (
-          error: HttpErrorResponse,
-        ) => {
-          this.errorMessage.set(
-            this.describeBulkDeleteError(
-              error,
-            ),
-          );
+        error: (error: HttpErrorResponse) => {
+          this.errorMessage.set(this.describeBulkDeleteError(error));
         },
       });
   }
@@ -990,111 +692,64 @@ export class InvoicesPage {
       });
   }
 
-  private buildInvoiceQuery(
-    includePaging: boolean,
-  ) {
-    const filterValues =
-      this.filters.getRawValue();
+  private buildInvoiceQuery(includePaging: boolean) {
+    const filterValues = this.filters.getRawValue();
 
-    const columnValues =
-      this.columnFilters.getRawValue();
+    const columnValues = this.columnFilters.getRawValue();
 
     return {
-      search:
-        filterValues.search,
+      search: filterValues.search,
 
-      dateFrom:
-        filterValues.dateFrom ||
-        null,
+      dateFrom: filterValues.dateFrom || null,
 
-      dateTo:
-        filterValues.dateTo ||
-        null,
+      dateTo: filterValues.dateTo || null,
 
-      invoiceNumber:
-        columnValues.invoiceNumber,
+      invoiceNumber: columnValues.invoiceNumber,
 
-      columnInvoiceDateFrom:
-        columnValues.invoiceDateFrom ||
-        null,
+      columnInvoiceDateFrom: columnValues.invoiceDateFrom || null,
 
-      columnInvoiceDateTo:
-        columnValues.invoiceDateTo ||
-        null,
+      columnInvoiceDateTo: columnValues.invoiceDateTo || null,
 
-      customerName:
-        columnValues.customerName,
+      customerName: columnValues.customerName,
 
-      minItemCount:
-        columnValues.minItemCount,
+      minItemCount: columnValues.minItemCount,
 
-      maxItemCount:
-        columnValues.maxItemCount,
+      maxItemCount: columnValues.maxItemCount,
 
-      minTotalQuantity:
-        columnValues.minTotalQuantity,
+      minTotalQuantity: columnValues.minTotalQuantity,
 
-      maxTotalQuantity:
-        columnValues.maxTotalQuantity,
+      maxTotalQuantity: columnValues.maxTotalQuantity,
 
-      minTotalGstAmount:
-        columnValues.minTotalGstAmount,
+      minTotalGstAmount: columnValues.minTotalGstAmount,
 
-      maxTotalGstAmount:
-        columnValues.maxTotalGstAmount,
+      maxTotalGstAmount: columnValues.maxTotalGstAmount,
 
-      minTotalAmount:
-        columnValues.minTotalAmount,
+      minTotalAmount: columnValues.minTotalAmount,
 
-      maxTotalAmount:
-        columnValues.maxTotalAmount,
+      maxTotalAmount: columnValues.maxTotalAmount,
 
-      uploadedFileName:
-        columnValues.uploadedFileName,
+      uploadedFileName: columnValues.uploadedFileName,
 
-      importedDateFrom:
-        columnValues.importedDateFrom ||
-        null,
+      importedDateFrom: columnValues.importedDateFrom || null,
 
-      importedDateTo:
-        columnValues.importedDateTo ||
-        null,
+      importedDateTo: columnValues.importedDateTo || null,
 
-      sortColumn:
-        this.sortColumn() ??
-        undefined,
+      sortColumn: this.sortColumn() ?? undefined,
 
-      sortDirection:
-        this.sortDirection() ??
-        undefined,
+      sortDirection: this.sortDirection() ?? undefined,
 
-      excelFilters:
-        this.serializeExcelFilters(),
+      excelFilters: this.serializeExcelFilters(),
 
-      page:
-        includePaging
-          ? this.page()
-          : undefined,
+      page: includePaging ? this.page() : undefined,
 
-      pageSize:
-        includePaging
-          ? this.pageSize()
-          : undefined,
+      pageSize: includePaging ? this.pageSize() : undefined,
     };
   }
 
-  private serializeExcelFilters():
-    string | undefined {
-    const selections =
-      this.excelFilterSelections();
+  private serializeExcelFilters(): string | undefined {
+    const selections = this.excelFilterSelections();
 
-    return Object.keys(
-      selections,
-    ).length > 0
-      ? JSON.stringify(
-          selections,
-        )
-      : undefined;
+    return Object.keys(selections).length > 0 ? JSON.stringify(selections) : undefined;
   }
 
   private loadInvoices(clearMessages = true): void {
@@ -1110,11 +765,7 @@ export class InvoicesPage {
     }
 
     this.invoiceApi
-      .getInvoices(
-        this.buildInvoiceQuery(
-          true,
-        ),
-      )
+      .getInvoices(this.buildInvoiceQuery(true))
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loading.set(false)),
@@ -1174,9 +825,7 @@ export class InvoicesPage {
     return this.readApiMessage(error) || 'The invoice could not be deleted.';
   }
 
-  private describeExportError(
-    error: HttpErrorResponse,
-  ): string {
+  private describeExportError(error: HttpErrorResponse): string {
     if (error.status === 401) {
       return 'Your session has expired. Sign in again before exporting invoices.';
     }
@@ -1196,9 +845,7 @@ export class InvoicesPage {
     return 'The invoice Excel export could not be downloaded.';
   }
 
-  private describeBulkDeleteError(
-    error: HttpErrorResponse,
-  ): string {
+  private describeBulkDeleteError(error: HttpErrorResponse): string {
     if (error.status === 401) {
       return 'Your session has expired. Sign in again before deleting invoices.';
     }
@@ -1211,10 +858,7 @@ export class InvoicesPage {
       return 'None of the selected invoices could be found.';
     }
 
-    return (
-      this.readApiMessage(error) ||
-      'The selected invoices could not be deleted.'
-    );
+    return this.readApiMessage(error) || 'The selected invoices could not be deleted.';
   }
 
   private readApiMessage(error: HttpErrorResponse): string {

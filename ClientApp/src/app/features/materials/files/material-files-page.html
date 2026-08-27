@@ -151,7 +151,7 @@
           <input
             #drawingInput
             type="file"
-            accept=".pdf,.dwg,.dxf,.step,.stp,.iges,.igs,.zip"
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.dwg,.dxf,.step,.stp,.iges,.igs,.zip"
             (change)="onDrawingSelected($event)"
             [disabled]="isUploading()"
           />
@@ -167,7 +167,7 @@
               {{
                 selectedDrawing()
                   ? fileSize(selectedDrawing())
-                  : 'PDF, DWG, DXF, STEP, STP, IGES, IGS or ZIP'
+                  : 'PDF, PNG, JPG, WebP, DWG, DXF, STEP, STP, IGES, IGS or ZIP'
               }}
             </small>
           </span>

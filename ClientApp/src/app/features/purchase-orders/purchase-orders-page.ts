@@ -11,10 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import {
-  ActivatedRoute,
-  RouterLink,
-} from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import {
@@ -27,9 +24,7 @@ import {
   PurchaseOrderSortDirection,
 } from '../../core/models/purchase-order.model';
 import { PurchaseOrdersApiService } from '../../core/services/purchase-orders-api.service';
-import {
-  ServerExcelFilter,
-} from '../../shared/server-excel-filter/server-excel-filter';
+import { ServerExcelFilter } from '../../shared/server-excel-filter/server-excel-filter';
 
 const EMPTY_SUMMARY: PurchaseOrderListSummary = {
   totalPurchaseOrders: 0,
@@ -91,41 +86,19 @@ export class PurchaseOrdersPage {
   readonly page = signal(1);
   readonly pageSize = signal(25);
 
-  readonly sortColumn =
-    signal<PurchaseOrderSortColumn | null>(
-      null,
-    );
+  readonly sortColumn = signal<PurchaseOrderSortColumn | null>(null);
 
-  readonly sortDirection =
-    signal<PurchaseOrderSortDirection | null>(
-      null,
-    );
+  readonly sortDirection = signal<PurchaseOrderSortDirection | null>(null);
 
-  readonly excelFilterSelections =
-    signal<PurchaseOrderExcelFilterSelections>(
-      {},
-    );
+  readonly excelFilterSelections = signal<PurchaseOrderExcelFilterSelections>({});
 
-  readonly excelFilterOptions =
-    signal<
-      Partial<
-        Record<
-          PurchaseOrderExcelFilterColumn,
-          readonly PurchaseOrderExcelFilterValue[]
-        >
-      >
-    >({});
+  readonly excelFilterOptions = signal<
+    Partial<Record<PurchaseOrderExcelFilterColumn, readonly PurchaseOrderExcelFilterValue[]>>
+  >({});
 
-  readonly excelFilterLoadingColumns =
-    signal<
-      ReadonlySet<
-        PurchaseOrderExcelFilterColumn
-      >
-    >(
-      new Set<
-        PurchaseOrderExcelFilterColumn
-      >(),
-    );
+  readonly excelFilterLoadingColumns = signal<ReadonlySet<PurchaseOrderExcelFilterColumn>>(
+    new Set<PurchaseOrderExcelFilterColumn>(),
+  );
 
   readonly totalRecords = signal(0);
   readonly totalPages = signal(1);
@@ -135,104 +108,53 @@ export class PurchaseOrdersPage {
   readonly successMessage = signal('');
   readonly bulkDeleting = signal(false);
 
-  readonly selectedIds =
-    signal<ReadonlySet<number>>(
-      new Set<number>(),
+  readonly selectedIds = signal<ReadonlySet<number>>(new Set<number>());
+
+  readonly hasPreviousPage = computed(() => this.page() > 1);
+
+  readonly hasNextPage = computed(() => this.page() < this.totalPages());
+
+  readonly visiblePages = computed(() => {
+    const current = this.page();
+
+    const total = this.totalPages();
+
+    const first = Math.max(1, current - 2);
+
+    const last = Math.min(total, first + 4);
+
+    const adjustedFirst = Math.max(1, last - 4);
+
+    return Array.from(
+      {
+        length: last - adjustedFirst + 1,
+      },
+      (_, index) => adjustedFirst + index,
     );
+  });
 
-  readonly hasPreviousPage =
-    computed(
-      () =>
-        this.page() > 1,
+  readonly selectedCount = computed(() => this.selectedIds().size);
+
+  readonly allCurrentPageSelected = computed(() => {
+    const purchaseOrders = this.items();
+
+    const selectedIds = this.selectedIds();
+
+    return (
+      purchaseOrders.length > 0 &&
+      purchaseOrders.every((purchaseOrder) => selectedIds.has(purchaseOrder.purchaseOrderId))
     );
-
-  readonly hasNextPage =
-    computed(
-      () =>
-        this.page() <
-        this.totalPages(),
-    );
-
-  readonly visiblePages =
-    computed(() => {
-      const current =
-        this.page();
-
-      const total =
-        this.totalPages();
-
-      const first =
-        Math.max(
-          1,
-          current - 2,
-        );
-
-      const last =
-        Math.min(
-          total,
-          first + 4,
-        );
-
-      const adjustedFirst =
-        Math.max(
-          1,
-          last - 4,
-        );
-
-      return Array.from(
-        {
-          length:
-            last -
-            adjustedFirst +
-            1,
-        },
-        (
-          _,
-          index,
-        ) =>
-          adjustedFirst +
-          index,
-      );
-    });
-
-  readonly selectedCount =
-    computed(
-      () =>
-        this.selectedIds().size,
-    );
-
-  readonly allCurrentPageSelected =
-    computed(() => {
-      const purchaseOrders =
-        this.items();
-
-      const selectedIds =
-        this.selectedIds();
-
-      return (
-        purchaseOrders.length > 0 &&
-        purchaseOrders.every(
-          (purchaseOrder) =>
-            selectedIds.has(
-              purchaseOrder.purchaseOrderId,
-            ),
-        )
-      );
-    });
+  });
   readonly showingFrom = computed(() =>
     this.totalRecords() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
   );
   readonly showingTo = computed(() => Math.min(this.page() * this.pageSize(), this.totalRecords()));
 
   constructor() {
-    const linkedPersonName =
-      this.route.snapshot.queryParamMap
-        .get('handler')
-        ?.trim() ?? '';
+    const linkedPersonName = this.route.snapshot.queryParamMap.get('handler')?.trim() ?? '';
 
     if (linkedPersonName) {
-      this.filters.controls.handler
-        .setValue(linkedPersonName);
+      this.filters.controls.handler.setValue(linkedPersonName);
     }
 
     this.loadPurchaseOrders();
@@ -241,142 +163,77 @@ export class PurchaseOrdersPage {
   excelFilterOptionsFor(
     column: PurchaseOrderExcelFilterColumn,
   ): readonly PurchaseOrderExcelFilterValue[] {
-    return (
-      this.excelFilterOptions()[
-        column
-      ] ?? []
-    );
+    return this.excelFilterOptions()[column] ?? [];
   }
 
-  excelFilterSelectedValues(
-    column: PurchaseOrderExcelFilterColumn,
-  ): readonly string[] {
-    return (
-      this.excelFilterSelections()[
-        column
-      ] ?? []
-    );
+  excelFilterSelectedValues(column: PurchaseOrderExcelFilterColumn): readonly string[] {
+    return this.excelFilterSelections()[column] ?? [];
   }
 
-  excelFilterActive(
-    column: PurchaseOrderExcelFilterColumn,
-  ): boolean {
-    return Object.prototype
-      .hasOwnProperty.call(
-        this.excelFilterSelections(),
-        column,
-      );
+  excelFilterActive(column: PurchaseOrderExcelFilterColumn): boolean {
+    return Object.prototype.hasOwnProperty.call(this.excelFilterSelections(), column);
   }
 
-  excelFilterLoading(
-    column: PurchaseOrderExcelFilterColumn,
-  ): boolean {
-    return this
-      .excelFilterLoadingColumns()
-      .has(
-        column,
-      );
+  excelFilterLoading(column: PurchaseOrderExcelFilterColumn): boolean {
+    return this.excelFilterLoadingColumns().has(column);
   }
 
-  excelSortDirection(
-    column: PurchaseOrderExcelFilterColumn,
-  ): PurchaseOrderSortDirection | null {
-    return this.sortColumn() ===
-      column
-      ? this.sortDirection()
-      : null;
+  excelSortDirection(column: PurchaseOrderExcelFilterColumn): PurchaseOrderSortDirection | null {
+    return this.sortColumn() === column ? this.sortDirection() : null;
   }
 
-  loadExcelFilterValues(
-    column: PurchaseOrderExcelFilterColumn,
-  ): void {
-    if (
-      this.excelFilterLoading(
-        column,
-      )
-    ) {
+  loadExcelFilterValues(column: PurchaseOrderExcelFilterColumn): void {
+    if (this.excelFilterLoading(column)) {
       return;
     }
 
-    this.excelFilterLoadingColumns
-      .update(
-        columns => {
-          const updated =
-            new Set(
-              columns,
-            );
+    this.excelFilterLoadingColumns.update((columns) => {
+      const updated = new Set(columns);
 
-          updated.add(
-            column,
-          );
+      updated.add(column);
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
-    const filterValues =
-      this.filters.getRawValue();
+    const filterValues = this.filters.getRawValue();
 
     this.purchaseOrdersApi
       .getExcelFilterValues(
         {
           page: 1,
-          pageSize:
-            this.pageSize(),
+          pageSize: this.pageSize(),
 
-          sortColumn:
-            this.sortColumn() ??
-            undefined,
+          sortColumn: this.sortColumn() ?? undefined,
 
-          sortDirection:
-            this.sortDirection() ??
-            undefined,
+          sortDirection: this.sortDirection() ?? undefined,
 
-          excelFilters:
-            this.serializeExcelFilters(),
+          excelFilters: this.serializeExcelFilters(),
 
           ...filterValues,
         },
         column,
       )
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(
-          () =>
-            this.excelFilterLoadingColumns
-              .update(
-                columns => {
-                  const updated =
-                    new Set(
-                      columns,
-                    );
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() =>
+          this.excelFilterLoadingColumns.update((columns) => {
+            const updated = new Set(columns);
 
-                  updated.delete(
-                    column,
-                  );
+            updated.delete(column);
 
-                  return updated;
-                },
-              ),
+            return updated;
+          }),
         ),
       )
       .subscribe({
-        next: options => {
-          this.excelFilterOptions
-            .update(
-              current => ({
-                ...current,
-                [column]:
-                  options,
-              }),
-            );
+        next: (options) => {
+          this.excelFilterOptions.update((current) => ({
+            ...current,
+            [column]: options,
+          }));
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
+        error: (error: HttpErrorResponse) => {
           this.errorMessage.set(
             this.describeMutationError(
               error,
@@ -389,20 +246,15 @@ export class PurchaseOrdersPage {
 
   applyExcelSort(
     column: PurchaseOrderExcelFilterColumn,
-    direction:
-      PurchaseOrderSortDirection,
+    direction: PurchaseOrderSortDirection | null,
   ): void {
     if (this.loading()) {
       return;
     }
 
-    this.sortColumn.set(
-      column,
-    );
+    this.sortColumn.set(direction === null ? null : column);
 
-    this.sortDirection.set(
-      direction,
-    );
+    this.sortDirection.set(direction);
 
     this.page.set(1);
     this.clearSelection();
@@ -410,51 +262,29 @@ export class PurchaseOrdersPage {
     this.loadPurchaseOrders();
   }
 
-  applyExcelFilter(
-    column: PurchaseOrderExcelFilterColumn,
-    values: readonly string[],
-  ): void {
-    const availableValues =
-      this.excelFilterOptions()[
-        column
-      ] ?? [];
+  applyExcelFilter(column: PurchaseOrderExcelFilterColumn, values: readonly string[]): void {
+    const availableValues = this.excelFilterOptions()[column] ?? [];
 
-    const selectedSet =
-      new Set(
-        values,
-      );
+    const selectedSet = new Set(values);
 
     const selectsEverything =
-      availableValues.length >
-        0 &&
-      availableValues.length ===
-        selectedSet.size &&
-      availableValues.every(
-        option =>
-          selectedSet.has(
-            option.value,
-          ),
-      );
+      availableValues.length > 0 &&
+      availableValues.length === selectedSet.size &&
+      availableValues.every((option) => selectedSet.has(option.value));
 
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          if (selectsEverything) {
-            delete updated[
-              column
-            ];
-          } else {
-            updated[column] =
-              [...values];
-          }
+      if (selectsEverything) {
+        delete updated[column];
+      } else {
+        updated[column] = [...values];
+      }
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.page.set(1);
     this.clearSelection();
@@ -462,23 +292,16 @@ export class PurchaseOrdersPage {
     this.loadPurchaseOrders();
   }
 
-  clearExcelFilter(
-    column: PurchaseOrderExcelFilterColumn,
-  ): void {
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+  clearExcelFilter(column: PurchaseOrderExcelFilterColumn): void {
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          delete updated[
-            column
-          ];
+      delete updated[column];
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.page.set(1);
     this.clearSelection();
@@ -486,22 +309,15 @@ export class PurchaseOrdersPage {
     this.loadPurchaseOrders();
   }
 
-  toggleSort(
-    column: PurchaseOrderSortColumn,
-  ): void {
+  toggleSort(column: PurchaseOrderSortColumn): void {
     if (this.loading()) {
       return;
     }
 
-    if (
-      this.sortColumn() !== column ||
-      this.sortDirection() === null
-    ) {
+    if (this.sortColumn() !== column || this.sortDirection() === null) {
       this.sortColumn.set(column);
       this.sortDirection.set('asc');
-    } else if (
-      this.sortDirection() === 'asc'
-    ) {
+    } else if (this.sortDirection() === 'asc') {
       this.sortDirection.set('desc');
     } else {
       this.sortColumn.set(null);
@@ -514,22 +330,15 @@ export class PurchaseOrdersPage {
     this.loadPurchaseOrders();
   }
 
-  sortIndicator(
-    column: PurchaseOrderSortColumn,
-  ): string {
+  sortIndicator(column: PurchaseOrderSortColumn): string {
     if (this.sortColumn() !== column) {
       return '\u2195';
     }
 
-    return this.sortDirection() === 'desc'
-      ? '\u2193'
-      : '\u2191';
+    return this.sortDirection() === 'desc' ? '\u2193' : '\u2191';
   }
 
-  sortTitle(
-    column: PurchaseOrderSortColumn,
-    label: string,
-  ): string {
+  sortTitle(column: PurchaseOrderSortColumn, label: string): string {
     if (this.sortColumn() !== column) {
       return `Sort ${label} ascending`;
     }
@@ -541,9 +350,7 @@ export class PurchaseOrdersPage {
     return `Clear ${label} sort`;
   }
 
-  applyColumnFilter(
-    filter: HTMLDetailsElement,
-  ): void {
+  applyColumnFilter(filter: HTMLDetailsElement): void {
     filter.open = false;
     this.applyFilters();
   }
@@ -651,27 +458,17 @@ export class PurchaseOrdersPage {
       | 'delivery'
       | 'pdf',
   ): boolean {
-    const values =
-      this.filters.getRawValue();
+    const values = this.filters.getRawValue();
 
     switch (column) {
       case 'po':
-        return Boolean(
-          values.search.trim() ||
-          values.handler.trim(),
-        );
+        return Boolean(values.search.trim() || values.handler.trim());
 
       case 'poDate':
-        return Boolean(
-          values.poDateFrom ||
-          values.poDateTo,
-        );
+        return Boolean(values.poDateFrom || values.poDateTo);
 
       case 'received':
-        return Boolean(
-          values.poReceivedDateFrom ||
-          values.poReceivedDateTo,
-        );
+        return Boolean(values.poReceivedDateFrom || values.poReceivedDateTo);
 
       case 'status':
         return Boolean(values.status);
@@ -680,34 +477,19 @@ export class PurchaseOrdersPage {
         return Boolean(values.materialStatus);
 
       case 'materials':
-        return Boolean(
-          values.minMaterials ||
-          values.maxMaterials,
-        );
+        return Boolean(values.minMaterials || values.maxMaterials);
 
       case 'quantity':
-        return Boolean(
-          values.minPoQuantity ||
-          values.maxPoQuantity,
-        );
+        return Boolean(values.minPoQuantity || values.maxPoQuantity);
 
       case 'value':
-        return Boolean(
-          values.minPoValue ||
-          values.maxPoValue,
-        );
+        return Boolean(values.minPoValue || values.maxPoValue);
 
       case 'dispatch':
-        return Boolean(
-          values.minDispatchBalance ||
-          values.maxDispatchBalance,
-        );
+        return Boolean(values.minDispatchBalance || values.maxDispatchBalance);
 
       case 'delivery':
-        return Boolean(
-          values.deliveryDateFrom ||
-          values.deliveryDateTo,
-        );
+        return Boolean(values.deliveryDateFrom || values.deliveryDateTo);
 
       case 'pdf':
         return Boolean(values.pdfAvailability);
@@ -723,9 +505,7 @@ export class PurchaseOrdersPage {
 
   clearFilters(): void {
     this.filters.reset();
-    this.excelFilterSelections.set(
-      {},
-    );
+    this.excelFilterSelections.set({});
     this.page.set(1);
     this.clearSelection();
     this.successMessage.set('');
@@ -746,32 +526,18 @@ export class PurchaseOrdersPage {
     this.loadPurchaseOrders();
   }
 
-  goToPage(
-    page: number,
-  ): void {
+  goToPage(page: number): void {
     if (this.loading()) {
       return;
     }
 
-    const normalizedPage =
-      Math.min(
-        Math.max(
-          page,
-          1,
-        ),
-        this.totalPages(),
-      );
+    const normalizedPage = Math.min(Math.max(page, 1), this.totalPages());
 
-    if (
-      normalizedPage ===
-      this.page()
-    ) {
+    if (normalizedPage === this.page()) {
       return;
     }
 
-    this.page.set(
-      normalizedPage,
-    );
+    this.page.set(normalizedPage);
 
     this.clearSelection();
     this.successMessage.set('');
@@ -783,9 +549,7 @@ export class PurchaseOrdersPage {
       return;
     }
 
-    this.goToPage(
-      this.page() - 1,
-    );
+    this.goToPage(this.page() - 1);
   }
 
   nextPage(): void {
@@ -793,49 +557,27 @@ export class PurchaseOrdersPage {
       return;
     }
 
-    this.goToPage(
-      this.page() + 1,
-    );
+    this.goToPage(this.page() + 1);
   }
 
-  togglePurchaseOrder(
-    purchaseOrderId: number,
-    event: Event,
-  ): void {
-    const checked =
-      (
-        event.target as
-          HTMLInputElement
-      ).checked;
+  togglePurchaseOrder(purchaseOrderId: number, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
 
-    this.selectedIds.update(
-      (selectedIds) => {
-        const updated =
-          new Set(selectedIds);
+    this.selectedIds.update((selectedIds) => {
+      const updated = new Set(selectedIds);
 
-        if (checked) {
-          updated.add(
-            purchaseOrderId,
-          );
-        } else {
-          updated.delete(
-            purchaseOrderId,
-          );
-        }
+      if (checked) {
+        updated.add(purchaseOrderId);
+      } else {
+        updated.delete(purchaseOrderId);
+      }
 
-        return updated;
-      },
-    );
+      return updated;
+    });
   }
 
-  toggleCurrentPage(
-    event: Event,
-  ): void {
-    const checked =
-      (
-        event.target as
-          HTMLInputElement
-      ).checked;
+  toggleCurrentPage(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
 
     if (!checked) {
       this.clearSelection();
@@ -843,34 +585,21 @@ export class PurchaseOrdersPage {
     }
 
     this.selectedIds.set(
-      new Set(
-        this.items().map(
-          (purchaseOrder) =>
-            purchaseOrder.purchaseOrderId,
-        ),
-      ),
+      new Set(this.items().map((purchaseOrder) => purchaseOrder.purchaseOrderId)),
     );
   }
 
   bulkDeletePurchaseOrders(): void {
-    const purchaseOrderIds =
-      Array.from(
-        this.selectedIds(),
-      );
+    const purchaseOrderIds = Array.from(this.selectedIds());
 
-    if (
-      purchaseOrderIds.length === 0 ||
-      this.bulkDeleting() ||
-      this.loading()
-    ) {
+    if (purchaseOrderIds.length === 0 || this.bulkDeleting() || this.loading()) {
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        `Delete ${purchaseOrderIds.length} selected Purchase Order(s)?\n\n` +
-          'Purchase Orders with linked materials will be safely skipped.',
-      );
+    const confirmed = window.confirm(
+      `Delete ${purchaseOrderIds.length} selected Purchase Order(s)?\n\n` +
+        'Purchase Orders with linked materials will be safely skipped.',
+    );
 
     if (!confirmed) {
       return;
@@ -885,71 +614,38 @@ export class PurchaseOrdersPage {
         purchaseOrderIds,
       })
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(() =>
-          this.bulkDeleting.set(
-            false,
-          ),
-        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.bulkDeleting.set(false)),
       )
       .subscribe({
         next: (response) => {
-          const deletedIds =
-            new Set(
-              response
-                .deletedPurchaseOrderIds,
-            );
+          const deletedIds = new Set(response.deletedPurchaseOrderIds);
 
-          if (
-            response.deletedCount > 0
-          ) {
+          if (response.deletedCount > 0) {
             const currentPageDeleted =
               this.items().length > 0 &&
-              this.items().every(
-                (purchaseOrder) =>
-                  deletedIds.has(
-                    purchaseOrder
-                      .purchaseOrderId,
-                  ),
-              );
+              this.items().every((purchaseOrder) => deletedIds.has(purchaseOrder.purchaseOrderId));
 
-            if (
-              currentPageDeleted &&
-              this.page() > 1
-            ) {
-              this.page.update(
-                (currentPage) =>
-                  currentPage - 1,
-              );
+            if (currentPageDeleted && this.page() > 1) {
+              this.page.update((currentPage) => currentPage - 1);
             }
 
             this.clearSelection();
 
             this.successMessage.set(
-              response.message ||
-                'Selected Purchase Orders deleted successfully.',
+              response.message || 'Selected Purchase Orders deleted successfully.',
             );
 
             this.loadPurchaseOrders();
             return;
           }
 
-          this.errorMessage.set(
-            response.message ||
-              'No selected Purchase Orders were deleted.',
-          );
+          this.errorMessage.set(response.message || 'No selected Purchase Orders were deleted.');
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
+        error: (error: HttpErrorResponse) => {
           this.errorMessage.set(
-            this.describeMutationError(
-              error,
-              'The selected Purchase Orders could not be deleted.',
-            ),
+            this.describeMutationError(error, 'The selected Purchase Orders could not be deleted.'),
           );
         },
       });
@@ -981,25 +677,14 @@ export class PurchaseOrdersPage {
     const values = this.filters.getRawValue();
     const params = new URLSearchParams();
 
-    const sortColumn =
-      this.sortColumn();
+    const sortColumn = this.sortColumn();
 
-    const sortDirection =
-      this.sortDirection();
+    const sortDirection = this.sortDirection();
 
-    if (
-      sortColumn &&
-      sortDirection
-    ) {
-      params.set(
-        'sortColumn',
-        sortColumn,
-      );
+    if (sortColumn && sortDirection) {
+      params.set('sortColumn', sortColumn);
 
-      params.set(
-        'sortDirection',
-        sortDirection,
-      );
+      params.set('sortDirection', sortDirection);
     }
 
     this.appendQueryValue(params, 'search', values.search);
@@ -1022,39 +707,27 @@ export class PurchaseOrdersPage {
     this.appendQueryValue(params, 'poReceivedDateFrom', values.poReceivedDateFrom);
     this.appendQueryValue(params, 'poReceivedDateTo', values.poReceivedDateTo);
 
-    const excelFilters =
-      this.serializeExcelFilters();
+    const excelFilters = this.serializeExcelFilters();
 
     if (excelFilters) {
-      params.set(
-        'excelFilters',
-        excelFilters,
-      );
+      params.set('excelFilters', excelFilters);
     }
 
     const queryString = params.toString();
 
-    return queryString ? `/api/purchase-orders/export-excel?${queryString}` : '/api/purchase-orders/export-excel';
+    return queryString
+      ? `/api/purchase-orders/export-excel?${queryString}`
+      : '/api/purchase-orders/export-excel';
   }
 
-  private serializeExcelFilters():
-    string | undefined {
-    const selections =
-      this.excelFilterSelections();
+  private serializeExcelFilters(): string | undefined {
+    const selections = this.excelFilterSelections();
 
-    return Object.keys(
-      selections,
-    ).length > 0
-      ? JSON.stringify(
-          selections,
-        )
-      : undefined;
+    return Object.keys(selections).length > 0 ? JSON.stringify(selections) : undefined;
   }
 
   private clearSelection(): void {
-    this.selectedIds.set(
-      new Set<number>(),
-    );
+    this.selectedIds.set(new Set<number>());
   }
 
   private loadPurchaseOrders(): void {
@@ -1073,16 +746,11 @@ export class PurchaseOrdersPage {
         page: this.page(),
         pageSize: this.pageSize(),
 
-        sortColumn:
-          this.sortColumn() ??
-          undefined,
+        sortColumn: this.sortColumn() ?? undefined,
 
-        sortDirection:
-          this.sortDirection() ??
-          undefined,
+        sortDirection: this.sortDirection() ?? undefined,
 
-        excelFilters:
-          this.serializeExcelFilters(),
+        excelFilters: this.serializeExcelFilters(),
 
         ...filterValues,
       })
@@ -1113,10 +781,7 @@ export class PurchaseOrdersPage {
       });
   }
 
-  private describeMutationError(
-    error: HttpErrorResponse,
-    fallbackMessage: string,
-  ): string {
+  private describeMutationError(error: HttpErrorResponse, fallbackMessage: string): string {
     if (error.status === 0) {
       return 'The PO Tracker API is unavailable.';
     }
@@ -1129,14 +794,9 @@ export class PurchaseOrdersPage {
       return 'Your account does not have permission to delete Purchase Orders.';
     }
 
-    const apiMessage =
-      error.error?.message ??
-      error.error?.error;
+    const apiMessage = error.error?.message ?? error.error?.error;
 
-    return typeof apiMessage ===
-      'string'
-      ? apiMessage
-      : fallbackMessage;
+    return typeof apiMessage === 'string' ? apiMessage : fallbackMessage;
   }
 
   private describeError(error: HttpErrorResponse): string {

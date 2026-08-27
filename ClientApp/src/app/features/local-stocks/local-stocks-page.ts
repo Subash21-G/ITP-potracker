@@ -1,10 +1,5 @@
-import {
-  DatePipe,
-  DecimalPipe,
-} from '@angular/common';
-import {
-  HttpErrorResponse,
-} from '@angular/common/http';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,26 +8,12 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import {
-  takeUntilDestroyed,
-} from '@angular/core/rxjs-interop';
-import {
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import {
-  RouterLink,
-} from '@angular/router';
-import {
-  Observable,
-  finalize,
-} from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { Observable, finalize } from 'rxjs';
 
-import {
-  ManageOnlyDirective,
-} from '../../core/directives/manage-only.directive';
+import { ManageOnlyDirective } from '../../core/directives/manage-only.directive';
 import {
   LocalStockExcelFilterColumn,
   LocalStockExcelFilterSelections,
@@ -43,12 +24,8 @@ import {
   LocalStockSummary,
   LocalStockUpsertRequest,
 } from '../../core/models/local-stock-api.model';
-import {
-  LocalStockApiService,
-} from '../../core/services/local-stock-api.service';
-import {
-  ServerExcelFilter,
-} from '../../shared/server-excel-filter/server-excel-filter';
+import { LocalStockApiService } from '../../core/services/local-stock-api.service';
+import { ServerExcelFilter } from '../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-local-stocks-page',
@@ -62,260 +39,135 @@ import {
   ],
   templateUrl: './local-stocks-page.html',
   styleUrl: './local-stocks-page.css',
-  changeDetection:
-    ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LocalStocksPage {
-  private readonly api =
-    inject(LocalStockApiService);
+  private readonly api = inject(LocalStockApiService);
 
-  private readonly destroyRef =
-    inject(DestroyRef);
+  private readonly destroyRef = inject(DestroyRef);
 
-  readonly searchControl =
-    new FormControl(
-      '',
-      {
-        nonNullable: true,
-      },
-    );
+  readonly searchControl = new FormControl('', {
+    nonNullable: true,
+  });
 
-  readonly columnFilters =
-    new FormGroup({
-      material:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+  readonly columnFilters = new FormGroup({
+    material: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      rmGrade:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    rmGrade: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      location:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    location: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minAvailableQty:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    minAvailableQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxAvailableQty:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    maxAvailableQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minMinimumQty:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    minMinimumQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxMinimumQty:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    maxMinimumQty: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      status:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    status: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      updatedFrom:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    updatedFrom: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      updatedTo:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
-    });
+    updatedTo: new FormControl('', {
+      nonNullable: true,
+    }),
+  });
 
-  readonly form =
-    new FormGroup({
-      materialNo:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-            validators: [
-              Validators.required,
-            ],
-          },
-        ),
+  readonly form = new FormGroup({
+    materialNo: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
 
-      materialName:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    materialName: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      rmGrade:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    rmGrade: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      location:
-        new FormControl(
-          '',
-          {
-            nonNullable: true,
-          },
-        ),
+    location: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      availableQty:
-        new FormControl(
-          0,
-          {
-            nonNullable: true,
-          },
-        ),
+    availableQty: new FormControl(0, {
+      nonNullable: true,
+    }),
 
-      minimumQty:
-        new FormControl(
-          0,
-          {
-            nonNullable: true,
-          },
-        ),
-    });
+    minimumQty: new FormControl(0, {
+      nonNullable: true,
+    }),
+  });
 
-  readonly items =
-    signal<readonly LocalStockListItem[]>([]);
+  readonly items = signal<readonly LocalStockListItem[]>([]);
 
-  readonly summary =
-    signal<LocalStockSummary>({
-      totalItems: 0,
-      lowStockItems: 0,
-      healthyItems: 0,
-      updatedToday: 0,
-    });
+  readonly summary = signal<LocalStockSummary>({
+    totalItems: 0,
+    lowStockItems: 0,
+    healthyItems: 0,
+    updatedToday: 0,
+  });
 
   readonly page = signal(1);
   readonly pageSize = signal(25);
   readonly totalRecords = signal(0);
   readonly totalPages = signal(1);
 
-  readonly sortColumn =
-    signal<
-      LocalStockExcelFilterColumn | null
-    >(null);
+  readonly sortColumn = signal<LocalStockExcelFilterColumn | null>(null);
 
-  readonly sortDirection =
-    signal<
-      LocalStockSortDirection | null
-    >(null);
+  readonly sortDirection = signal<LocalStockSortDirection | null>(null);
 
-  readonly excelFilterSelections =
-    signal<LocalStockExcelFilterSelections>(
-      {},
-    );
+  readonly excelFilterSelections = signal<LocalStockExcelFilterSelections>({});
 
-  readonly excelFilterOptions =
-    signal<
-      Partial<
-        Record<
-          LocalStockExcelFilterColumn,
-          readonly LocalStockExcelFilterValue[]
-        >
-      >
-    >({});
+  readonly excelFilterOptions = signal<
+    Partial<Record<LocalStockExcelFilterColumn, readonly LocalStockExcelFilterValue[]>>
+  >({});
 
-  readonly excelFilterLoadingColumns =
-    signal<
-      ReadonlySet<
-        LocalStockExcelFilterColumn
-      >
-    >(
-      new Set<
-        LocalStockExcelFilterColumn
-      >(),
-    );
+  readonly excelFilterLoadingColumns = signal<ReadonlySet<LocalStockExcelFilterColumn>>(
+    new Set<LocalStockExcelFilterColumn>(),
+  );
 
   readonly loading = signal(false);
   readonly saving = signal(false);
-  readonly deletingId =
-    signal<number | null>(null);
+  readonly deletingId = signal<number | null>(null);
 
-  readonly editingId =
-    signal<number | null>(null);
+  readonly editingId = signal<number | null>(null);
 
   readonly formVisible = signal(false);
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
 
-  readonly isEditing =
-    computed(() =>
-      this.editingId() !== null,
-    );
+  readonly isEditing = computed(() => this.editingId() !== null);
 
-  readonly hasPreviousPage =
-    computed(() =>
-      this.page() > 1,
-    );
+  readonly hasPreviousPage = computed(() => this.page() > 1);
 
-  readonly hasNextPage =
-    computed(() =>
-      this.page() <
-      this.totalPages(),
-    );
+  readonly hasNextPage = computed(() => this.page() < this.totalPages());
 
-  readonly showingFrom =
-    computed(() =>
-      this.totalRecords() === 0
-        ? 0
-        : (
-            this.page() - 1
-          ) *
-            this.pageSize() +
-          1,
-    );
+  readonly showingFrom = computed(() =>
+    this.totalRecords() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
+  );
 
-  readonly showingTo =
-    computed(() =>
-      Math.min(
-        this.page() *
-          this.pageSize(),
-        this.totalRecords(),
-      ),
-    );
+  readonly showingTo = computed(() => Math.min(this.page() * this.pageSize(), this.totalRecords()));
 
   constructor() {
     this.load();
@@ -337,26 +189,16 @@ export class LocalStocksPage {
     this.formVisible.set(true);
   }
 
-  startEdit(
-    item: LocalStockListItem,
-  ): void {
-    this.editingId.set(
-      item.id,
-    );
+  startEdit(item: LocalStockListItem): void {
+    this.editingId.set(item.id);
 
     this.form.reset({
-      materialNo:
-        item.materialNo,
-      materialName:
-        item.materialName,
-      rmGrade:
-        item.rmGrade,
-      location:
-        item.location,
-      availableQty:
-        item.availableQty,
-      minimumQty:
-        item.minimumQty,
+      materialNo: item.materialNo,
+      materialName: item.materialName,
+      rmGrade: item.rmGrade,
+      location: item.location,
+      availableQty: item.availableQty,
+      minimumQty: item.minimumQty,
     });
 
     this.errorMessage.set('');
@@ -375,53 +217,31 @@ export class LocalStocksPage {
   }
 
   save(): void {
-    if (
-      this.form.invalid ||
-      this.saving()
-    ) {
+    if (this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
       return;
     }
 
-    const values =
-      this.form.getRawValue();
+    const values = this.form.getRawValue();
 
-    const request:
-      LocalStockUpsertRequest = {
-        materialNo:
-          values.materialNo.trim(),
+    const request: LocalStockUpsertRequest = {
+      materialNo: values.materialNo.trim(),
 
-        materialName:
-          this.normalizeOptional(
-            values.materialName,
-          ),
+      materialName: this.normalizeOptional(values.materialName),
 
-        rmGrade:
-          this.normalizeOptional(
-            values.rmGrade,
-          ),
+      rmGrade: this.normalizeOptional(values.rmGrade),
 
-        location:
-          this.normalizeOptional(
-            values.location,
-          ),
+      location: this.normalizeOptional(values.location),
 
-        availableQty:
-          Number(
-            values.availableQty,
-          ) || 0,
+      availableQty: Number(values.availableQty) || 0,
 
-        minimumQty:
-          Number(
-            values.minimumQty,
-          ) || 0,
-      };
+      minimumQty: Number(values.minimumQty) || 0,
+    };
 
     if (!request.materialNo) {
-      this.form.controls.materialNo
-        .setErrors({
-          required: true,
-        });
+      this.form.controls.materialNo.setErrors({
+        required: true,
+      });
 
       return;
     }
@@ -430,34 +250,19 @@ export class LocalStocksPage {
     this.errorMessage.set('');
     this.successMessage.set('');
 
-    const editingId =
-      this.editingId();
+    const editingId = this.editingId();
 
-    const operation:
-      Observable<LocalStockSaveResponse> =
-        editingId === null
-          ? this.api.create(
-              request,
-            )
-          : this.api.update(
-              editingId,
-              request,
-            );
+    const operation: Observable<LocalStockSaveResponse> =
+      editingId === null ? this.api.create(request) : this.api.update(editingId, request);
 
     operation
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(() =>
-          this.saving.set(false),
-        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.saving.set(false)),
       )
       .subscribe({
-        next: response => {
-          this.successMessage.set(
-            response.message,
-          );
+        next: (response) => {
+          this.successMessage.set(response.message);
 
           this.editingId.set(null);
           this.formVisible.set(false);
@@ -465,90 +270,54 @@ export class LocalStocksPage {
           this.load();
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
+        error: (error: HttpErrorResponse) => {
           this.errorMessage.set(
-            this.describeError(
-              error,
-              'The local stock item could not be saved.',
-            ),
+            this.describeError(error, 'The local stock item could not be saved.'),
           );
         },
       });
   }
 
-  deleteStock(
-    item: LocalStockListItem,
-  ): void {
-    if (
-      this.deletingId() !== null ||
-      this.loading()
-    ) {
+  deleteStock(item: LocalStockListItem): void {
+    if (this.deletingId() !== null || this.loading()) {
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        `Delete local stock item ${item.materialNo}?`,
-      );
+    const confirmed = window.confirm(`Delete local stock item ${item.materialNo}?`);
 
     if (!confirmed) {
       return;
     }
 
-    this.deletingId.set(
-      item.id,
-    );
+    this.deletingId.set(item.id);
 
     this.errorMessage.set('');
     this.successMessage.set('');
 
     this.api
-      .delete(
-        item.id,
-      )
+      .delete(item.id)
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(() =>
-          this.deletingId.set(null),
-        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.deletingId.set(null)),
       )
       .subscribe({
-        next: response => {
-          if (
-            this.items().length === 1 &&
-            this.page() > 1
-          ) {
-            this.page.update(
-              current =>
-                current - 1,
-            );
+        next: (response) => {
+          if (this.items().length === 1 && this.page() > 1) {
+            this.page.update((current) => current - 1);
           }
 
-          this.successMessage.set(
-            response.message,
-          );
+          this.successMessage.set(response.message);
 
-          if (
-            this.editingId() === item.id
-          ) {
+          if (this.editingId() === item.id) {
             this.cancelForm();
           }
 
           this.load();
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
+        error: (error: HttpErrorResponse) => {
           this.errorMessage.set(
-            this.describeError(
-              error,
-              'The local stock item could not be deleted.',
-            ),
+            this.describeError(error, 'The local stock item could not be deleted.'),
           );
         },
       });
@@ -557,127 +326,63 @@ export class LocalStocksPage {
   excelFilterOptionsFor(
     column: LocalStockExcelFilterColumn,
   ): readonly LocalStockExcelFilterValue[] {
-    return (
-      this.excelFilterOptions()[
-        column
-      ] ?? []
-    );
+    return this.excelFilterOptions()[column] ?? [];
   }
 
-  excelFilterSelectedValues(
-    column: LocalStockExcelFilterColumn,
-  ): readonly string[] {
-    return (
-      this.excelFilterSelections()[
-        column
-      ] ?? []
-    );
+  excelFilterSelectedValues(column: LocalStockExcelFilterColumn): readonly string[] {
+    return this.excelFilterSelections()[column] ?? [];
   }
 
-  excelFilterActive(
-    column: LocalStockExcelFilterColumn,
-  ): boolean {
-    return Object.prototype
-      .hasOwnProperty.call(
-        this.excelFilterSelections(),
-        column,
-      );
+  excelFilterActive(column: LocalStockExcelFilterColumn): boolean {
+    return Object.prototype.hasOwnProperty.call(this.excelFilterSelections(), column);
   }
 
-  excelFilterLoading(
-    column: LocalStockExcelFilterColumn,
-  ): boolean {
-    return this
-      .excelFilterLoadingColumns()
-      .has(
-        column,
-      );
+  excelFilterLoading(column: LocalStockExcelFilterColumn): boolean {
+    return this.excelFilterLoadingColumns().has(column);
   }
 
-  excelSortDirection(
-    column: LocalStockExcelFilterColumn,
-  ): LocalStockSortDirection | null {
-    return this.sortColumn() ===
-      column
-      ? this.sortDirection()
-      : null;
+  excelSortDirection(column: LocalStockExcelFilterColumn): LocalStockSortDirection | null {
+    return this.sortColumn() === column ? this.sortDirection() : null;
   }
 
-  loadExcelFilterValues(
-    column: LocalStockExcelFilterColumn,
-  ): void {
-    if (
-      this.excelFilterLoading(
-        column,
-      )
-    ) {
+  loadExcelFilterValues(column: LocalStockExcelFilterColumn): void {
+    if (this.excelFilterLoading(column)) {
       return;
     }
 
-    this.excelFilterLoadingColumns
-      .update(
-        columns => {
-          const updated =
-            new Set(
-              columns,
-            );
+    this.excelFilterLoadingColumns.update((columns) => {
+      const updated = new Set(columns);
 
-          updated.add(
-            column,
-          );
+      updated.add(column);
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.api
-      .getExcelFilterValues(
-        this.buildListQuery(),
-        column,
-      )
+      .getExcelFilterValues(this.buildListQuery(), column)
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(
-          () =>
-            this.excelFilterLoadingColumns
-              .update(
-                columns => {
-                  const updated =
-                    new Set(
-                      columns,
-                    );
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() =>
+          this.excelFilterLoadingColumns.update((columns) => {
+            const updated = new Set(columns);
 
-                  updated.delete(
-                    column,
-                  );
+            updated.delete(column);
 
-                  return updated;
-                },
-              ),
+            return updated;
+          }),
         ),
       )
       .subscribe({
-        next: options => {
-          this.excelFilterOptions
-            .update(
-              current => ({
-                ...current,
-                [column]:
-                  options,
-              }),
-            );
+        next: (options) => {
+          this.excelFilterOptions.update((current) => ({
+            ...current,
+            [column]: options,
+          }));
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
+        error: (error: HttpErrorResponse) => {
           this.errorMessage.set(
-            this.describeError(
-              error,
-              `Excel filter values for ${column} could not be loaded.`,
-            ),
+            this.describeError(error, `Excel filter values for ${column} could not be loaded.`),
           );
         },
       });
@@ -685,94 +390,60 @@ export class LocalStocksPage {
 
   applyExcelSort(
     column: LocalStockExcelFilterColumn,
-    direction:
-      LocalStockSortDirection,
+    direction: LocalStockSortDirection | null,
   ): void {
     if (this.loading()) {
       return;
     }
 
-    this.sortColumn.set(
-      column,
-    );
+    this.sortColumn.set(direction === null ? null : column);
 
-    this.sortDirection.set(
-      direction,
-    );
+    this.sortDirection.set(direction);
 
     this.page.set(1);
     this.successMessage.set('');
     this.load();
   }
 
-  applyExcelFilter(
-    column: LocalStockExcelFilterColumn,
-    values: readonly string[],
-  ): void {
-    const availableValues =
-      this.excelFilterOptions()[
-        column
-      ] ?? [];
+  applyExcelFilter(column: LocalStockExcelFilterColumn, values: readonly string[]): void {
+    const availableValues = this.excelFilterOptions()[column] ?? [];
 
-    const selectedSet =
-      new Set(
-        values,
-      );
+    const selectedSet = new Set(values);
 
     const selectsEverything =
-      availableValues.length >
-        0 &&
-      availableValues.length ===
-        selectedSet.size &&
-      availableValues.every(
-        option =>
-          selectedSet.has(
-            option.value,
-          ),
-      );
+      availableValues.length > 0 &&
+      availableValues.length === selectedSet.size &&
+      availableValues.every((option) => selectedSet.has(option.value));
 
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          if (selectsEverything) {
-            delete updated[
-              column
-            ];
-          } else {
-            updated[column] =
-              [...values];
-          }
+      if (selectsEverything) {
+        delete updated[column];
+      } else {
+        updated[column] = [...values];
+      }
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.page.set(1);
     this.successMessage.set('');
     this.load();
   }
 
-  clearExcelFilter(
-    column: LocalStockExcelFilterColumn,
-  ): void {
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+  clearExcelFilter(column: LocalStockExcelFilterColumn): void {
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          delete updated[
-            column
-          ];
+      delete updated[column];
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.page.set(1);
     this.successMessage.set('');
@@ -785,9 +456,7 @@ export class LocalStocksPage {
     this.load();
   }
 
-  applyColumnFilter(
-    filter: HTMLDetailsElement,
-  ): void {
+  applyColumnFilter(filter: HTMLDetailsElement): void {
     filter.open = false;
     this.page.set(1);
     this.successMessage.set('');
@@ -795,30 +464,20 @@ export class LocalStocksPage {
   }
 
   clearColumnFilter(
-    column:
-      | 'material'
-      | 'grade'
-      | 'location'
-      | 'available'
-      | 'minimum'
-      | 'status'
-      | 'updated',
+    column: 'material' | 'grade' | 'location' | 'available' | 'minimum' | 'status' | 'updated',
     filter: HTMLDetailsElement,
   ): void {
     switch (column) {
       case 'material':
-        this.columnFilters.controls
-          .material.setValue('');
+        this.columnFilters.controls.material.setValue('');
         break;
 
       case 'grade':
-        this.columnFilters.controls
-          .rmGrade.setValue('');
+        this.columnFilters.controls.rmGrade.setValue('');
         break;
 
       case 'location':
-        this.columnFilters.controls
-          .location.setValue('');
+        this.columnFilters.controls.location.setValue('');
         break;
 
       case 'available':
@@ -836,8 +495,7 @@ export class LocalStocksPage {
         break;
 
       case 'status':
-        this.columnFilters.controls
-          .status.setValue('');
+        this.columnFilters.controls.status.setValue('');
         break;
 
       case 'updated':
@@ -855,56 +513,31 @@ export class LocalStocksPage {
   }
 
   columnFilterActive(
-    column:
-      | 'material'
-      | 'grade'
-      | 'location'
-      | 'available'
-      | 'minimum'
-      | 'status'
-      | 'updated',
+    column: 'material' | 'grade' | 'location' | 'available' | 'minimum' | 'status' | 'updated',
   ): boolean {
-    const values =
-      this.columnFilters.getRawValue();
+    const values = this.columnFilters.getRawValue();
 
     switch (column) {
       case 'material':
-        return Boolean(
-          values.material.trim(),
-        );
+        return Boolean(values.material.trim());
 
       case 'grade':
-        return Boolean(
-          values.rmGrade.trim(),
-        );
+        return Boolean(values.rmGrade.trim());
 
       case 'location':
-        return Boolean(
-          values.location.trim(),
-        );
+        return Boolean(values.location.trim());
 
       case 'available':
-        return Boolean(
-          values.minAvailableQty.trim() ||
-          values.maxAvailableQty.trim(),
-        );
+        return Boolean(values.minAvailableQty.trim() || values.maxAvailableQty.trim());
 
       case 'minimum':
-        return Boolean(
-          values.minMinimumQty.trim() ||
-          values.maxMinimumQty.trim(),
-        );
+        return Boolean(values.minMinimumQty.trim() || values.maxMinimumQty.trim());
 
       case 'status':
-        return Boolean(
-          values.status,
-        );
+        return Boolean(values.status);
 
       case 'updated':
-        return Boolean(
-          values.updatedFrom ||
-          values.updatedTo,
-        );
+        return Boolean(values.updatedFrom || values.updatedTo);
     }
 
     return false;
@@ -917,25 +550,10 @@ export class LocalStocksPage {
     this.load();
   }
 
-  changePageSize(
-    event: Event,
-  ): void {
-    const value =
-      Number(
-        (
-          event.target as
-            HTMLSelectElement
-        ).value,
-      );
+  changePageSize(event: Event): void {
+    const value = Number((event.target as HTMLSelectElement).value);
 
-    if (
-      ![
-        10,
-        25,
-        50,
-        100,
-      ].includes(value)
-    ) {
+    if (![10, 25, 50, 100].includes(value)) {
       return;
     }
 
@@ -945,33 +563,21 @@ export class LocalStocksPage {
   }
 
   previousPage(): void {
-    if (
-      !this.hasPreviousPage() ||
-      this.loading()
-    ) {
+    if (!this.hasPreviousPage() || this.loading()) {
       return;
     }
 
-    this.page.update(
-      current =>
-        current - 1,
-    );
+    this.page.update((current) => current - 1);
 
     this.load();
   }
 
   nextPage(): void {
-    if (
-      !this.hasNextPage() ||
-      this.loading()
-    ) {
+    if (!this.hasNextPage() || this.loading()) {
       return;
     }
 
-    this.page.update(
-      current =>
-        current + 1,
-    );
+    this.page.update((current) => current + 1);
 
     this.load();
   }
@@ -981,74 +587,47 @@ export class LocalStocksPage {
   }
 
   private buildListQuery() {
-    const columnValues =
-      this.columnFilters.getRawValue();
+    const columnValues = this.columnFilters.getRawValue();
 
     return {
-      search:
-        this.searchControl.value,
+      search: this.searchControl.value,
 
-      material:
-        columnValues.material,
+      material: columnValues.material,
 
-      rmGrade:
-        columnValues.rmGrade,
+      rmGrade: columnValues.rmGrade,
 
-      location:
-        columnValues.location,
+      location: columnValues.location,
 
-      minAvailableQty:
-        columnValues.minAvailableQty,
+      minAvailableQty: columnValues.minAvailableQty,
 
-      maxAvailableQty:
-        columnValues.maxAvailableQty,
+      maxAvailableQty: columnValues.maxAvailableQty,
 
-      minMinimumQty:
-        columnValues.minMinimumQty,
+      minMinimumQty: columnValues.minMinimumQty,
 
-      maxMinimumQty:
-        columnValues.maxMinimumQty,
+      maxMinimumQty: columnValues.maxMinimumQty,
 
-      status:
-        columnValues.status,
+      status: columnValues.status,
 
-      updatedFrom:
-        columnValues.updatedFrom,
+      updatedFrom: columnValues.updatedFrom,
 
-      updatedTo:
-        columnValues.updatedTo,
+      updatedTo: columnValues.updatedTo,
 
-      sortColumn:
-        this.sortColumn() ??
-        undefined,
+      sortColumn: this.sortColumn() ?? undefined,
 
-      sortDirection:
-        this.sortDirection() ??
-        undefined,
+      sortDirection: this.sortDirection() ?? undefined,
 
-      excelFilters:
-        this.serializeExcelFilters(),
+      excelFilters: this.serializeExcelFilters(),
 
-      page:
-        this.page(),
+      page: this.page(),
 
-      pageSize:
-        this.pageSize(),
+      pageSize: this.pageSize(),
     };
   }
 
-  private serializeExcelFilters():
-    string | undefined {
-    const selections =
-      this.excelFilterSelections();
+  private serializeExcelFilters(): string | undefined {
+    const selections = this.excelFilterSelections();
 
-    return Object.keys(
-      selections,
-    ).length > 0
-      ? JSON.stringify(
-          selections,
-        )
-      : undefined;
+    return Object.keys(selections).length > 0 ? JSON.stringify(selections) : undefined;
   }
 
   private load(): void {
@@ -1060,76 +639,45 @@ export class LocalStocksPage {
     this.errorMessage.set('');
 
     this.api
-      .getStocks(
-        this.buildListQuery(),
-      )
+      .getStocks(this.buildListQuery())
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(() =>
-          this.loading.set(false),
-        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.loading.set(false)),
       )
       .subscribe({
-        next: response => {
-          this.items.set(
-            response.items,
-          );
+        next: (response) => {
+          this.items.set(response.items);
 
-          this.summary.set(
-            response.summary,
-          );
+          this.summary.set(response.summary);
 
-          this.page.set(
-            response.page,
-          );
+          this.page.set(response.page);
 
-          this.pageSize.set(
-            response.pageSize,
-          );
+          this.pageSize.set(response.pageSize);
 
-          this.totalRecords.set(
-            response.totalRecords,
-          );
+          this.totalRecords.set(response.totalRecords);
 
-          this.totalPages.set(
-            response.totalPages,
-          );
+          this.totalPages.set(response.totalPages);
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
+        error: (error: HttpErrorResponse) => {
           this.items.set([]);
           this.totalRecords.set(0);
           this.totalPages.set(1);
 
           this.errorMessage.set(
-            this.describeError(
-              error,
-              'Local stock records could not be loaded.',
-            ),
+            this.describeError(error, 'Local stock records could not be loaded.'),
           );
         },
       });
   }
 
-  private normalizeOptional(
-    value: string,
-  ): string | null {
-    const normalized =
-      value.trim();
+  private normalizeOptional(value: string): string | null {
+    const normalized = value.trim();
 
-    return normalized
-      ? normalized
-      : null;
+    return normalized ? normalized : null;
   }
 
-  private describeError(
-    error: HttpErrorResponse,
-    fallbackMessage: string,
-  ): string {
+  private describeError(error: HttpErrorResponse, fallbackMessage: string): string {
     if (error.status === 0) {
       return 'The PO Tracker API is unavailable.';
     }
@@ -1142,13 +690,8 @@ export class LocalStocksPage {
       return 'Your account does not have permission to manage local stock.';
     }
 
-    const message =
-      error.error?.message ??
-      error.error?.error;
+    const message = error.error?.message ?? error.error?.error;
 
-    return typeof message ===
-      'string'
-      ? message
-      : fallbackMessage;
+    return typeof message === 'string' ? message : fallbackMessage;
   }
 }

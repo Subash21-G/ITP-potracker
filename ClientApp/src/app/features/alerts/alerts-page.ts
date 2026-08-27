@@ -1,12 +1,6 @@
-import {
-  DatePipe,
-  DecimalPipe,
-  Location,
-} from '@angular/common';
+import { DatePipe, DecimalPipe, Location } from '@angular/common';
 
-import {
-  HttpErrorResponse,
-} from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 
 import {
   ChangeDetectionStrategy,
@@ -17,21 +11,11 @@ import {
   signal,
 } from '@angular/core';
 
-import {
-  takeUntilDestroyed,
-} from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import {
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-} from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
-import {
-  ActivatedRoute,
-  Router,
-  RouterLink,
-} from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import {
   EMPTY,
@@ -58,753 +42,432 @@ import {
   AlertsSummary,
 } from '../../core/models/alert-api.model';
 
-import {
-  AlertApiService,
-} from '../../core/services/alert-api.service';
+import { AlertApiService } from '../../core/services/alert-api.service';
 
-import {
-  ServerExcelFilter,
-} from '../../shared/server-excel-filter/server-excel-filter';
+import { ServerExcelFilter } from '../../shared/server-excel-filter/server-excel-filter';
 
 interface AlertCategoryOption {
-  readonly value:
-    AlertCategory;
+  readonly value: AlertCategory;
 
   readonly label: string;
   readonly description: string;
   readonly shortLabel: string;
-  readonly tone:
-    | 'blue'
-    | 'red'
-    | 'amber'
-    | 'violet'
-    | 'orange'
-    | 'green'
-    | 'navy';
+  readonly tone: 'blue' | 'red' | 'amber' | 'violet' | 'orange' | 'green' | 'navy';
 
-  readonly dateField:
-    | 'alertDate'
-    | 'deliveryDate'
-    | 'dispatchDate';
+  readonly dateField: 'alertDate' | 'deliveryDate' | 'dispatchDate';
 }
 
-const EMPTY_SUMMARY:
-  AlertsSummary = {
-    processStartAlerts: 0,
-    overdueMaterials: 0,
-    deliveryWithinSevenDays: 0,
-    pendingProcess: 0,
-    dispatchPending: 0,
-    dispatchDateAlerts: 0,
-    lowStock: 0,
-    totalAlerts: 0,
-  };
+const EMPTY_SUMMARY: AlertsSummary = {
+  processStartAlerts: 0,
+  overdueMaterials: 0,
+  deliveryWithinSevenDays: 0,
+  pendingProcess: 0,
+  dispatchPending: 0,
+  dispatchDateAlerts: 0,
+  lowStock: 0,
+  totalAlerts: 0,
+};
 
-const EMPTY_RESPONSE:
-  AlertsPagedResponse = {
-    generatedAt: '',
-    summary:
-      EMPTY_SUMMARY,
-    category:
-      'process-start',
-    items: [],
-    page: 1,
-    pageSize: 25,
-    totalCount: 0,
-    totalPages: 1,
-    hasPreviousPage: false,
-    hasNextPage: false,
-  };
+const EMPTY_RESPONSE: AlertsPagedResponse = {
+  generatedAt: '',
+  summary: EMPTY_SUMMARY,
+  category: 'process-start',
+  items: [],
+  page: 1,
+  pageSize: 25,
+  totalCount: 0,
+  totalPages: 1,
+  hasPreviousPage: false,
+  hasNextPage: false,
+};
 
 @Component({
   selector: 'app-alerts-page',
-  imports: [
-    DatePipe,
-    DecimalPipe,
-    ReactiveFormsModule,
-    RouterLink,
-    ServerExcelFilter,
-  ],
-  templateUrl:
-    './alerts-page.html',
-  styleUrl:
-    './alerts-page.css',
-  changeDetection:
-    ChangeDetectionStrategy.OnPush,
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink, ServerExcelFilter],
+  templateUrl: './alerts-page.html',
+  styleUrl: './alerts-page.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AlertsPage {
-  private readonly api =
-    inject(AlertApiService);
+  private readonly api = inject(AlertApiService);
 
-  private readonly destroyRef =
-    inject(DestroyRef);
+  private readonly destroyRef = inject(DestroyRef);
 
-  private readonly route =
-    inject(ActivatedRoute);
+  private readonly route = inject(ActivatedRoute);
 
-  private readonly router =
-    inject(Router);
+  private readonly router = inject(Router);
 
-  private readonly location =
-    inject(Location);
+  private readonly location = inject(Location);
 
-  private readonly requestAlerts =
-    new Subject<void>();
+  private readonly requestAlerts = new Subject<void>();
 
-  private readonly initialParams =
-    this.route.snapshot
-      .queryParamMap;
+  private readonly initialParams = this.route.snapshot.queryParamMap;
 
-  readonly categoryOptions:
-    readonly AlertCategoryOption[] = [
-      {
-        value:
-          'process-start',
-        label:
-          'Process Start Alerts',
-        shortLabel:
-          'Process Start',
-        description:
-          'Process alert date has been reached and work is not completed.',
-        tone:
-          'blue',
-        dateField:
-          'alertDate',
-      },
-      {
-        value:
-          'overdue',
-        label:
-          'Overdue Materials',
-        shortLabel:
-          'Overdue',
-        description:
-          'Delivery date has passed while processing remains incomplete.',
-        tone:
-          'red',
-        dateField:
-          'deliveryDate',
-      },
-      {
-        value:
-          'delivery-seven-days',
-        label:
-          'Delivery Within 7 Days',
-        shortLabel:
-          'Due Soon',
-        description:
-          'Committed delivery date falls within the next seven days.',
-        tone:
-          'amber',
-        dateField:
-          'deliveryDate',
-      },
-      {
-        value:
-          'pending-process',
-        label:
-          'Pending Process Materials',
-        shortLabel:
-          'Pending Process',
-        description:
-          'Material is pending, in process or currently on hold.',
-        tone:
-          'violet',
-        dateField:
-          'deliveryDate',
-      },
-      {
-        value:
-          'dispatch-pending',
-        label:
-          'Dispatch Pending Materials',
-        shortLabel:
-          'Dispatch Pending',
-        description:
-          'Dispatch status is pending or only partially completed.',
-        tone:
-          'orange',
-        dateField:
-          'deliveryDate',
-      },
-      {
-        value:
-          'dispatch-date',
-        label:
-          'Dispatch Date Alerts',
-        shortLabel:
-          'Dispatch Date',
-        description:
-          'Dispatch date is due within seven days and dispatch is incomplete.',
-        tone:
-          'green',
-        dateField:
-          'dispatchDate',
-      },
-      {
-        value:
-          'low-stock',
-        label:
-          'Stock Shortage Materials',
-        shortLabel:
-          'Stock Shortage',
-        description:
-          'Priority-allocated live stock cannot cover the pending requirement.',
-        tone:
-          'navy',
-        dateField:
-          'deliveryDate',
-      },
-    ];
+  readonly categoryOptions: readonly AlertCategoryOption[] = [
+    {
+      value: 'process-start',
+      label: 'Process Start Alerts',
+      shortLabel: 'Process Start',
+      description: 'Process alert date has been reached and work is not completed.',
+      tone: 'blue',
+      dateField: 'alertDate',
+    },
+    {
+      value: 'overdue',
+      label: 'Overdue Materials',
+      shortLabel: 'Overdue',
+      description: 'Delivery date has passed while processing remains incomplete.',
+      tone: 'red',
+      dateField: 'deliveryDate',
+    },
+    {
+      value: 'delivery-seven-days',
+      label: 'Delivery Within 7 Days',
+      shortLabel: 'Due Soon',
+      description: 'Committed delivery date falls within the next seven days.',
+      tone: 'amber',
+      dateField: 'deliveryDate',
+    },
+    {
+      value: 'pending-process',
+      label: 'Pending Process Materials',
+      shortLabel: 'Pending Process',
+      description: 'Material is pending, in process or currently on hold.',
+      tone: 'violet',
+      dateField: 'deliveryDate',
+    },
+    {
+      value: 'dispatch-pending',
+      label: 'Dispatch Pending Materials',
+      shortLabel: 'Dispatch Pending',
+      description: 'Dispatch status is pending or only partially completed.',
+      tone: 'orange',
+      dateField: 'deliveryDate',
+    },
+    {
+      value: 'dispatch-date',
+      label: 'Dispatch Date Alerts',
+      shortLabel: 'Dispatch Date',
+      description: 'Dispatch date is due within seven days and dispatch is incomplete.',
+      tone: 'green',
+      dateField: 'dispatchDate',
+    },
+    {
+      value: 'low-stock',
+      label: 'Stock Shortage Materials',
+      shortLabel: 'Stock Shortage',
+      description: 'Priority-allocated live stock cannot cover the pending requirement.',
+      tone: 'navy',
+      dateField: 'deliveryDate',
+    },
+  ];
 
-  readonly data =
-    signal<AlertsPagedResponse>(
-      EMPTY_RESPONSE,
-    );
+  readonly data = signal<AlertsPagedResponse>(EMPTY_RESPONSE);
 
-  readonly category =
-    signal<AlertCategory>(
-      this.parseCategory(
-        this.initialParams.get(
-          'category',
-        ),
-      ),
-    );
+  readonly category = signal<AlertCategory>(this.parseCategory(this.initialParams.get('category')));
 
-  readonly sortColumn =
-    signal<AlertSortColumn | null>(
-      this.parseSortColumn(
-        this.initialParams.get(
-          'sortColumn',
-        ),
-      ),
-    );
+  readonly sortColumn = signal<AlertSortColumn | null>(
+    this.parseSortColumn(this.initialParams.get('sortColumn')),
+  );
 
-  readonly sortDirection =
-    signal<AlertSortDirection | null>(
-      this.parseSortDirection(
-        this.initialParams.get(
-          'sortDirection',
-        ),
-      ),
-    );
+  readonly sortDirection = signal<AlertSortDirection | null>(
+    this.parseSortDirection(this.initialParams.get('sortDirection')),
+  );
 
-  readonly excelFilterSelections =
-    signal<AlertExcelFilterSelections>(
-      {},
-    );
+  readonly excelFilterSelections = signal<AlertExcelFilterSelections>({});
 
-  readonly excelFilterOptions =
-    signal<
-      Partial<
-        Record<
-          AlertExcelFilterColumn,
-          readonly AlertExcelFilterValue[]
-        >
-      >
-    >({});
+  readonly excelFilterOptions = signal<
+    Partial<Record<AlertExcelFilterColumn, readonly AlertExcelFilterValue[]>>
+  >({});
 
-  readonly excelFilterLoadingColumns =
-    signal<
-      ReadonlySet<
-        AlertExcelFilterColumn
-      >
-    >(
-      new Set<
-        AlertExcelFilterColumn
-      >(),
-    );
+  readonly excelFilterLoadingColumns = signal<ReadonlySet<AlertExcelFilterColumn>>(
+    new Set<AlertExcelFilterColumn>(),
+  );
 
-  readonly searchControl =
-    new FormControl(
-      this.initialParams.get(
-        'search',
-      ) ?? '',
-      {
-        nonNullable: true,
-      },
-    );
+  readonly searchControl = new FormControl(this.initialParams.get('search') ?? '', {
+    nonNullable: true,
+  });
 
-  readonly columnFilters =
-    new FormGroup({
-      material: new FormControl(this.initialParams.get('material') ?? '', { nonNullable: true }),
-      description: new FormControl(this.initialParams.get('description') ?? '', { nonNullable: true }),
-      priorityDateFrom: new FormControl(this.initialParams.get('priorityDateFrom') ?? '', { nonNullable: true }),
-      priorityDateTo: new FormControl(this.initialParams.get('priorityDateTo') ?? '', { nonNullable: true }),
-      deliveryDateFrom: new FormControl(this.initialParams.get('deliveryDateFrom') ?? '', { nonNullable: true }),
-      deliveryDateTo: new FormControl(this.initialParams.get('deliveryDateTo') ?? '', { nonNullable: true }),
-      processStatus: new FormControl(this.initialParams.get('processStatus') ?? '', { nonNullable: true }),
-      dispatchStatus: new FormControl(this.initialParams.get('dispatchStatus') ?? '', { nonNullable: true }),
-      minAllocatedStock: new FormControl(this.initialParams.get('minAllocatedStock') ?? '', { nonNullable: true }),
-      maxAllocatedStock: new FormControl(this.initialParams.get('maxAllocatedStock') ?? '', { nonNullable: true }),
-      minLiveStock: new FormControl(this.initialParams.get('minLiveStock') ?? '', { nonNullable: true }),
-      maxLiveStock: new FormControl(this.initialParams.get('maxLiveStock') ?? '', { nonNullable: true }),
-      stockStatus: new FormControl(this.initialParams.get('stockStatus') ?? '', { nonNullable: true }),
-    });
+  readonly columnFilters = new FormGroup({
+    material: new FormControl(this.initialParams.get('material') ?? '', { nonNullable: true }),
+    description: new FormControl(this.initialParams.get('description') ?? '', {
+      nonNullable: true,
+    }),
+    priorityDateFrom: new FormControl(this.initialParams.get('priorityDateFrom') ?? '', {
+      nonNullable: true,
+    }),
+    priorityDateTo: new FormControl(this.initialParams.get('priorityDateTo') ?? '', {
+      nonNullable: true,
+    }),
+    deliveryDateFrom: new FormControl(this.initialParams.get('deliveryDateFrom') ?? '', {
+      nonNullable: true,
+    }),
+    deliveryDateTo: new FormControl(this.initialParams.get('deliveryDateTo') ?? '', {
+      nonNullable: true,
+    }),
+    processStatus: new FormControl(this.initialParams.get('processStatus') ?? '', {
+      nonNullable: true,
+    }),
+    dispatchStatus: new FormControl(this.initialParams.get('dispatchStatus') ?? '', {
+      nonNullable: true,
+    }),
+    minAllocatedStock: new FormControl(this.initialParams.get('minAllocatedStock') ?? '', {
+      nonNullable: true,
+    }),
+    maxAllocatedStock: new FormControl(this.initialParams.get('maxAllocatedStock') ?? '', {
+      nonNullable: true,
+    }),
+    minLiveStock: new FormControl(this.initialParams.get('minLiveStock') ?? '', {
+      nonNullable: true,
+    }),
+    maxLiveStock: new FormControl(this.initialParams.get('maxLiveStock') ?? '', {
+      nonNullable: true,
+    }),
+    stockStatus: new FormControl(this.initialParams.get('stockStatus') ?? '', {
+      nonNullable: true,
+    }),
+  });
 
-  readonly page =
-    signal(
-      this.parsePositiveInteger(
-        this.initialParams.get(
-          'page',
-        ),
-        1,
-      ),
-    );
+  readonly page = signal(this.parsePositiveInteger(this.initialParams.get('page'), 1));
 
-  readonly pageSize =
-    signal(
-      this.parsePageSize(
-        this.initialParams.get(
-          'pageSize',
-        ),
-      ),
-    );
+  readonly pageSize = signal(this.parsePageSize(this.initialParams.get('pageSize')));
 
-  readonly loading =
-    signal(false);
+  readonly loading = signal(false);
 
-  readonly errorMessage =
-    signal('');
+  readonly errorMessage = signal('');
 
-  readonly selectedCategory =
-    computed(() =>
-      this.categoryOptions.find(
-        option =>
-          option.value ===
-          this.category(),
-      ) ??
+  readonly selectedCategory = computed(
+    () =>
+      this.categoryOptions.find((option) => option.value === this.category()) ??
       this.categoryOptions[0],
+  );
+
+  readonly startRecord = computed(() =>
+    this.data().totalCount === 0 ? 0 : (this.data().page - 1) * this.data().pageSize + 1,
+  );
+
+  readonly endRecord = computed(() =>
+    Math.min(this.data().page * this.data().pageSize, this.data().totalCount),
+  );
+
+  readonly visiblePages = computed(() => {
+    const current = this.data().page;
+
+    const total = this.data().totalPages;
+
+    const first = Math.max(1, current - 2);
+
+    const last = Math.min(total, first + 4);
+
+    const adjustedFirst = Math.max(1, last - 4);
+
+    return Array.from(
+      {
+        length: last - adjustedFirst + 1,
+      },
+      (_, index) => adjustedFirst + index,
     );
-
-  readonly startRecord =
-    computed(() =>
-      this.data().totalCount === 0
-        ? 0
-        : (
-            this.data().page - 1
-          ) *
-            this.data().pageSize +
-          1,
-    );
-
-  readonly endRecord =
-    computed(() =>
-      Math.min(
-        this.data().page *
-          this.data().pageSize,
-        this.data().totalCount,
-      ),
-    );
-
-  readonly visiblePages =
-    computed(() => {
-      const current =
-        this.data().page;
-
-      const total =
-        this.data().totalPages;
-
-      const first =
-        Math.max(
-          1,
-          current - 2,
-        );
-
-      const last =
-        Math.min(
-          total,
-          first + 4,
-        );
-
-      const adjustedFirst =
-        Math.max(
-          1,
-          last - 4,
-        );
-
-      return Array.from(
-        {
-          length:
-            last -
-            adjustedFirst +
-            1,
-        },
-        (
-          _,
-          index,
-        ) =>
-          adjustedFirst +
-          index,
-      );
-    });
+  });
 
   constructor() {
     this.requestAlerts
       .pipe(
         switchMap(() =>
           defer(() => {
-            this.loading.set(
-              true,
-            );
+            this.loading.set(true);
 
-            this.errorMessage.set(
-              '',
-            );
+            this.errorMessage.set('');
 
             this.replaceUrlState();
 
-            return this.api
-              .getAlerts(
-                this.buildQuery(),
-              )
-              .pipe(
-                tap(
-                  response => {
-                    this.data.set(
-                      response,
-                    );
+            return this.api.getAlerts(this.buildQuery()).pipe(
+              tap((response) => {
+                this.data.set(response);
 
-                    this.category.set(
-                      response.category,
-                    );
+                this.category.set(response.category);
 
-                    this.page.set(
-                      response.page,
-                    );
+                this.page.set(response.page);
 
-                    this.pageSize.set(
-                      response.pageSize,
-                    );
-                  },
-                ),
+                this.pageSize.set(response.pageSize);
+              }),
 
-                catchError(
-                  (
-                    error:
-                      HttpErrorResponse,
-                  ) => {
-                    this.errorMessage.set(
-                      this.describeError(
-                        error,
-                      ),
-                    );
+              catchError((error: HttpErrorResponse) => {
+                this.errorMessage.set(this.describeError(error));
 
-                    return EMPTY;
-                  },
-                ),
+                return EMPTY;
+              }),
 
-                finalize(() =>
-                  this.loading.set(
-                    false,
-                  ),
-                ),
-              );
+              finalize(() => this.loading.set(false)),
+            );
           }),
         ),
 
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe();
 
-    this.searchControl
-      .valueChanges
+    this.searchControl.valueChanges
       .pipe(
         debounceTime(320),
 
         distinctUntilChanged(),
 
-        tap(() =>
-          this.page.set(1),
-        ),
+        tap(() => this.page.set(1)),
 
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
+        takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(() =>
-        this.load(),
-      );
+      .subscribe(() => this.load());
 
     this.load();
   }
 
-  excelFilterOptionsFor(
-    column: AlertExcelFilterColumn,
-  ): readonly AlertExcelFilterValue[] {
-    return (
-      this.excelFilterOptions()[
-        column
-      ] ?? []
-    );
+  excelFilterOptionsFor(column: AlertExcelFilterColumn): readonly AlertExcelFilterValue[] {
+    return this.excelFilterOptions()[column] ?? [];
   }
 
-  excelFilterSelectedValues(
-    column: AlertExcelFilterColumn,
-  ): readonly string[] {
-    return (
-      this.excelFilterSelections()[
-        column
-      ] ?? []
-    );
+  excelFilterSelectedValues(column: AlertExcelFilterColumn): readonly string[] {
+    return this.excelFilterSelections()[column] ?? [];
   }
 
-  excelFilterActive(
-    column: AlertExcelFilterColumn,
-  ): boolean {
-    return Object.prototype
-      .hasOwnProperty.call(
-        this.excelFilterSelections(),
-        column,
-      );
+  excelFilterActive(column: AlertExcelFilterColumn): boolean {
+    return Object.prototype.hasOwnProperty.call(this.excelFilterSelections(), column);
   }
 
-  excelFilterLoading(
-    column: AlertExcelFilterColumn,
-  ): boolean {
-    return this
-      .excelFilterLoadingColumns()
-      .has(
-        column,
-      );
+  excelFilterLoading(column: AlertExcelFilterColumn): boolean {
+    return this.excelFilterLoadingColumns().has(column);
   }
 
-  excelSortDirection(
-    column: AlertExcelFilterColumn,
-  ): AlertSortDirection | null {
-    return this.sortColumn() ===
-      column
-      ? this.sortDirection()
-      : null;
+  excelSortDirection(column: AlertExcelFilterColumn): AlertSortDirection | null {
+    return this.sortColumn() === column ? this.sortDirection() : null;
   }
 
-  loadExcelFilterValues(
-    column: AlertExcelFilterColumn,
-  ): void {
-    if (
-      this.excelFilterLoading(
-        column,
-      )
-    ) {
+  loadExcelFilterValues(column: AlertExcelFilterColumn): void {
+    if (this.excelFilterLoading(column)) {
       return;
     }
 
-    this.excelFilterLoadingColumns
-      .update(
-        columns => {
-          const updated =
-            new Set(
-              columns,
-            );
+    this.excelFilterLoadingColumns.update((columns) => {
+      const updated = new Set(columns);
 
-          updated.add(
-            column,
-          );
+      updated.add(column);
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.api
-      .getExcelFilterValues(
-        this.buildQuery(),
-        column,
-      )
+      .getExcelFilterValues(this.buildQuery(), column)
       .pipe(
-        takeUntilDestroyed(
-          this.destroyRef,
-        ),
-        finalize(
-          () =>
-            this.excelFilterLoadingColumns
-              .update(
-                columns => {
-                  const updated =
-                    new Set(
-                      columns,
-                    );
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() =>
+          this.excelFilterLoadingColumns.update((columns) => {
+            const updated = new Set(columns);
 
-                  updated.delete(
-                    column,
-                  );
+            updated.delete(column);
 
-                  return updated;
-                },
-              ),
+            return updated;
+          }),
         ),
       )
       .subscribe({
-        next: options => {
-          this.excelFilterOptions
-            .update(
-              current => ({
-                ...current,
-                [column]:
-                  options,
-              }),
-            );
+        next: (options) => {
+          this.excelFilterOptions.update((current) => ({
+            ...current,
+            [column]: options,
+          }));
         },
 
-        error: (
-          error: HttpErrorResponse,
-        ) => {
-          this.errorMessage.set(
-            this.describeError(
-              error,
-            ),
-          );
+        error: (error: HttpErrorResponse) => {
+          this.errorMessage.set(this.describeError(error));
         },
       });
   }
 
-  applyExcelSort(
-    column: AlertExcelFilterColumn,
-    direction: AlertSortDirection,
-  ): void {
+  applyExcelSort(column: AlertExcelFilterColumn, direction: AlertSortDirection | null): void {
     if (this.loading()) {
       return;
     }
 
-    this.sortColumn.set(
-      column,
-    );
+    this.sortColumn.set(direction === null ? null : column);
 
-    this.sortDirection.set(
-      direction,
-    );
+    this.sortDirection.set(direction);
 
     this.page.set(1);
     this.load();
   }
 
-  applyExcelFilter(
-    column: AlertExcelFilterColumn,
-    values: readonly string[],
-  ): void {
-    const availableValues =
-      this.excelFilterOptions()[
-        column
-      ] ?? [];
+  applyExcelFilter(column: AlertExcelFilterColumn, values: readonly string[]): void {
+    const availableValues = this.excelFilterOptions()[column] ?? [];
 
-    const selectedSet =
-      new Set(
-        values,
-      );
+    const selectedSet = new Set(values);
 
     const selectsEverything =
-      availableValues.length >
-        0 &&
-      availableValues.length ===
-        selectedSet.size &&
-      availableValues.every(
-        option =>
-          selectedSet.has(
-            option.value,
-          ),
-      );
+      availableValues.length > 0 &&
+      availableValues.length === selectedSet.size &&
+      availableValues.every((option) => selectedSet.has(option.value));
 
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          if (selectsEverything) {
-            delete updated[
-              column
-            ];
-          } else {
-            updated[column] =
-              [...values];
-          }
+      if (selectsEverything) {
+        delete updated[column];
+      } else {
+        updated[column] = [...values];
+      }
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.page.set(1);
     this.load();
   }
 
-  clearExcelFilter(
-    column: AlertExcelFilterColumn,
-  ): void {
-    this.excelFilterSelections
-      .update(
-        current => {
-          const updated = {
-            ...current,
-          };
+  clearExcelFilter(column: AlertExcelFilterColumn): void {
+    this.excelFilterSelections.update((current) => {
+      const updated = {
+        ...current,
+      };
 
-          delete updated[
-            column
-          ];
+      delete updated[column];
 
-          return updated;
-        },
-      );
+      return updated;
+    });
 
     this.page.set(1);
     this.load();
   }
 
-  toggleSort(
-    column: AlertSortColumn,
-  ): void {
+  toggleSort(column: AlertSortColumn): void {
     if (this.loading()) {
       return;
     }
 
-    if (
-      this.sortColumn() !== column ||
-      this.sortDirection() === null
-    ) {
-      this.sortColumn.set(
-        column,
-      );
+    if (this.sortColumn() !== column || this.sortDirection() === null) {
+      this.sortColumn.set(column);
 
-      this.sortDirection.set(
-        'asc',
-      );
-    } else if (
-      this.sortDirection() === 'asc'
-    ) {
-      this.sortDirection.set(
-        'desc',
-      );
+      this.sortDirection.set('asc');
+    } else if (this.sortDirection() === 'asc') {
+      this.sortDirection.set('desc');
     } else {
-      this.sortColumn.set(
-        null,
-      );
+      this.sortColumn.set(null);
 
-      this.sortDirection.set(
-        null,
-      );
+      this.sortDirection.set(null);
     }
 
     this.page.set(1);
     this.load();
   }
 
-  sortIndicator(
-    column: AlertSortColumn,
-  ): string {
+  sortIndicator(column: AlertSortColumn): string {
     if (this.sortColumn() !== column) {
       return '\u2195';
     }
 
-    return this.sortDirection() === 'desc'
-      ? '\u2193'
-      : '\u2191';
+    return this.sortDirection() === 'desc' ? '\u2193' : '\u2191';
   }
 
-  sortTitle(
-    column: AlertSortColumn,
-    label: string,
-  ): string {
+  sortTitle(column: AlertSortColumn, label: string): string {
     if (this.sortColumn() !== column) {
       return `Sort ${label} ascending`;
     }
@@ -827,15 +490,31 @@ export class AlertsPage {
     filter: HTMLDetailsElement,
   ): void {
     switch (column) {
-      case 'material': this.columnFilters.controls.material.setValue(''); break;
-      case 'description': this.columnFilters.controls.description.setValue(''); break;
-      case 'priority': this.columnFilters.patchValue({ priorityDateFrom: '', priorityDateTo: '' }); break;
-      case 'delivery': this.columnFilters.patchValue({ deliveryDateFrom: '', deliveryDateTo: '' }); break;
-      case 'process': this.columnFilters.controls.processStatus.setValue(''); break;
-      case 'dispatch': this.columnFilters.controls.dispatchStatus.setValue(''); break;
+      case 'material':
+        this.columnFilters.controls.material.setValue('');
+        break;
+      case 'description':
+        this.columnFilters.controls.description.setValue('');
+        break;
+      case 'priority':
+        this.columnFilters.patchValue({ priorityDateFrom: '', priorityDateTo: '' });
+        break;
+      case 'delivery':
+        this.columnFilters.patchValue({ deliveryDateFrom: '', deliveryDateTo: '' });
+        break;
+      case 'process':
+        this.columnFilters.controls.processStatus.setValue('');
+        break;
+      case 'dispatch':
+        this.columnFilters.controls.dispatchStatus.setValue('');
+        break;
       case 'stock':
         this.columnFilters.patchValue({
-          minAllocatedStock: '', maxAllocatedStock: '', minLiveStock: '', maxLiveStock: '', stockStatus: '',
+          minAllocatedStock: '',
+          maxAllocatedStock: '',
+          minLiveStock: '',
+          maxLiveStock: '',
+          stockStatus: '',
         });
         break;
     }
@@ -849,15 +528,25 @@ export class AlertsPage {
   ): boolean {
     const value = this.columnFilters.getRawValue();
     switch (column) {
-      case 'material': return Boolean(value.material.trim());
-      case 'description': return Boolean(value.description.trim());
-      case 'priority': return Boolean(value.priorityDateFrom || value.priorityDateTo);
-      case 'delivery': return Boolean(value.deliveryDateFrom || value.deliveryDateTo);
-      case 'process': return Boolean(value.processStatus);
-      case 'dispatch': return Boolean(value.dispatchStatus);
+      case 'material':
+        return Boolean(value.material.trim());
+      case 'description':
+        return Boolean(value.description.trim());
+      case 'priority':
+        return Boolean(value.priorityDateFrom || value.priorityDateTo);
+      case 'delivery':
+        return Boolean(value.deliveryDateFrom || value.deliveryDateTo);
+      case 'process':
+        return Boolean(value.processStatus);
+      case 'dispatch':
+        return Boolean(value.dispatchStatus);
       case 'stock':
         return Boolean(
-          value.minAllocatedStock || value.maxAllocatedStock || value.minLiveStock || value.maxLiveStock || value.stockStatus,
+          value.minAllocatedStock ||
+          value.maxAllocatedStock ||
+          value.minLiveStock ||
+          value.maxLiveStock ||
+          value.stockStatus,
         );
     }
   }
@@ -866,216 +555,114 @@ export class AlertsPage {
     this.requestAlerts.next();
   }
 
-  setCategory(
-    category: AlertCategory,
-  ): void {
-    if (
-      category ===
-      this.category()
-    ) {
+  setCategory(category: AlertCategory): void {
+    if (category === this.category()) {
       return;
     }
 
-    this.category.set(
-      category,
-    );
+    this.category.set(category);
 
     this.page.set(1);
     this.load();
   }
 
-  changeCategory(
-    value: string,
-  ): void {
-    this.setCategory(
-      this.parseCategory(
-        value,
-      ),
-    );
+  changeCategory(value: string): void {
+    this.setCategory(this.parseCategory(value));
   }
 
-  changePageSize(
-    value: string,
-  ): void {
-    const pageSize =
-      this.parsePageSize(
-        value,
-      );
+  changePageSize(value: string): void {
+    const pageSize = this.parsePageSize(value);
 
-    if (
-      pageSize ===
-      this.pageSize()
-    ) {
+    if (pageSize === this.pageSize()) {
       return;
     }
 
-    this.pageSize.set(
-      pageSize,
-    );
+    this.pageSize.set(pageSize);
 
     this.page.set(1);
     this.load();
   }
 
-  goToPage(
-    page: number,
-  ): void {
-    const normalizedPage =
-      Math.min(
-        Math.max(
-          page,
-          1,
-        ),
-        this.data().totalPages,
-      );
+  goToPage(page: number): void {
+    const normalizedPage = Math.min(Math.max(page, 1), this.data().totalPages);
 
-    if (
-      normalizedPage ===
-      this.page()
-    ) {
+    if (normalizedPage === this.page()) {
       return;
     }
 
-    this.page.set(
-      normalizedPage,
-    );
+    this.page.set(normalizedPage);
 
     this.load();
   }
 
   clearSearch(): void {
-    this.searchControl.setValue(
-      '',
-    );
+    this.searchControl.setValue('');
   }
 
-  countFor(
-    category: AlertCategory,
-  ): number {
-    const summary =
-      this.data().summary;
+  countFor(category: AlertCategory): number {
+    const summary = this.data().summary;
 
     switch (category) {
       case 'overdue':
-        return summary
-          .overdueMaterials;
+        return summary.overdueMaterials;
 
       case 'delivery-seven-days':
-        return summary
-          .deliveryWithinSevenDays;
+        return summary.deliveryWithinSevenDays;
 
       case 'pending-process':
-        return summary
-          .pendingProcess;
+        return summary.pendingProcess;
 
       case 'dispatch-pending':
-        return summary
-          .dispatchPending;
+        return summary.dispatchPending;
 
       case 'dispatch-date':
-        return summary
-          .dispatchDateAlerts;
+        return summary.dispatchDateAlerts;
 
       case 'low-stock':
-        return summary
-          .lowStock;
+        return summary.lowStock;
 
       default:
-        return summary
-          .processStartAlerts;
+        return summary.processStartAlerts;
     }
   }
 
-  getDate(
-    item: AlertMaterial,
-  ): string | null {
-    return item[
-      this.selectedCategory()
-        .dateField
-    ];
+  getDate(item: AlertMaterial): string | null {
+    return item[this.selectedCategory().dateField];
   }
 
-  statusClass(
-    status: string,
-  ): string {
-    const normalized =
-      status
-        .trim()
-        .toLowerCase();
+  statusClass(status: string): string {
+    const normalized = status.trim().toLowerCase();
 
-    if (
-      normalized.includes(
-        'completed',
-      ) ||
-      normalized.includes(
-        'dispatched',
-      )
-    ) {
+    if (normalized.includes('completed') || normalized.includes('dispatched')) {
       return 'status status--success';
     }
 
-    if (
-      normalized.includes(
-        'partial',
-      ) ||
-      normalized.includes(
-        'process',
-      )
-    ) {
+    if (normalized.includes('partial') || normalized.includes('process')) {
       return 'status status--info';
     }
 
-    if (
-      normalized.includes(
-        'hold',
-      ) ||
-      normalized.includes(
-        'overdue',
-      )
-    ) {
+    if (normalized.includes('hold') || normalized.includes('overdue')) {
       return 'status status--danger';
     }
 
     return 'status status--warning';
   }
 
-  stockStatusClass(
-    status: string,
-  ): string {
-    const normalized =
-      status
-        .trim()
-        .toLowerCase();
+  stockStatusClass(status: string): string {
+    const normalized = status.trim().toLowerCase();
 
-    if (
-      normalized.includes(
-        'available',
-      ) ||
-      normalized.includes(
-        'no pending',
-      )
-    ) {
+    if (normalized.includes('available') || normalized.includes('no pending')) {
       return 'status status--success';
     }
 
-    if (
-      normalized.includes(
-        'partial',
-      )
-    ) {
+    if (normalized.includes('partial')) {
       return 'status status--info';
     }
 
     if (
-      normalized.includes(
-        'shortage',
-      ) ||
-      normalized.includes(
-        'out of stock',
-      ) ||
-      normalized.includes(
-        'offline',
-      )
+      normalized.includes('shortage') ||
+      normalized.includes('out of stock') ||
+      normalized.includes('offline')
     ) {
       return 'status status--danger';
     }
@@ -1087,37 +674,24 @@ export class AlertsPage {
     return {
       category: this.category(),
 
-      sortColumn:
-        this.sortColumn() ??
-        undefined,
+      sortColumn: this.sortColumn() ?? undefined,
 
-      sortDirection:
-        this.sortDirection() ??
-        undefined,
+      sortDirection: this.sortDirection() ?? undefined,
 
       search: this.searchControl.value,
       ...this.columnFilters.getRawValue(),
 
-      excelFilters:
-        this.serializeExcelFilters(),
+      excelFilters: this.serializeExcelFilters(),
 
       page: this.page(),
       pageSize: this.pageSize(),
     };
   }
 
-  private serializeExcelFilters():
-    string | undefined {
-    const selections =
-      this.excelFilterSelections();
+  private serializeExcelFilters(): string | undefined {
+    const selections = this.excelFilterSelections();
 
-    return Object.keys(
-      selections,
-    ).length > 0
-      ? JSON.stringify(
-          selections,
-        )
-      : undefined;
+    return Object.keys(selections).length > 0 ? JSON.stringify(selections) : undefined;
   }
 
   private replaceUrlState(): void {
@@ -1125,18 +699,11 @@ export class AlertsPage {
     const urlTree = this.router.createUrlTree([], {
       relativeTo: this.route,
       queryParams: {
-        category:
-          query.category !== 'process-start'
-            ? query.category
-            : null,
+        category: query.category !== 'process-start' ? query.category : null,
 
-        sortColumn:
-          query.sortColumn ??
-          null,
+        sortColumn: query.sortColumn ?? null,
 
-        sortDirection:
-          query.sortDirection ??
-          null,
+        sortDirection: query.sortDirection ?? null,
 
         search: query.search?.trim() || null,
         material: query.material?.trim() || null,
@@ -1159,11 +726,7 @@ export class AlertsPage {
     this.location.replaceState(this.router.serializeUrl(urlTree));
   }
 
-  private parseSortColumn(
-    value:
-      | string
-      | null,
-  ): AlertSortColumn | null {
+  private parseSortColumn(value: string | null): AlertSortColumn | null {
     switch (value) {
       case 'material':
       case 'description':
@@ -1179,66 +742,29 @@ export class AlertsPage {
     }
   }
 
-  private parseSortDirection(
-    value:
-      | string
-      | null,
-  ): AlertSortDirection | null {
-    return value === 'asc' ||
-      value === 'desc'
-      ? value
-      : null;
+  private parseSortDirection(value: string | null): AlertSortDirection | null {
+    return value === 'asc' || value === 'desc' ? value : null;
   }
 
-  private parseCategory(
-    value:
-      | string
-      | null,
-  ): AlertCategory {
-    return this.categoryOptions
-      .some(
-        option =>
-          option.value ===
-          value,
-      )
-        ? value as AlertCategory
-        : 'process-start';
+  private parseCategory(value: string | null): AlertCategory {
+    return this.categoryOptions.some((option) => option.value === value)
+      ? (value as AlertCategory)
+      : 'process-start';
   }
 
-  private parsePositiveInteger(
-    value:
-      | string
-      | null,
-    fallback: number,
-  ): number {
-    const parsed =
-      Number(value);
+  private parsePositiveInteger(value: string | null, fallback: number): number {
+    const parsed = Number(value);
 
-    return Number.isInteger(
-      parsed,
-    ) &&
-      parsed > 0
-      ? parsed
-      : fallback;
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
   }
 
-  private parsePageSize(
-    value:
-      | string
-      | null,
-  ): number {
-    const parsed =
-      Number(value);
+  private parsePageSize(value: string | null): number {
+    const parsed = Number(value);
 
-    return parsed === 50 ||
-      parsed === 100
-      ? parsed
-      : 25;
+    return parsed === 50 || parsed === 100 ? parsed : 25;
   }
 
-  private describeError(
-    error: HttpErrorResponse,
-  ): string {
+  private describeError(error: HttpErrorResponse): string {
     if (error.status === 0) {
       return 'The PO Tracker API is unavailable.';
     }
@@ -1247,13 +773,8 @@ export class AlertsPage {
       return 'Your session has expired. Sign in again.';
     }
 
-    const message =
-      error.error?.message ??
-      error.error?.error;
+    const message = error.error?.message ?? error.error?.error;
 
-    return typeof message ===
-      'string'
-      ? message
-      : 'Smart Alerts could not be loaded.';
+    return typeof message === 'string' ? message : 'Smart Alerts could not be loaded.';
   }
 }

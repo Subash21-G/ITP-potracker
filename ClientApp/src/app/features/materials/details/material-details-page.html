@@ -1,4 +1,5 @@
-﻿<section class="material-details-page">
+﻿<section class="material-details-layout">
+  <div class="material-details-page">
   <header class="page-header">
     <div>
       <a class="back-link" routerLink="/materials">
@@ -529,6 +530,49 @@
             </div>
           }
         </div>
+
+        <section
+          class="document-preview"
+          aria-label="Drawing preview"
+        >
+          <header class="document-preview__header">
+            <div>
+              <span>Drawing preview</span>
+
+              @if (documentPreview(); as preview) {
+                <strong>{{ preview.name }}</strong>
+              } @else {
+                <strong>No preview available</strong>
+              }
+            </div>
+
+            @if (documentPreview(); as preview) {
+              <a
+                [href]="preview.path"
+                target="_blank"
+                rel="noopener"
+              >
+                Open full view
+              </a>
+            }
+          </header>
+
+          @if (documentPreview(); as preview) {
+            <iframe
+              class="document-preview__frame"
+              [src]="preview.safeUrl"
+              [title]="'Drawing preview: ' + preview.name"
+              loading="lazy"
+            ></iframe>
+          } @else {
+            <div class="document-preview__empty">
+              <strong>Preview unavailable</strong>
+              <span>
+                Upload a PDF or image drawing to preview it here.
+              </span>
+            </div>
+          }
+        </section>
       </article>
 
       <article class="details-card details-card--wide">
@@ -569,8 +613,112 @@
       </article>
     </section>
   }
+  </div>
+
+  @if (material(); as item) {
+    <aside
+      class="related-purchase-orders-panel"
+      aria-label="Related purchase orders"
+    >
+      <header>
+        <div>
+          <span class="eyebrow">Same material</span>
+          <h2>Related POs</h2>
+          <p>{{ item.materialNo }}</p>
+        </div>
+
+        @if (!relatedPurchaseOrdersLoading()) {
+          <strong class="related-purchase-orders-count">
+            {{ relatedPurchaseOrders().length }}
+          </strong>
+        }
+      </header>
+
+      @if (relatedPurchaseOrdersLoading()) {
+        <p class="related-purchase-orders-message">
+          Loading purchase orders…
+        </p>
+      } @else if (relatedPurchaseOrdersError()) {
+        <p class="related-purchase-orders-message related-purchase-orders-message--error">
+          {{ relatedPurchaseOrdersError() }}
+        </p>
+      } @else if (relatedPurchaseOrders().length === 0) {
+        <p class="related-purchase-orders-message">
+          No other purchase orders contain this material.
+        </p>
+      } @else {
+        <div class="related-purchase-orders-list">
+          @for (purchaseOrder of relatedPurchaseOrders(); track purchaseOrder.purchaseOrderId) {
+            <button
+              type="button"
+              class="related-purchase-order"
+              [class.related-purchase-order--active]="
+                purchaseOrder.purchaseOrderId === item.purchaseOrderId
+              "
+              [attr.aria-current]="
+                purchaseOrder.purchaseOrderId === item.purchaseOrderId
+                  ? 'page'
+                  : null
+              "
+              [disabled]="
+                isLoading() || selectingPurchaseOrderId() !== null
+              "
+              [title]="
+                purchaseOrder.purchaseOrderId === item.purchaseOrderId
+                  ? 'Currently displayed purchase order'
+                  : 'Show this material from PO ' + purchaseOrder.poNumber
+              "
+              (click)="openRelatedPurchaseOrder(purchaseOrder)"
+            >
+              <span class="related-purchase-order__heading">
+                <strong>
+                  {{
+                    purchaseOrder.poNumber ||
+                      'PO #' + purchaseOrder.purchaseOrderId
+                  }}
+                </strong>
+
+                <span class="related-purchase-order__state">
+                  @if (selectingPurchaseOrderId() === purchaseOrder.purchaseOrderId) {
+                    Opening…
+                  } @else if (purchaseOrder.purchaseOrderId === item.purchaseOrderId) {
+                    Current
+                  }
+                </span>
+              </span>
+
+              <span>
+                {{
+                  purchaseOrder.purchaserName ||
+                    'Purchaser not set'
+                }}
+              </span>
+
+              <small>
+                {{ purchaseOrder.materialCount }} matching
+                {{
+                  purchaseOrder.materialCount === 1
+                    ? 'line'
+                    : 'lines'
+                }}
+                @if (purchaseOrder.handler) {
+                  · {{ purchaseOrder.handler }}
+                }
+              </small>
+            </button>
+          }
+        </div>
+      }
+
+      @if (relatedPurchaseOrderNavigationError()) {
+        <p class="related-purchase-orders-message related-purchase-orders-message--error">
+          {{ relatedPurchaseOrderNavigationError() }}
+        </p>
+      }
+
+      <p class="related-purchase-orders-hint">
+        Select a PO to show this material's details on this page.
+      </p>
+    </aside>
+  }
 </section>
-
-
-
-

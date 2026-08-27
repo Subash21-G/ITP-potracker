@@ -288,8 +288,9 @@ namespace POTracker.Controllers.Api
                     .FirstOrDefaultAsync(cancellationToken);
 
             // =====================================================
-            // RECENT MATERIALS
-            // Projection loads only fields required by Angular.
+            // MATERIALS
+            // Projection loads only fields required by Angular so the
+            // dashboard table can provide complete Excel-style filters.
             // =====================================================
 
             var recentMaterials =
@@ -297,7 +298,6 @@ namespace POTracker.Controllers.Api
                     .AsNoTracking()
                     .OrderByDescending(material =>
                         material.Id)
-                    .Take(8)
                     .Select(material =>
                         new DashboardRecentMaterialDto
                         {

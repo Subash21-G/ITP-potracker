@@ -63,6 +63,10 @@ namespace POTracker.Controllers.Api
                     ".stp",
                     ".iges",
                     ".igs",
+                    ".png",
+                    ".jpg",
+                    ".jpeg",
+                    ".webp",
                     ".zip"
                 };
 
@@ -899,6 +903,66 @@ namespace POTracker.Controllers.Api
             }
 
             return Ok(material);
+        }
+
+        /// <summary>
+        /// Returns every purchase order containing the same material number
+        /// as the selected material record.
+        /// </summary>
+        [HttpGet("{id:int}/related-purchase-orders")]
+        [ProducesResponseType(
+            typeof(IReadOnlyList<RelatedMaterialPurchaseOrderDto>),
+            StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IReadOnlyList<RelatedMaterialPurchaseOrderDto>>>
+            RelatedPurchaseOrders(
+                int id,
+                CancellationToken cancellationToken = default)
+        {
+            var materialNumber = await _context.Materials
+                .AsNoTracking()
+                .Where(material => material.Id == id)
+                .Select(material => material.MaterialNo)
+                .SingleOrDefaultAsync(cancellationToken);
+
+            if (string.IsNullOrWhiteSpace(materialNumber))
+            {
+                return NotFound();
+            }
+
+            var normalizedMaterialNumber = materialNumber.Trim().ToLower();
+
+            var purchaseOrders = await _context.Materials
+                .AsNoTracking()
+                .Where(material =>
+                    material.MaterialNo != null &&
+                    material.MaterialNo.Trim().ToLower() == normalizedMaterialNumber)
+                .GroupBy(material => new
+                {
+                    material.PurchaseOrderId,
+                    PONumber = material.PurchaseOrder != null
+                        ? material.PurchaseOrder.PONumber
+                        : string.Empty,
+                    Handler = material.PurchaseOrder != null
+                        ? material.PurchaseOrder.BuyerContactPerson ?? string.Empty
+                        : string.Empty,
+                    PurchaserName = material.PurchaseOrder != null &&
+                        material.PurchaseOrder.Purchaser != null
+                        ? material.PurchaseOrder.Purchaser.PurchaserName
+                        : string.Empty,
+                })
+                .Select(group => new RelatedMaterialPurchaseOrderDto
+                {
+                    PurchaseOrderId = group.Key.PurchaseOrderId,
+                    PONumber = group.Key.PONumber,
+                    Handler = group.Key.Handler,
+                    PurchaserName = group.Key.PurchaserName,
+                    MaterialCount = group.Count(),
+                })
+                .OrderByDescending(item => item.PurchaseOrderId)
+                .ToListAsync(cancellationToken);
+
+            return Ok(purchaseOrders);
         }
 
         // ============================================================
@@ -4426,7 +4490,7 @@ namespace POTracker.Controllers.Api
                     extension))
             {
                 return
-                    "Allowed drawing files: PDF, DWG, DXF, STEP, STP, IGES, IGS or ZIP.";
+                    "Allowed drawing files: PDF, PNG, JPG, WebP, DWG, DXF, STEP, STP, IGES, IGS or ZIP.";
             }
 
             return null;

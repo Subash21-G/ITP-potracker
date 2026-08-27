@@ -1,17 +1,27 @@
-<div
-  class="server-excel-filter"
-  [class.server-excel-filter--active]="active"
->
+<div class="server-excel-filter" [class.server-excel-filter--active]="hasActiveState">
   <button
     #trigger
     type="button"
     class="server-excel-filter__trigger"
-    [class.server-excel-filter__trigger--active]="active"
+    [class.server-excel-filter__trigger--active]="hasActiveState"
     [attr.aria-label]="'Excel filter for ' + title"
-    [title]="'Filter ' + title"
+    [attr.aria-expanded]="isOpen"
+    [attr.aria-pressed]="hasActiveState"
+    aria-haspopup="dialog"
+    [title]="triggerTitle"
     (click)="toggleMenu($event)"
   >
-    â–¾
+    @switch (sortDirection) {
+      @case ('asc') {
+        <span aria-hidden="true">&#8593;</span>
+      }
+      @case ('desc') {
+        <span aria-hidden="true">&#8595;</span>
+      }
+      @default {
+        <span aria-hidden="true">&#9662;</span>
+      }
+    }
   </button>
 
   <div
@@ -23,16 +33,12 @@
     (toggle)="onMenuToggle($event)"
   >
     <section class="server-excel-filter__section">
-      <div class="server-excel-filter__section-title">
-        SORT
-      </div>
+      <div class="server-excel-filter__section-title">SORT</div>
 
       <button
         type="button"
         class="server-excel-filter__menu-action"
-        [class.server-excel-filter__menu-action--active]="
-          sortDirection === 'asc'
-        "
+        [class.server-excel-filter__menu-action--active]="sortDirection === 'asc'"
         [disabled]="loading"
         (click)="requestSort('asc')"
       >
@@ -43,25 +49,31 @@
       <button
         type="button"
         class="server-excel-filter__menu-action"
-        [class.server-excel-filter__menu-action--active]="
-          sortDirection === 'desc'
-        "
+        [class.server-excel-filter__menu-action--active]="sortDirection === 'desc'"
         [disabled]="loading"
         (click)="requestSort('desc')"
       >
         <span aria-hidden="true">&#8595;</span>
         <span>Sort Z to A</span>
       </button>
+
+      <button
+        type="button"
+        class="server-excel-filter__menu-action"
+        [disabled]="loading || sortDirection === null"
+        (click)="requestSort(null)"
+      >
+        <span aria-hidden="true">&#10005;</span>
+        <span>Clear sort</span>
+      </button>
     </section>
 
     <section class="server-excel-filter__section">
       <label class="server-excel-filter__search">
-        <span class="server-excel-filter__section-title">
-          SEARCH
-        </span>
+        <span class="server-excel-filter__section-title"> SEARCH </span>
 
         <span class="server-excel-filter__search-box">
-          <span aria-hidden="true">âŒ•</span>
+          <span aria-hidden="true">&#128269;</span>
 
           <input
             #searchInput
@@ -75,15 +87,11 @@
       </label>
     </section>
 
-    <section
-      class="
-        server-excel-filter__section
-        server-excel-filter__section--values
-      "
-    >
+    <section class="server-excel-filter__section server-excel-filter__section--values">
       <div class="server-excel-filter__selection-tools">
         <button
           type="button"
+          [disabled]="loading || filteredOptions.length === 0"
           (click)="selectAllVisible()"
         >
           Select all
@@ -91,30 +99,22 @@
 
         <button
           type="button"
+          [disabled]="loading || filteredOptions.length === 0"
           (click)="selectNoneVisible()"
         >
           Select none
         </button>
+
+        <span> {{ selectedCount }} of {{ options.length }} selected </span>
       </div>
 
-      <div
-        class="server-excel-filter__values"
-        role="group"
-        [attr.aria-label]="title + ' values'"
-      >
+      <div class="server-excel-filter__values" role="group" [attr.aria-label]="title + ' values'">
         @if (loading) {
-          <div class="server-excel-filter__message">
-            Loading valuesâ€¦
-          </div>
+          <div class="server-excel-filter__message">Loading values&hellip;</div>
         } @else if (filteredOptions.length === 0) {
-          <div class="server-excel-filter__message">
-            No matching values
-          </div>
+          <div class="server-excel-filter__message">No matching values</div>
         } @else {
-          @for (
-            option of filteredOptions;
-            track option.value
-          ) {
+          @for (option of filteredOptions; track option.value) {
             <label class="server-excel-filter__option">
               <input
                 type="checkbox"
