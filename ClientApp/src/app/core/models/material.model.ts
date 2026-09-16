@@ -1,3 +1,5 @@
+import { MaterialHistoryOutcome } from './material-history-api.model';
+
 export interface MaterialListItem {
   readonly id: number;
   readonly purchaseOrderId: number;
@@ -8,6 +10,8 @@ export interface MaterialListItem {
   readonly poReceivedDate: string | null;
   readonly lineItem: string;
   readonly materialNo: string;
+  readonly duplicateCount?: number;
+  readonly latestHistoryOutcome: MaterialHistoryOutcome | null;
   readonly hsnSacCode: string | null;
   readonly description: string;
   readonly quantity: number;
@@ -32,7 +36,16 @@ export interface MaterialListItem {
   readonly deliveryDate: string | null;
   readonly drawingNo: string;
   readonly assignedDashboard: string;
+  readonly sourcingType?: MaterialSourcingType;
+  readonly outsourcedTo?: string;
+  readonly hasCostVariation?: boolean;
+  readonly variationCost?: number | null;
+  readonly priorityLevel?: MaterialPriorityLevel;
 }
+
+export type MaterialSourcingType = 'Inhouse' | 'Outsourcing';
+
+export type MaterialPriorityLevel = 'Normal' | 'Priority' | 'Urgent';
 
 export interface PagedResult<T> {
   readonly items: readonly T[];
@@ -91,6 +104,8 @@ export interface MaterialQuery {
   readonly sortColumn?: MaterialSortColumn;
   readonly sortDirection?: MaterialSortDirection;
   readonly excelFilters?: string;
+  readonly removeDuplicates?: boolean;
+  readonly pendingOnly?: boolean;
 
   readonly search?: string;
   readonly poNumber?: string;
@@ -161,4 +176,18 @@ export interface MaterialBulkDeleteResponse {
   readonly invoiceLinkedCount: number;
   readonly dispatchLinkedCount: number;
   readonly deletedMaterialIds: readonly number[];
+}
+
+export type MaterialProcessStatus =
+  | 'Pending'
+  | 'In Process'
+  | 'Completed'
+  | 'On Hold';
+
+export interface MaterialProcessStatusUpdateResponse {
+  readonly success: boolean;
+  readonly message: string;
+  readonly materialId: number;
+  readonly processStatus: MaterialProcessStatus;
+  readonly updatedDate: string;
 }

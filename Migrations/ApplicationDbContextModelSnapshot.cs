@@ -92,6 +92,62 @@ namespace POTracker.Migrations
                     b.ToTable("AppUsers");
                 });
 
+            modelBuilder.Entity("POTracker.Models.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("DispatchStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("MaterialId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MaterialNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Owner")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PONumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ProcessStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedDate", "Action");
+
+                    b.HasIndex("MaterialId", "CreatedDate");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("POTracker.Models.Dispatch", b =>
                 {
                     b.Property<int>("Id")
@@ -235,6 +291,125 @@ namespace POTracker.Migrations
                     b.ToTable("InvoiceItems");
                 });
 
+            modelBuilder.Entity("POTracker.Models.MasterSheetProcessOption", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProcessName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("VendorName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedDate");
+
+                    b.ToTable("MasterSheetProcessOptions");
+                });
+
+            modelBuilder.Entity("POTracker.Models.MasterSheetProcessStep", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MasterSheetRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProcessName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("VendorName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MasterSheetRecordId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("MasterSheetProcessSteps");
+                });
+
+            modelBuilder.Entity("POTracker.Models.MasterSheetRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DrawingNo")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("DrawingVersion")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FinishSize")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Grade")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("MaterialNo")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("RequiredRmSize")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ShortDescription")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterialNo")
+                        .IsUnique();
+
+                    b.ToTable("MasterSheetRecords");
+                });
+
             modelBuilder.Entity("POTracker.Models.Material", b =>
                 {
                     b.Property<int>("Id")
@@ -301,6 +476,13 @@ namespace POTracker.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("HandSketchFilePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("HasCostVariation")
+                        .HasColumnType("bit");
+
                     b.Property<string>("HsnSacCode")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -339,6 +521,14 @@ namespace POTracker.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("OutsourceDrawingFilePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OutsourcedTo")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("PDFFilePath")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -352,6 +542,11 @@ namespace POTracker.Migrations
                     b.Property<string>("PriceUnit")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PriorityLevel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime?>("ProcessStartDate")
                         .HasColumnType("datetime2");
@@ -379,6 +574,10 @@ namespace POTracker.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("RMSize")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("RMSource")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -402,6 +601,11 @@ namespace POTracker.Migrations
                     b.Property<string>("ShortDescription")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("SourcingType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<decimal>("StockQty")
                         .HasColumnType("decimal(18,2)");
@@ -430,6 +634,13 @@ namespace POTracker.Migrations
                     b.Property<decimal>("ValueOfGoods")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal?>("VariationCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("WebDrawingFilePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MaterialNo");
@@ -445,6 +656,44 @@ namespace POTracker.Migrations
                     b.HasIndex("PurchaseOrderId", "MaterialNo", "LineItem");
 
                     b.ToTable("Materials");
+                });
+
+            modelBuilder.Entity("POTracker.Models.MaterialHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MaterialId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("OccurredDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterialId", "OccurredDate");
+
+                    b.HasIndex("Outcome", "OccurredDate");
+
+                    b.ToTable("MaterialHistories");
                 });
 
             modelBuilder.Entity("POTracker.Models.PendingInvoiceItem", b =>
@@ -782,6 +1031,16 @@ namespace POTracker.Migrations
                     b.Navigation("Material");
                 });
 
+            modelBuilder.Entity("POTracker.Models.AuditLog", b =>
+                {
+                    b.HasOne("POTracker.Models.Material", "Material")
+                        .WithMany()
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Material");
+                });
+
             modelBuilder.Entity("POTracker.Models.Dispatch", b =>
                 {
                     b.HasOne("POTracker.Models.Material", "Material")
@@ -812,6 +1071,17 @@ namespace POTracker.Migrations
                     b.Navigation("Material");
                 });
 
+            modelBuilder.Entity("POTracker.Models.MasterSheetProcessStep", b =>
+                {
+                    b.HasOne("POTracker.Models.MasterSheetRecord", "MasterSheetRecord")
+                        .WithMany("ProcessSteps")
+                        .HasForeignKey("MasterSheetRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MasterSheetRecord");
+                });
+
             modelBuilder.Entity("POTracker.Models.Material", b =>
                 {
                     b.HasOne("POTracker.Models.PurchaseOrder", "PurchaseOrder")
@@ -821,6 +1091,17 @@ namespace POTracker.Migrations
                         .IsRequired();
 
                     b.Navigation("PurchaseOrder");
+                });
+
+            modelBuilder.Entity("POTracker.Models.MaterialHistory", b =>
+                {
+                    b.HasOne("POTracker.Models.Material", "Material")
+                        .WithMany("HistoryEntries")
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Material");
                 });
 
             modelBuilder.Entity("POTracker.Models.PendingInvoiceItem", b =>
@@ -861,9 +1142,16 @@ namespace POTracker.Migrations
                     b.Navigation("Items");
                 });
 
+            modelBuilder.Entity("POTracker.Models.MasterSheetRecord", b =>
+                {
+                    b.Navigation("ProcessSteps");
+                });
+
             modelBuilder.Entity("POTracker.Models.Material", b =>
                 {
                     b.Navigation("Dispatches");
+
+                    b.Navigation("HistoryEntries");
 
                     b.Navigation("InvoiceItems");
                 });

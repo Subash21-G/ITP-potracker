@@ -63,7 +63,7 @@ describe('ServerExcelFilter', () => {
   });
 
   it('shows the current sort on the header and emits Clear sort', () => {
-    component.sortDirection = 'asc';
+    fixture.componentRef.setInput('sortDirection', 'asc');
 
     fixture.detectChanges();
 
@@ -125,5 +125,37 @@ describe('ServerExcelFilter', () => {
     apply.click();
 
     expect(applied).toEqual(['PO-2']);
+  });
+
+  it('lists numeric labels naturally and checks every value by default', () => {
+    component.options = [
+      { value: 'N-100', label: '100' },
+      { value: 'N-10', label: '10' },
+      { value: 'N-20', label: '20' },
+    ];
+
+    fixture.detectChanges();
+
+    const trigger = fixture.nativeElement.querySelector(
+      '.server-excel-filter__trigger',
+    ) as HTMLButtonElement;
+
+    trigger.click();
+    fixture.detectChanges();
+
+    const labels = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>(
+        '.server-excel-filter__option-label',
+      ),
+    ).map((label) => label.textContent?.trim());
+    const checkboxes = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>(
+        '.server-excel-filter__option input',
+      ),
+    );
+
+    expect(labels).toEqual(['10', '20', '100']);
+    expect(checkboxes.every((checkbox) => checkbox.checked)).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('3 of 3 selected');
   });
 });

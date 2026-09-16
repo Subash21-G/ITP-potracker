@@ -77,6 +77,8 @@ export class MaterialFormPage implements OnInit {
 
   readonly missingPurchaseOrderNumber = signal('');
 
+  private rmGradeBeforeNotApplicable = '';
+
   readonly form = this.formBuilder.nonNullable.group({
     purchaseOrderId: [
       0,
@@ -110,6 +112,7 @@ export class MaterialFormPage implements OnInit {
     totalValue: [0, [Validators.min(0)]],
 
     rmGrade: [''],
+    rmGradeNotApplicable: [false],
     rmSource: [''],
     rmProcess: [''],
 
@@ -130,6 +133,11 @@ export class MaterialFormPage implements OnInit {
 
     processStatus: ['Pending'],
     assignedDashboard: [''],
+    sourcingType: ['Inhouse' as 'Inhouse' | 'Outsourcing'],
+    outsourcedTo: ['', [Validators.maxLength(200)]],
+    hasCostVariation: [false],
+    variationCost: [0, [Validators.min(0)]],
+    priorityLevel: ['Normal' as 'Normal' | 'Priority' | 'Urgent'],
     remark: [''],
   });
 
@@ -169,6 +177,35 @@ export class MaterialFormPage implements OnInit {
     }
 
     this.loadEditForm(parsedId);
+  }
+
+  onRmGradeNotApplicableChange(): void {
+    this.setRmGradeNotApplicableState(
+      this.form.controls.rmGradeNotApplicable.value,
+      true,
+    );
+  }
+
+  onPlanningClassificationChange(): void {
+    const outsourcedToControl =
+      this.form.controls.outsourcedTo;
+    const variationCostControl =
+      this.form.controls.variationCost;
+
+    outsourcedToControl.setValidators(
+      this.form.controls.sourcingType.value === 'Outsourcing'
+        ? [Validators.required, Validators.maxLength(200)]
+        : [Validators.maxLength(200)],
+    );
+
+    variationCostControl.setValidators(
+      this.form.controls.hasCostVariation.value
+        ? [Validators.required, Validators.min(0)]
+        : [Validators.min(0)],
+    );
+
+    outsourcedToControl.updateValueAndValidity({ emitEvent: false });
+    variationCostControl.updateValueAndValidity({ emitEvent: false });
   }
 
   submit(): void {
@@ -415,6 +452,12 @@ export class MaterialFormPage implements OnInit {
   private patchForm(
     material: MaterialDetails,
   ): void {
+    const rmGradeNotApplicable =
+      material.rmGrade.trim().toUpperCase() ===
+      'N/A';
+
+    this.rmGradeBeforeNotApplicable = '';
+
     this.form.patchValue({
       purchaseOrderId:
         material.purchaseOrderId,
@@ -452,7 +495,10 @@ export class MaterialFormPage implements OnInit {
         material.totalValue ?? 0,
 
       rmGrade:
-        material.rmGrade ?? '',
+        rmGradeNotApplicable
+          ? ''
+          : material.rmGrade ?? '',
+      rmGradeNotApplicable,
       rmSource:
         material.rmSource ?? '',
       rmProcess:
@@ -490,9 +536,71 @@ export class MaterialFormPage implements OnInit {
         material.processStatus || 'Pending',
       assignedDashboard:
         material.assignedDashboard ?? '',
+      sourcingType:
+        material.sourcingType ?? 'Inhouse',
+      outsourcedTo:
+        material.outsourcedTo ?? '',
+      hasCostVariation:
+        material.hasCostVariation ?? false,
+      variationCost:
+        material.variationCost ?? 0,
+      priorityLevel:
+        material.priorityLevel ?? 'Normal',
       remark:
         material.remark ?? '',
     });
+
+    this.setRmGradeNotApplicableState(
+      rmGradeNotApplicable,
+      false,
+    );
+
+    this.onPlanningClassificationChange();
+  }
+
+  private setRmGradeNotApplicableState(
+    notApplicable: boolean,
+    rememberCurrentValue: boolean,
+  ): void {
+    const rmGradeControl =
+      this.form.controls.rmGrade;
+
+    if (notApplicable) {
+      if (rememberCurrentValue) {
+        this.rmGradeBeforeNotApplicable =
+          rmGradeControl.value;
+      }
+
+      rmGradeControl.setValue(
+        '',
+        {
+          emitEvent: false,
+        },
+      );
+
+      rmGradeControl.disable({
+        emitEvent: false,
+      });
+
+      return;
+    }
+
+    rmGradeControl.enable({
+      emitEvent: false,
+    });
+
+    if (
+      rememberCurrentValue &&
+      !rmGradeControl.value &&
+      this.rmGradeBeforeNotApplicable
+    ) {
+      rmGradeControl.setValue(
+        this.rmGradeBeforeNotApplicable,
+        {
+          emitEvent: false,
+        },
+      );
+    }
   }
 
 
@@ -691,7 +799,9 @@ export class MaterialFormPage implements OnInit {
         Number(value.totalValue) || 0,
 
       rmGrade:
-        this.nullIfEmpty(value.rmGrade),
+        value.rmGradeNotApplicable
+          ? 'N/A'
+          : this.nullIfEmpty(value.rmGrade),
       rmSource:
         this.nullIfEmpty(value.rmSource),
       rmProcess:
@@ -747,6 +857,20 @@ export class MaterialFormPage implements OnInit {
         this.nullIfEmpty(
           value.assignedDashboard,
         ),
+      sourcingType:
+        value.sourcingType,
+      outsourcedTo:
+        value.sourcingType === 'Outsourcing'
+          ? this.nullIfEmpty(value.outsourcedTo)
+          : null,
+      hasCostVariation:
+        value.hasCostVariation,
+      variationCost:
+        value.hasCostVariation
+          ? Number(value.variationCost)
+          : null,
+      priorityLevel:
+        value.priorityLevel,
       remark:
         this.nullIfEmpty(value.remark),
     };
@@ -828,4 +952,3 @@ export class MaterialFormPage implements OnInit {
       : 'Material could not be saved.';
   }
 }
-

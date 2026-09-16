@@ -1657,6 +1657,18 @@ namespace POTracker.Controllers.Api
                 });
         }
 
+        [HttpDelete("pending/{id:int}")]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
+        public async Task<IActionResult> DeletePending(int id, CancellationToken cancellationToken = default)
+        {
+            var item = await _context.PendingInvoiceItems
+                .SingleOrDefaultAsync(row => row.Id == id && row.Status == "Pending", cancellationToken);
+            if (item == null) return NotFound();
+            _context.PendingInvoiceItems.Remove(item);
+            await _context.SaveChangesAsync(cancellationToken);
+            return NoContent();
+        }
+
         // ============================================================
         // MANUAL MATCH ONE PENDING ROW
         // ============================================================

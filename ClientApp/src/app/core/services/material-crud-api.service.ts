@@ -10,6 +10,7 @@ import {
 import {
   Observable,
   switchMap,
+  tap,
 } from 'rxjs';
 
 import {
@@ -109,6 +110,12 @@ export class MaterialCrudApiService {
             },
           ),
         ),
+
+        tap(() => {
+          this.cache.invalidate(
+            'materials:',
+          );
+        }),
       );
   }
 
@@ -130,6 +137,12 @@ export class MaterialCrudApiService {
             },
           ),
         ),
+
+        tap(() => {
+          this.cache.invalidate(
+            'materials:',
+          );
+        }),
       );
   }
 
@@ -156,6 +169,26 @@ export class MaterialCrudApiService {
       );
     }
 
+    if (files.handSketchFile) {
+      formData.append(
+        'handSketchFile',
+        files.handSketchFile,
+        files.handSketchFile.name,
+      );
+    }
+
+    if (files.outsourceDrawingFile) {
+      formData.append(
+        'outsourceDrawingFile',
+        files.outsourceDrawingFile,
+        files.outsourceDrawingFile.name,
+      );
+    }
+
+    if (files.webDrawingFile) {
+      formData.append('webDrawingFile', files.webDrawingFile, files.webDrawingFile.name);
+    }
+
     return this.authApi
       .getXsrfToken()
       .pipe(
@@ -170,6 +203,38 @@ export class MaterialCrudApiService {
             },
           ),
         ),
+
+        tap(() => {
+          this.cache.invalidate(
+            'materials:detail:',
+          );
+        }),
+      );
+  }
+
+  deleteDrawing(
+    id: number,
+    documentType = 'drawing',
+  ): Observable<MaterialSaveResponse> {
+    return this.authApi
+      .getXsrfToken()
+      .pipe(
+        switchMap(() =>
+          this.http.delete<
+            MaterialSaveResponse
+          >(
+            `/api/materials/${id}/files/drawing?documentType=${encodeURIComponent(documentType)}`,
+            {
+              withCredentials: true,
+            },
+          ),
+        ),
+
+        tap(() => {
+          this.cache.invalidate(
+            'materials:detail:',
+          );
+        }),
       );
   }
 

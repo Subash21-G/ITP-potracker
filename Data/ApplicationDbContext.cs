@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using POTracker.Models;
 
 namespace POTracker.Data
@@ -18,6 +18,16 @@ namespace POTracker.Data
         public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
 
         public DbSet<Material> Materials { get; set; }
+
+        public DbSet<MaterialHistory> MaterialHistories { get; set; }
+
+        public DbSet<MasterSheetRecord> MasterSheetRecords { get; set; }
+
+        public DbSet<MasterSheetProcessStep> MasterSheetProcessSteps { get; set; }
+
+        public DbSet<MasterSheetProcessOption> MasterSheetProcessOptions { get; set; }
+
+        public DbSet<AuditLog> AuditLogs { get; set; }
 
         public DbSet<Stock> Stocks { get; set; }
 
@@ -262,6 +272,10 @@ namespace POTracker.Data
                 .HasMaxLength(100);
 
             modelBuilder.Entity<Material>()
+                .Property(x => x.RMSize)
+                .HasMaxLength(200);
+
+            modelBuilder.Entity<Material>()
                 .Property(x => x.DrawingNo)
                 .HasMaxLength(200);
 
@@ -276,6 +290,141 @@ namespace POTracker.Data
             modelBuilder.Entity<Material>()
                 .Property(x => x.PDFFilePath)
                 .HasMaxLength(500);
+
+            // =====================================================
+            // MATERIAL DELIVERY HISTORY
+            // =====================================================
+
+            modelBuilder.Entity<MaterialHistory>()
+                .HasKey(x => x.Id);
+
+            modelBuilder.Entity<MaterialHistory>()
+                .Property(x => x.Outcome)
+                .HasMaxLength(40)
+                .IsRequired();
+
+            modelBuilder.Entity<MaterialHistory>()
+                .Property(x => x.Remark)
+                .HasMaxLength(2000);
+
+            modelBuilder.Entity<MaterialHistory>()
+                .HasOne(x => x.Material)
+                .WithMany(x => x.HistoryEntries)
+                .HasForeignKey(x => x.MaterialId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MaterialHistory>()
+                .HasIndex(x => new
+                {
+                    x.MaterialId,
+                    x.OccurredDate
+                });
+
+            modelBuilder.Entity<MaterialHistory>()
+                .HasIndex(x => new
+                {
+                    x.Outcome,
+                    x.OccurredDate
+                });
+
+            // =====================================================
+            // MASTER SHEET
+            // =====================================================
+
+            modelBuilder.Entity<MasterSheetRecord>()
+                .HasKey(x => x.Id);
+
+            modelBuilder.Entity<MasterSheetRecord>()
+                .Property(x => x.MaterialNo)
+                .HasMaxLength(150)
+                .IsRequired();
+
+            modelBuilder.Entity<MasterSheetRecord>()
+                .HasIndex(x => x.MaterialNo)
+                .IsUnique();
+
+            modelBuilder.Entity<MasterSheetProcessStep>()
+                .HasKey(x => x.Id);
+
+            modelBuilder.Entity<MasterSheetProcessStep>()
+                .HasOne(x => x.MasterSheetRecord)
+                .WithMany(x => x.ProcessSteps)
+                .HasForeignKey(x => x.MasterSheetRecordId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MasterSheetProcessStep>()
+                .HasIndex(x => new
+                {
+                    x.MasterSheetRecordId,
+                    x.Sequence
+                })
+                .IsUnique();
+
+            modelBuilder.Entity<MasterSheetProcessOption>()
+                .HasKey(x => x.Id);
+
+            modelBuilder.Entity<MasterSheetProcessOption>()
+                .HasIndex(x => x.CreatedDate);
+
+            // =====================================================
+            // AUDIT LOG
+            // =====================================================
+
+            modelBuilder.Entity<AuditLog>()
+                .HasKey(x => x.Id);
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(x => x.Action)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(x => x.MaterialNo)
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(x => x.PONumber)
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(x => x.ProcessStatus)
+                .HasMaxLength(50);
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(x => x.DispatchStatus)
+                .HasMaxLength(50);
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(x => x.Owner)
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(x => x.UserName)
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(x => x.Details)
+                .HasMaxLength(1000);
+
+            modelBuilder.Entity<AuditLog>()
+                .HasOne(x => x.Material)
+                .WithMany()
+                .HasForeignKey(x => x.MaterialId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(x => new
+                {
+                    x.CreatedDate,
+                    x.Action
+                });
+
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(x => new
+                {
+                    x.MaterialId,
+                    x.CreatedDate
+                });
 
             // =====================================================
             // MATERIAL QUANTITY FIELDS

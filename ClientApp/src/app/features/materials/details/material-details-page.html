@@ -32,6 +32,14 @@
           {{ isLoading() ? 'Refreshing…' : 'Refresh' }}
         </button>
 
+        <a
+          class="edit-button"
+          routerLink="/history"
+          [queryParams]="{ materialId: item.id }"
+        >
+          View history
+        </a>
+
         <a appManageOnly
           class="edit-button"
           [routerLink]="['/materials', item.id, 'edit']"
@@ -279,6 +287,47 @@
             <span>Assigned dashboard</span>
             <strong>{{ item.assignedDashboard || '—' }}</strong>
           </div>
+
+          <div>
+            <span>Sourcing</span>
+            <strong>{{ item.sourcingType || 'Inhouse' }}</strong>
+          </div>
+
+          @if (item.sourcingType === 'Outsourcing') {
+            <div>
+              <span>Outsourced to</span>
+              <strong>{{ item.outsourcedTo || 'Not assigned' }}</strong>
+            </div>
+          }
+
+          <div>
+            <span>Planning flags</span>
+            <strong class="detail-planning-badges">
+              @if (item.hasCostVariation) {
+                <span class="detail-planning-badge detail-planning-badge--cost">
+                  Cost variation
+                </span>
+              }
+
+              @if (item.priorityLevel === 'Priority') {
+                <span class="detail-planning-badge detail-planning-badge--priority">
+                  Priority
+                </span>
+              }
+
+              @if (item.priorityLevel === 'Urgent') {
+                <span class="detail-planning-badge detail-planning-badge--urgent">
+                  Urgent
+                </span>
+              }
+
+              @if (!item.hasCostVariation && item.priorityLevel === 'Normal') {
+                <span class="detail-planning-badge detail-planning-badge--normal">
+                  Normal
+                </span>
+              }
+            </strong>
+          </div>
         </div>
       </article>
 
@@ -372,6 +421,30 @@
             <span>Cost</span>
             <strong>{{ item.cost | number: '1.2-2' }}</strong>
           </div>
+
+          @if (item.hasCostVariation) {
+            <div class="detail-item">
+              <span>Variation cost (revised)</span>
+              <strong>
+                {{ item.variationCost !== null && item.variationCost !== undefined
+                  ? (item.variationCost | number: '1.2-2')
+                  : 'Not entered' }}
+              </strong>
+            </div>
+
+            <div class="detail-item">
+              <span>Cost difference</span>
+              <strong>
+                @if (item.variationCost !== null && item.variationCost !== undefined) {
+                  {{ item.variationCost - item.cost > 0 ? '+' : '' }}{{
+                    item.variationCost - item.cost | number: '1.2-2'
+                  }}
+                } @else {
+                  —
+                }
+              </strong>
+            </div>
+          }
 
           <div class="detail-item">
             <span>Value of goods</span>
@@ -471,7 +544,7 @@
         <header>
           <div>
             <span class="eyebrow">Drawing and files</span>
-            <h2>Documents</h2>
+            <h2>CAD drawing, hand sketch &amp; outsourced drawing</h2>
           </div>
 
           <a appManageOnly
@@ -497,15 +570,27 @@
           </div>
 
           @if (item.pdfFilePath) {
-            <a
+            <button
+              type="button"
               class="file-link"
-              [href]="item.pdfFilePath"
-              target="_blank"
-              rel="noopener"
+              [class.file-link--active]="
+                isDocumentPreviewSelected(item.pdfFilePath)
+              "
+              [attr.aria-pressed]="
+                isDocumentPreviewSelected(item.pdfFilePath)
+              "
+              (click)="selectDocumentPreview(item.pdfFilePath)"
             >
               <span>Material PDF</span>
               <strong>{{ fileName(item.pdfFilePath) }}</strong>
-            </a>
+              <small>
+                {{
+                  isDocumentPreviewSelected(item.pdfFilePath)
+                    ? 'Showing in preview'
+                    : 'Click to preview'
+                }}
+              </small>
+            </button>
           } @else {
             <div>
               <span>Material PDF</span>
@@ -514,30 +599,135 @@
           }
 
           @if (item.drawingFilePath) {
-            <a
+            <button
+              type="button"
               class="file-link"
-              [href]="item.drawingFilePath"
-              target="_blank"
-              rel="noopener"
+              [class.file-link--active]="
+                isDocumentPreviewSelected(item.drawingFilePath)
+              "
+              [attr.aria-pressed]="
+                isDocumentPreviewSelected(item.drawingFilePath)
+              "
+              (click)="selectDocumentPreview(item.drawingFilePath)"
             >
-              <span>Drawing file</span>
+              <span>CAD drawing</span>
               <strong>{{ fileName(item.drawingFilePath) }}</strong>
-            </a>
+              <small>
+                {{
+                  isDocumentPreviewSelected(item.drawingFilePath)
+                    ? 'Showing in preview'
+                    : 'Click to preview below'
+                }}
+              </small>
+            </button>
           } @else {
             <div>
-              <span>Drawing file</span>
+              <span>CAD drawing</span>
               <strong>Not uploaded</strong>
             </div>
           }
-        </div>
 
+          @if (item.handSketchFilePath) {
+            <button
+              type="button"
+              class="file-link"
+              [class.file-link--active]="
+                isDocumentPreviewSelected(item.handSketchFilePath)
+              "
+              [attr.aria-pressed]="
+                isDocumentPreviewSelected(item.handSketchFilePath)
+              "
+              (click)="selectDocumentPreview(item.handSketchFilePath)"
+            >
+              <span>Hand sketch</span>
+              <strong>{{ fileName(item.handSketchFilePath) }}</strong>
+              <small>
+                {{
+                  isDocumentPreviewSelected(item.handSketchFilePath)
+                    ? 'Showing in preview'
+                    : 'Click to preview below'
+                }}
+              </small>
+            </button>
+          } @else {
+            <div>
+              <span>Hand sketch</span>
+              <strong>Not uploaded</strong>
+            </div>
+          }
+
+          @if (item.outsourceDrawingFilePath) {
+            <button
+              type="button"
+              class="file-link"
+              [class.file-link--active]="
+                isDocumentPreviewSelected(item.outsourceDrawingFilePath)
+              "
+              [attr.aria-pressed]="
+                isDocumentPreviewSelected(item.outsourceDrawingFilePath)
+              "
+              (click)="selectDocumentPreview(item.outsourceDrawingFilePath)"
+            >
+              <span>Outsourced drawing</span>
+              <strong>{{ fileName(item.outsourceDrawingFilePath) }}</strong>
+              <small>
+                {{
+                  isDocumentPreviewSelected(item.outsourceDrawingFilePath)
+                    ? 'Showing in preview'
+                    : 'Click to preview below'
+                }}
+              </small>
+            </button>
+          } @else {
+            <div>
+              <span>Outsourced drawing</span>
+              <strong>Not uploaded</strong>
+            </div>
+          }
+
+          @if (item.webDrawingFilePath) {
+            <button type="button" class="file-link" [class.file-link--active]="isDocumentPreviewSelected(item.webDrawingFilePath)" (click)="selectDocumentPreview(item.webDrawingFilePath)">
+              <span>WEG drawing</span>
+              <strong>{{ fileName(item.webDrawingFilePath) }}</strong>
+              <small>{{ isDocumentPreviewSelected(item.webDrawingFilePath) ? 'Showing in preview' : 'Click to preview below' }}</small>
+            </button>
+          } @else {
+            <div><span>Web drawing</span><strong>Not uploaded</strong></div>
+          }
+        </div>
+      </article>
+
+      @if (item.drawingFilePath || item.outsourceDrawingFilePath || item.webDrawingFilePath || item.handSketchFilePath || item.pdfFilePath) {
+        <article class="details-card details-card--wide outsourced-preview-sheet">
+          <header><div><span class="eyebrow">Drawing backside</span><h2>Front drawing and backside data</h2></div><button type="button" class="print-backside-button" (click)="printOutsourceDetails()" [disabled]="isPreparingDrawingPrint()">{{ isPreparingDrawingPrint() ? 'Preparing PDF...' : 'Print front + backside (2 pages)' }}</button></header>
+          <div class="outsourced-backside__grid">
+            <div><span>1. Material No.</span><strong>{{ item.materialNo || '' }}</strong></div>
+            <div><span>2. Short description</span><strong>{{ item.shortDescription || '' }}</strong></div>
+            <div><span>3. Grade</span><strong>{{ item.rmGrade || '' }}</strong></div>
+            <div><span>4. Process qty</span><strong>{{ item.dispatchQty > 0 ? item.dispatchQty : '' }}</strong></div>
+            <div><span>5. Required qty</span><strong>{{ item.requiredQty ?? item.pendingQty }}</strong></div>
+            <div><span>6. Stock qty</span><strong></strong></div>
+            <div><span>7. Drawing version</span><strong>{{ item.drawingVersion || '' }}</strong></div>
+            <div><span>8. Finish size</span><strong></strong></div>
+            <div><span>9. Required RM size</span><strong>{{ item.rmSize || '' }}</strong></div>
+            <div><span>10. Machining process</span><strong>{{ item.rmProcess || '' }}</strong></div>
+          </div>
+          @if (drawingPrintError()) {
+            <p class="outsourced-backside__error" role="alert">{{ drawingPrintError() }}</p>
+          }
+        </article>
+      }
+
+      <article class="details-card details-card--wide document-preview-card">
         <section
           class="document-preview"
-          aria-label="Drawing preview"
+          aria-label="Document preview"
         >
           <header class="document-preview__header">
             <div>
-              <span>Drawing preview</span>
+              <span>
+                {{ documentPreview()?.label || 'Document preview' }}
+              </span>
 
               @if (documentPreview(); as preview) {
                 <strong>{{ preview.name }}</strong>
@@ -558,17 +748,83 @@
           </header>
 
           @if (documentPreview(); as preview) {
-            <iframe
-              class="document-preview__frame"
-              [src]="preview.safeUrl"
-              [title]="'Drawing preview: ' + preview.name"
-              loading="lazy"
-            ></iframe>
+            @if (preview.label === 'Outsourced drawing preview') {
+              <section class="outsourced-backside" aria-label="Outsourced drawing print details">
+                <header><strong>Drawing backside data</strong><button type="button" (click)="printOutsourceDetails()" [disabled]="isPreparingDrawingPrint()">{{ isPreparingDrawingPrint() ? 'Preparing PDF...' : 'Print front + backside (2 pages)' }}</button></header>
+                <div class="outsourced-backside__grid">
+                  <div><span>1. Material No.</span><strong>{{ item.materialNo || '' }}</strong></div>
+                  <div><span>2. Short description</span><strong>{{ item.shortDescription || '' }}</strong></div>
+                  <div><span>3. Grade</span><strong>{{ item.rmGrade || '' }}</strong></div>
+                  <div><span>4. Process qty</span><strong>{{ item.dispatchQty > 0 ? item.dispatchQty : '' }}</strong></div>
+                  <div><span>5. Required qty</span><strong>{{ item.requiredQty ?? item.pendingQty }}</strong></div>
+                  <div><span>6. Stock qty</span><strong></strong></div>
+                  <div><span>7. Drawing version</span><strong>{{ item.drawingVersion || '' }}</strong></div>
+                  <div><span>8. Finish size</span><strong></strong></div>
+                  <div><span>9. Required RM size</span><strong>{{ item.rmSize || '' }}</strong></div>
+                  <div><span>10. Machining process</span><strong>{{ item.rmProcess || '' }}</strong></div>
+                </div>
+                @if (drawingPrintError()) {
+                  <p class="outsourced-backside__error" role="alert">{{ drawingPrintError() }}</p>
+                }
+              </section>
+            }
+            @if (preview.kind === 'pdf') {
+              <app-pdf-redaction-editor
+                [sourceUrl]="preview.path"
+                [fileName]="preview.name"
+                [savePdf]="authApi.canOperate() ? saveEditedDocument : null"
+              />
+            } @else if (preview.kind === 'image') {
+              <div class="document-preview__image-stage">
+                <img
+                  class="document-preview__image"
+                  [src]="preview.safeUrl"
+                  [alt]="preview.label + ': ' + preview.name"
+                />
+              </div>
+            } @else if (preview.kind === 'cad') {
+              <div class="document-preview__cad">
+                <div #cadHost class="document-preview__cad-canvas" aria-label="CAD drawing preview"></div>
+                @if (cadPreviewError(); as error) { <p class="document-preview__cad-error">{{ error }}</p> }
+                <div class="document-preview__cad-toolbar" aria-label="CAD view controls">
+                  <button type="button" (click)="zoomCad('in')">Zoom in +</button>
+                  <button type="button" (click)="zoomCad('out')">Zoom out −</button>
+                  <button type="button" (click)="fitCadView()">Fit drawing</button>
+                  <button type="button" (click)="resetCadView()">Reset view</button>
+                  <button type="button" (click)="fullscreenCad()">Full screen</button>
+                  <span>Drag to move · Scroll to zoom</span>
+                </div>
+                <span class="document-preview__cad-format">
+                  {{ documentExtension(preview.path) }}
+                </span>
+                <strong>CAD drawing selected</strong>
+                <p>
+                  The secure CAD file is ready. Use Open full view to inspect it
+                  in your installed CAD application.
+                </p>
+                <a
+                  [href]="preview.path"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Open CAD file
+                </a>
+              </div>
+            } @else {
+              <div class="document-preview__empty">
+                <span class="document-preview__cad-format">
+                  {{ documentExtension(preview.path) }}
+                </span>
+                <strong>File selected</strong>
+                <span>Use Open full view to download this attachment.</span>
+              </div>
+            }
           } @else {
             <div class="document-preview__empty">
               <strong>Preview unavailable</strong>
               <span>
-                Upload a PDF or image drawing to preview it here.
+                Upload a material PDF, CAD drawing, hand sketch, or outsourced
+                drawing and select its card to show it here.
               </span>
             </div>
           }
@@ -581,7 +837,16 @@
             <span class="eyebrow">Notes</span>
             <h2>Remark and audit</h2>
           </div>
+
+          <a
+            routerLink="/history"
+            [queryParams]="{ materialId: item.id }"
+          >
+            Open full history
+          </a>
         </header>
+
+        <h3 class="remark-section-title">Current material remark</h3>
 
         <div class="remark-box">
           {{ item.remark || 'No remark added.' }}
@@ -610,6 +875,78 @@
             Dispatch links: {{ item.dispatchRecordCount }}
           </span>
         </div>
+
+        <section class="remark-history" aria-labelledby="remark-history-title">
+          <header class="remark-history__heading">
+            <div>
+              <h3 id="remark-history-title">Remark history</h3>
+              <p>Delivery results and remarks recorded for this material.</p>
+            </div>
+
+            @if (materialHistoryTotal() > 0) {
+              <strong>{{ materialHistoryTotal() }} entries</strong>
+            }
+          </header>
+
+          @if (materialHistoryLoading()) {
+            <div class="remark-history__state">Loading remark history…</div>
+          } @else if (materialHistoryError()) {
+            <div class="remark-history__state remark-history__state--error">
+              {{ materialHistoryError() }}
+            </div>
+          } @else if (materialHistoryItems().length === 0) {
+            <div class="remark-history__state">No history remarks recorded.</div>
+          } @else {
+            <div class="remark-history__list">
+              @for (history of materialHistoryItems(); track history.id) {
+                <article
+                  [class]="
+                    'remark-history-entry remark-history-entry--' +
+                    historyOutcomeClass(history.outcome)
+                  "
+                >
+                  <header>
+                    <span
+                      [class]="
+                        'history-outcome history-outcome--' +
+                        historyOutcomeClass(history.outcome)
+                      "
+                    >
+                      {{ historyOutcomeLabel(history.outcome) }}
+                    </span>
+
+                    <time [attr.datetime]="history.occurredDate">
+                      {{ history.occurredDate | date: 'dd MMM yyyy' }}
+                    </time>
+                  </header>
+
+                  <p>{{ history.remark || 'No remark recorded for this result.' }}</p>
+
+                  <footer>
+                    <span>
+                      Recorded {{ history.createdDate | date: 'dd MMM yyyy, hh:mm a' }}
+                    </span>
+                    @if (history.updatedDate) {
+                      <span>
+                        Edited {{ history.updatedDate | date: 'dd MMM yyyy, hh:mm a' }}
+                      </span>
+                    }
+                  </footer>
+                </article>
+              }
+            </div>
+
+            @if (materialHistoryTotal() > materialHistoryItems().length) {
+              <a
+                class="remark-history__more"
+                routerLink="/history"
+                [queryParams]="{ materialId: item.id }"
+              >
+                View all {{ materialHistoryTotal() }} history entries
+              </a>
+            }
+          }
+        </section>
       </article>
     </section>
   }

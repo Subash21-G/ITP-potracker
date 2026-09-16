@@ -1,0 +1,296 @@
+.mastersheet-page {
+  display: grid;
+  gap: 20px;
+  padding: 28px;
+}
+
+.page-header,
+.table-heading,
+.assignment-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow {
+  color: #52708f;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page-header h1,
+.table-heading h2,
+.flow-card h2,
+.master-form-card h2 {
+  margin: 4px 0;
+}
+
+.card {
+  padding: 20px;
+  border: 1px solid #d9e2ec;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px #172b4d12;
+}
+
+.notice {
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.notice.success {
+  border: 1px solid #a8d5c6;
+  color: #176b51;
+  background: #edf9f4;
+}
+
+.notice.error,
+.error {
+  border: 1px solid #e4b8b8;
+  color: #a93434;
+  background: #fff3f3;
+}
+
+.flow-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr 180px auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 16px;
+}
+
+.flow-form label,
+.master-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.flow-form input,
+.flow-form select,
+.master-form input,
+.master-form select {
+  padding: 10px;
+  border: 1px solid #cbd6e2;
+  border-radius: 8px;
+}
+
+.flow-form button,
+.flow-list button,
+.master-actions button,
+.add-another {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: #176b68;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.flow-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.flow-list > div {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f5f8fb;
+}
+
+.flow-list span:first-of-type {
+  margin-left: auto;
+}
+
+.flow-list button,
+.master-actions .danger {
+  padding: 6px 10px;
+  background: #a93434;
+}
+
+.table-delete {
+  padding: 6px 10px;
+  background: #a93434;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+}
+
+.master-form {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.master-actions {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+
+.assignment-inline {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e5ebf2;
+}
+
+.assignment-heading p {
+  margin: 4px 0 0;
+  color: #63788e;
+  font-size: 12px;
+}
+
+.add-another {
+  white-space: nowrap;
+}
+
+.add-another span {
+  font-size: 18px;
+  vertical-align: -1px;
+}
+
+.process-number {
+  min-width: 76px;
+  color: #176b68;
+}
+
+.table-scroll {
+  overflow: auto;
+  margin-top: 16px;
+}
+
+table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 11px 10px;
+  border-bottom: 1px solid #e5ebf2;
+  font-size: 12px;
+  text-align: left;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  color: #526b84;
+  background: #f3f7fa;
+}
+
+@media (max-width: 800px) {
+  .mastersheet-page {
+    padding: 16px;
+  }
+
+  .flow-form,
+  .master-form {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-list > div,
+  .master-actions,
+  .assignment-heading {
+    flex-wrap: wrap;
+  }
+
+  .flow-list span:first-of-type {
+    margin-left: 0;
+  }
+}
+
+.section-nav,
+.pagination,
+.pagination-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.section-nav a,
+.pagination button,
+.pagination select {
+  padding: 9px 12px;
+  border: 1px solid #cbd6e2;
+  border-radius: 8px;
+  background: #fff;
+  color: #176b68;
+}
+
+.section-nav a {
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.section-nav a.active {
+  background: #176b68;
+  border-color: #176b68;
+  color: #fff;
+}
+
+.pagination {
+  justify-content: space-between;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.pagination label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination button:not(:disabled) {
+  cursor: pointer;
+}
+
+.list-search {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.list-search label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.list-search input {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.list-search input,
+.list-search button {
+  padding: 10px 12px;
+  border: 1px solid #cbd6e2;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.list-search button {
+  color: #176b68;
+  cursor: pointer;
+}

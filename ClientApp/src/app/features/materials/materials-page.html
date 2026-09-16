@@ -217,6 +217,18 @@
       </select>
     </label>
 
+    <label class="field field--wide filter-options">
+      <span>Duplicate materials</span>
+      <span class="checkbox-field">
+        <input formControlName="removeDuplicates" type="checkbox" />
+        Combine same material numbers across all POs and total their ordered, dispatched and pending quantities
+      </span>
+      <span class="checkbox-field">
+        <input formControlName="pendingOnly" type="checkbox" />
+        Show pending materials only (exclude completed materials)
+      </span>
+    </label>
+
     <label class="field">
       <span>Delivery from</span>
       <input
@@ -293,6 +305,12 @@
         Showing {{ showingFrom() | number }}–{{ showingTo() | number }}
         of {{ totalRecords() | number }}
       </p>
+    </div>
+
+    <div class="history-color-legend" aria-label="Latest material history colors">
+      <span class="history-color-key history-color-key--perfect">Perfect</span>
+      <span class="history-color-key history-color-key--rework">Rework</span>
+      <span class="history-color-key history-color-key--rejected">Rejected</span>
     </div>
 
     <label class="page-size">
@@ -646,6 +664,7 @@
                 [checked]="
                   selectedIds().has(material.id)
                 "
+                [disabled]="(material.duplicateCount ?? 1) > 1"
                 [attr.aria-label]="
                   'Select material ' +
                   (material.materialNo || material.id)
@@ -680,20 +699,120 @@
 
             <td>{{ material.lineItem || '—' }}</td>
 
-            <td>
-              <a
-                class="primary-link"
-                [routerLink]="[
-                  '/materials',
-                  material.id
-                ]"
-              >
-                {{ material.materialNo || '—' }}
-              </a>
+            <td class="material-identity-cell">
+              <div class="material-number-row">
+                <a
+                  class="primary-link"
+                  [class.material-history-highlight]="material.latestHistoryOutcome"
+                  [class.material-history-highlight--perfect]="
+                    material.latestHistoryOutcome === 'PerfectDelivery'
+                  "
+                  [class.material-history-highlight--rework]="
+                    material.latestHistoryOutcome === 'ReworkAndDelivery'
+                  "
+                  [class.material-history-highlight--rejected]="
+                    material.latestHistoryOutcome === 'Rejected'
+                  "
+                  [title]="
+                    material.latestHistoryOutcome === 'PerfectDelivery'
+                      ? 'Latest history: Perfect delivery'
+                      : material.latestHistoryOutcome === 'ReworkAndDelivery'
+                        ? 'Latest history: Rework and delivery'
+                        : material.latestHistoryOutcome === 'Rejected'
+                          ? 'Latest history: Rejected'
+                          : 'No material history recorded'
+                  "
+                  [routerLink]="[
+                    '/materials',
+                    material.id
+                  ]"
+                >
+                  {{ material.materialNo || '—' }}
+                </a>
+
+                <span class="material-planning-actions" aria-label="Material planning shortcuts">
+                  <a
+                    class="material-planning-circle material-planning-circle--sourcing"
+                    [class.material-planning-circle--outsourcing]="
+                      material.sourcingType === 'Outsourcing'
+                    "
+                    [class.material-planning-circle--inhouse]="
+                      material.sourcingType !== 'Outsourcing'
+                    "
+                    routerLink="/outsourcing-inhouse"
+                    [queryParams]="{
+                      scope: material.sourcingType === 'Outsourcing' ? 'outsourcing' : 'inhouse',
+                      search: material.materialNo
+                    }"
+                    [title]="
+                      material.sourcingType === 'Outsourcing'
+                        ? 'Outsourced to ' + (material.outsourcedTo || 'not assigned') +
+                          '. Open Outsourcing for this material'
+                        : 'Open Inhousing for this material'
+                    "
+                  >
+                    <span aria-hidden="true">
+                      {{ material.sourcingType === 'Outsourcing' ? 'O' : 'I' }}
+                    </span>
+                  </a>
+
+                  @if (material.priorityLevel === 'Priority') {
+                    <a
+                      class="material-planning-circle material-planning-circle--priority"
+                      routerLink="/priority-urgent"
+                      [queryParams]="{ scope: 'priority', search: material.materialNo }"
+                      title="Open Priority for this material"
+                      aria-label="Open Priority for this material"
+                    >
+                      <span aria-hidden="true">P</span>
+                    </a>
+                  }
+
+                  @if (material.priorityLevel === 'Urgent') {
+                    <a
+                      class="material-planning-circle material-planning-circle--urgent"
+                      routerLink="/priority-urgent"
+                      [queryParams]="{ scope: 'urgent', search: material.materialNo }"
+                      title="Open Urgent materials for this material"
+                      aria-label="Open Urgent materials for this material"
+                    >
+                      <span aria-hidden="true">!</span>
+                    </a>
+                  }
+
+                  @if (material.hasCostVariation) {
+                    <a
+                      class="material-planning-circle material-planning-circle--cost"
+                      routerLink="/cost-variation"
+                      [queryParams]="{ search: material.materialNo }"
+                      [title]="
+                        'Variation cost: ' +
+                        (material.variationCost ?? 'not entered') +
+                        '. Open Cost Variation for this material'
+                      "
+                      aria-label="Open Cost Variation for this material"
+                    >
+                      <span aria-hidden="true">CV</span>
+                    </a>
+                  }
+                </span>
+              </div>
+
+              @if (material.latestHistoryOutcome) {
+                <span class="secondary-value history-color-caption">
+                  Latest history
+                </span>
+              }
 
               @if (material.hsnSacCode) {
                 <span class="secondary-value">
                   HSN {{ material.hsnSacCode }}
+                </span>
+              }
+
+              @if ((material.duplicateCount ?? 1) > 1) {
+                <span class="secondary-value">
+                  {{ material.duplicateCount }} duplicate rows combined
                 </span>
               }
             </td>
@@ -775,11 +894,41 @@
             </td>
 
             <td>
-              <span
-                [class]="statusClass(material.processStatus)"
-              >
-                {{ material.processStatus }}
-              </span>
+              @if (canOperate()) {
+                <select
+                  class="process-status-select"
+                  [class.process-status-select--pending]="
+                    material.processStatus === 'Pending'
+                  "
+                  [class.process-status-select--active]="
+                    material.processStatus === 'In Process'
+                  "
+                  [class.process-status-select--completed]="
+                    material.processStatus === 'Completed'
+                  "
+                  [class.process-status-select--hold]="
+                    material.processStatus === 'On Hold' || material.processStatus === 'Hold'
+                  "
+                  [value]="processStatusSelectValue(material.processStatus)"
+                  [disabled]="loading() || isProcessStatusUpdating(material.id)"
+                  [attr.aria-label]="
+                    'Process status for ' + (material.materialNo || 'material ' + material.id)
+                  "
+                  (change)="changeProcessStatus(material, $event)"
+                >
+                  @for (status of processStatusOptions; track status) {
+                    <option [value]="status">{{ status }}</option>
+                  }
+                </select>
+
+                @if (isProcessStatusUpdating(material.id)) {
+                  <span class="secondary-value process-status-saving">Saving…</span>
+                }
+              } @else {
+                <span [class]="statusClass(material.processStatus)">
+                  {{ material.processStatus }}
+                </span>
+              }
             </td>
 
             <td>

@@ -76,17 +76,9 @@ describe('PurchaseOrdersApiService', () => {
     expect(request.request.params.get('page')).toBe('2');
     expect(request.request.params.get('pageSize')).toBe('25');
 
-    expect(
-      request.request.params.get(
-        'sortColumn',
-      ),
-    ).toBe('delivery');
+    expect(request.request.params.get('sortColumn')).toBe('delivery');
 
-    expect(
-      request.request.params.get(
-        'sortDirection',
-      ),
-    ).toBe('desc');
+    expect(request.request.params.get('sortDirection')).toBe('desc');
 
     expect(request.request.params.get('search')).toBe('4500');
     expect(request.request.params.get('handler')).toBe('Manoj S');
@@ -164,5 +156,46 @@ describe('PurchaseOrdersApiService', () => {
     expect(request.request.withCredentials).toBe(true);
 
     request.flush(response);
+  });
+
+  it('sends Excel filter and sort state for Purchase Order materials', () => {
+    service
+      .getPurchaseOrderDetailsFiltered(19, {
+        materialPage: 1,
+        materialPageSize: 25,
+        materialSortColumn: 'quantity',
+        materialSortDirection: 'desc',
+        materialExcelFilters: '{"dispatch":["Pending"]}',
+      })
+      .subscribe();
+
+    const request = httpController.expectOne(
+      (candidate) => candidate.url === '/api/purchase-orders/19',
+    );
+
+    expect(request.request.params.get('materialSortColumn')).toBe('quantity');
+    expect(request.request.params.get('materialSortDirection')).toBe('desc');
+    expect(request.request.params.get('materialExcelFilters')).toBe('{"dispatch":["Pending"]}');
+
+    request.flush({});
+  });
+
+  it('requests full-dataset values for a Purchase Order material column', () => {
+    service
+      .getPurchaseOrderMaterialExcelFilterValues(19, 'material', {
+        materialPage: 1,
+        materialPageSize: 25,
+        materialExcelFilters: '{"dispatch":["Pending"]}',
+      })
+      .subscribe((values) => expect(values).toEqual([]));
+
+    const request = httpController.expectOne(
+      '/api/purchase-orders/19/materials/excel-filter-values?column=material&materialExcelFilters=%7B%22dispatch%22:%5B%22Pending%22%5D%7D',
+    );
+
+    expect(request.request.method).toBe('GET');
+    expect(request.request.withCredentials).toBe(true);
+
+    request.flush([]);
   });
 });

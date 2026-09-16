@@ -887,6 +887,112 @@ app-dashboard-page .dashboard-table-wrap{
   }
 }
 
+/* Final polish shared by every workspace page. */
+.app-main:not(.app-main--login) {
+  position: relative;
+  min-height: calc(100vh - 76px);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(99, 102, 241, .10), transparent 28rem),
+    radial-gradient(circle at 92% 18%, rgba(20, 184, 166, .08), transparent 25rem);
+}
+
+.app-main:not(.app-main--login) :is(h1, h2, h3) {
+  letter-spacing: -.025em;
+}
+
+.app-main:not(.app-main--login) :is(.card, .panel, .content-card, .table-card, .dashboard-recent-panel, .dashboard-quantity-panel, .dashboard-status-panel) {
+  border: 1px solid rgba(148, 163, 184, .24);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, .075), 0 1px 0 rgba(255, 255, 255, .8) inset;
+}
+
+.app-main:not(.app-main--login) :is(button, .button, a.button) {
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.app-main:not(.app-main--login) :is(button, .button, a.button):hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: saturate(1.08);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, .16);
+}
+
+.app-main:not(.app-main--login) :is(input, select, textarea) {
+  border-color: #d7e0ec;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 2px 5px rgba(15, 23, 42, .025) inset;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.app-main:not(.app-main--login) :is(input, select, textarea):focus {
+  border-color: #6d7fe0;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, .12);
+  outline: none;
+}
+
+.app-main:not(.app-main--login) table tbody tr {
+  transition: background-color 140ms ease;
+}
+
+.app-main:not(.app-main--login) table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(239, 246, 255, .9), rgba(240, 253, 250, .72));
+}
+
+.app-footer {
+  border-top: 1px solid rgba(148, 163, 184, .22);
+  background: rgba(255, 255, 255, .62);
+  backdrop-filter: blur(14px);
+}
+
+/* Responsive safety net for feature pages with dense data. */
+@media (max-width: 900px) {
+  .app-main:not(.app-main--login) :is(.page-header, .content-header, .dashboard-section-heading, .table-heading, .hero) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .app-main:not(.app-main--login) :is(.form-grid, .filter-grid, .master-form, .flow-form, .search-panel) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-main:not(.app-main--login) :is(.table-scroll, .table-wrap, .dashboard-table-wrap) {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-main:not(.app-main--login) :is(.form-grid, .filter-grid, .master-form, .flow-form, .search-panel, .dashboard-quantity-grid, .dashboard-status-grid) {
+    grid-template-columns: 1fr;
+  }
+
+  .app-main:not(.app-main--login) :is(.card, .panel, .content-card, .table-card, .dashboard-recent-panel, .dashboard-quantity-panel, .dashboard-status-panel) {
+    border-radius: 14px;
+  }
+
+  .app-main:not(.app-main--login) :is(input, select, textarea, button, .button) {
+    min-height: 42px;
+  }
+
+  .app-main:not(.app-main--login) :is(.pagination, .premium-pagination, .dashboard-pagination) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app-main:not(.app-main--login) :is(.pagination-actions, .dashboard-pagination__actions) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .app-main:not(.app-main--login) :is(.pagination-actions button, .dashboard-pagination__actions button) {
+    width: 100%;
+  }
+
+  app-purchasers-page .po-person-cell {
+    min-width: 14rem;
+  }
+}
+
 /* SMART ALERTS */
 app-alerts-page{
   display: block;

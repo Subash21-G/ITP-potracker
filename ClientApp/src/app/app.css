@@ -327,6 +327,22 @@
   place-items: center;
 }
 
+.nav-dropdown__icon--priority {
+  background: linear-gradient(145deg, #1d4ed8, #2563eb 62%, #60a5fa);
+  box-shadow: 0 7px 18px rgba(37, 99, 235, 0.3);
+}
+
+.nav-dropdown__icon--cost {
+  background: linear-gradient(145deg, #9ca3af 0%, #e5e7eb 40%, #b91c1c 100%);
+  text-shadow: 0 1px 1px rgba(15, 23, 42, 0.45);
+  box-shadow: 0 7px 18px rgba(153, 27, 27, 0.24);
+}
+
+.nav-dropdown__icon--sourcing {
+  background: linear-gradient(145deg, #0f766e, #2563eb 52%, #7c3aed);
+  box-shadow: 0 7px 18px rgba(15, 118, 110, 0.25);
+}
+
 .nav-dropdown__link
   > span:last-child {
   min-width: 0;

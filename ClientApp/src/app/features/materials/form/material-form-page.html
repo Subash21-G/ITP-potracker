@@ -139,6 +139,72 @@
               <option value="On Hold">On Hold</option>
             </select>
           </label>
+
+          <label class="field">
+            <span>Sourcing</span>
+            <select
+              formControlName="sourcingType"
+              (change)="onPlanningClassificationChange()"
+            >
+              <option value="Inhouse">Inhouse</option>
+              <option value="Outsourcing">Outsourcing</option>
+            </select>
+          </label>
+
+          @if (form.controls.sourcingType.value === 'Outsourcing') {
+            <label class="field">
+              <span>Outsourced to</span>
+              <input
+                type="text"
+                maxlength="200"
+                formControlName="outsourcedTo"
+                placeholder="Vendor or subcontractor name"
+              />
+
+              @if (fieldInvalid('outsourcedTo')) {
+                <small>Enter who received the outsourced work.</small>
+              }
+            </label>
+          }
+
+          <label class="field">
+            <span>Attention level</span>
+            <select formControlName="priorityLevel">
+              <option value="Normal">Normal</option>
+              <option value="Priority">Priority</option>
+              <option value="Urgent">Urgent</option>
+            </select>
+          </label>
+
+          <label class="field checkbox-field planning-checkbox">
+            <input
+              type="checkbox"
+              formControlName="hasCostVariation"
+              (change)="onPlanningClassificationChange()"
+            />
+            <span>Cost variation</span>
+          </label>
+
+          @if (form.controls.hasCostVariation.value) {
+            <label class="field">
+              <span>Variation cost (revised)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                formControlName="variationCost"
+                placeholder="Enter revised unit cost"
+              />
+
+              @if (fieldInvalid('variationCost')) {
+                <small>Enter a valid revised cost.</small>
+              } @else {
+                <small class="field-help">
+                  Original cost: &#8377;{{ form.controls.cost.value | number: '1.2-2' }}
+                </small>
+              }
+            </label>
+          }
         </div>
       </section>
 
@@ -249,13 +315,24 @@
         </header>
 
         <div class="form-grid">
-          <label class="field">
-            <span>RM grade</span>
+          <div class="field">
+            <span id="rm-grade-label">RM grade</span>
             <input
               type="text"
               formControlName="rmGrade"
+              aria-labelledby="rm-grade-label"
+              placeholder="Enter the raw-material grade"
             />
-          </label>
+
+            <label class="checkbox-field">
+              <input
+                type="checkbox"
+                formControlName="rmGradeNotApplicable"
+                (change)="onRmGradeNotApplicableChange()"
+              />
+              <span>No RM grade / Not applicable</span>
+            </label>
+          </div>
 
           <label class="field">
             <span>RM source</span>

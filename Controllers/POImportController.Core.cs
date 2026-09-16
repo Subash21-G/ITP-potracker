@@ -273,6 +273,50 @@ namespace POTracker.Controllers
                         existingMaterial.BriefDescription =
                             item.FullDescription?.Trim();
 
+                        if (string.IsNullOrWhiteSpace(
+                                existingMaterial.RMGrade))
+                        {
+                            existingMaterial.RMGrade =
+                                string.IsNullOrWhiteSpace(item.Grade)
+                                    ? MaterialRmGradeExtractor.Extract(
+                                        item.ShortDescription,
+                                        item.FullDescription)
+                                    : item.Grade.Trim();
+                        }
+
+                        if (string.IsNullOrWhiteSpace(
+                                existingMaterial.RMSize))
+                        {
+                            existingMaterial.RMSize =
+                                string.IsNullOrWhiteSpace(item.Size)
+                                    ? WegMaterialDetailExtractor.ExtractSize(
+                                        item.ShortDescription,
+                                        item.FullDescription)
+                                    : item.Size.Trim();
+                        }
+
+                        if (string.IsNullOrWhiteSpace(
+                                existingMaterial.RMProcess))
+                        {
+                            existingMaterial.RMProcess =
+                                string.IsNullOrWhiteSpace(item.Process)
+                                    ? WegMaterialDetailExtractor.ExtractProcess(
+                                        item.ShortDescription,
+                                        item.FullDescription)
+                                    : item.Process.Trim();
+                        }
+
+                        if (string.IsNullOrWhiteSpace(
+                                existingMaterial.RMSource))
+                        {
+                            existingMaterial.RMSource =
+                                string.IsNullOrWhiteSpace(item.Source)
+                                    ? WegMaterialDetailExtractor.ExtractSource(
+                                        item.ShortDescription,
+                                        item.FullDescription)
+                                    : item.Source.Trim();
+                        }
+
                         existingMaterial.Qty =
                             item.Quantity;
 
@@ -331,7 +375,12 @@ namespace POTracker.Controllers
                             item.DrawingNo?.Trim();
 
                         existingMaterial.DrawingVersion =
-                            item.DrawingNo?.Trim();
+                            string.IsNullOrWhiteSpace(
+                                item.DrawingVersion)
+                                ? WegMaterialDetailExtractor
+                                    .ExtractDrawingVersion(
+                                        item.DrawingNo)
+                                : item.DrawingVersion.Trim();
 
                         if (!string.IsNullOrWhiteSpace(
                                 drawingFilePath))
@@ -393,6 +442,34 @@ namespace POTracker.Controllers
                             BriefDescription =
                                 item.FullDescription?.Trim(),
 
+                            RMGrade =
+                                string.IsNullOrWhiteSpace(item.Grade)
+                                    ? MaterialRmGradeExtractor.Extract(
+                                        item.ShortDescription,
+                                        item.FullDescription)
+                                    : item.Grade.Trim(),
+
+                            RMSize =
+                                string.IsNullOrWhiteSpace(item.Size)
+                                    ? WegMaterialDetailExtractor.ExtractSize(
+                                        item.ShortDescription,
+                                        item.FullDescription)
+                                    : item.Size.Trim(),
+
+                            RMProcess =
+                                string.IsNullOrWhiteSpace(item.Process)
+                                    ? WegMaterialDetailExtractor.ExtractProcess(
+                                        item.ShortDescription,
+                                        item.FullDescription)
+                                    : item.Process.Trim(),
+
+                            RMSource =
+                                string.IsNullOrWhiteSpace(item.Source)
+                                    ? WegMaterialDetailExtractor.ExtractSource(
+                                        item.ShortDescription,
+                                        item.FullDescription)
+                                    : item.Source.Trim(),
+
                             Qty =
                                 item.Quantity,
 
@@ -442,7 +519,12 @@ namespace POTracker.Controllers
                                 item.DrawingNo?.Trim(),
 
                             DrawingVersion =
-                                item.DrawingNo?.Trim(),
+                                string.IsNullOrWhiteSpace(
+                                    item.DrawingVersion)
+                                    ? WegMaterialDetailExtractor
+                                        .ExtractDrawingVersion(
+                                            item.DrawingNo)
+                                    : item.DrawingVersion.Trim(),
 
                             DrawingFilePath =
                                 drawingFilePath,
@@ -1386,6 +1468,31 @@ namespace POTracker.Controllers
                 var drawingNo =
                     GetDrawingNo(itemBlock);
 
+                var drawingVersion =
+                    WegMaterialDetailExtractor
+                        .ExtractDrawingVersion(
+                            drawingNo);
+
+                var grade =
+                    MaterialRmGradeExtractor.Extract(
+                        shortDescription,
+                        fullDescription);
+
+                var size =
+                    WegMaterialDetailExtractor.ExtractSize(
+                        shortDescription,
+                        fullDescription);
+
+                var process =
+                    WegMaterialDetailExtractor.ExtractProcess(
+                        shortDescription,
+                        fullDescription);
+
+                var source =
+                    WegMaterialDetailExtractor.ExtractSource(
+                        shortDescription,
+                        fullDescription);
+
                 var hsnSacCode =
                     GetHsnSacCode(itemBlock);
 
@@ -1450,7 +1557,22 @@ namespace POTracker.Controllers
                             fullDescription,
 
                         DrawingNo =
-                            drawingNo
+                            drawingNo,
+
+                        DrawingVersion =
+                            drawingVersion,
+
+                        Grade =
+                            grade,
+
+                        Size =
+                            size,
+
+                        Process =
+                            process,
+
+                        Source =
+                            source
                     };
 
                 items.Add(materialItem);

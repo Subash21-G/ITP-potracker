@@ -11,8 +11,8 @@
         ← Back to material details
       </a>
 
-      <span class="eyebrow">Documents</span>
-      <h1>Upload material files</h1>
+      <span class="eyebrow">Drawing and files</span>
+      <h1>CAD, hand sketch &amp; outsourced files</h1>
 
       @if (material(); as item) {
         <p>
@@ -22,7 +22,8 @@
         </p>
       } @else {
         <p>
-          Upload or replace the material PDF and drawing file.
+          Upload or replace the material PDF, CAD drawing, hand sketch,
+          and outsourced drawing.
         </p>
       }
     </div>
@@ -74,27 +75,109 @@
 
       <article class="file-card">
         <div>
-          <span class="file-label">Current drawing file</span>
+          <span class="file-label">Current WEG drawing</span>
+          @if (item.webDrawingFilePath) {
+            <strong>{{ fileName(item.webDrawingFilePath) }}</strong>
+            <small>An upload will replace the current WEG drawing.</small>
+          } @else {
+            <strong>Not uploaded</strong>
+            <small>No WEG drawing is currently attached.</small>
+          }
+        </div>
+        @if (item.webDrawingFilePath) {
+          <div class="file-card__actions"><a [href]="item.webDrawingFilePath" target="_blank" rel="noopener">Open web drawing</a><button class="delete-drawing-button" type="button" (click)="deleteDrawing('web-drawing')" [disabled]="isUploading() || isDeletingDrawing()">Delete web drawing</button></div>
+        }
+      </article>
+
+      <article class="file-card">
+        <div>
+          <span class="file-label">Current CAD drawing</span>
 
           @if (item.drawingFilePath) {
             <strong>{{ fileName(item.drawingFilePath) }}</strong>
             <small>
-              A new drawing will replace the current file path.
+              A new CAD drawing will replace the current file.
             </small>
           } @else {
             <strong>Not uploaded</strong>
-            <small>No drawing file is currently attached.</small>
+            <small>No CAD drawing is currently attached.</small>
           }
         </div>
 
         @if (item.drawingFilePath) {
-          <a
-            [href]="item.drawingFilePath"
+          <div class="file-card__actions">
+            <a
+              [href]="item.drawingFilePath"
+              target="_blank"
+              rel="noopener"
+            >
+              Open CAD drawing
+            </a>
+
+            <button
+              class="delete-drawing-button"
+              type="button"
+              (click)="deleteDrawing()"
+              [disabled]="
+                isUploading() ||
+                isDeletingDrawing()
+              "
+            >
+              {{
+                isDeletingDrawing()
+                  ? 'Deleting…'
+                  : 'Delete drawing'
+              }}
+            </button>
+          </div>
+        }
+      </article>
+
+      <article class="file-card">
+        <div>
+          <span class="file-label">Current hand sketch</span>
+
+          @if (item.handSketchFilePath) {
+            <strong>{{ fileName(item.handSketchFilePath) }}</strong>
+            <small>A new hand sketch will replace the current file.</small>
+          } @else {
+            <strong>Not uploaded</strong>
+            <small>No hand sketch is currently attached.</small>
+          }
+        </div>
+
+        @if (item.handSketchFilePath) {
+          <div class="file-card__actions"><a
+            [href]="item.handSketchFilePath"
             target="_blank"
             rel="noopener"
           >
-            Open drawing
-          </a>
+            Open hand sketch
+          </a><button class="delete-drawing-button" type="button" (click)="deleteDrawing('hand-sketch')" [disabled]="isUploading() || isDeletingDrawing()">Delete hand sketch</button></div>
+        }
+      </article>
+
+      <article class="file-card">
+        <div>
+          <span class="file-label">Current outsourced drawing</span>
+
+          @if (item.outsourceDrawingFilePath) {
+            <strong>{{ fileName(item.outsourceDrawingFilePath) }}</strong>
+            <small>An upload will replace the current outsourced drawing.</small>
+          } @else {
+            <strong>Not uploaded</strong>
+            <small>No outsourced drawing is currently attached.</small>
+          }
+        </div>
+
+        @if (item.outsourceDrawingFilePath) {
+          <div class="file-card__actions"><a
+            [href]="item.outsourceDrawingFilePath"
+            target="_blank"
+            rel="noopener"
+          >
+            Open outsourced drawing
+          </a><button class="delete-drawing-button" type="button" (click)="deleteDrawing('outsource-drawing')" [disabled]="isUploading() || isDeletingDrawing()">Delete outsourced drawing</button></div>
         }
       </article>
     </section>
@@ -116,7 +199,10 @@
             type="file"
             accept=".pdf,application/pdf"
             (change)="onPdfSelected($event)"
-            [disabled]="isUploading()"
+            [disabled]="
+              isUploading() ||
+              isDeletingDrawing()
+            "
           />
 
           <span class="file-input__icon">PDF</span>
@@ -140,8 +226,31 @@
       <section class="upload-card">
         <header>
           <div>
-            <span class="eyebrow">Drawing</span>
-            <h2>Select drawing file</h2>
+            <span class="eyebrow">WEG drawing</span>
+            <h2>Select WEG drawing</h2>
+            <p>Attach the WEG drawing file for this material.</p>
+          </div>
+          <span class="limit-badge">Maximum 100 MB</span>
+        </header>
+        <label class="file-input">
+          <input #webDrawingInput type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.svg,.html,.htm,.dwg,.dxf,.step,.stp,.iges,.igs,.zip" (change)="onWebDrawingSelected($event)" [disabled]="isUploading() || isDeletingDrawing()" />
+          <span class="file-input__icon">WEB</span>
+          <span class="file-input__content">
+            <strong>{{ selectedWebDrawing()?.name || 'Choose WEG drawing' }}</strong>
+            <small>{{ selectedWebDrawing() ? fileSize(selectedWebDrawing()) : 'PDF, images, SVG, HTML or CAD files' }}</small>
+          </span>
+        </label>
+      </section>
+
+      <section class="upload-card">
+        <header>
+          <div>
+            <span class="eyebrow">CAD drawing</span>
+            <h2>Select CAD drawing file</h2>
+            <p>
+              This drawing will also appear on every material record
+              with the same material number.
+            </p>
           </div>
 
           <span class="limit-badge">Maximum 100 MB</span>
@@ -153,14 +262,17 @@
             type="file"
             accept=".pdf,.png,.jpg,.jpeg,.webp,.dwg,.dxf,.step,.stp,.iges,.igs,.zip"
             (change)="onDrawingSelected($event)"
-            [disabled]="isUploading()"
+            [disabled]="
+              isUploading() ||
+              isDeletingDrawing()
+            "
           />
 
           <span class="file-input__icon">CAD</span>
 
           <span class="file-input__content">
             <strong>
-              {{ selectedDrawing()?.name || 'Choose drawing file' }}
+              {{ selectedDrawing()?.name || 'Choose CAD drawing' }}
             </strong>
 
             <small>
@@ -174,6 +286,92 @@
         </label>
       </section>
 
+      <section class="upload-card">
+        <header>
+          <div>
+            <span class="eyebrow">Hand sketch</span>
+            <h2>Select sketch image or PDF</h2>
+            <p>
+              Add a scanned or photographed hand sketch for this material.
+            </p>
+          </div>
+
+          <span class="limit-badge">Maximum 100 MB</span>
+        </header>
+
+        <label class="file-input">
+          <input
+            #handSketchInput
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp"
+            (change)="onHandSketchSelected($event)"
+            [disabled]="
+              isUploading() ||
+              isDeletingDrawing()
+            "
+          />
+
+          <span class="file-input__icon">IMG</span>
+
+          <span class="file-input__content">
+            <strong>
+              {{ selectedHandSketch()?.name || 'Choose hand sketch' }}
+            </strong>
+
+            <small>
+              {{
+                selectedHandSketch()
+                  ? fileSize(selectedHandSketch())
+                  : 'PDF, PNG, JPG, JPEG, WebP, GIF or BMP'
+              }}
+            </small>
+          </span>
+        </label>
+      </section>
+
+      <section class="upload-card">
+        <header>
+          <div>
+            <span class="eyebrow">Outsourced drawing</span>
+            <h2>Select outsourced drawing</h2>
+            <p>
+              Attach the drawing received from the outsourced vendor or person.
+            </p>
+          </div>
+
+          <span class="limit-badge">Maximum 100 MB</span>
+        </header>
+
+        <label class="file-input">
+          <input
+            #outsourceDrawingInput
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.dwg,.dxf,.step,.stp,.iges,.igs,.zip"
+            (change)="onOutsourceDrawingSelected($event)"
+            [disabled]="
+              isUploading() ||
+              isDeletingDrawing()
+            "
+          />
+
+          <span class="file-input__icon">OUT</span>
+
+          <span class="file-input__content">
+            <strong>
+              {{ selectedOutsourceDrawing()?.name || 'Choose outsourced drawing' }}
+            </strong>
+
+            <small>
+              {{
+                selectedOutsourceDrawing()
+                  ? fileSize(selectedOutsourceDrawing())
+                  : 'PDF, images, DWG, DXF, STEP, STP, IGES, IGS or ZIP'
+              }}
+            </small>
+          </span>
+        </label>
+      </section>
+
       <div class="selection-summary">
         <div>
           <span>Selected PDF</span>
@@ -181,8 +379,22 @@
         </div>
 
         <div>
-          <span>Selected drawing</span>
+          <span>Selected CAD drawing</span>
           <strong>{{ selectedDrawing()?.name || 'None' }}</strong>
+        </div>
+
+        <div>
+          <span>Selected hand sketch</span>
+          <strong>{{ selectedHandSketch()?.name || 'None' }}</strong>
+        </div>
+
+        <div>
+          <span>Selected outsourced drawing</span>
+          <strong>{{ selectedOutsourceDrawing()?.name || 'None' }}</strong>
+        </div>
+        <div>
+          <span>Selected WEG drawing</span>
+          <strong>{{ selectedWebDrawing()?.name || 'None' }}</strong>
         </div>
       </div>
 
@@ -200,7 +412,8 @@
           (click)="clearSelection()"
           [disabled]="
             isUploading() ||
-            (!selectedPdf() && !selectedDrawing())
+            isDeletingDrawing() ||
+            !hasSelectedFiles()
           "
         >
           Clear selected
@@ -211,7 +424,8 @@
           type="submit"
           [disabled]="
             isUploading() ||
-            (!selectedPdf() && !selectedDrawing())
+            isDeletingDrawing() ||
+            !hasSelectedFiles()
           "
         >
           {{ isUploading() ? 'Uploading…' : 'Upload files' }}

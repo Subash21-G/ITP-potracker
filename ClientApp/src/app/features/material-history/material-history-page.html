@@ -1,0 +1,428 @@
+<section class="history-page">
+  <header class="history-hero">
+    <div>
+      <span class="eyebrow">Material quality trail</span>
+      <h1>Material History</h1>
+      <p>
+        Record delivery results and remarks for every material number. Previous entries stay
+        available as a complete history.
+      </p>
+    </div>
+
+    <button appManageOnly class="button button--light" type="button" (click)="startCreate()">
+      + Add history
+    </button>
+  </header>
+
+  <section class="outcome-guide" aria-label="Delivery result guide">
+    <article class="guide-card guide-card--perfect">
+      <span class="status-dot" aria-hidden="true"></span>
+      <div>
+        <strong>Green · Perfect delivery</strong>
+        <small>Delivered correctly without rework</small>
+      </div>
+    </article>
+
+    <article class="guide-card guide-card--rework">
+      <span class="status-dot" aria-hidden="true"></span>
+      <div>
+        <strong>Orange · Rework and delivery</strong>
+        <small>Reworked and then delivered</small>
+      </div>
+    </article>
+
+    <article class="guide-card guide-card--rejected">
+      <span class="status-dot" aria-hidden="true"></span>
+      <div>
+        <strong>Red · Rejected</strong>
+        <small>A rejection reason is mandatory</small>
+      </div>
+    </article>
+  </section>
+
+  @if (formVisible()) {
+    <section appManageOnly class="history-panel editor-panel">
+      <header class="panel-heading">
+        <div>
+          <span class="eyebrow">{{ isEditing() ? 'Update entry' : 'New entry' }}</span>
+          <h2>{{ isEditing() ? 'Edit material history' : 'Add material history' }}</h2>
+          <p>Choose the exact material and PO line so duplicate material numbers remain clear.</p>
+        </div>
+
+        <button class="icon-button" type="button" (click)="cancelForm()" aria-label="Close editor">
+          ×
+        </button>
+      </header>
+
+      <form class="history-form" [formGroup]="form" (ngSubmit)="save()">
+        <div class="form-grid">
+          <label class="field field--wide">
+            <span>Material number / PO line *</span>
+            <select formControlName="materialId">
+              <option [ngValue]="null" disabled>
+                {{ optionsLoading() ? 'Loading materials…' : 'Select a material' }}
+              </option>
+              @for (material of materialOptions(); track material.id) {
+                <option [ngValue]="material.id">{{ material.displayLabel }}</option>
+              }
+            </select>
+            @if (form.controls.materialId.touched && form.controls.materialId.invalid) {
+              <small class="field-error">Material is required.</small>
+            }
+          </label>
+
+          <label class="field">
+            <span>Delivery / result date *</span>
+            <input type="date" formControlName="occurredDate" />
+            @if (form.controls.occurredDate.touched && form.controls.occurredDate.invalid) {
+              <small class="field-error">Date is required.</small>
+            }
+          </label>
+        </div>
+
+        <fieldset class="result-fieldset">
+          <legend>Delivery result *</legend>
+
+          <div class="result-options">
+            <label class="result-option result-option--perfect">
+              <input type="radio" formControlName="outcome" value="PerfectDelivery" />
+              <span class="result-option__dot" aria-hidden="true"></span>
+              <span>
+                <strong>Perfect delivery</strong>
+                <small>Delivered correctly</small>
+              </span>
+            </label>
+
+            <label class="result-option result-option--rework">
+              <input type="radio" formControlName="outcome" value="ReworkAndDelivery" />
+              <span class="result-option__dot" aria-hidden="true"></span>
+              <span>
+                <strong>Rework and delivery</strong>
+                <small>Corrected before delivery</small>
+              </span>
+            </label>
+
+            <label class="result-option result-option--rejected">
+              <input type="radio" formControlName="outcome" value="Rejected" />
+              <span class="result-option__dot" aria-hidden="true"></span>
+              <span>
+                <strong>Rejected</strong>
+                <small>Reason must be entered</small>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+
+        <label class="field field--remark">
+          <span>
+            {{ form.controls.outcome.value === 'Rejected' ? 'Why was it rejected? *' : 'Remark' }}
+          </span>
+          <textarea
+            rows="4"
+            maxlength="2000"
+            formControlName="remark"
+            [placeholder]="
+              form.controls.outcome.value === 'Rejected'
+                ? 'Enter the rejection reason'
+                : 'Add delivery or rework details'
+            "
+          ></textarea>
+          @if (
+            form.controls.remark.touched && form.controls.remark.errors?.['rejectionReasonRequired']
+          ) {
+            <small class="field-error">Rejection reason is required.</small>
+          }
+        </label>
+
+        @if (formErrorMessage()) {
+          <div class="message message--error" role="alert">{{ formErrorMessage() }}</div>
+        }
+
+        <div class="form-actions">
+          <button class="button button--primary" type="submit" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : isEditing() ? 'Update history' : 'Save history' }}
+          </button>
+          <button
+            class="button button--quiet"
+            type="button"
+            [disabled]="saving()"
+            (click)="cancelForm()"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (successMessage()) {
+    <div class="message message--success" role="status">
+      <strong>Completed</strong>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <section class="summary-grid">
+    <article>
+      <span>All entries</span>
+      <strong>{{ summary().totalEntries | number }}</strong>
+      <small>Matching material and search</small>
+    </article>
+    <article class="summary-card--perfect">
+      <span>Perfect delivery</span>
+      <strong>{{ summary().perfectDeliveries | number }}</strong>
+      <small>Green results</small>
+    </article>
+    <article class="summary-card--rework">
+      <span>Rework and delivery</span>
+      <strong>{{ summary().reworkDeliveries | number }}</strong>
+      <small>Orange results</small>
+    </article>
+    <article class="summary-card--rejected">
+      <span>Rejected</span>
+      <strong>{{ summary().rejected | number }}</strong>
+      <small>Red results with reasons</small>
+    </article>
+  </section>
+
+  <section class="history-panel records-panel">
+    <header class="panel-heading">
+      <div>
+        <span class="eyebrow">Saved trail</span>
+        <h2>Remark history</h2>
+        <p>Search by material number, PO, description, line item, or remark.</p>
+      </div>
+    </header>
+
+    <form class="filters" (ngSubmit)="applyFilters()">
+      <label class="field field--search">
+        <span>Search</span>
+        <input
+          type="search"
+          [formControl]="searchControl"
+          placeholder="Material, PO, description or remark"
+        />
+      </label>
+
+      <label class="field">
+        <span>Material</span>
+        <select [formControl]="materialFilterControl">
+          <option [ngValue]="null">All materials</option>
+          @for (material of materialOptions(); track material.id) {
+            <option [ngValue]="material.id">{{ material.displayLabel }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Result</span>
+        <select [formControl]="outcomeFilterControl">
+          <option value="">All results</option>
+          <option value="PerfectDelivery">Perfect delivery</option>
+          <option value="ReworkAndDelivery">Rework and delivery</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </label>
+
+      <div class="filter-actions">
+        <button class="button button--primary" type="submit" [disabled]="loading()">Apply</button>
+        <button
+          class="button button--quiet"
+          type="button"
+          [disabled]="loading()"
+          (click)="clearFilters()"
+        >
+          Clear
+        </button>
+      </div>
+    </form>
+
+    @if (errorMessage()) {
+      <div class="message message--error" role="alert">
+        <span>{{ errorMessage() }}</span>
+        <button type="button" (click)="applyFilters()">Try again</button>
+      </div>
+    }
+
+    @if (loading() && items().length === 0) {
+      <div class="state-panel">Loading material history…</div>
+    } @else if (!errorMessage() && items().length === 0) {
+      <div class="state-panel state-panel--empty">
+        <strong>No history entries found</strong>
+        <span>Add an entry or change the current filters.</span>
+      </div>
+    } @else if (items().length > 0) {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>
+                <div class="server-table-heading">
+                  <span>Date</span>
+                  <app-server-excel-filter
+                    title="Date"
+                    [options]="excelFilterOptionsFor('date')"
+                    [loading]="excelFilterLoading('date')"
+                    [active]="excelFilterActive('date')"
+                    [selectionActive]="excelFilterActive('date')"
+                    [selectedValues]="excelFilterSelectedValues('date')"
+                    [sortDirection]="excelSortDirection('date')"
+                    (opened)="loadExcelFilterValues('date')"
+                    (sortRequested)="applyExcelSort('date', $event)"
+                    (applyValues)="applyExcelFilter('date', $event)"
+                    (clearRequested)="clearExcelFilter('date')"
+                  />
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading">
+                  <span>Material</span>
+                  <app-server-excel-filter
+                    title="Material"
+                    [options]="excelFilterOptionsFor('material')"
+                    [loading]="excelFilterLoading('material')"
+                    [active]="excelFilterActive('material')"
+                    [selectionActive]="excelFilterActive('material')"
+                    [selectedValues]="excelFilterSelectedValues('material')"
+                    [sortDirection]="excelSortDirection('material')"
+                    (opened)="loadExcelFilterValues('material')"
+                    (sortRequested)="applyExcelSort('material', $event)"
+                    (applyValues)="applyExcelFilter('material', $event)"
+                    (clearRequested)="clearExcelFilter('material')"
+                  />
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading">
+                  <span>PO / line</span>
+                  <app-server-excel-filter
+                    title="PO / line"
+                    [options]="excelFilterOptionsFor('poLine')"
+                    [loading]="excelFilterLoading('poLine')"
+                    [active]="excelFilterActive('poLine')"
+                    [selectionActive]="excelFilterActive('poLine')"
+                    [selectedValues]="excelFilterSelectedValues('poLine')"
+                    [sortDirection]="excelSortDirection('poLine')"
+                    (opened)="loadExcelFilterValues('poLine')"
+                    (sortRequested)="applyExcelSort('poLine', $event)"
+                    (applyValues)="applyExcelFilter('poLine', $event)"
+                    (clearRequested)="clearExcelFilter('poLine')"
+                  />
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading">
+                  <span>Result</span>
+                  <app-server-excel-filter
+                    title="Result"
+                    [options]="excelFilterOptionsFor('result')"
+                    [loading]="excelFilterLoading('result')"
+                    [active]="excelFilterActive('result')"
+                    [selectionActive]="excelFilterActive('result')"
+                    [selectedValues]="excelFilterSelectedValues('result')"
+                    [sortDirection]="excelSortDirection('result')"
+                    (opened)="loadExcelFilterValues('result')"
+                    (sortRequested)="applyExcelSort('result', $event)"
+                    (applyValues)="applyExcelFilter('result', $event)"
+                    (clearRequested)="clearExcelFilter('result')"
+                  />
+                </div>
+              </th>
+              <th>
+                <div class="server-table-heading">
+                  <span>Remark</span>
+                  <app-server-excel-filter
+                    title="Remark"
+                    [options]="excelFilterOptionsFor('remark')"
+                    [loading]="excelFilterLoading('remark')"
+                    [active]="excelFilterActive('remark')"
+                    [selectionActive]="excelFilterActive('remark')"
+                    [selectedValues]="excelFilterSelectedValues('remark')"
+                    [sortDirection]="excelSortDirection('remark')"
+                    (opened)="loadExcelFilterValues('remark')"
+                    (sortRequested)="applyExcelSort('remark', $event)"
+                    (applyValues)="applyExcelFilter('remark', $event)"
+                    (clearRequested)="clearExcelFilter('remark')"
+                  />
+                </div>
+              </th>
+              <th appManageOnly class="action-column">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items(); track item.id) {
+              <tr>
+                <td data-label="Date">
+                  <strong>{{ item.occurredDate | date: 'dd MMM yyyy' }}</strong>
+                  @if (item.updatedDate) {
+                    <small>Edited {{ item.updatedDate | date: 'dd MMM yyyy, h:mm a' }}</small>
+                  }
+                </td>
+                <td data-label="Material">
+                  <a
+                    [class]="
+                      'material-number-highlight material-number-highlight--' +
+                      outcomeClass(item.outcome)
+                    "
+                    [routerLink]="['/materials', item.materialId]"
+                  >
+                    {{ item.materialNo || 'No material number' }}
+                  </a>
+                  <small>{{ item.description || 'No description' }}</small>
+                </td>
+                <td data-label="PO / line">
+                  <strong>{{ item.poNumber || '—' }}</strong>
+                  <small>Line {{ item.lineItem || '—' }}</small>
+                </td>
+                <td data-label="Result">
+                  <span [class]="'outcome-badge outcome-badge--' + outcomeClass(item.outcome)">
+                    <span aria-hidden="true"></span>
+                    {{ outcomeLabel(item.outcome) }}
+                  </span>
+                </td>
+                <td data-label="Remark" class="remark-cell">
+                  {{ item.remark || '—' }}
+                </td>
+                <td appManageOnly data-label="Action" class="action-column">
+                  <button class="edit-link" type="button" (click)="startEdit(item)">Edit</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="pagination">
+        <span>Showing {{ showingFrom() }}–{{ showingTo() }} of {{ totalRecords() }}</span>
+
+        <label>
+          <span>Rows</span>
+          <select
+            #pageSizeSelect
+            [value]="pageSize()"
+            (change)="changePageSize(pageSizeSelect.value)"
+          >
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </label>
+
+        <div>
+          <button
+            type="button"
+            [disabled]="!hasPreviousPage() || loading()"
+            (click)="previousPage()"
+          >
+            Previous
+          </button>
+          <strong>Page {{ page() }} of {{ totalPages() }}</strong>
+          <button type="button" [disabled]="!hasNextPage() || loading()" (click)="nextPage()">
+            Next
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</section>

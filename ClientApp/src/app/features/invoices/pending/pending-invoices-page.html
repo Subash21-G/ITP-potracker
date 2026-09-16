@@ -61,6 +61,9 @@
         Search by invoice number, PO number, material number or line item.
       </p>
     </div>
+    <button appManageOnly class="button button--danger" type="button" [disabled]="selectedIds().size === 0 || deletingId() !== null" (click)="deleteSelectedPendingItems()">
+      Delete selected ({{ selectedIds().size }})
+    </button>
 
     <button
       class="button button--quiet"
@@ -150,6 +153,7 @@
     <table>
             <thead>
         <tr>
+          <th><input type="checkbox" aria-label="Select all pending invoice rows" [checked]="allVisibleSelected()" (change)="toggleAllPendingSelection($any($event.target).checked)"></th>
           <th>#</th>
           <th>
             <div class="server-table-heading">
@@ -367,6 +371,7 @@
       <tbody>
         @for (item of items(); track item.id; let rowIndex = $index) {
           <tr>
+            <td><input type="checkbox" [attr.aria-label]="'Select pending invoice row ' + (rowIndex + 1)" [checked]="selectedIds().has(item.id)" (change)="togglePendingSelection(item.id, $any($event.target).checked)"></td>
             <td class="row-number">{{ rowIndex + 1 }}</td>
 
             <td>
@@ -429,11 +434,19 @@
               >
                 Find Match
               </button>
+              <button
+                appManageOnly
+                class="button button--table button--danger"
+                type="button"
+                [disabled]="deletingId() === item.id || loading()"
+                (click)="deletePendingItem(item)">
+                {{ deletingId() === item.id ? 'Deleting...' : 'Delete' }}
+              </button>
             </td>
           </tr>
         } @empty {
           <tr>
-            <td class="empty-state" colspan="13">
+            <td class="empty-state" colspan="14">
               <strong>No pending invoice rows found</strong>
               <span>
                 All imported rows are matched, or the current search has no
@@ -636,5 +649,3 @@
     </section>
   </div>
 }
-
-

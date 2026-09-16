@@ -56,9 +56,38 @@ export interface PurchaseOrderMaterial {
   readonly isOverdue: boolean;
 }
 
+export type PurchaseOrderMaterialExcelFilterColumn =
+  | 'line'
+  | 'material'
+  | 'description'
+  | 'quantity'
+  | 'unitPrice'
+  | 'invoiceBalance'
+  | 'dispatchBalance'
+  | 'delivery'
+  | 'process'
+  | 'invoice'
+  | 'dispatch';
+
+export type PurchaseOrderMaterialSortDirection = 'asc' | 'desc';
+
+export interface PurchaseOrderMaterialExcelFilterValue {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+}
+
+export type PurchaseOrderMaterialExcelFilterSelections = Partial<
+  Record<PurchaseOrderMaterialExcelFilterColumn, readonly string[]>
+>;
+
 export interface PurchaseOrderMaterialQuery {
   readonly materialPage: number;
   readonly materialPageSize: number;
+
+  readonly materialSortColumn?: PurchaseOrderMaterialExcelFilterColumn;
+  readonly materialSortDirection?: PurchaseOrderMaterialSortDirection;
+  readonly materialExcelFilters?: string;
 
   readonly lineItem?: string;
   readonly material?: string;
@@ -79,10 +108,7 @@ export interface PurchaseOrderMaterialQuery {
   readonly deliveryDateFrom?: string;
   readonly deliveryDateTo?: string;
 
-  readonly overdueStatus?:
-    | 'all'
-    | 'overdue'
-    | 'not-overdue';
+  readonly overdueStatus?: 'all' | 'overdue' | 'not-overdue';
 
   readonly processStatus?: string;
   readonly invoiceStatus?: string;

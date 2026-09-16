@@ -1,0 +1,276 @@
+<main class="mastersheet-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Production</span>
+      <h1>Mastersheet</h1>
+      <p>{{ isMaterialPage() ? 'Material records and ordered process flow.' : 'Vendor and process options.' }}</p>
+    </div>
+    <a routerLink="/materials">Materials</a>
+  </header>
+
+  <nav class="section-nav" aria-label="Mastersheet pages">
+    <a routerLink="/mastersheet/vendors-processes" routerLinkActive="active" ariaCurrentWhenActive="page">Vendor and process</a>
+    <a routerLink="/mastersheet/materials" routerLinkActive="active" ariaCurrentWhenActive="page">Material records</a>
+  </nav>
+
+  @if (message()) {
+    <p class="notice success" role="status">{{ message() }}</p>
+  }
+  @if (error()) {
+    <p class="notice error" role="alert">{{ error() }}</p>
+  }
+
+  @if (!isMaterialPage()) {
+  <section class="card flow-card">
+    <div>
+      <span class="eyebrow">Process options</span>
+      <h2>Add process and vendor</h2>
+    </div>
+    <form [formGroup]="form" (ngSubmit)="addProcess()" class="flow-form">
+      <label>
+        Process name
+        <input formControlName="name" placeholder="e.g. Turning" />
+      </label>
+      <label>
+        Vendor name
+        <input formControlName="vendor" placeholder="Optional" />
+      </label>
+      <label>
+        Type
+        <select formControlName="source">
+          <option value="In-house">In-house</option>
+          <option value="Outsource">Outsource</option>
+        </select>
+      </label>
+      <button type="submit">Add option</button>
+    </form>
+    <div class="list-search">
+      <label for="process-search">Search vendor and process</label>
+      <input id="process-search" type="search" placeholder="Process, vendor, or type" [value]="processSearch()" (input)="changeSearch('process', $any($event.target).value)" />
+      @if (processSearch()) {
+        <button type="button" (click)="changeSearch('process', '')">Clear search</button>
+      }
+    </div>
+    <div class="flow-list">
+      @for (row of pagedProcesses(); track row.id) {
+        <div>
+          <strong>{{ row.processName }}</strong>
+          <span>{{ row.vendorName || 'No vendor' }}</span>
+          <span>{{ row.source }}</span>
+          <button type="button" (click)="removeProcess(row)">Remove</button>
+        </div>
+      } @empty {
+        <p>{{ processSearch().trim() ? 'No process and vendor options match your search.' : 'No process and vendor options added.' }}</p>
+      }
+    </div>
+    <nav class="pagination" aria-label="Vendor and process pagination">
+      <label>Rows per page
+        <select [value]="processPageSize()" (change)="changePageSize('process', $any($event.target).value)">
+          @for (size of pageSizes; track size) {
+            <option [value]="size">{{ size }}</option>
+          }
+        </select>
+      </label>
+      <span role="status">{{ filteredProcesses().length }} of {{ flow().length }} records | Page {{ processPage() }} of {{ processTotalPages() }}</span>
+      <div class="pagination-actions">
+        <button type="button" (click)="processPage.set(1)" [disabled]="processPage() === 1">First</button>
+        <button type="button" (click)="processPage.set(processPage() - 1)" [disabled]="processPage() === 1">Previous</button>
+        <button type="button" (click)="processPage.set(processPage() + 1)" [disabled]="processPage() >= processTotalPages()">Next</button>
+        <button type="button" (click)="processPage.set(processTotalPages())" [disabled]="processPage() >= processTotalPages()">Last</button>
+      </div>
+    </nav>
+  </section>
+
+  } @else {
+  <section class="card master-form-card">
+    <div>
+      <span class="eyebrow">Fillable master data</span>
+      <h2>Material record</h2>
+    </div>
+    <form [formGroup]="masterForm" class="master-form">
+      <label>
+        Material No.
+        <input formControlName="materialNo" (keyup.enter)="lookupMaster()" />
+      </label>
+      <label>
+        Short Description
+        <input formControlName="shortDescription" />
+      </label>
+      <label>
+        Grade
+        <input formControlName="grade" />
+      </label>
+      <label>
+        Drawing Code
+        <input formControlName="drawingNo" maxlength="200" />
+      </label>
+      <label>
+        Drawing Version
+        <input formControlName="drawingVersion" />
+      </label>
+      <label>
+        Finish Size
+        <input formControlName="finishSize" />
+      </label>
+      <label>
+        Required RM Size
+        <input formControlName="requiredRmSize" />
+      </label>
+      <label>
+        Process
+        <select formControlName="process" (change)="onProcessSelected()">
+          <option value="">Select process</option>
+          @for (option of processOptions(); track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        Vendor
+        <select formControlName="vendor">
+          <option value="">Select vendor</option>
+          @for (option of vendorsForSelectedProcess(); track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        Type
+        <select formControlName="source">
+          <option value="In-house">In-house</option>
+          <option value="Outsource">Outsource</option>
+        </select>
+      </label>
+      <div class="master-actions">
+        <button type="button" (click)="lookupMaster()" [disabled]="loading()">
+          {{ loading() ? 'Loading...' : 'Load' }}
+        </button>
+        <button type="button" (click)="saveMaster()" [disabled]="saving() || loading()">
+          {{ saving() ? 'Saving...' : 'Save data' }}
+        </button>
+        <button
+          type="button"
+          class="danger"
+          (click)="deleteMaster()"
+          [disabled]="saving() || loading() || !loadedRecord()"
+        >
+          Delete data
+        </button>
+      </div>
+    </form>
+
+    <div class="assignment-inline">
+      <div class="assignment-heading">
+        <div>
+          <span class="eyebrow">Process flow for this material</span>
+          <p>Each process is saved in the order shown below.</p>
+        </div>
+        <button
+          class="add-another"
+          type="button"
+          (click)="addMaterialProcess()"
+          [disabled]="saving() || loading()"
+        >
+          <span aria-hidden="true">+</span> Add another process
+        </button>
+      </div>
+      <div class="flow-list material-flow-list">
+        @for (row of materialAssignments(); track row.id || $index) {
+          <div>
+            <strong class="process-number">Process {{ $index + 1 }}</strong>
+            <strong>{{ row.processName }}</strong>
+            <span>{{ row.vendorName || 'No vendor' }}</span>
+            <span>{{ row.source }}</span>
+            <button type="button" (click)="removeMaterialProcess($index)" [disabled]="saving() || loading()">Delete</button>
+          </div>
+        } @empty {
+          <p>No entries saved for this material.</p>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="card table-card">
+    <div class="table-heading">
+      <div>
+        <span class="eyebrow">Materials</span>
+        <h2>Material master data</h2>
+      </div>
+      <span>{{ savedRecords().length }} loaded</span>
+    </div>
+    <div class="list-search">
+      <label for="material-search">Search material records</label>
+      <input id="material-search" type="search" placeholder="Material number, description, grade, drawing code, process, or vendor" [value]="materialSearch()" (input)="changeSearch('material', $any($event.target).value)" />
+      @if (materialSearch()) {
+        <button type="button" (click)="changeSearch('material', '')">Clear search</button>
+      }
+    </div>
+    @if (loading()) {
+      <p>Loading materials...</p>
+    } @else {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Material No.</th>
+              <th>Short Description</th>
+              <th>Grade</th>
+              <th>Drawing Code</th>
+              <th>Drawing Version</th>
+              <th>Finish Size</th>
+              <th>Required RM Size</th>
+              <th>Process</th>
+              <th>Vendor</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredRecords().length > 0) {
+            @for (record of pagedRecords(); track record.id || record.materialNo) {
+              <tr>
+                <td>{{ record.materialNo }}</td>
+                <td>{{ record.shortDescription || '-' }}</td>
+                <td>{{ record.grade || '-' }}</td>
+                <td>{{ record.drawingNo || '-' }}</td>
+                <td>{{ record.drawingVersion || '-' }}</td>
+                <td>{{ record.finishSize || '-' }}</td>
+                <td>{{ record.requiredRmSize || '-' }}</td>
+                <td>{{ recordProcessSummary(record) }}</td>
+                <td>{{ recordVendorSummary(record) }}</td>
+                <td>
+                  <button type="button" class="danger table-delete" (click)="deleteSavedRecord(record)" [disabled]="saving()">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            }
+            } @else {
+              <tr>
+                <td colspan="10" class="empty">
+                  {{ materialSearch().trim() ? 'No material records match your search.' : 'Enter a Material No. above to load or create its master data.' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <nav class="pagination" aria-label="Material records pagination">
+      <label>Rows per page
+        <select [value]="materialPageSize()" (change)="changePageSize('material', $any($event.target).value)">
+          @for (size of pageSizes; track size) {
+            <option [value]="size">{{ size }}</option>
+          }
+        </select>
+      </label>
+      <span role="status">{{ filteredRecords().length }} of {{ savedRecords().length }} records | Page {{ materialPage() }} of {{ materialTotalPages() }}</span>
+      <div class="pagination-actions">
+        <button type="button" (click)="materialPage.set(1)" [disabled]="materialPage() === 1">First</button>
+        <button type="button" (click)="materialPage.set(materialPage() - 1)" [disabled]="materialPage() === 1">Previous</button>
+        <button type="button" (click)="materialPage.set(materialPage() + 1)" [disabled]="materialPage() >= materialTotalPages()">Next</button>
+        <button type="button" (click)="materialPage.set(materialTotalPages())" [disabled]="materialPage() >= materialTotalPages()">Last</button>
+      </div>
+    </nav>
+  </section>
+  }
+</main>

@@ -68,6 +68,14 @@ namespace POTracker.Controllers.Api
                     .AsNoTracking()
                     .CountAsync(cancellationToken);
 
+            var completedPurchaseOrders = await _context.PurchaseOrders
+                .AsNoTracking()
+                .CountAsync(order => order.Status == "Completed", cancellationToken);
+
+            var completedInvoices = await _context.Materials
+                .AsNoTracking()
+                .CountAsync(material => material.InvoiceStatus == "Fully Invoiced", cancellationToken);
+
             var stockCandidates =
                 await _context.Materials
                     .AsNoTracking()
@@ -311,6 +319,11 @@ namespace POTracker.Controllers.Api
                                     ? material.PurchaseOrder.PONumber
                                     : string.Empty,
 
+                            InvoiceNumber = material.InvoiceItems
+                                .OrderByDescending(item => item.Id)
+                                .Select(item => item.Invoice != null ? item.Invoice.InvoiceNumber : string.Empty)
+                                .FirstOrDefault() ?? string.Empty,
+
                             PurchaserName =
                                 material.PurchaseOrder != null &&
                                 material.PurchaseOrder.Purchaser != null
@@ -369,8 +382,12 @@ namespace POTracker.Controllers.Api
                             TotalPurchasers =
                                 totalPurchasers,
 
-                            TotalPurchaseOrders =
-                                totalPurchaseOrders,
+                        TotalPurchaseOrders =
+                            totalPurchaseOrders,
+
+                        CompletedPurchaseOrders = completedPurchaseOrders,
+
+                        CompletedInvoices = completedInvoices,
 
                             TotalMaterials =
                                 materialStats?
@@ -490,5 +507,3 @@ namespace POTracker.Controllers.Api
         }
     }
 }
-
-

@@ -74,14 +74,99 @@
 
         <a
           class="nav-link nav-link--primary"
-          routerLink="/purchase-orders"
+          routerLink="/mastersheet"
           routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: false
-          }"
+          [routerLinkActiveOptions]="{ exact: false }"
           (click)="closeNavigation()">
-          Purchase Orders
+          Mastersheet
         </a>
+
+        <details
+          class="nav-group"
+          routerLinkActive="nav-group--active">
+          <summary
+            (click)="prepareNavigationGroup($event)">
+            <span>Material Planning</span>
+            <span
+              class="nav-chevron"
+              aria-hidden="true">
+              &#8964;
+            </span>
+          </summary>
+
+          <div class="nav-dropdown">
+            <a class="nav-dropdown__link" routerLink="/tools" routerLinkActive="active" (click)="closeNavigation()">
+              <span class="nav-dropdown__icon" aria-hidden="true">TL</span><span><strong>Tools Register</strong><small>Purchased tool inventory</small></span>
+            </a>
+            <a class="nav-dropdown__link" routerLink="/tools/gauges" routerLinkActive="active" (click)="closeNavigation()">
+              <span class="nav-dropdown__icon" aria-hidden="true">GA</span><span><strong>Gauge Register</strong><small>Gauge purchases</small></span>
+            </a>
+            <a class="nav-dropdown__link" routerLink="/tools/instruments" routerLinkActive="active" (click)="closeNavigation()">
+              <span class="nav-dropdown__icon" aria-hidden="true">IN</span><span><strong>Instrument Register</strong><small>Instrument purchases</small></span>
+            </a>
+            <a
+              class="nav-dropdown__link"
+              routerLink="/priority-urgent"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon nav-dropdown__icon--priority"
+                aria-hidden="true">
+                PR
+              </span>
+              <span>
+                <strong>Priority &amp; Urgent</strong>
+                <small>High-attention materials</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/cost-variation"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon nav-dropdown__icon--cost"
+                aria-hidden="true">
+                CV
+              </span>
+              <span>
+                <strong>Cost Variation</strong>
+                <small>Commercial exceptions</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/outsourcing-inhouse"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon nav-dropdown__icon--sourcing"
+                aria-hidden="true">
+                OI
+              </span>
+              <span>
+                <strong>Outsourcing &amp; Inhousing</strong>
+                <small>Production ownership</small>
+              </span>
+            </a>
+          </div>
+        </details>
+
+        <details class="nav-group" routerLinkActive="nav-group--active">
+          <summary (click)="prepareNavigationGroup($event)">
+            <span>Purchase Orders</span><span class="nav-chevron" aria-hidden="true">&#8964;</span>
+          </summary>
+          <div class="nav-dropdown">
+            <a class="nav-dropdown__link" routerLink="/purchase-orders" routerLinkActive="active" (click)="closeNavigation()">
+              <span class="nav-dropdown__icon" aria-hidden="true">PO</span><span><strong>Purchase Orders</strong><small>Order register</small></span>
+            </a>
+            <a class="nav-dropdown__link" routerLink="/completed-status" routerLinkActive="active" (click)="closeNavigation()">
+              <span class="nav-dropdown__icon" aria-hidden="true">CO</span><span><strong>Completed</strong><small>Completed POs and invoices</small></span>
+            </a>
+          </div>
+        </details>
 
         <a
           class="nav-link nav-link--primary"
@@ -164,6 +249,22 @@
               <span>
                 <strong>Drawings</strong>
                 <small>Drawing control</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/history"
+              routerLinkActive="active"
+              (click)="closeNavigation()">
+              <span
+                class="nav-dropdown__icon"
+                aria-hidden="true">
+                HI
+              </span>
+              <span>
+                <strong>Material History</strong>
+                <small>Delivery outcomes and remarks</small>
               </span>
             </a>
 

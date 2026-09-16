@@ -11,7 +11,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 
 import { ManageOnlyDirective } from '../../../core/directives/manage-only.directive';
 import {
@@ -60,6 +60,9 @@ export class PendingInvoicesPage {
   readonly candidateSearch = new FormControl('', { nonNullable: true });
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
+  readonly deletingId = signal<number | null>(null);
+  readonly selectedIds = signal<ReadonlySet<number>>(new Set());
+  readonly allVisibleSelected = computed(() => this.items().length > 0 && this.items().every(item => this.selectedIds().has(item.id)));
 
   readonly sortColumn = signal<PendingInvoiceExcelFilterColumn | null>(null);
 
@@ -250,6 +253,43 @@ export class PendingInvoicesPage {
     this.excelFilterSelections.set({});
 
     this.loadPendingItems();
+  }
+
+  deletePendingItem(item: PendingInvoiceItem): void {
+    if (!window.confirm(`Delete pending invoice row ${item.invoiceNumber || item.id}?`)) return;
+    this.deletingId.set(item.id);
+    this.invoiceApi.deletePendingItem(item.id).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.deletingId.set(null)),
+    ).subscribe({
+      next: () => { this.successMessage.set('Pending invoice row deleted.'); this.loadPendingItems(); },
+      error: (error: HttpErrorResponse) => this.errorMessage.set(this.describeError(error)),
+    });
+  }
+
+  togglePendingSelection(id: number, checked: boolean): void {
+    this.selectedIds.update(current => {
+      const next = new Set(current);
+      checked ? next.add(id) : next.delete(id);
+      return next;
+    });
+  }
+
+  toggleAllPendingSelection(checked: boolean): void {
+    this.selectedIds.set(checked ? new Set(this.items().map(item => item.id)) : new Set());
+  }
+
+  deleteSelectedPendingItems(): void {
+    const ids = [...this.selectedIds()];
+    if (!ids.length || !window.confirm(`Delete ${ids.length} selected pending invoice row(s)?`)) return;
+    this.deletingId.set(-1);
+    forkJoin(ids.map(id => this.invoiceApi.deletePendingItem(id))).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.deletingId.set(null)),
+    ).subscribe({
+      next: () => { this.selectedIds.set(new Set()); this.successMessage.set(`${ids.length} pending invoice row(s) deleted.`); this.loadPendingItems(); },
+      error: (error: HttpErrorResponse) => this.errorMessage.set(this.describeError(error)),
+    });
   }
 
   openManualMatch(item: PendingInvoiceItem): void {

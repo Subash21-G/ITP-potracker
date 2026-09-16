@@ -324,7 +324,7 @@ export class InvoiceApiService {
     }
 
     return this.http.get<PendingInvoiceItem[]>(
-      '/api/invoices/pending/excel',
+      '/api/invoices/pending',
       {
         params,
         withCredentials: true,
@@ -431,6 +431,12 @@ export class InvoiceApiService {
           },
         ),
       ),
+    );
+  }
+
+  deletePendingItem(id: number): Observable<void> {
+    return this.authApi.getXsrfToken().pipe(
+      switchMap(() => this.http.delete<void>(`/api/invoices/pending/${id}`, { withCredentials: true })),
     );
   }
 

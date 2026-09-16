@@ -169,4 +169,35 @@ describe('MaterialsApiService', () => {
 
     request.flush(response);
   });
+
+  it('updates one material process status through the dedicated endpoint', () => {
+    service
+      .updateProcessStatus(42, 'In Process')
+      .subscribe((response) => {
+        expect(response.processStatus).toBe('In Process');
+      });
+
+    const xsrfRequest = httpController.expectOne('/api/auth/xsrf-token');
+
+    expect(xsrfRequest.request.method).toBe('GET');
+    expect(xsrfRequest.request.withCredentials).toBe(true);
+
+    xsrfRequest.flush({ success: true });
+
+    const request = httpController.expectOne('/api/materials/42/process-status');
+
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({
+      processStatus: 'In Process',
+    });
+    expect(request.request.withCredentials).toBe(true);
+
+    request.flush({
+      success: true,
+      message: 'Process status updated successfully.',
+      materialId: 42,
+      processStatus: 'In Process',
+      updatedDate: '2026-08-29T13:00:00',
+    });
+  });
 });

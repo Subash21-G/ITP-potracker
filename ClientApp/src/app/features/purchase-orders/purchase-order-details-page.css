@@ -284,6 +284,81 @@ h2 {
   background: #fbfcfe;
 }
 
+/* Keep the material filter controls readable and polished on wide tables. */
+.table-panel .results-heading {
+  padding: 18px 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table-panel thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #f8fafc;
+  box-shadow: inset 0 -1px 0 #dbe4ef;
+}
+
+.table-panel .server-table-heading {
+  min-height: 34px;
+  align-items: center;
+}
+
+.table-panel .server-table-heading > span {
+  color: #334155;
+  font-size: .7rem;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.table-panel .server-column-filter__menu {
+  width: 285px;
+  max-height: min(520px, calc(100vh - 160px));
+  padding: 14px;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #d7dee9;
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 24%), 0 5px 18px rgb(15 23 42 / 9%);
+}
+
+.table-panel .server-column-filter__menu::before {
+  content: 'FILTER';
+  display: block;
+  padding-bottom: 9px;
+  color: #64748b;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.table-panel .server-column-filter__menu label {
+  gap: 7px;
+}
+
+.table-panel .server-column-filter__menu input,
+.table-panel .server-column-filter__menu select {
+  min-height: 40px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.table-panel .server-column-filter__actions {
+  padding-top: 6px;
+}
+
+.table-panel .server-column-filter__actions button {
+  min-height: 38px;
+  border-radius: 8px;
+}
+
+.table-panel .server-column-filter__actions button:last-child {
+  color: #fff;
+  background: linear-gradient(135deg, #6d28d9, #2563eb);
+  border-color: #6d28d9;
+}
+
 .page-size {
   display: flex;
   align-items: center;

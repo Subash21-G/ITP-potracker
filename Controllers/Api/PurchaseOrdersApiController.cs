@@ -43,6 +43,25 @@ namespace POTracker.Controllers.Api
                     },
                     StringComparer.OrdinalIgnoreCase);
 
+        private static readonly HashSet<string>
+            PurchaseOrderMaterialExcelFilterColumns =
+                new(
+                    new[]
+                    {
+                        "line",
+                        "material",
+                        "description",
+                        "quantity",
+                        "unitprice",
+                        "invoicebalance",
+                        "dispatchbalance",
+                        "delivery",
+                        "process",
+                        "invoice",
+                        "dispatch"
+                    },
+                    StringComparer.OrdinalIgnoreCase);
+
         private readonly ApplicationDbContext _context;
 
         private readonly PrivateDocumentReferenceService _documentReferences;
@@ -722,6 +741,9 @@ namespace POTracker.Controllers.Api
                 string? processStatus,
                 string? invoiceStatus,
                 string? dispatchStatus,
+                string? materialSortColumn = null,
+                string? materialSortDirection = null,
+                string? materialExcelFilters = null,
                 int materialPage = 1,
                 int materialPageSize = DefaultPageSize,
                 CancellationToken cancellationToken = default)
@@ -820,6 +842,12 @@ namespace POTracker.Controllers.Api
                     dispatchStatus,
                     today);
 
+            materialsQuery =
+                ApplyPurchaseOrderMaterialExcelFilters(
+                    materialsQuery,
+                    ParsePurchaseOrderMaterialExcelFilters(
+                        materialExcelFilters));
+
             var summary =
                 await materialsQuery
                     .GroupBy(_ => 1)
@@ -897,13 +925,10 @@ namespace POTracker.Controllers.Api
             }
 
             var materials =
-                await materialsQuery
-                    .OrderBy(materialRow =>
-                        materialRow.LineItem)
-                    .ThenBy(materialRow =>
-                        materialRow.MaterialNo)
-                    .ThenBy(materialRow =>
-                        materialRow.Id)
+                await ApplyPurchaseOrderMaterialSort(
+                        materialsQuery,
+                        materialSortColumn,
+                        materialSortDirection)
                     .Skip(
                         (materialPage - 1) *
                         materialPageSize)
@@ -1068,6 +1093,602 @@ namespace POTracker.Controllers.Api
                         }
                 });
         }
+
+        [HttpGet("{id:int}/materials/excel-filter-values")]
+        [ProducesResponseType(
+            typeof(IReadOnlyList<ExcelFilterValueDto>),
+            StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IReadOnlyList<ExcelFilterValueDto>>>
+            GetPurchaseOrderMaterialExcelFilterValues(
+                int id,
+                string column,
+                string? materialExcelFilters,
+                CancellationToken cancellationToken = default)
+        {
+            var normalizedColumn =
+                NormalizePurchaseOrderMaterialColumn(
+                    column);
+
+            if (!PurchaseOrderMaterialExcelFilterColumns.Contains(normalizedColumn))
+            {
+                return BadRequest(new
+                {
+                    error = "Unsupported Purchase Order material Excel filter column."
+                });
+            }
+
+            if (!await _context.PurchaseOrders
+                    .AsNoTracking()
+                    .AnyAsync(
+                        purchaseOrder => purchaseOrder.Id == id,
+                        cancellationToken))
+            {
+                return NotFound(new
+                {
+                    error = $"Purchase Order {id} was not found."
+                });
+            }
+
+            var selections =
+                ParsePurchaseOrderMaterialExcelFilters(
+                    materialExcelFilters);
+
+            selections.Remove(normalizedColumn);
+
+            var query =
+                ApplyPurchaseOrderMaterialExcelFilters(
+                    _context.Materials
+                        .AsNoTracking()
+                        .Where(materialRow =>
+                            materialRow.PurchaseOrderId == id),
+                    selections);
+
+            var rows =
+                await query
+                    .Select(materialRow =>
+                        new PurchaseOrderMaterialFilterRow
+                        {
+                            LineItem = materialRow.LineItem,
+                            MaterialNo = materialRow.MaterialNo,
+                            DrawingNo = materialRow.DrawingNo,
+                            HsnSacCode = materialRow.HsnSacCode,
+                            Description =
+                                materialRow.ShortDescription != null &&
+                                materialRow.ShortDescription != string.Empty
+                                    ? materialRow.ShortDescription
+                                    : materialRow.BriefDescription,
+                            Quantity = materialRow.Qty,
+                            Unit = materialRow.Unit,
+                            UnitPrice = materialRow.Cost,
+                            InvoiceBalance =
+                                materialRow.BalanceQty > 0
+                                    ? materialRow.BalanceQty
+                                    : 0m,
+                            DispatchBalance =
+                                materialRow.PendingQty > 0
+                                    ? materialRow.PendingQty
+                                    : 0m,
+                            DeliveryDate = materialRow.DeliveryDate,
+                            ProcessStatus = materialRow.ProcessStatus,
+                            InvoiceStatus = materialRow.InvoiceStatus,
+                            DispatchStatus = materialRow.DispatchStatus
+                        })
+                    .ToListAsync(
+                        cancellationToken);
+
+            var values =
+                rows
+                    .Select(row =>
+                        GetPurchaseOrderMaterialExcelCell(
+                            row,
+                            normalizedColumn))
+                    .GroupBy(
+                        cell => cell.Value,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group =>
+                        new ExcelFilterValueDto
+                        {
+                            Value = group.Key,
+                            Label = group.First().Label,
+                            Count = group.Count()
+                        })
+                    .ToList();
+
+            if (normalizedColumn == "line")
+            {
+                values = values
+                    .OrderBy(item =>
+                        PurchaseOrderLineItemNumber(item.Value).HasValue
+                            ? 0
+                            : 1)
+                    .ThenBy(item =>
+                        PurchaseOrderLineItemNumber(item.Value))
+                    .ThenBy(
+                        item => item.Label,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+            else
+            {
+                values = values
+                    .OrderBy(
+                        item => item.Label,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+
+            return Ok(values);
+        }
+
+        private static Dictionary<string, string[]>
+            ParsePurchaseOrderMaterialExcelFilters(
+                string? excelFilters)
+        {
+            if (string.IsNullOrWhiteSpace(excelFilters))
+            {
+                return new Dictionary<string, string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+
+            try
+            {
+                var parsed =
+                    System.Text.Json.JsonSerializer
+                        .Deserialize<Dictionary<string, string[]>>(
+                            excelFilters)
+                    ?? new Dictionary<string, string[]>();
+
+                return parsed
+                    .Select(pair =>
+                        new
+                        {
+                            Column = NormalizePurchaseOrderMaterialColumn(pair.Key),
+                            Values = pair.Value ?? Array.Empty<string>()
+                        })
+                    .Where(pair =>
+                        PurchaseOrderMaterialExcelFilterColumns.Contains(pair.Column))
+                    .ToDictionary(
+                        pair => pair.Column,
+                        pair => pair.Values,
+                        StringComparer.OrdinalIgnoreCase);
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return new Dictionary<string, string[]>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private static IQueryable<Material>
+            ApplyPurchaseOrderMaterialExcelFilters(
+                IQueryable<Material> query,
+                IReadOnlyDictionary<string, string[]> selections)
+        {
+            foreach (var pair in selections)
+            {
+                var values = pair.Value ?? Array.Empty<string>();
+
+                if (values.Length == 0)
+                {
+                    query = query.Where(_ => false);
+                    continue;
+                }
+
+                switch (pair.Key)
+                {
+                    case "line":
+                        query = query.Where(materialRow =>
+                            values.Contains(materialRow.LineItem ?? string.Empty));
+                        break;
+
+                    case "material":
+                        query = query.Where(materialRow =>
+                            values.Contains(
+                                (materialRow.MaterialNo ?? string.Empty) +
+                                "\u001f" +
+                                (materialRow.DrawingNo ?? string.Empty) +
+                                "\u001f" +
+                                (materialRow.HsnSacCode ?? string.Empty)));
+                        break;
+
+                    case "description":
+                        query = query.Where(materialRow =>
+                            values.Contains(
+                                materialRow.ShortDescription != null &&
+                                materialRow.ShortDescription != string.Empty
+                                    ? materialRow.ShortDescription
+                                    : materialRow.BriefDescription ?? string.Empty));
+                        break;
+
+                    case "quantity":
+                        query = ApplyDecimalExcelFilter(
+                            query,
+                            values,
+                            "quantity");
+                        break;
+
+                    case "unitprice":
+                        query = ApplyDecimalExcelFilter(
+                            query,
+                            values,
+                            "unitprice");
+                        break;
+
+                    case "invoicebalance":
+                        query = ApplyDecimalExcelFilter(
+                            query,
+                            values,
+                            "invoicebalance");
+                        break;
+
+                    case "dispatchbalance":
+                        query = ApplyDecimalExcelFilter(
+                            query,
+                            values,
+                            "dispatchbalance");
+                        break;
+
+                    case "delivery":
+                        var includeBlank = values.Contains(string.Empty);
+                        var dates = values
+                            .Select(value =>
+                                DateTime.TryParseExact(
+                                    value,
+                                    "yyyy-MM-dd",
+                                    CultureInfo.InvariantCulture,
+                                    DateTimeStyles.None,
+                                    out var parsed)
+                                        ? parsed.Date
+                                        : (DateTime?)null)
+                            .Where(value => value.HasValue)
+                            .Select(value => value!.Value)
+                            .ToArray();
+
+                        query = query.Where(materialRow =>
+                            (includeBlank && !materialRow.DeliveryDate.HasValue) ||
+                            (materialRow.DeliveryDate.HasValue &&
+                             dates.Contains(materialRow.DeliveryDate.Value.Date)));
+                        break;
+
+                    case "process":
+                        query = query.Where(materialRow =>
+                            values.Contains(materialRow.ProcessStatus));
+                        break;
+
+                    case "invoice":
+                        query = query.Where(materialRow =>
+                            values.Contains(materialRow.InvoiceStatus));
+                        break;
+
+                    case "dispatch":
+                        query = query.Where(materialRow =>
+                            values.Contains(materialRow.DispatchStatus));
+                        break;
+                }
+            }
+
+            return query;
+        }
+
+        private static IQueryable<Material>
+            ApplyDecimalExcelFilter(
+                IQueryable<Material> query,
+                IReadOnlyList<string> rawValues,
+                string column)
+        {
+            var values = rawValues
+                .Select(value =>
+                    decimal.TryParse(
+                        value,
+                        NumberStyles.Number,
+                        CultureInfo.InvariantCulture,
+                        out var parsed)
+                            ? parsed
+                            : (decimal?)null)
+                .Where(value => value.HasValue)
+                .Select(value => value!.Value)
+                .ToArray();
+
+            if (values.Length == 0)
+            {
+                return query.Where(_ => false);
+            }
+
+            return column switch
+            {
+                "quantity" => query.Where(materialRow =>
+                    values.Contains(materialRow.Qty)),
+                "unitprice" => query.Where(materialRow =>
+                    values.Contains(materialRow.Cost)),
+                "invoicebalance" => query.Where(materialRow =>
+                    values.Contains(
+                        materialRow.BalanceQty > 0
+                            ? materialRow.BalanceQty
+                            : 0m)),
+                "dispatchbalance" => query.Where(materialRow =>
+                    values.Contains(
+                        materialRow.PendingQty > 0
+                            ? materialRow.PendingQty
+                            : 0m)),
+                _ => query.Where(_ => false)
+            };
+        }
+
+        private static IOrderedQueryable<Material>
+            ApplyPurchaseOrderMaterialSort(
+                IQueryable<Material> query,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var column = NormalizePurchaseOrderMaterialColumn(sortColumn);
+            var descending = string.Equals(
+                sortDirection?.Trim(),
+                "desc",
+                StringComparison.OrdinalIgnoreCase);
+
+            return (column, descending) switch
+            {
+                ("line", false) => query
+                    .OrderBy(materialRow => materialRow.LineItem)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("line", true) => query
+                    .OrderByDescending(materialRow => materialRow.LineItem)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                ("material", false) => query
+                    .OrderBy(materialRow => materialRow.MaterialNo)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("material", true) => query
+                    .OrderByDescending(materialRow => materialRow.MaterialNo)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                ("description", false) => query
+                    .OrderBy(materialRow =>
+                        materialRow.ShortDescription ?? materialRow.BriefDescription)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("description", true) => query
+                    .OrderByDescending(materialRow =>
+                        materialRow.ShortDescription ?? materialRow.BriefDescription)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                ("quantity", false) => query
+                    .OrderBy(materialRow => materialRow.Qty)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("quantity", true) => query
+                    .OrderByDescending(materialRow => materialRow.Qty)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                ("unitprice", false) => query
+                    .OrderBy(materialRow => materialRow.Cost)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("unitprice", true) => query
+                    .OrderByDescending(materialRow => materialRow.Cost)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                ("invoicebalance", false) => query
+                    .OrderBy(materialRow =>
+                        materialRow.BalanceQty > 0 ? materialRow.BalanceQty : 0m)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("invoicebalance", true) => query
+                    .OrderByDescending(materialRow =>
+                        materialRow.BalanceQty > 0 ? materialRow.BalanceQty : 0m)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                ("dispatchbalance", false) => query
+                    .OrderBy(materialRow =>
+                        materialRow.PendingQty > 0 ? materialRow.PendingQty : 0m)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("dispatchbalance", true) => query
+                    .OrderByDescending(materialRow =>
+                        materialRow.PendingQty > 0 ? materialRow.PendingQty : 0m)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                ("delivery", false) => query
+                    .OrderBy(materialRow => materialRow.DeliveryDate)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("delivery", true) => query
+                    .OrderByDescending(materialRow => materialRow.DeliveryDate)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                ("process", false) => query
+                    .OrderBy(materialRow => materialRow.ProcessStatus)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("process", true) => query
+                    .OrderByDescending(materialRow => materialRow.ProcessStatus)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                ("invoice", false) => query
+                    .OrderBy(materialRow => materialRow.InvoiceStatus)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("invoice", true) => query
+                    .OrderByDescending(materialRow => materialRow.InvoiceStatus)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                ("dispatch", false) => query
+                    .OrderBy(materialRow => materialRow.DispatchStatus)
+                    .ThenBy(materialRow => materialRow.Id),
+                ("dispatch", true) => query
+                    .OrderByDescending(materialRow => materialRow.DispatchStatus)
+                    .ThenByDescending(materialRow => materialRow.Id),
+                _ => query
+                    .OrderBy(materialRow => materialRow.LineItem)
+                    .ThenBy(materialRow => materialRow.MaterialNo)
+                    .ThenBy(materialRow => materialRow.Id)
+            };
+        }
+
+        private static PurchaseOrderMaterialExcelCell
+            GetPurchaseOrderMaterialExcelCell(
+                PurchaseOrderMaterialFilterRow row,
+                string column)
+        {
+            return column switch
+            {
+                "line" => new PurchaseOrderMaterialExcelCell(
+                    row.LineItem ?? string.Empty,
+                    PurchaseOrderLineItemLabel(row.LineItem)),
+                "material" => new PurchaseOrderMaterialExcelCell(
+                    (row.MaterialNo ?? string.Empty) +
+                    "\u001f" +
+                    (row.DrawingNo ?? string.Empty) +
+                    "\u001f" +
+                    (row.HsnSacCode ?? string.Empty),
+                    PurchaseOrderMaterialLabel(row)),
+                "description" => new PurchaseOrderMaterialExcelCell(
+                    row.Description ?? string.Empty,
+                    string.IsNullOrWhiteSpace(row.Description) ? "(Blank)" : row.Description),
+                "quantity" => DecimalMaterialExcelCell(
+                    row.Quantity,
+                    row.Unit),
+                "unitprice" => new PurchaseOrderMaterialExcelCell(
+                    row.UnitPrice.ToString(CultureInfo.InvariantCulture),
+                    $"₹{row.UnitPrice.ToString("N2", CultureInfo.InvariantCulture)}"),
+                "invoicebalance" => DecimalMaterialExcelCell(row.InvoiceBalance),
+                "dispatchbalance" => DecimalMaterialExcelCell(row.DispatchBalance),
+                "delivery" => row.DeliveryDate.HasValue
+                    ? new PurchaseOrderMaterialExcelCell(
+                        row.DeliveryDate.Value.ToString(
+                            "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture),
+                        row.DeliveryDate.Value.ToString(
+                            "dd MMM yyyy",
+                            CultureInfo.InvariantCulture))
+                    : new PurchaseOrderMaterialExcelCell(string.Empty, "(Blank)"),
+                "process" => StatusMaterialExcelCell(row.ProcessStatus, "Pending"),
+                "invoice" => StatusMaterialExcelCell(row.InvoiceStatus, "Not Invoiced"),
+                "dispatch" => StatusMaterialExcelCell(row.DispatchStatus, "Pending"),
+                _ => new PurchaseOrderMaterialExcelCell(string.Empty, "(Blank)")
+            };
+        }
+
+        private static string PurchaseOrderLineItemLabel(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "(Blank)";
+            }
+
+            var trimmed = value.Trim();
+            var separatorIndex = trimmed.IndexOf('-');
+            var numberText = separatorIndex >= 0
+                ? trimmed[(separatorIndex + 1)..].Trim()
+                : trimmed;
+
+            return decimal.TryParse(
+                numberText,
+                NumberStyles.Number,
+                CultureInfo.InvariantCulture,
+                out var number)
+                    ? number.ToString(
+                        "0.############################",
+                        CultureInfo.InvariantCulture)
+                    : trimmed;
+        }
+
+        private static decimal? PurchaseOrderLineItemNumber(string? value)
+        {
+            var label = PurchaseOrderLineItemLabel(value);
+
+            return decimal.TryParse(
+                label,
+                NumberStyles.Number,
+                CultureInfo.InvariantCulture,
+                out var number)
+                    ? number
+                    : null;
+        }
+
+        private static PurchaseOrderMaterialExcelCell
+            DecimalMaterialExcelCell(
+                decimal value,
+                string? suffix = null)
+        {
+            var label = value.ToString(
+                "0.##",
+                CultureInfo.InvariantCulture);
+
+            if (!string.IsNullOrWhiteSpace(suffix))
+            {
+                label += $" {suffix.Trim()}";
+            }
+
+            return new PurchaseOrderMaterialExcelCell(
+                value.ToString(CultureInfo.InvariantCulture),
+                label);
+        }
+
+        private static PurchaseOrderMaterialExcelCell
+            StatusMaterialExcelCell(
+                string? value,
+                string fallback)
+        {
+            var normalized = string.IsNullOrWhiteSpace(value)
+                ? fallback
+                : value;
+
+            return new PurchaseOrderMaterialExcelCell(
+                normalized,
+                normalized);
+        }
+
+        private static string PurchaseOrderMaterialLabel(
+            PurchaseOrderMaterialFilterRow row)
+        {
+            var parts = new List<string>
+            {
+                string.IsNullOrWhiteSpace(row.MaterialNo)
+                    ? "(No material number)"
+                    : row.MaterialNo
+            };
+
+            if (!string.IsNullOrWhiteSpace(row.DrawingNo))
+            {
+                parts.Add($"Drg: {row.DrawingNo}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(row.HsnSacCode))
+            {
+                parts.Add($"HSN: {row.HsnSacCode}");
+            }
+
+            return string.Join(" | ", parts);
+        }
+
+        private static string NormalizePurchaseOrderMaterialColumn(
+            string? column)
+        {
+            return string.Concat(
+                (column ?? string.Empty)
+                    .Where(char.IsLetterOrDigit)
+                    .Select(char.ToLowerInvariant));
+        }
+
+        private sealed class PurchaseOrderMaterialFilterRow
+        {
+            public string? LineItem { get; init; }
+
+            public string? MaterialNo { get; init; }
+
+            public string? DrawingNo { get; init; }
+
+            public string? HsnSacCode { get; init; }
+
+            public string? Description { get; init; }
+
+            public decimal Quantity { get; init; }
+
+            public string? Unit { get; init; }
+
+            public decimal UnitPrice { get; init; }
+
+            public decimal InvoiceBalance { get; init; }
+
+            public decimal DispatchBalance { get; init; }
+
+            public DateTime? DeliveryDate { get; init; }
+
+            public string? ProcessStatus { get; init; }
+
+            public string? InvoiceStatus { get; init; }
+
+            public string? DispatchStatus { get; init; }
+        }
+
+        private sealed record PurchaseOrderMaterialExcelCell(
+            string Value,
+            string Label);
 
         private static IQueryable<Material>
             ApplyPurchaseOrderMaterialFilters(

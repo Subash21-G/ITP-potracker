@@ -11,6 +11,7 @@ import {
 import {
   Observable,
   switchMap,
+  tap,
 } from 'rxjs';
 
 import {
@@ -19,6 +20,8 @@ import {
   MaterialExcelFilterColumn,
   MaterialExcelFilterValue,
   MaterialListItem,
+  MaterialProcessStatus,
+  MaterialProcessStatusUpdateResponse,
   MaterialQuery,
   PagedResult,
 } from '../models/material.model';
@@ -143,6 +146,30 @@ export class MaterialsApiService {
       );
   }
 
+  updateProcessStatus(
+    materialId: number,
+    processStatus: MaterialProcessStatus,
+  ): Observable<MaterialProcessStatusUpdateResponse> {
+    return this.authApi
+      .getXsrfToken()
+      .pipe(
+        switchMap(() =>
+          this.http.patch<MaterialProcessStatusUpdateResponse>(
+            `/api/materials/${materialId}/process-status`,
+            {
+              processStatus,
+            },
+            {
+              withCredentials: true,
+            },
+          ),
+        ),
+        tap(() => {
+          this.cache.invalidate('materials:');
+        }),
+      );
+  }
+
   private buildFilterParams(
     query: MaterialQuery,
   ): HttpParams {
@@ -156,7 +183,9 @@ export class MaterialsApiService {
       ][] = [
         ['sortColumn', query.sortColumn],
         ['sortDirection', query.sortDirection],
-        ['excelFilters', query.excelFilters],
+      ['excelFilters', query.excelFilters],
+      ['removeDuplicates', query.removeDuplicates ? 'true' : undefined],
+      ['pendingOnly', query.pendingOnly ? 'true' : undefined],
         ['search', query.search],
         ['poNumber', query.poNumber],
         ['handler', query.handler],

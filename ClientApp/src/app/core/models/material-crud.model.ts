@@ -35,6 +35,8 @@ export interface MaterialDetails {
   dep: string;
   dispatchQty: number;
   pendingQty: number;
+  requiredQty: number;
+  stockQty: number;
   liveStockQuantity: number;
   allocatedStockQuantity: number;
   stockMinimumQuantity: number;
@@ -60,6 +62,7 @@ export interface MaterialDetails {
   totalValueWithTax: number;
 
   rmGrade: string;
+  rmSize: string;
   rmSource: string;
   rmProcess: string;
 
@@ -80,11 +83,19 @@ export interface MaterialDetails {
   drawingNo: string;
   drawingVersion: string;
   drawingFilePath: string;
+  handSketchFilePath: string;
+  outsourceDrawingFilePath: string;
+  webDrawingFilePath: string;
   pdfFilePath: string;
 
   processStatus: string;
   dispatchStatus: string;
   assignedDashboard: string;
+  sourcingType?: 'Inhouse' | 'Outsourcing';
+  outsourcedTo?: string;
+  hasCostVariation?: boolean;
+  variationCost?: number | null;
+  priorityLevel?: 'Normal' | 'Priority' | 'Urgent';
   remark: string;
 
   createdDate: string;
@@ -137,6 +148,11 @@ export interface MaterialUpsertRequest {
 
   processStatus: string | null;
   assignedDashboard: string | null;
+  sourcingType?: 'Inhouse' | 'Outsourcing';
+  outsourcedTo?: string | null;
+  hasCostVariation?: boolean;
+  variationCost?: number | null;
+  priorityLevel?: 'Normal' | 'Priority' | 'Urgent';
   remark: string | null;
 }
 
@@ -157,6 +173,9 @@ export interface MaterialDeleteResponse {
 export interface MaterialFileUpload {
   pdfFile?: File | null;
   drawingFile?: File | null;
+  handSketchFile?: File | null;
+  outsourceDrawingFile?: File | null;
+  webDrawingFile?: File | null;
 }
 
 

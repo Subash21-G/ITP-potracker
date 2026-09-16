@@ -99,6 +99,19 @@ export const routes: Routes = [
         (component) => component.MaterialsPage,
       ),
   },
+  {
+    path: 'mastersheet',
+    pathMatch: 'full',
+    redirectTo: 'mastersheet/vendors-processes',
+  },
+  {
+    path: 'mastersheet/:section',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/mastersheet/mastersheet-page').then(
+        component => component.MastersheetPage,
+      ),
+  },
 
   // ============================================================
   // PURCHASE ORDERS
@@ -227,6 +240,54 @@ export const routes: Routes = [
       ).then(
         component =>
           component.LocalStocksPage,
+      ),
+  },
+
+  // ============================================================
+  // MATERIAL DELIVERY HISTORY
+  // ============================================================
+  {
+    path: 'history',
+    canActivate: [
+      authGuard,
+    ],
+    loadComponent: () =>
+      import(
+        './features/material-history/material-history-page'
+      ).then(
+        component =>
+          component.MaterialHistoryPage,
+      ),
+  },
+
+  // ============================================================
+  // MATERIAL PLANNING WORKSPACES
+  // ============================================================
+  {
+    path: 'outsourcing-inhouse',
+    canActivate: [authGuard],
+    data: { workspace: 'sourcing' },
+    loadComponent: () =>
+      import('./features/material-planning/material-planning-page').then(
+        component => component.MaterialPlanningPage,
+      ),
+  },
+  {
+    path: 'cost-variation',
+    canActivate: [authGuard],
+    data: { workspace: 'cost-variation' },
+    loadComponent: () =>
+      import('./features/material-planning/material-planning-page').then(
+        component => component.MaterialPlanningPage,
+      ),
+  },
+  {
+    path: 'priority-urgent',
+    canActivate: [authGuard],
+    data: { workspace: 'priority-urgent' },
+    loadComponent: () =>
+      import('./features/material-planning/material-planning-page').then(
+        component => component.MaterialPlanningPage,
       ),
   },
 
@@ -470,6 +531,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'completed-status',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/completed-status/completed-status-page').then(component => component.CompletedStatusPage),
+  },
+  {
     path: 'notifications',
     canActivate: [
       authGuard,
@@ -481,6 +547,23 @@ export const routes: Routes = [
         (component) =>
           component.NotificationsPage,
       ),
+  },
+  {
+    path: 'tools',
+    canActivate: [authGuard, manageAccessGuard],
+    loadComponent: () => import('./features/tools/tools-page').then(component => component.ToolsPage),
+  },
+  {
+    path: 'tools/gauges',
+    canActivate: [authGuard, manageAccessGuard],
+    data: { category: 'gauges' },
+    loadComponent: () => import('./features/tools/tools-page').then(component => component.ToolsPage),
+  },
+  {
+    path: 'tools/instruments',
+    canActivate: [authGuard, manageAccessGuard],
+    data: { category: 'instruments' },
+    loadComponent: () => import('./features/tools/tools-page').then(component => component.ToolsPage),
   },
   {
     path: 'alerts',
@@ -542,9 +625,3 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
 ];
-
-
-
-
-
-

@@ -35,6 +35,10 @@
 
         public int TotalPurchaseOrders { get; set; }
 
+        public int CompletedPurchaseOrders { get; set; }
+
+        public int CompletedInvoices { get; set; }
+
         public int TotalMaterials { get; set; }
 
         public int PendingMaterials { get; set; }
@@ -117,6 +121,8 @@
         public int PurchaseOrderId { get; set; }
 
         public string PoNumber { get; set; } = string.Empty;
+
+        public string InvoiceNumber { get; set; } = string.Empty;
 
         public string PurchaserName { get; set; } = string.Empty;
 

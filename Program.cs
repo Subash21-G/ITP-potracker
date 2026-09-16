@@ -71,6 +71,7 @@ builder.Services.AddAntiforgery(options =>
 // ============================================================
 
 builder.Services.AddScoped<PendingInvoiceMatcher>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 
 builder.Services.Configure<PrivateDocumentStorageOptions>(
     builder.Configuration.GetSection(
@@ -91,9 +92,9 @@ builder.Services.Configure<FormOptions>(options =>
     options.ValueCountLimit = 10000;
     options.ValueLengthLimit = int.MaxValue;
 
-    // Maximum uploaded request size: 200 MB.
+    // Maximum combined material-document upload size: 350 MB.
     options.MultipartBodyLengthLimit =
-        1024L * 1024L * 200L;
+        1024L * 1024L * 350L;
 
     options.MultipartHeadersLengthLimit = int.MaxValue;
 });
@@ -154,6 +155,9 @@ builder.Services.AddDbContextPool<ApplicationDbContext>(
     },
     poolSize: 128);
 
+builder.Services.AddHostedService<
+    MaterialRmGradeBackfillService>();
+
 // ============================================================
 // SESSION
 // ============================================================
@@ -202,6 +206,19 @@ builder.Services.AddScoped<
     POTracker.Services.ExternalStockService>();
 
 var app = builder.Build();
+
+// Keep the database schema in sync with the application before serving
+// material details.  This is especially important for installations that
+// already have POTrackerDB and are upgrading to a build with new material
+// fields (for example RMSize); without applying the pending migration the
+// material-details query fails with an invalid-column error.
+using (var migrationScope = app.Services.CreateScope())
+{
+    var database = migrationScope.ServiceProvider
+        .GetRequiredService<ApplicationDbContext>();
+
+    database.Database.Migrate();
+}
 
 // ============================================================
 // ERROR HANDLING
@@ -388,10 +405,22 @@ app.MapGet(
 // responses remain unaffected.
 app.MapFallbackToFile(
     "app/{*path:nonfile}",
-    "app/index.html");
+    "app/index.html",
+    new StaticFileOptions
+    {
+        OnPrepareResponse = context =>
+        {
+            // The fallback has its own static-file middleware; it does not use
+            // the cache policy configured by UseStaticFiles above.
+            context.Context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+            context.Context.Response.Headers.Pragma = "no-cache";
+            context.Context.Response.Headers.Expires = "0";
+        }
+    });
 
 // ============================================================
 // START APPLICATION
 // ============================================================
+
 
 app.Run();

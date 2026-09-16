@@ -519,6 +519,9 @@ namespace POTracker.Controllers
                 HsnSacCode = NullIfWhiteSpace(row.HsnSacCode),
                 ShortDescription = NullIfWhiteSpace(row.ShortDescription),
                 BriefDescription = NullIfWhiteSpace(row.BriefDescription),
+                RMGrade = MaterialRmGradeExtractor.Extract(
+                    row.ShortDescription,
+                    row.BriefDescription),
                 Qty = row.Qty,
                 Unit = NullIfWhiteSpace(row.Unit),
                 Dep = NullIfWhiteSpace(row.Dep),
@@ -560,6 +563,10 @@ namespace POTracker.Controllers
             material.HsnSacCode = NullIfWhiteSpace(row.HsnSacCode);
             material.ShortDescription = NullIfWhiteSpace(row.ShortDescription);
             material.BriefDescription = NullIfWhiteSpace(row.BriefDescription);
+            material.RMGrade ??=
+                MaterialRmGradeExtractor.Extract(
+                    row.ShortDescription,
+                    row.BriefDescription);
             material.Qty = row.Qty;
             material.Unit = NullIfWhiteSpace(row.Unit);
             material.Dep = NullIfWhiteSpace(row.Dep);

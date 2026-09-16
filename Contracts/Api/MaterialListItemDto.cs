@@ -20,6 +20,10 @@ namespace POTracker.Contracts.Api
 
         public string MaterialNo { get; init; } = string.Empty;
 
+        public int DuplicateCount { get; init; } = 1;
+
+        public string? LatestHistoryOutcome { get; init; }
+
         public string? HsnSacCode { get; init; }
 
         public string Description { get; init; } = string.Empty;
@@ -51,6 +55,17 @@ namespace POTracker.Contracts.Api
         public string DrawingNo { get; init; } = string.Empty;
 
         public string AssignedDashboard { get; init; } = string.Empty;
+
+        public string SourcingType { get; init; } = "Inhouse";
+
+        public string OutsourcedTo { get; init; } = string.Empty;
+
+        public bool HasCostVariation { get; init; }
+
+        public decimal? VariationCost { get; init; }
+
+        public string PriorityLevel { get; init; } = "Normal";
+
         public decimal LiveStockQuantity { get; set; }
 
         public decimal AllocatedStockQuantity { get; set; }

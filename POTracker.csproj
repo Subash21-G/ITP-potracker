@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>23842e57-c88c-484c-b9aa-f48f96bb1eae</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -49,12 +50,9 @@
   </ItemGroup>
   <!-- Runtime documents live outside the deployed application package. -->
   <ItemGroup>
-    <Content Update="wwwroot\uploads\**\*"
-             CopyToPublishDirectory="Never" />
-    <Content Update="App_Data\private-uploads\**\*"
-             CopyToPublishDirectory="Never" />
-    <None Update="App_Data\private-uploads\**\*"
-          CopyToPublishDirectory="Never" />
+    <Content Update="wwwroot\uploads\**\*" CopyToPublishDirectory="Never" />
+    <Content Update="App_Data\private-uploads\**\*" CopyToPublishDirectory="Never" />
+    <None Update="App_Data\private-uploads\**\*" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
 </Project>

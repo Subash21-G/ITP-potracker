@@ -80,6 +80,10 @@ namespace POTracker.Contracts.Api
 
         public decimal PendingQty { get; init; }
 
+        public decimal RequiredQty { get; set; }
+
+        public decimal StockQty { get; init; }
+
 
         public decimal LiveStockQuantity { get; set; }
 
@@ -128,6 +132,8 @@ namespace POTracker.Contracts.Api
         // RAW MATERIAL
         public string RMGrade { get; init; } = string.Empty;
 
+        public string RMSize { get; init; } = string.Empty;
+
         public string RMSource { get; init; } = string.Empty;
 
         public string RMProcess { get; init; } = string.Empty;
@@ -164,6 +170,12 @@ namespace POTracker.Contracts.Api
 
         public string DrawingFilePath { get; set; } = string.Empty;
 
+        public string HandSketchFilePath { get; set; } = string.Empty;
+
+        public string OutsourceDrawingFilePath { get; set; } = string.Empty;
+
+        public string WebDrawingFilePath { get; set; } = string.Empty;
+
         public string PdfFilePath { get; set; } = string.Empty;
 
         // STATUS
@@ -172,6 +184,16 @@ namespace POTracker.Contracts.Api
         public string DispatchStatus { get; init; } = string.Empty;
 
         public string AssignedDashboard { get; init; } = string.Empty;
+
+        public string SourcingType { get; init; } = "Inhouse";
+
+        public string OutsourcedTo { get; init; } = string.Empty;
+
+        public bool HasCostVariation { get; init; }
+
+        public decimal? VariationCost { get; init; }
+
+        public string PriorityLevel { get; init; } = "Normal";
 
         public string Remark { get; init; } = string.Empty;
 
@@ -311,6 +333,28 @@ namespace POTracker.Contracts.Api
         [StringLength(100)]
         public string? AssignedDashboard { get; set; }
 
+        [RegularExpression(
+            "^(Inhouse|Outsourcing)$",
+            ErrorMessage = "Sourcing type must be Inhouse or Outsourcing.")]
+        public string? SourcingType { get; set; }
+
+        [StringLength(200)]
+        public string? OutsourcedTo { get; set; }
+
+        public bool HasCostVariation { get; set; }
+
+        [Range(
+            typeof(decimal),
+            "0",
+            "9999999999999999",
+            ErrorMessage = "Variation cost cannot be negative.")]
+        public decimal? VariationCost { get; set; }
+
+        [RegularExpression(
+            "^(Normal|Priority|Urgent)$",
+            ErrorMessage = "Priority level must be Normal, Priority, or Urgent.")]
+        public string? PriorityLevel { get; set; }
+
         public string? Remark { get; set; }
     }
 
@@ -328,6 +372,26 @@ namespace POTracker.Contracts.Api
         public int MatchedPendingInvoiceRows { get; init; }
 
         public MaterialDetailsDto? Material { get; init; }
+    }
+
+    public sealed class MaterialProcessStatusUpdateRequestDto
+    {
+        [Required]
+        [StringLength(50)]
+        public string ProcessStatus { get; set; } = string.Empty;
+    }
+
+    public sealed class MaterialProcessStatusUpdateResponseDto
+    {
+        public bool Success { get; init; }
+
+        public string Message { get; init; } = string.Empty;
+
+        public int MaterialId { get; init; }
+
+        public string ProcessStatus { get; init; } = string.Empty;
+
+        public DateTime UpdatedDate { get; init; }
     }
 
     /// <summary>

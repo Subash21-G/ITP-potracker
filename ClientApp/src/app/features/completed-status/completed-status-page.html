@@ -1,0 +1,81 @@
+<section class="completed-page">
+  <header class="completed-hero">
+    <div>
+      <span class="eyebrow">Operations report</span>
+      <h1>Completed Status</h1>
+      <p>Review completed purchase orders and fully invoiced materials in one place.</p>
+    </div>
+    <div class="completed-actions">
+      <button type="button" (click)="load()" [disabled]="loading()">{{ loading() ? 'Refreshing...' : 'Refresh' }}</button>
+      <a routerLink="/dashboard">Back to Dashboard</a>
+    </div>
+  </header>
+
+  @if (error()) { <p class="completed-error" role="alert">{{ error() }}</p> }
+  @if (data(); as summary) {
+    <div class="completed-grid">
+      <article class="completed-card completed-card--blue">
+        <span>Completed Purchase Orders</span>
+        <strong>{{ summary.overview.completedPurchaseOrders | number }}</strong>
+        <small>of {{ summary.overview.totalPurchaseOrders | number }} total POs</small>
+        <a routerLink="/purchase-orders">View Purchase Orders →</a>
+      </article>
+      <article class="completed-card completed-card--violet">
+        <span>Completed Invoices</span>
+        <strong>{{ summary.overview.completedInvoices | number }}</strong>
+        <small>Fully invoiced material records</small>
+        <a routerLink="/invoices">View Invoices →</a>
+      </article>
+    </div>
+    <section class="completed-note">
+      <strong>Completion tracking</strong>
+      <p>Counts are calculated from the latest purchase order and material invoice statuses.</p>
+    </section>
+    <section class="completed-table-card">
+      <header>
+        <div>
+          <span class="eyebrow">Finished material records</span>
+          <h2>Completed Material Numbers</h2>
+        </div>
+        <span>{{ completedMaterials().length }} shown</span>
+      </header>
+      @if (completedMaterials().length) {
+        <div class="completed-table-scroll">
+          <table>
+            <thead><tr><th>Material No.</th><th>PO Number</th><th>Invoice Number</th><th>Process</th><th>Invoice Status</th><th>Completed quantity</th></tr></thead>
+            <tbody>
+              @for (material of pagedCompletedMaterials(); track material.id) {
+                <tr>
+                  <td><strong>{{ material.materialNo || '—' }}</strong><small>{{ material.description || '—' }}</small></td>
+                  <td>{{ material.poNumber || '—' }}</td>
+                  <td>{{ material.invoiceNumber || '—' }}</td>
+                  <td><span class="status-pill">{{ material.processStatus || 'Completed' }}</span></td>
+                  <td><span class="status-pill">{{ material.invoiceStatus || 'Fully Invoiced' }}</span></td>
+                  <td>{{ material.poQty | number:'1.0-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="completed-empty">No completed material numbers are available yet.</p>
+      }
+      @if (completedMaterials().length > 0) {
+        <nav class="completed-pagination" aria-label="Completed materials pagination">
+          <label>Rows per page
+            <select [value]="pageSize()" (change)="changePageSize($any($event.target).value)">
+              @for (size of pageSizes; track size) { <option [value]="size">{{ size }}</option> }
+            </select>
+          </label>
+          <span role="status">{{ completedMaterials().length }} records | Page {{ page() }} of {{ totalPages() }}</span>
+          <div>
+            <button type="button" (click)="page.set(1)" [disabled]="page() === 1">First</button>
+            <button type="button" (click)="page.set(page() - 1)" [disabled]="page() === 1">Previous</button>
+            <button type="button" (click)="page.set(page() + 1)" [disabled]="page() >= totalPages()">Next</button>
+            <button type="button" (click)="page.set(totalPages())" [disabled]="page() >= totalPages()">Last</button>
+          </div>
+        </nav>
+      }
+    </section>
+  }
+</section>

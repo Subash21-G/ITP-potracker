@@ -10,7 +10,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
+  linkedSignal,
   signal,
 } from '@angular/core';
 
@@ -74,6 +76,19 @@ export class DashboardPage {
   readonly errorMessage =
     signal('');
 
+  readonly recentPageSize = signal(10);
+  readonly recentPageSizes = [5, 10, 25, 50];
+  readonly recentTotalPages = computed(() => Math.max(1, Math.ceil((this.dashboard()?.recentMaterials.length ?? 0) / this.recentPageSize())));
+  readonly recentPage = linkedSignal<number, number>({
+    source: this.recentTotalPages,
+    computation: (total, previous) => Math.min(previous?.value ?? 1, total),
+  });
+  readonly pagedRecentMaterials = computed(() => {
+    const rows = this.dashboard()?.recentMaterials ?? [];
+    const start = (this.recentPage() - 1) * this.recentPageSize();
+    return rows.slice(start, start + this.recentPageSize());
+  });
+
   constructor() {
     this.requestDashboard
       .pipe(
@@ -132,6 +147,13 @@ export class DashboardPage {
 
   loadDashboard(): void {
     this.requestDashboard.next();
+  }
+
+  changeRecentPageSize(value: string): void {
+    const size = Number(value);
+    if (!this.recentPageSizes.includes(size)) return;
+    this.recentPageSize.set(size);
+    this.recentPage.set(1);
   }
 
   percentage(

@@ -185,9 +185,10 @@
               track item.id;
               let index = $index
             ) {
+              @for (person of item.purchaseOrderPersons.length ? item.purchaseOrderPersons : [null]; track person?.name || 'none'; let personIndex = $index) {
               <tr>
                 <td class="row-number">
-                  {{ index + 1 }}
+                  {{ person ? personIndex + 1 : index + 1 }}
                 </td>
 
                 <td>
@@ -201,15 +202,7 @@
                 </td>
 
                 <td class="po-person-cell">
-                  @if (
-                    item.purchaseOrderPersons.length > 0
-                  ) {
-                    <div class="po-person-list">
-                      @for (
-                        person of
-                          item.purchaseOrderPersons;
-                        track person.name
-                      ) {
+                  @if (person) {
                         <a
                           class="po-person-link"
                           [routerLink]="[
@@ -225,7 +218,10 @@
                             person.name
                           "
                         >
-                          <span>{{ person.name }}</span>
+                          <span class="po-person-identity">
+                            <strong>{{ person.name }}</strong>
+                            <small class="po-person-company">WEG Industries (India) Pvt Ltd</small>
+                          </span>
 
                           <small>
                             {{
@@ -235,8 +231,6 @@
                             PO(s)
                           </small>
                         </a>
-                      }
-                    </div>
                   } @else {
                     <span class="no-po-person">
                       No PO person
@@ -281,11 +275,11 @@
                   <span
                     class="count-badge"
                     [class.count-badge--linked]="
-                      item.purchaseOrderCount > 0
+                      (person?.purchaseOrderCount ?? item.purchaseOrderCount) > 0
                     "
                   >
                     {{
-                      item.purchaseOrderCount
+                      person?.purchaseOrderCount ?? item.purchaseOrderCount
                         | number
                     }}
                   </span>
@@ -345,6 +339,7 @@
                   }
                 </td>
               </tr>
+              }
             }
           </tbody>
         </table>

@@ -154,6 +154,9 @@ namespace POTracker.Models
         public string? RMGrade { get; set; }
 
         [StringLength(200)]
+        public string? RMSize { get; set; }
+
+        [StringLength(200)]
         public string? RMSource { get; set; }
 
         [StringLength(200)]
@@ -209,6 +212,15 @@ namespace POTracker.Models
         public string? DrawingFilePath { get; set; }
 
         [StringLength(500)]
+        public string? HandSketchFilePath { get; set; }
+
+        [StringLength(500)]
+        public string? OutsourceDrawingFilePath { get; set; }
+
+        [StringLength(500)]
+        public string? WebDrawingFilePath { get; set; }
+
+        [StringLength(500)]
         public string? PDFFilePath { get; set; }
 
         // =====================================================
@@ -229,6 +241,24 @@ namespace POTracker.Models
 
         [StringLength(100)]
         public string? AssignedDashboard { get; set; }
+
+        // =====================================================
+        // PLANNING CLASSIFICATION
+        // =====================================================
+
+        [StringLength(20)]
+        public string SourcingType { get; set; } = "Inhouse";
+
+        [StringLength(200)]
+        public string? OutsourcedTo { get; set; }
+
+        public bool HasCostVariation { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? VariationCost { get; set; }
+
+        [StringLength(20)]
+        public string PriorityLevel { get; set; } = "Normal";
 
         // =====================================================
         // REMARKS
@@ -253,5 +283,8 @@ namespace POTracker.Models
 
         public ICollection<Dispatch> Dispatches { get; set; }
             = new List<Dispatch>();
+
+        public ICollection<MaterialHistory> HistoryEntries { get; set; }
+            = new List<MaterialHistory>();
     }
 }

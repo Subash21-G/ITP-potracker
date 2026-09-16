@@ -98,6 +98,16 @@ namespace POTracker.ViewModels
 
         public string? DrawingNo { get; set; }
 
+        public string? DrawingVersion { get; set; }
+
+        public string? Grade { get; set; }
+
+        public string? Size { get; set; }
+
+        public string? Process { get; set; }
+
+        public string? Source { get; set; }
+
         // =====================================================
         // RECEIVER DETAILS
         // =====================================================

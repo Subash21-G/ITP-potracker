@@ -2,3 +2,32 @@
   display: block;
   min-width: 0;
 }
+
+.dashboard-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  color: #526b84;
+  font-size: 13px;
+}
+
+.dashboard-pagination label,
+.dashboard-pagination__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-pagination select,
+.dashboard-pagination button {
+  padding: 8px 11px;
+  border: 1px solid #cbd6e2;
+  border-radius: 8px;
+  background: #fff;
+  color: #176b68;
+}
+
+.dashboard-pagination button:not(:disabled) { cursor: pointer; }

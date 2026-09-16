@@ -11,6 +11,8 @@
 export interface DashboardOverview {
   totalPurchasers: number;
   totalPurchaseOrders: number;
+  completedPurchaseOrders: number;
+  completedInvoices: number;
   totalMaterials: number;
   pendingMaterials: number;
   lowStock: number;
@@ -52,6 +54,7 @@ export interface DashboardRecentMaterial {
   id: number;
   purchaseOrderId: number;
   poNumber: string;
+  invoiceNumber: string;
   purchaserName: string;
   lineItem: string;
   materialNo: string;

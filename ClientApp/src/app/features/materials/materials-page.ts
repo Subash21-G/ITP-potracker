@@ -19,10 +19,12 @@ import {
   MaterialExcelFilterSelections,
   MaterialExcelFilterValue,
   MaterialListItem,
+  MaterialProcessStatus,
   MaterialSortColumn,
   MaterialSortDirection,
 } from '../../core/models/material.model';
 import { MaterialsApiService } from '../../core/services/materials-api.service';
+import { AuthApiService } from '../../core/services/auth-api.service';
 import { ServerExcelFilter } from '../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
@@ -41,6 +43,7 @@ import { ServerExcelFilter } from '../../shared/server-excel-filter/server-excel
 })
 export class MaterialsPage {
   private readonly materialsApi = inject(MaterialsApiService);
+  private readonly authApi = inject(AuthApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -57,6 +60,8 @@ export class MaterialsPage {
     stockStatus: new FormControl('', { nonNullable: true }),
     deliveryDateFrom: new FormControl('', { nonNullable: true }),
     deliveryDateTo: new FormControl('', { nonNullable: true }),
+    removeDuplicates: new FormControl(false, { nonNullable: true }),
+    pendingOnly: new FormControl(false, { nonNullable: true }),
   });
 
   readonly columnFilters = new FormGroup({
@@ -196,6 +201,18 @@ export class MaterialsPage {
   readonly successMessage = signal('');
   readonly downloadingExcel = signal(false);
   readonly bulkDeleting = signal(false);
+
+  readonly canOperate = this.authApi.canOperate;
+
+  readonly processStatusOptions: readonly MaterialProcessStatus[] = [
+    'Pending',
+    'In Process',
+    'Completed',
+    'On Hold',
+  ];
+
+  readonly updatingProcessStatusIds =
+    signal<ReadonlySet<number>>(new Set<number>());
 
   readonly selectedIds = signal<ReadonlySet<number>>(new Set<number>());
 
@@ -709,6 +726,10 @@ export class MaterialsPage {
   }
 
   toggleMaterial(materialId: number, event: Event): void {
+    const material = this.items().find((item) => item.id === materialId);
+    if (material && (material.duplicateCount ?? 1) > 1) {
+      return;
+    }
     const checked = (event.target as HTMLInputElement).checked;
 
     this.selectedIds.update((selectedIds) => {
@@ -732,7 +753,13 @@ export class MaterialsPage {
       return;
     }
 
-    this.selectedIds.set(new Set(this.items().map((material) => material.id)));
+    this.selectedIds.set(
+      new Set(
+        this.items()
+          .filter((material) => (material.duplicateCount ?? 1) === 1)
+          .map((material) => material.id),
+      ),
+    );
   }
 
   downloadExcel(): void {
@@ -873,6 +900,89 @@ export class MaterialsPage {
       });
   }
 
+  changeProcessStatus(material: MaterialListItem, event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const requestedStatus = select.value as MaterialProcessStatus;
+
+    if (
+      !this.processStatusOptions.includes(requestedStatus) ||
+      requestedStatus === this.processStatusSelectValue(material.processStatus) ||
+      this.isProcessStatusUpdating(material.id) ||
+      this.loading()
+    ) {
+      select.value = this.processStatusSelectValue(material.processStatus);
+      return;
+    }
+
+    this.setProcessStatusUpdating(material.id, true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+
+    this.materialsApi
+      .updateProcessStatus(material.id, requestedStatus)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.setProcessStatusUpdating(material.id, false)),
+      )
+      .subscribe({
+        next: (response) => {
+          this.items.update((items) =>
+            items.map((item) =>
+              item.id === material.id
+                ? {
+                    ...item,
+                    processStatus: response.processStatus,
+                  }
+                : item,
+            ),
+          );
+
+          this.successMessage.set(
+            `${material.materialNo || `Material ${material.id}`}: ${response.message}`,
+          );
+
+          this.loadMaterials(true);
+        },
+        error: (error: HttpErrorResponse) => {
+          select.value = this.processStatusSelectValue(material.processStatus);
+          this.items.update((items) => [...items]);
+          this.errorMessage.set(
+            this.describeMutationError(error, 'Process status could not be updated.'),
+          );
+        },
+      });
+  }
+
+  isProcessStatusUpdating(materialId: number): boolean {
+    return this.updatingProcessStatusIds().has(materialId);
+  }
+
+  processStatusSelectValue(status: string): MaterialProcessStatus {
+    if (status.trim().toLowerCase() === 'hold') {
+      return 'On Hold';
+    }
+
+    const matchedStatus = this.processStatusOptions.find(
+      (option) => option.toLowerCase() === status.trim().toLowerCase(),
+    );
+
+    return matchedStatus ?? 'Pending';
+  }
+
+  private setProcessStatusUpdating(materialId: number, updating: boolean): void {
+    this.updatingProcessStatusIds.update((ids) => {
+      const updated = new Set(ids);
+
+      if (updating) {
+        updated.add(materialId);
+      } else {
+        updated.delete(materialId);
+      }
+
+      return updated;
+    });
+  }
+
   private serializeExcelFilters(): string | undefined {
     const selections = this.excelFilterSelections();
 
@@ -929,7 +1039,7 @@ export class MaterialsPage {
 
     return 'status status--neutral';
   }
-  private loadMaterials(): void {
+  private loadMaterials(forceRefresh = false): void {
     if (this.loading()) {
       return;
     }
@@ -943,8 +1053,9 @@ export class MaterialsPage {
     this.errorStatus.set(null);
 
     this.materialsApi
-      .getMaterials({
-        page: this.page(),
+      .getMaterials(
+        {
+          page: this.page(),
 
         pageSize: this.pageSize(),
 
@@ -955,8 +1066,10 @@ export class MaterialsPage {
         excelFilters: this.serializeExcelFilters(),
 
         ...filterValues,
-        ...columnValues,
-      })
+          ...columnValues,
+        },
+        forceRefresh,
+      )
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loading.set(false)),

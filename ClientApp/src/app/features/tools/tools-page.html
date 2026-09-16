@@ -1,0 +1,14 @@
+<section class="tools-page">
+  <header class="tools-hero"><div><span class="eyebrow">Monitoring · Inventory</span><h1>{{ pageTitle }}</h1><p>{{ pageDescription }}</p></div></header>
+  <section class="tools-card"><h2>Add tool purchase</h2><form [formGroup]="form" (ngSubmit)="add()" class="tools-form">
+    <label>Tool list<select formControlName="type">@for (type of types; track type) { <option [value]="type">{{ type }} list</option> }</select></label>
+    <label>Tool name / specification<input formControlName="name" placeholder="e.g. 10 mm carbide drill" /></label>
+    <label>Purchase cost<input type="number" min="0" step="0.01" formControlName="cost" /></label>
+    <label>Purchase date<input type="date" formControlName="date" /></label>
+    <label>Quantity purchased<input type="number" min="1" step="1" formControlName="quantity" /></label>
+    <button appManageOnly type="submit">Add purchase</button>
+  </form></section>
+  <div class="tool-lists">@for (type of types; track type) { <section class="tools-card tool-list"><header><div><span class="eyebrow">{{ type }} list</span><h2>{{ type }}s</h2></div><strong>{{ entriesFor(type).length }} items</strong></header>
+    @if (entriesFor(type).length) { <div class="table-scroll"><table><thead><tr><th>Tool</th><th>Cost</th><th>Purchase date</th><th>Qty</th><th>Action</th></tr></thead><tbody>@for (entry of entriesFor(type); track entry.id) { <tr><td>{{ entry.name }}</td><td>{{ entry.cost | currency:'INR':'symbol':'1.2-2' }}</td><td>{{ entry.date | date:'dd MMM yyyy' }}</td><td>{{ entry.quantity | number }}</td><td><button appManageOnly class="delete" type="button" (click)="remove(entry)">Delete</button></td></tr> }</tbody></table></div> } @else { <p class="empty">No {{ type.toLowerCase() }} purchases recorded.</p> }
+  </section> }</div>
+</section>

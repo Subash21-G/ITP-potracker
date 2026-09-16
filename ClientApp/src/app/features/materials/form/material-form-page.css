@@ -166,6 +166,43 @@ textarea:focus {
   font-size: 0.67rem;
 }
 
+.checkbox-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.checkbox-field input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: #0d9488;
+  cursor: pointer;
+}
+
+.planning-checkbox {
+  align-self: end;
+  min-height: 45px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f8fafc, #fef2f2);
+}
+
+.field input:disabled {
+  color: #64748b;
+  background: #e2e8f0;
+  cursor: not-allowed;
+}
+
 .form-note {
   margin: 14px 0 0;
   color: #64748b;

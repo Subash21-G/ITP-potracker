@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
 using POTracker.Data;
+using POTracker.Models;
 
 namespace POTracker.Controllers.Api
 {
@@ -65,10 +66,6 @@ namespace POTracker.Controllers.Api
                 NormalizePageSize(
                     pageSize);
 
-            var query =
-                _context.Materials
-                    .AsNoTracking();
-
             var normalizedSearch =
                 Clean(
                     search);
@@ -84,6 +81,166 @@ namespace POTracker.Controllers.Api
             var normalizedDispatchStatus =
                 Clean(
                     dispatchStatus);
+
+            var normalizedMaterialNo =
+                Clean(
+                    materialNo);
+
+            var normalizedPONumber =
+                Clean(
+                    poNumber);
+
+            var normalizedAction =
+                Clean(
+                    action);
+
+            var normalizedColumnProcessStatus =
+                Clean(
+                    columnProcessStatus);
+
+            var normalizedColumnDispatchStatus =
+                Clean(
+                    columnDispatchStatus);
+
+            var normalizedColumnOwner =
+                Clean(
+                    columnOwner);
+
+            var hasRealAuditLogs =
+                await _context.AuditLogs.AnyAsync(cancellationToken);
+
+            if (hasRealAuditLogs)
+            {
+                var auditQuery = _context.AuditLogs.AsNoTracking();
+
+                if (normalizedSearch != null)
+                {
+                    auditQuery = auditQuery.Where(log =>
+                        (log.MaterialNo != null && log.MaterialNo.Contains(normalizedSearch)) ||
+                        (log.PONumber != null && log.PONumber.Contains(normalizedSearch)) ||
+                        log.Action.Contains(normalizedSearch));
+                }
+
+                if (normalizedOwner != null)
+                {
+                    auditQuery = auditQuery.Where(log =>
+                        (log.Owner != null && log.Owner.Contains(normalizedOwner)) ||
+                        (log.UserName != null && log.UserName.Contains(normalizedOwner)));
+                }
+
+                if (normalizedProcessStatus != null)
+                {
+                    auditQuery = auditQuery.Where(log =>
+                        log.ProcessStatus == normalizedProcessStatus);
+                }
+
+                if (normalizedDispatchStatus != null)
+                {
+                    auditQuery = auditQuery.Where(log =>
+                        log.DispatchStatus == normalizedDispatchStatus);
+                }
+
+                if (dateFrom.HasValue)
+                {
+                    var startDate = dateFrom.Value.Date;
+                    auditQuery = auditQuery.Where(log => log.CreatedDate >= startDate);
+                }
+
+                if (dateTo.HasValue)
+                {
+                    var endDateExclusive = dateTo.Value.Date.AddDays(1);
+                    auditQuery = auditQuery.Where(log => log.CreatedDate < endDateExclusive);
+                }
+
+                if (normalizedMaterialNo != null)
+                {
+                    auditQuery = auditQuery.Where(log =>
+                        log.MaterialNo != null && log.MaterialNo.Contains(normalizedMaterialNo));
+                }
+
+                if (normalizedPONumber != null)
+                {
+                    auditQuery = auditQuery.Where(log =>
+                        log.PONumber != null && log.PONumber.Contains(normalizedPONumber));
+                }
+
+                if (normalizedAction != null)
+                {
+                    auditQuery = auditQuery.Where(log =>
+                        log.Action.Contains(normalizedAction));
+                }
+
+                if (normalizedColumnProcessStatus != null)
+                {
+                    auditQuery = auditQuery.Where(log =>
+                        log.ProcessStatus == normalizedColumnProcessStatus);
+                }
+
+                if (normalizedColumnDispatchStatus != null)
+                {
+                    auditQuery = auditQuery.Where(log =>
+                        log.DispatchStatus == normalizedColumnDispatchStatus);
+                }
+
+                if (normalizedColumnOwner != null)
+                {
+                    auditQuery = auditQuery.Where(log =>
+                        (log.Owner != null && log.Owner.Contains(normalizedColumnOwner)) ||
+                        (log.UserName != null && log.UserName.Contains(normalizedColumnOwner)));
+                }
+
+                if (createdDateFrom.HasValue)
+                {
+                    var columnStartDate = createdDateFrom.Value.Date;
+                    auditQuery = auditQuery.Where(log => log.CreatedDate >= columnStartDate);
+                }
+
+                if (createdDateTo.HasValue)
+                {
+                    var columnEndDateExclusive = createdDateTo.Value.Date.AddDays(1);
+                    auditQuery = auditQuery.Where(log => log.CreatedDate < columnEndDateExclusive);
+                }
+
+                auditQuery = ApplyAuditLogExcelFilters(auditQuery, excelFilters);
+
+                var totalAuditCount = await auditQuery.CountAsync(cancellationToken);
+                var totalAuditPages = Math.Max(1, (int)Math.Ceiling(totalAuditCount / (double)pageSize));
+
+                if (page > totalAuditPages)
+                {
+                    page = totalAuditPages;
+                }
+
+                var auditItems = await ApplyAuditLogSort(auditQuery, sortColumn, sortDirection)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(log => new AuditItemDto
+                    {
+                        MaterialId = log.MaterialId ?? 0,
+                        CreatedDate = log.CreatedDate,
+                        MaterialNo = log.MaterialNo ?? string.Empty,
+                        PONumber = log.PONumber ?? string.Empty,
+                        Action = log.Action,
+                        ProcessStatus = log.ProcessStatus ?? string.Empty,
+                        DispatchStatus = log.DispatchStatus ?? string.Empty,
+                        Owner = log.Owner ?? log.UserName ?? string.Empty
+                    })
+                    .ToListAsync(cancellationToken);
+
+                return Ok(new AuditPagedResponseDto
+                {
+                    Items = auditItems,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalCount = totalAuditCount,
+                    TotalPages = totalAuditPages,
+                    GeneratedAt = DateTime.Now
+                });
+            }
+
+            var query =
+                _context.Materials
+                    .AsNoTracking();
 
             if (normalizedSearch != null)
             {
@@ -149,10 +306,6 @@ namespace POTracker.Controllers.Api
                         endDateExclusive);
             }
 
-            var normalizedMaterialNo =
-                Clean(
-                    materialNo);
-
             if (normalizedMaterialNo != null)
             {
                 query =
@@ -162,10 +315,6 @@ namespace POTracker.Controllers.Api
                             normalizedMaterialNo));
             }
 
-            var normalizedPONumber =
-                Clean(
-                    poNumber);
-
             if (normalizedPONumber != null)
             {
                 query =
@@ -174,10 +323,6 @@ namespace POTracker.Controllers.Api
                         material.PurchaseOrder.PONumber.Contains(
                             normalizedPONumber));
             }
-
-            var normalizedAction =
-                Clean(
-                    action);
 
             if (
                 normalizedAction != null &&
@@ -190,10 +335,6 @@ namespace POTracker.Controllers.Api
                     query.Where(_ => false);
             }
 
-            var normalizedColumnProcessStatus =
-                Clean(
-                    columnProcessStatus);
-
             if (normalizedColumnProcessStatus != null)
             {
                 query =
@@ -202,10 +343,6 @@ namespace POTracker.Controllers.Api
                         normalizedColumnProcessStatus);
             }
 
-            var normalizedColumnDispatchStatus =
-                Clean(
-                    columnDispatchStatus);
-
             if (normalizedColumnDispatchStatus != null)
             {
                 query =
@@ -213,10 +350,6 @@ namespace POTracker.Controllers.Api
                         material.DispatchStatus ==
                         normalizedColumnDispatchStatus);
             }
-
-            var normalizedColumnOwner =
-                Clean(
-                    columnOwner);
 
             if (normalizedColumnOwner != null)
             {

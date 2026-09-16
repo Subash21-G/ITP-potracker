@@ -70,6 +70,19 @@ namespace POTracker.Controllers.Api
                     ".zip"
                 };
 
+        private static readonly HashSet<string>
+            AllowedHandSketchExtensions =
+                new(StringComparer.OrdinalIgnoreCase)
+                {
+                    ".pdf",
+                    ".png",
+                    ".jpg",
+                    ".jpeg",
+                    ".webp",
+                    ".gif",
+                    ".bmp"
+                };
+
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
         private readonly PendingInvoiceMatcher
@@ -133,6 +146,18 @@ namespace POTracker.Controllers.Api
                             material.MaterialNo ??
                             string.Empty,
 
+                        DuplicateCount = 1,
+
+                        LatestHistoryOutcome =
+                            material.HistoryEntries
+                                .OrderByDescending(history =>
+                                    history.OccurredDate)
+                                .ThenByDescending(history =>
+                                    history.Id)
+                                .Select(history =>
+                                    history.Outcome)
+                                .FirstOrDefault(),
+
                         HsnSacCode =
                             material.HsnSacCode,
 
@@ -188,7 +213,23 @@ namespace POTracker.Controllers.Api
 
                         AssignedDashboard =
                             material.AssignedDashboard ??
-                            string.Empty
+                            string.Empty,
+
+                        SourcingType =
+                            material.SourcingType,
+
+                        OutsourcedTo =
+                            material.OutsourcedTo ??
+                            string.Empty,
+
+                        HasCostVariation =
+                            material.HasCostVariation,
+
+                        VariationCost =
+                            material.VariationCost,
+
+                        PriorityLevel =
+                            material.PriorityLevel
                     };
 
         private static readonly Expression<
@@ -268,6 +309,9 @@ namespace POTracker.Controllers.Api
                         PendingQty =
                             material.PendingQty,
 
+                        StockQty =
+                            material.StockQty,
+
 
                         InvoiceQty =
                             material.InvoiceQty,
@@ -314,6 +358,10 @@ namespace POTracker.Controllers.Api
 
                         RMGrade =
                             material.RMGrade ??
+                            string.Empty,
+
+                        RMSize =
+                            material.RMSize ??
                             string.Empty,
 
                         RMSource =
@@ -380,6 +428,15 @@ namespace POTracker.Controllers.Api
                             material.DrawingFilePath ??
                             string.Empty,
 
+                        HandSketchFilePath =
+                            material.HandSketchFilePath ??
+                            string.Empty,
+
+                        OutsourceDrawingFilePath =
+                            material.OutsourceDrawingFilePath ??
+                            string.Empty,
+                        WebDrawingFilePath = material.WebDrawingFilePath ?? string.Empty,
+
                         PdfFilePath =
                             material.PDFFilePath ??
                             string.Empty,
@@ -393,6 +450,22 @@ namespace POTracker.Controllers.Api
                         AssignedDashboard =
                             material.AssignedDashboard ??
                             string.Empty,
+
+                        SourcingType =
+                            material.SourcingType,
+
+                        OutsourcedTo =
+                            material.OutsourcedTo ??
+                            string.Empty,
+
+                        HasCostVariation =
+                            material.HasCostVariation,
+
+                        VariationCost =
+                            material.VariationCost,
+
+                        PriorityLevel =
+                            material.PriorityLevel,
 
                         Remark =
                             material.Remark ??
@@ -499,6 +572,8 @@ namespace POTracker.Controllers.Api
                 string? excelFilters,
                 string? sortColumn,
                 string? sortDirection,
+                bool removeDuplicates = false,
+                bool pendingOnly = false,
 
                 int page = 1,
                 int pageSize = DefaultPageSize,
@@ -580,7 +655,9 @@ namespace POTracker.Controllers.Api
             if (
                 !requiresStockDerivedFiltering &&
                 !requiresExcelFiltering &&
-                !requiresExcelDerivedSort
+                !requiresExcelDerivedSort &&
+                !removeDuplicates &&
+                !pendingOnly
             )
             {
                 totalRecords =
@@ -636,8 +713,14 @@ namespace POTracker.Controllers.Api
                     allItems,
                     cancellationToken);
 
+                if (removeDuplicates)
+                {
+                    allItems = AggregateDuplicateMaterials(allItems);
+                }
+
                 var filteredItems =
                     allItems
+                        .Where(item => !pendingOnly || item.PendingQuantity > 0)
                         .Where(item =>
                             MatchesStockDerivedFilters(
                                 item,
@@ -1048,6 +1131,11 @@ namespace POTracker.Controllers.Api
                 MaterialUpsertRequestDto request,
                 CancellationToken cancellationToken = default)
         {
+            if (!ValidatePlanningDetails(request))
+            {
+                return ValidationProblem(ModelState);
+            }
+
             var purchaseOrder =
                 await _context.PurchaseOrders
                     .AsNoTracking()
@@ -1184,6 +1272,11 @@ namespace POTracker.Controllers.Api
                     });
             }
 
+            if (!ValidatePlanningDetails(request))
+            {
+                return ValidationProblem(ModelState);
+            }
+
             var purchaseOrder =
                 await _context.PurchaseOrders
                     .AsNoTracking()
@@ -1261,12 +1354,14 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         /// <summary>
-        /// Uploads or replaces a material PDF and/or drawing file.
+        /// Uploads or replaces the material PDF, CAD drawing, hand sketch,
+        /// and/or outsourced drawing. Drawings are shared by every material
+        /// record with the same material number; material PDFs remain specific.
         /// </summary>
         [HttpPost("{id:int}/files")]
         [POTracker.Security.ValidateApiAntiforgeryToken]
         [Consumes("multipart/form-data")]
-        [RequestSizeLimit(200L * 1024L * 1024L)]
+        [RequestSizeLimit(350L * 1024L * 1024L)]
         [ProducesResponseType(
             typeof(MaterialSaveResponseDto),
             StatusCodes.Status200OK)]
@@ -1284,19 +1379,29 @@ namespace POTracker.Controllers.Api
             UploadFiles(
                 int id,
                 [FromForm]
-                IFormFile? pdfFile,
+                IFormFile? pdfFile = null,
                 [FromForm]
-                IFormFile? drawingFile,
+                IFormFile? drawingFile = null,
+                [FromForm]
+                IFormFile? handSketchFile = null,
+                [FromForm]
+                IFormFile? outsourceDrawingFile = null,
+                [FromForm] IFormFile? webDrawingFile = null,
                 CancellationToken cancellationToken = default)
         {
             if ((pdfFile == null ||
                  pdfFile.Length == 0) &&
                 (drawingFile == null ||
-                 drawingFile.Length == 0))
+                 drawingFile.Length == 0) &&
+                (handSketchFile == null ||
+                 handSketchFile.Length == 0) &&
+                (outsourceDrawingFile == null ||
+                 outsourceDrawingFile.Length == 0) &&
+                (webDrawingFile == null || webDrawingFile.Length == 0))
             {
                 ModelState.AddModelError(
                     "files",
-                    "Select a PDF or drawing file.");
+                    "Select a material PDF, CAD drawing, hand sketch, outsourced drawing, or web drawing file.");
 
                 return ValidationProblem(ModelState);
             }
@@ -1322,6 +1427,34 @@ namespace POTracker.Controllers.Api
                     drawingError);
             }
 
+            var handSketchError =
+                ValidateHandSketchFile(
+                    handSketchFile);
+
+            if (handSketchError != null)
+            {
+                ModelState.AddModelError(
+                    nameof(handSketchFile),
+                    handSketchError);
+            }
+
+            var outsourceDrawingError =
+                ValidateDrawingFile(
+                    outsourceDrawingFile);
+
+            if (outsourceDrawingError != null)
+            {
+                ModelState.AddModelError(
+                    nameof(outsourceDrawingFile),
+                    outsourceDrawingError);
+            }
+
+            var webDrawingError = ValidateDrawingFile(webDrawingFile);
+            if (webDrawingError != null)
+            {
+                ModelState.AddModelError(nameof(webDrawingFile), webDrawingError);
+            }
+
             if (!ModelState.IsValid)
             {
                 return ValidationProblem(ModelState);
@@ -1344,6 +1477,9 @@ namespace POTracker.Controllers.Api
                     });
             }
 
+            var updatedDate =
+                DateTime.Now;
+
             if (pdfFile != null &&
                 pdfFile.Length > 0)
             {
@@ -1354,23 +1490,191 @@ namespace POTracker.Controllers.Api
                         cancellationToken);
             }
 
+            var sharedDocumentMaterialCount = 0;
+
+            var replacedDrawingPaths =
+                new List<string>();
+
+            var replacedHandSketchPaths =
+                new List<string>();
+
+            var replacedOutsourceDrawingPaths =
+                new List<string>();
+
+            var replacedWebDrawingPaths = new List<string>();
+
+            List<Material>? sharedMaterials = null;
+
+            if (
+                (drawingFile != null && drawingFile.Length > 0) ||
+                (handSketchFile != null && handSketchFile.Length > 0) ||
+                (outsourceDrawingFile != null && outsourceDrawingFile.Length > 0) ||
+                (webDrawingFile != null && webDrawingFile.Length > 0)
+            )
+            {
+                sharedMaterials =
+                    await LoadMaterialsSharingMaterialNumberAsync(
+                        material,
+                        cancellationToken);
+
+                sharedDocumentMaterialCount =
+                    sharedMaterials.Count;
+            }
+
             if (drawingFile != null &&
                 drawingFile.Length > 0)
             {
-                material.DrawingFilePath =
+                var drawingFilePath =
                     await SaveFileAsync(
                         drawingFile,
                         "drawings",
                         cancellationToken);
 
-                material.DrawingUpdatedDate =
-                    DateTime.Now;
+                replacedDrawingPaths =
+                    sharedMaterials!
+                        .Select(item =>
+                            item.DrawingFilePath)
+                        .Where(path =>
+                            !string.IsNullOrWhiteSpace(
+                                path))
+                        .Select(path =>
+                            path!)
+                        .Distinct(
+                            StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                foreach (
+                    var drawingMaterial
+                    in sharedMaterials!)
+                {
+                    drawingMaterial.DrawingFilePath =
+                        drawingFilePath;
+
+                    drawingMaterial.DrawingUpdatedDate =
+                        updatedDate;
+
+                    drawingMaterial.UpdatedDate =
+                        updatedDate;
+                }
+
+            }
+
+            if (handSketchFile != null &&
+                handSketchFile.Length > 0)
+            {
+                var handSketchFilePath =
+                    await SaveFileAsync(
+                        handSketchFile,
+                        "hand-sketches",
+                        cancellationToken);
+
+                replacedHandSketchPaths =
+                    sharedMaterials!
+                        .Select(item =>
+                            item.HandSketchFilePath)
+                        .Where(path =>
+                            !string.IsNullOrWhiteSpace(
+                                path))
+                        .Select(path =>
+                            path!)
+                        .Distinct(
+                            StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                foreach (
+                    var drawingMaterial
+                    in sharedMaterials!)
+                {
+                    drawingMaterial.HandSketchFilePath =
+                        handSketchFilePath;
+
+                    drawingMaterial.DrawingUpdatedDate =
+                        updatedDate;
+
+                    drawingMaterial.UpdatedDate =
+                        updatedDate;
+                }
+            }
+
+            if (outsourceDrawingFile != null &&
+                outsourceDrawingFile.Length > 0)
+            {
+                var outsourceDrawingFilePath =
+                    await SaveFileAsync(
+                        outsourceDrawingFile,
+                        "outsource-drawings",
+                        cancellationToken);
+
+                replacedOutsourceDrawingPaths =
+                    sharedMaterials!
+                        .Select(item =>
+                            item.OutsourceDrawingFilePath)
+                        .Where(path =>
+                            !string.IsNullOrWhiteSpace(
+                                path))
+                        .Select(path =>
+                            path!)
+                        .Distinct(
+                            StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                foreach (
+                    var drawingMaterial
+                    in sharedMaterials!)
+                {
+                    drawingMaterial.OutsourceDrawingFilePath =
+                        outsourceDrawingFilePath;
+
+                    drawingMaterial.DrawingUpdatedDate =
+                        updatedDate;
+
+                    drawingMaterial.UpdatedDate =
+                        updatedDate;
+                }
+            }
+
+            if (webDrawingFile != null && webDrawingFile.Length > 0)
+            {
+                var webDrawingFilePath = await SaveFileAsync(webDrawingFile, "web-drawings", cancellationToken);
+                replacedWebDrawingPaths = sharedMaterials!.Select(item => item.WebDrawingFilePath)
+                    .Where(path => !string.IsNullOrWhiteSpace(path)).Select(path => path!)
+                    .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                foreach (var drawingMaterial in sharedMaterials!)
+                {
+                    drawingMaterial.WebDrawingFilePath = webDrawingFilePath;
+                    drawingMaterial.DrawingUpdatedDate = updatedDate;
+                    drawingMaterial.UpdatedDate = updatedDate;
+                }
             }
 
             material.UpdatedDate =
-                DateTime.Now;
+                updatedDate;
 
             await _context.SaveChangesAsync(
+                cancellationToken);
+
+            await DeleteUnreferencedMaterialFilesAsync(
+                replacedDrawingPaths,
+                "drawings",
+                item => item.DrawingFilePath,
+                cancellationToken);
+
+            await DeleteUnreferencedMaterialFilesAsync(
+                replacedHandSketchPaths,
+                "hand-sketches",
+                item => item.HandSketchFilePath,
+                cancellationToken);
+
+            await DeleteUnreferencedMaterialFilesAsync(
+                replacedOutsourceDrawingPaths,
+                "outsource-drawings",
+                item => item.OutsourceDrawingFilePath,
+                cancellationToken);
+
+            await DeleteUnreferencedMaterialFilesAsync(
+                replacedWebDrawingPaths,
+                "web-drawings",
+                item => item.WebDrawingFilePath,
                 cancellationToken);
 
             var savedMaterial =
@@ -1383,7 +1687,123 @@ namespace POTracker.Controllers.Api
                 {
                     Success = true,
                     Message =
-                        "Material files uploaded successfully.",
+                        sharedDocumentMaterialCount > 1
+                            ? "Material files uploaded successfully. " +
+                              $"The shared drawings were applied to {sharedDocumentMaterialCount} records " +
+                              $"with material number {material.MaterialNo!.Trim()}."
+                            : "Material files uploaded successfully.",
+                    MaterialId =
+                        material.Id,
+                    Material =
+                        savedMaterial
+                });
+        }
+
+        /// <summary>
+        /// Removes the shared drawing from every material record with
+        /// the same material number. Material PDFs are not changed.
+        /// </summary>
+        [HttpDelete("{id:int}/files/drawing")]
+        [POTracker.Security.ValidateApiAntiforgeryToken]
+        [ProducesResponseType(
+            typeof(MaterialSaveResponseDto),
+            StatusCodes.Status200OK)]
+        [ProducesResponseType(
+            StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(
+            StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(
+            StatusCodes.Status404NotFound)]
+        public async Task<
+            ActionResult<MaterialSaveResponseDto>>
+            DeleteDrawing(
+                int id,
+                [FromQuery] string documentType = "drawing",
+                CancellationToken cancellationToken = default)
+        {
+            var material =
+                await _context.Materials
+                    .FirstOrDefaultAsync(
+                        item =>
+                            item.Id == id,
+                        cancellationToken);
+
+            if (material == null)
+            {
+                return NotFound(
+                    new
+                    {
+                        error =
+                            $"Material {id} was not found."
+                    });
+            }
+
+            var drawingMaterials =
+                await LoadMaterialsSharingMaterialNumberAsync(
+                    material,
+                    cancellationToken);
+
+            var normalizedDocumentType = (documentType ?? "drawing").Trim().ToLowerInvariant();
+            var documentPaths = drawingMaterials.Select(item => normalizedDocumentType == "hand-sketch" || normalizedDocumentType == "handsketch" ? item.HandSketchFilePath : normalizedDocumentType == "outsource" || normalizedDocumentType == "outsource-drawing" ? item.OutsourceDrawingFilePath : normalizedDocumentType == "web" || normalizedDocumentType == "web-drawing" ? item.WebDrawingFilePath : item.DrawingFilePath)
+                    .Where(path =>
+                        !string.IsNullOrWhiteSpace(
+                            path))
+                    .Select(path =>
+                        path!)
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            var updatedDate =
+                DateTime.Now;
+
+            foreach (
+                var drawingMaterial
+                in drawingMaterials)
+            {
+                switch (normalizedDocumentType)
+                {
+                    case "hand-sketch": case "handsketch": drawingMaterial.HandSketchFilePath = null; break;
+                    case "outsource": case "outsource-drawing": drawingMaterial.OutsourceDrawingFilePath = null; break;
+                    case "web": case "web-drawing": drawingMaterial.WebDrawingFilePath = null; break;
+                    default: drawingMaterial.DrawingFilePath = null; drawingMaterial.DrawingUpdatedDate = null; break;
+                }
+
+                drawingMaterial.DrawingUpdatedDate =
+                    null;
+
+                drawingMaterial.UpdatedDate =
+                    updatedDate;
+            }
+
+            await _context.SaveChangesAsync(
+                cancellationToken);
+
+            await DeleteUnreferencedMaterialFilesAsync(
+                documentPaths,
+                normalizedDocumentType switch { "hand-sketch" or "handsketch" => "hand-sketches", "outsource" or "outsource-drawing" => "outsource-drawings", "web" or "web-drawing" => "web-drawings", _ => "drawings" },
+                item => normalizedDocumentType == "hand-sketch" || normalizedDocumentType == "handsketch" ? item.HandSketchFilePath : normalizedDocumentType == "outsource" || normalizedDocumentType == "outsource-drawing" ? item.OutsourceDrawingFilePath : normalizedDocumentType == "web" || normalizedDocumentType == "web-drawing" ? item.WebDrawingFilePath : item.DrawingFilePath,
+                cancellationToken);
+
+            var savedMaterial =
+                await GetMaterialDetailsAsync(
+                    material.Id,
+                    cancellationToken);
+
+            var materialNumber =
+                Clean(material.MaterialNo);
+
+            return Ok(
+                new MaterialSaveResponseDto
+                {
+                    Success = true,
+                    Message =
+                        drawingMaterials.Count > 1 &&
+                        materialNumber != null
+                            ? "Drawing deleted successfully from " +
+                              $"{drawingMaterials.Count} records with " +
+                              $"material number {materialNumber}."
+                            : "Drawing deleted successfully.",
                     MaterialId =
                         material.Id,
                     Material =
@@ -1555,6 +1975,8 @@ namespace POTracker.Controllers.Api
             string? excelFilters,
             string? sortColumn,
             string? sortDirection,
+            bool removeDuplicates = false,
+            bool pendingOnly = false,
 
             CancellationToken cancellationToken = default)
         {
@@ -1604,6 +2026,16 @@ namespace POTracker.Controllers.Api
             await PopulateExportStockAsync(
                 items,
                 cancellationToken);
+
+            if (removeDuplicates)
+            {
+                items = AggregateDuplicateMaterials(items);
+            }
+
+            if (pendingOnly)
+            {
+                items = items.Where(item => item.PendingQuantity > 0).ToList();
+            }
 
             var requiresStockDerivedFiltering =
                 !string.IsNullOrWhiteSpace(
@@ -2138,6 +2570,53 @@ namespace POTracker.Controllers.Api
             public DateTime? DeliveryDate { get; init; }
         }
 
+        private static List<MaterialListItemDto> AggregateDuplicateMaterials(
+            IEnumerable<MaterialListItemDto> items)
+        {
+            var numbered = items
+                .Where(item => !string.IsNullOrWhiteSpace(item.MaterialNo))
+                .GroupBy(item => item.MaterialNo.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
+                {
+                    var first = group.OrderBy(item => item.Id).First();
+                    return new MaterialListItemDto
+                    {
+                        Id = first.Id, PurchaseOrderId = first.PurchaseOrderId,
+                        PONumber = first.PONumber, Handler = first.Handler,
+                        PurchaserName = first.PurchaserName, PODate = first.PODate,
+                        POReceivedDate = first.POReceivedDate, LineItem = first.LineItem,
+                        MaterialNo = first.MaterialNo, DuplicateCount = group.Count(),
+                        LatestHistoryOutcome = first.LatestHistoryOutcome, HsnSacCode = first.HsnSacCode,
+                        Description = first.Description, Quantity = group.Sum(x => x.Quantity),
+                        Unit = first.Unit, UnitPrice = first.UnitPrice, PriceUnit = first.PriceUnit,
+                        TotalValue = group.Sum(x => x.TotalValue),
+                        InvoiceQuantity = group.Sum(x => x.InvoiceQuantity),
+                        DispatchQuantity = group.Sum(x => x.DispatchQuantity),
+                        PendingQuantity = group.Sum(x => x.PendingQuantity),
+                        InvoiceStatus = first.InvoiceStatus, ProcessStatus = first.ProcessStatus,
+                        DispatchStatus = first.DispatchStatus, DeliveryDate = first.DeliveryDate,
+                        DrawingNo = first.DrawingNo, AssignedDashboard = first.AssignedDashboard,
+                        SourcingType = first.SourcingType,
+                        OutsourcedTo = first.OutsourcedTo,
+                        HasCostVariation = group.Any(x => x.HasCostVariation),
+                        VariationCost = group.FirstOrDefault(x => x.VariationCost.HasValue)?.VariationCost,
+                        PriorityLevel = group.Any(x => x.PriorityLevel == "Urgent")
+                            ? "Urgent"
+                            : group.Any(x => x.PriorityLevel == "Priority")
+                                ? "Priority"
+                                : "Normal",
+                        LiveStockQuantity = first.LiveStockQuantity,
+                        AllocatedStockQuantity = group.Sum(x => x.AllocatedStockQuantity),
+                        StockMinimumQuantity = first.StockMinimumQuantity,
+                        StockShortageQuantity = group.Sum(x => x.StockShortageQuantity),
+                        StockStatus = first.StockStatus, StockRecordCount = first.StockRecordCount,
+                        StockDataLive = first.StockDataLive
+                    };
+                });
+
+            return numbered.Concat(items.Where(item => string.IsNullOrWhiteSpace(item.MaterialNo))).ToList();
+        }
+
         private static void WriteMaterialExcel(
             IXLWorksheet worksheet,
             IReadOnlyList<MaterialListItemDto> items)
@@ -2452,11 +2931,40 @@ namespace POTracker.Controllers.Api
                 return null;
             }
 
+            // Required quantity for printing is the total pending quantity
+            // across every line for this material number. Completed lines
+            // are intentionally excluded.
+            details.RequiredQty = await _context.Materials
+                .AsNoTracking()
+                .Where(material =>
+                    material.MaterialNo != null &&
+                    material.MaterialNo.Trim() == details.MaterialNo.Trim() &&
+                    (material.ProcessStatus == null ||
+                     material.ProcessStatus.Trim() != "Completed"))
+                .SumAsync(material => material.PendingQty, cancellationToken);
+
             details.DrawingFilePath =
                 _documentReferences.ToDownloadUrl(
                     details.DrawingFilePath,
                     "drawings") ??
                 string.Empty;
+
+            details.HandSketchFilePath =
+                _documentReferences.ToDownloadUrl(
+                    details.HandSketchFilePath,
+                    "hand-sketches") ??
+                string.Empty;
+
+            details.OutsourceDrawingFilePath =
+                _documentReferences.ToDownloadUrl(
+                    details.OutsourceDrawingFilePath,
+                    "outsource-drawings") ??
+                string.Empty;
+
+            details.WebDrawingFilePath =
+                _documentReferences.ToDownloadUrl(
+                    details.WebDrawingFilePath,
+                    "web-drawings") ?? string.Empty;
 
             details.PdfFilePath =
                 _documentReferences.ToDownloadUrl(
@@ -4232,7 +4740,11 @@ namespace POTracker.Controllers.Api
                 request.TotalValue;
 
             material.RMGrade =
-                Clean(request.RMGrade);
+                Clean(request.RMGrade) ??
+                Clean(material.RMGrade) ??
+                MaterialRmGradeExtractor.Extract(
+                    material.ShortDescription,
+                    material.BriefDescription);
 
             material.RMSource =
                 Clean(request.RMSource);
@@ -4284,8 +4796,84 @@ namespace POTracker.Controllers.Api
                 Clean(
                     request.AssignedDashboard);
 
+            var sourcingType =
+                NormalizeSourcingType(
+                    request.SourcingType);
+
+            material.SourcingType =
+                sourcingType;
+
+            material.OutsourcedTo =
+                sourcingType == "Outsourcing"
+                    ? Clean(request.OutsourcedTo)
+                    : null;
+
+            material.HasCostVariation =
+                request.HasCostVariation;
+
+            material.VariationCost =
+                request.HasCostVariation
+                    ? request.VariationCost
+                    : null;
+
+            material.PriorityLevel =
+                NormalizePriorityLevel(
+                    request.PriorityLevel);
+
             material.Remark =
                 Clean(request.Remark);
+        }
+
+        private bool ValidatePlanningDetails(
+            MaterialUpsertRequestDto request)
+        {
+            if (
+                NormalizeSourcingType(request.SourcingType) == "Outsourcing" &&
+                string.IsNullOrWhiteSpace(request.OutsourcedTo))
+            {
+                ModelState.AddModelError(
+                    nameof(request.OutsourcedTo),
+                    "Outsourced To is required for outsourced materials.");
+            }
+
+            if (
+                request.HasCostVariation &&
+                !request.VariationCost.HasValue)
+            {
+                ModelState.AddModelError(
+                    nameof(request.VariationCost),
+                    "Variation cost is required when Cost Variation is selected.");
+            }
+
+            return ModelState.IsValid;
+        }
+
+        private static string NormalizeSourcingType(string? value)
+        {
+            return string.Equals(
+                value?.Trim(),
+                "Outsourcing",
+                StringComparison.OrdinalIgnoreCase)
+                    ? "Outsourcing"
+                    : "Inhouse";
+        }
+
+        private static string NormalizePriorityLevel(string? value)
+        {
+            if (string.Equals(
+                    value?.Trim(),
+                    "Urgent",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return "Urgent";
+            }
+
+            return string.Equals(
+                value?.Trim(),
+                "Priority",
+                StringComparison.OrdinalIgnoreCase)
+                    ? "Priority"
+                    : "Normal";
         }
 
         private static void ApplyScheduleRules(
@@ -4435,6 +5023,182 @@ namespace POTracker.Controllers.Api
         // FILE HELPERS
         // ============================================================
 
+        private async Task<List<Material>>
+            LoadMaterialsSharingMaterialNumberAsync(
+                Material material,
+                CancellationToken cancellationToken)
+        {
+            var normalizedMaterialNumber =
+                Clean(material.MaterialNo)?
+                    .ToLower();
+
+            if (normalizedMaterialNumber == null)
+            {
+                return new List<Material>
+                {
+                    material
+                };
+            }
+
+            return await _context.Materials
+                .Where(item =>
+                    item.MaterialNo != null &&
+                    item.MaterialNo
+                        .Trim()
+                        .ToLower() ==
+                    normalizedMaterialNumber)
+                .ToListAsync(
+                    cancellationToken);
+        }
+
+        private async Task
+            DeleteUnreferencedMaterialFilesAsync(
+                IEnumerable<string> storedPaths,
+                string category,
+                Expression<Func<Material, string?>> pathSelector,
+                CancellationToken cancellationToken)
+        {
+            var candidatePaths =
+                storedPaths
+                    .Select(path =>
+                        TryGetMaterialDocumentRelativePath(
+                            path,
+                            category))
+                    .Where(path =>
+                        path != null)
+                    .Select(path =>
+                        path!)
+                    .ToHashSet(
+                        StringComparer.OrdinalIgnoreCase);
+
+            if (candidatePaths.Count == 0)
+            {
+                return;
+            }
+
+            var remainingStoredPaths =
+                await _context.Materials
+                    .AsNoTracking()
+                    .Select(pathSelector)
+                    .Where(path =>
+                        path != null &&
+                        path != string.Empty)
+                    .Select(path =>
+                        path!)
+                    .ToListAsync(
+                        cancellationToken);
+
+            var referencedPaths =
+                remainingStoredPaths
+                    .Select(path =>
+                        TryGetMaterialDocumentRelativePath(
+                            path,
+                            category))
+                    .Where(path =>
+                        path != null)
+                    .Select(path =>
+                        path!)
+                    .ToHashSet(
+                        StringComparer.OrdinalIgnoreCase);
+
+            foreach (
+                var relativePath
+                in candidatePaths.Except(
+                    referencedPaths,
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    _privateDocumentStorage
+                        .DeleteIfExists(
+                            relativePath);
+
+                    DeletePublicDocumentMirrorIfExists(
+                        relativePath);
+                }
+                catch (
+                    IOException)
+                {
+                    // The database reference has already been removed.
+                    // A locked orphan can be cleaned up separately.
+                }
+                catch (
+                    UnauthorizedAccessException)
+                {
+                    // Preserve the successful database deletion when a
+                    // deployment temporarily denies file-system cleanup.
+                }
+            }
+        }
+
+        private string? TryGetMaterialDocumentRelativePath(
+            string? storedPath,
+            string category)
+        {
+            if (
+                !_documentReferences.TryNormalizeRelativePath(
+                    storedPath,
+                    category,
+                    out var relativePath)
+            )
+            {
+                return null;
+            }
+
+            var segments =
+                relativePath.Split(
+                    '/',
+                    StringSplitOptions.RemoveEmptyEntries);
+
+            return
+                segments.Length == 2 &&
+                segments[0].Equals(
+                    category,
+                    StringComparison.OrdinalIgnoreCase)
+                    ? relativePath
+                    : null;
+        }
+
+        private void DeletePublicDocumentMirrorIfExists(
+            string relativePath)
+        {
+            var segments =
+                relativePath.Split(
+                    '/',
+                    StringSplitOptions.RemoveEmptyEntries);
+
+            if (segments.Length != 2)
+            {
+                return;
+            }
+
+            var category =
+                segments[0];
+
+            var fileName =
+                segments[1];
+
+            var webRootPath =
+                _environment.WebRootPath ??
+                Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot");
+
+            var publicPhysicalPath =
+                Path.Combine(
+                    webRootPath,
+                    "uploads",
+                    category,
+                    fileName);
+
+            if (System.IO.File.Exists(
+                    publicPhysicalPath))
+            {
+                System.IO.File.Delete(
+                    publicPhysicalPath);
+            }
+        }
+
         private static string? ValidatePdfFile(
             IFormFile? file)
         {
@@ -4491,6 +5255,36 @@ namespace POTracker.Controllers.Api
             {
                 return
                     "Allowed drawing files: PDF, PNG, JPG, WebP, DWG, DXF, STEP, STP, IGES, IGS or ZIP.";
+            }
+
+            return null;
+        }
+
+        private static string? ValidateHandSketchFile(
+            IFormFile? file)
+        {
+            if (file == null ||
+                file.Length == 0)
+            {
+                return null;
+            }
+
+            if (file.Length >
+                MaximumDrawingFileSize)
+            {
+                return
+                    "Hand sketch file size must not exceed 100 MB.";
+            }
+
+            var extension =
+                Path.GetExtension(
+                    file.FileName);
+
+            if (!AllowedHandSketchExtensions.Contains(
+                    extension))
+            {
+                return
+                    "Allowed hand sketch files: PDF, PNG, JPG, JPEG, WebP, GIF or BMP.";
             }
 
             return null;

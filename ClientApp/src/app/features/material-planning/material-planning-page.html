@@ -1,0 +1,240 @@
+<section class="planning-page">
+  <header [class]="'planning-hero planning-hero--' + workspace">
+    <div>
+      <span class="eyebrow">{{ copy.eyebrow }}</span>
+      <h1>{{ copy.title }}</h1>
+      <p>{{ copy.description }}</p>
+    </div>
+
+    <a class="hero-link" routerLink="/materials">Open all materials</a>
+  </header>
+
+  <nav class="workspace-switcher" aria-label="Material planning workspaces">
+    <a routerLink="/outsourcing-inhouse" routerLinkActive="active">Outsourcing & Inhousing</a>
+    <a routerLink="/cost-variation" routerLinkActive="active">Cost Variation</a>
+    <a routerLink="/priority-urgent" routerLinkActive="active">Priority & Urgent</a>
+  </nav>
+
+  <section class="summary-grid" aria-label="Material planning summary">
+    <article class="summary-card summary-card--inhouse">
+      <span>Inhousing</span>
+      <strong>{{ summary().inhouse | number }}</strong>
+    </article>
+    <article class="summary-card summary-card--outsourcing">
+      <span>Outsourcing</span>
+      <strong>{{ summary().outsourcing | number }}</strong>
+    </article>
+    <article class="summary-card summary-card--cost">
+      <span>Cost variation</span>
+      <strong>{{ summary().costVariation | number }}</strong>
+    </article>
+    <article class="summary-card summary-card--priority">
+      <span>Priority</span>
+      <strong>{{ summary().priority | number }}</strong>
+    </article>
+    <article class="summary-card summary-card--urgent">
+      <span>Urgent</span>
+      <strong>{{ summary().urgent | number }}</strong>
+    </article>
+  </section>
+
+  <section class="planning-panel">
+    <header class="panel-heading">
+      <div>
+        <span class="eyebrow">Current queue</span>
+        <h2>{{ copy.title }} materials</h2>
+      </div>
+
+      <strong>{{ totalRecords() | number }} records</strong>
+    </header>
+
+    <form class="filters" (ngSubmit)="applySearch()">
+      <label>
+        <span>Search</span>
+        <input
+          type="search"
+          [formControl]="searchControl"
+          placeholder="Material, PO, line item or description"
+        />
+      </label>
+
+      <button type="submit" [disabled]="loading()">Search</button>
+      <button type="button" class="button--quiet" [disabled]="loading()" (click)="clearSearch()">
+        Clear
+      </button>
+    </form>
+
+    @if (workspace === 'sourcing') {
+      <div class="scope-tabs" aria-label="Sourcing filter">
+        <button type="button" [class.active]="scope() === ''" (click)="selectScope('')">All</button>
+        <button type="button" [class.active]="scope() === 'inhouse'" (click)="selectScope('inhouse')">
+          Inhouse
+        </button>
+        <button
+          type="button"
+          [class.active]="scope() === 'outsourcing'"
+          (click)="selectScope('outsourcing')"
+        >
+          Outsourcing
+        </button>
+      </div>
+    } @else if (workspace === 'priority-urgent') {
+      <div class="scope-tabs" aria-label="Attention filter">
+        <button type="button" [class.active]="scope() === ''" (click)="selectScope('')">All</button>
+        <button type="button" [class.active]="scope() === 'priority'" (click)="selectScope('priority')">
+          Priority
+        </button>
+        <button type="button" [class.active]="scope() === 'urgent'" (click)="selectScope('urgent')">
+          Urgent
+        </button>
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <div class="message message--error" role="alert">{{ errorMessage() }}</div>
+    }
+
+    <div class="table-wrap" [class.table-wrap--loading]="loading()">
+      <table>
+        <thead>
+          <tr>
+            <th>PO / Line</th>
+            <th>Material</th>
+            <th>Description</th>
+            <th class="number-cell">Quantity</th>
+            <th class="number-cell">
+              {{ workspace === 'cost-variation' ? 'Original cost' : 'Cost' }}
+            </th>
+            <th>
+              @if (workspace === 'sourcing') {
+                Assigned to
+              } @else if (workspace === 'cost-variation') {
+                Revised cost
+              } @else {
+                Planning
+              }
+            </th>
+            <th>Delivery</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (material of items(); track material.id) {
+            <tr>
+              <td>
+                <a [routerLink]="['/purchase-orders', material.purchaseOrderId]">
+                  {{ material.poNumber || '—' }}
+                </a>
+                <small>Line {{ material.lineItem || '—' }}</small>
+              </td>
+              <td>
+                <a class="material-link" [routerLink]="['/materials', material.id]">
+                  {{ material.materialNo || '—' }}
+                </a>
+                <span class="badge badge--sourcing">{{ material.sourcingType }}</span>
+              </td>
+              <td class="description-cell" [title]="material.description">
+                {{ material.description || '—' }}
+              </td>
+              <td class="number-cell">
+                {{ material.quantity | number: '1.0-2' }} {{ material.unit }}
+              </td>
+              <td class="number-cell">₹{{ material.cost | number: '1.2-2' }}</td>
+              <td>
+                @if (workspace === 'sourcing') {
+                  @if (material.sourcingType === 'Outsourcing') {
+                    <strong class="assignment-name">
+                      {{ material.outsourcedTo || 'Not assigned' }}
+                    </strong>
+                    <small>Outsourced vendor / person</small>
+                  } @else {
+                    <strong class="assignment-name">Internal team</strong>
+                    <small>Produced inhouse</small>
+                  }
+                } @else if (workspace === 'cost-variation') {
+                  @if (material.variationCost !== null) {
+                    <strong class="variation-cost">
+                      &#8377;{{ material.variationCost | number: '1.2-2' }}
+                    </strong>
+                    <small
+                      class="variation-difference"
+                      [class.variation-difference--increase]="material.variationCost > material.cost"
+                      [class.variation-difference--decrease]="material.variationCost < material.cost"
+                    >
+                      {{ material.variationCost - material.cost > 0 ? '+' : '' }}&#8377;{{
+                        material.variationCost - material.cost | number: '1.2-2'
+                      }} difference
+                    </small>
+                  } @else {
+                    <strong class="assignment-name">Not entered</strong>
+                    <small>Add the revised cost from Edit</small>
+                  }
+                } @else {
+                  <div class="badge-stack">
+                    @if (material.hasCostVariation) {
+                      <span class="badge badge--cost">Cost variation</span>
+                    }
+                    @if (material.priorityLevel === 'Priority') {
+                      <span class="badge badge--priority">Priority</span>
+                    }
+                    @if (material.priorityLevel === 'Urgent') {
+                      <span class="badge badge--urgent">Urgent</span>
+                    }
+                    @if (!material.hasCostVariation && material.priorityLevel === 'Normal') {
+                      <span class="badge badge--normal">Normal</span>
+                    }
+                  </div>
+                }
+              </td>
+              <td>
+                {{ material.deliveryDate ? (material.deliveryDate | date: 'dd MMM yyyy') : '—' }}
+                <small>{{ material.processStatus || 'Pending' }}</small>
+              </td>
+              <td>
+                <a
+                  appManageOnly
+                  class="edit-link"
+                  [routerLink]="['/materials', material.id, 'edit']"
+                >
+                  Edit
+                </a>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="empty-state" colspan="8">
+                {{ loading() ? 'Loading materials…' : copy.emptyMessage }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="pagination">
+      <span>
+        Showing {{ showingFrom() | number }}–{{ showingTo() | number }} of
+        {{ totalRecords() | number }}
+      </span>
+
+      <div>
+        <label>
+          Rows
+          <select [value]="pageSize()" (change)="changePageSize($event)">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </label>
+        <button type="button" [disabled]="!hasPreviousPage() || loading()" (click)="previousPage()">
+          Previous
+        </button>
+        <strong>{{ page() }} / {{ totalPages() }}</strong>
+        <button type="button" [disabled]="!hasNextPage() || loading()" (click)="nextPage()">
+          Next
+        </button>
+      </div>
+    </footer>
+  </section>
+</section>

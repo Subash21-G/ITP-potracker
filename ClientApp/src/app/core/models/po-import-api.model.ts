@@ -6,6 +6,11 @@
   shortDescription: string | null;
   fullDescription: string | null;
   drawingNo: string | null;
+  drawingVersion: string | null;
+  grade: string | null;
+  size: string | null;
+  process: string | null;
+  source: string | null;
   receiver: string | null;
   unloadingPoint: string | null;
   quantity: number;

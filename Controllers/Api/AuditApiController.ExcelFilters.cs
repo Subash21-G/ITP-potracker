@@ -699,5 +699,99 @@ namespace POTracker.Controllers.Api
                 .ToLowerInvariant() ??
                 string.Empty;
         }
+
+        private static IQueryable<AuditLog>
+            ApplyAuditLogExcelFilters(
+                IQueryable<AuditLog> query,
+                string? excelFilters)
+        {
+            var selections =
+                ParseAuditExcelFilters(
+                    excelFilters);
+
+            foreach (var pair in selections)
+            {
+                var selected = pair.Value ?? Array.Empty<string>();
+                if (selected.Length == 0)
+                {
+                    return query.Where(_ => false);
+                }
+
+                switch (pair.Key)
+                {
+                    case "date":
+                    {
+                        var dates = selected
+                            .Select(value => DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed) ? parsed : (DateTime?)null)
+                            .Where(value => value.HasValue)
+                            .Select(value => value!.Value)
+                            .ToArray();
+
+                        if (dates.Length != selected.Length)
+                        {
+                            return query.Where(_ => false);
+                        }
+
+                        query = query.Where(log => dates.Contains(log.CreatedDate));
+                        break;
+                    }
+
+                    case "material":
+                        query = query.Where(log => selected.Contains(log.MaterialNo ?? string.Empty));
+                        break;
+
+                    case "po":
+                        query = query.Where(log => selected.Contains(log.PONumber ?? string.Empty));
+                        break;
+
+                    case "action":
+                        query = query.Where(log => selected.Contains(log.Action));
+                        break;
+
+                    case "process":
+                        query = query.Where(log => selected.Contains(log.ProcessStatus ?? string.Empty));
+                        break;
+
+                    case "dispatch":
+                        query = query.Where(log => selected.Contains(log.DispatchStatus ?? string.Empty));
+                        break;
+
+                    case "owner":
+                        query = query.Where(log => selected.Contains(log.Owner ?? log.UserName ?? string.Empty));
+                        break;
+                }
+            }
+
+            return query;
+        }
+
+        private static IQueryable<AuditLog>
+            ApplyAuditLogSort(
+                IQueryable<AuditLog> query,
+                string? sortColumn,
+                string? sortDirection)
+        {
+            var descending =
+                string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase);
+
+            return (sortColumn?.Trim().ToLowerInvariant()) switch
+            {
+                "date" when descending => query.OrderByDescending(log => log.CreatedDate).ThenByDescending(log => log.Id),
+                "date" => query.OrderBy(log => log.CreatedDate).ThenBy(log => log.Id),
+                "material" when descending => query.OrderByDescending(log => log.MaterialNo).ThenByDescending(log => log.Id),
+                "material" => query.OrderBy(log => log.MaterialNo).ThenBy(log => log.Id),
+                "po" when descending => query.OrderByDescending(log => log.PONumber).ThenByDescending(log => log.Id),
+                "po" => query.OrderBy(log => log.PONumber).ThenBy(log => log.Id),
+                "action" when descending => query.OrderByDescending(log => log.Action).ThenByDescending(log => log.Id),
+                "action" => query.OrderBy(log => log.Action).ThenBy(log => log.Id),
+                "process" when descending => query.OrderByDescending(log => log.ProcessStatus).ThenByDescending(log => log.Id),
+                "process" => query.OrderBy(log => log.ProcessStatus).ThenBy(log => log.Id),
+                "dispatch" when descending => query.OrderByDescending(log => log.DispatchStatus).ThenByDescending(log => log.Id),
+                "dispatch" => query.OrderBy(log => log.DispatchStatus).ThenBy(log => log.Id),
+                "owner" when descending => query.OrderByDescending(log => log.Owner ?? log.UserName).ThenByDescending(log => log.Id),
+                "owner" => query.OrderBy(log => log.Owner ?? log.UserName).ThenBy(log => log.Id),
+                _ => query.OrderByDescending(log => log.CreatedDate).ThenByDescending(log => log.Id)
+            };
+        }
     }
 }

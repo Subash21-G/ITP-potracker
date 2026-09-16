@@ -1,0 +1,197 @@
+<section class="pdf-editor" aria-label="PDF drawing editor">
+  <div class="pdf-editor__toolbar">
+    <div class="tool-group" aria-label="Editor mode">
+      <button
+        type="button"
+        [class.is-active]="tool() === 'view'"
+        (click)="setTool('view')"
+      >
+        View / scroll
+      </button>
+
+      <button
+        type="button"
+        [class.is-active]="tool() === 'erase'"
+        (click)="setTool('erase')"
+        [disabled]="isLoading()"
+      >
+        Erase box
+      </button>
+    </div>
+
+    <label class="fill-control">
+      <span>Box shade</span>
+      <select
+        [value]="maskFill()"
+        (change)="setMaskFill($event)"
+        [disabled]="tool() !== 'erase'"
+      >
+        <option value="white">White erase</option>
+        <option value="black">Black cover</option>
+        <option value="gray">Gray cover</option>
+      </select>
+    </label>
+
+    <div class="tool-group" aria-label="Zoom controls">
+      <button
+        type="button"
+        (click)="setZoom(zoom() - 0.25)"
+        [disabled]="zoom() <= 0.75 || isLoading()"
+        aria-label="Zoom out"
+      >
+        -
+      </button>
+
+      <span class="zoom-value">{{ zoom() * 100 | number: '1.0-0' }}%</span>
+
+      <button
+        type="button"
+        (click)="setZoom(zoom() + 0.25)"
+        [disabled]="zoom() >= 2 || isLoading()"
+        aria-label="Zoom in"
+      >
+        +
+      </button>
+    </div>
+
+    <div class="tool-group tool-group--actions">
+      <button
+        type="button"
+        (click)="undoMask()"
+        [disabled]="masks().length === 0 || isExporting() || isSaving()"
+      >
+        Undo
+      </button>
+
+      <button
+        type="button"
+        (click)="clearMasks()"
+        [disabled]="masks().length === 0 || isExporting() || isSaving()"
+      >
+        Clear boxes
+      </button>
+
+      @if (savePdf) {
+        <button
+          type="button"
+          class="button--print"
+          (click)="saveEditedPdf()"
+          [disabled]="isLoading() || isExporting() || isSaving() || masks().length === 0"
+        >
+          {{ isSaving() ? 'Saving...' : 'Save edits' }}
+        </button>
+      }
+
+      <button
+        type="button"
+        class="button--export"
+        (click)="downloadEditedPdf()"
+        [disabled]="isLoading() || isExporting() || isSaving()"
+      >
+        Download edited PDF
+      </button>
+
+      <button
+        type="button"
+        class="button--print"
+        (click)="printEditedPdf()"
+        [disabled]="isLoading() || isExporting() || isSaving()"
+      >
+        {{ isExporting() ? 'Preparing...' : 'Print edited PDF' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="pdf-editor__notice">
+    @if (tool() === 'erase') {
+      Drag a rectangle over the text or logo you want to hide.
+    } @else {
+      Choose <strong>Erase box</strong> to cover drawing content.
+    }
+
+    <span>
+      @if (savePdf) {
+        Edits appear in front + backside printing. Save edits to update the stored PDF.
+      } @else {
+        Download edited PDF to save a copy with your changes.
+      }
+    </span>
+  </div>
+
+  @if (saveMessage()) {
+    <div class="pdf-editor__notice" role="status">{{ saveMessage() }}</div>
+  }
+
+  @if (errorMessage()) {
+    <div class="pdf-editor__error" role="alert">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <div
+    class="pdf-editor__viewport"
+    [class.is-erasing]="tool() === 'erase'"
+  >
+    @if (isLoading()) {
+      <div class="pdf-editor__loading">
+        Loading drawing pages...
+      </div>
+    } @else {
+      <div class="pdf-editor__pages">
+        @for (page of pages(); track page.pageNumber) {
+          <article
+            class="pdf-page"
+            [style.width.px]="page.width * zoom()"
+            [style.height.px]="page.height * zoom()"
+            [attr.aria-label]="'PDF page ' + page.pageNumber"
+          >
+            <canvas
+              [attr.data-page-number]="page.pageNumber"
+            ></canvas>
+
+            <div
+              class="pdf-page__mask-layer"
+              [class.is-editing]="tool() === 'erase'"
+              (pointerdown)="startMask($event, page.pageNumber)"
+              (pointermove)="moveMask($event, page.pageNumber)"
+              (pointerup)="finishMask($event, page.pageNumber)"
+              (pointercancel)="cancelMask($event)"
+            >
+              @for (mask of masksForPage(page.pageNumber); track mask.id) {
+                <span
+                  class="pdf-mask"
+                  [class.pdf-mask--white]="mask.fill === 'white'"
+                  [class.pdf-mask--black]="mask.fill === 'black'"
+                  [class.pdf-mask--gray]="mask.fill === 'gray'"
+                  [style.left.%]="mask.x * 100"
+                  [style.top.%]="mask.y * 100"
+                  [style.width.%]="mask.width * 100"
+                  [style.height.%]="mask.height * 100"
+                ></span>
+              }
+
+              @if (draftMask(); as draft) {
+                @if (draft.pageNumber === page.pageNumber) {
+                  <span
+                    class="pdf-mask pdf-mask--draft"
+                    [class.pdf-mask--white]="draft.fill === 'white'"
+                    [class.pdf-mask--black]="draft.fill === 'black'"
+                    [class.pdf-mask--gray]="draft.fill === 'gray'"
+                    [style.left.%]="draft.x * 100"
+                    [style.top.%]="draft.y * 100"
+                    [style.width.%]="draft.width * 100"
+                    [style.height.%]="draft.height * 100"
+                  ></span>
+                }
+              }
+            </div>
+
+            <span class="pdf-page__number">
+              Page {{ page.pageNumber }} of {{ pages().length }}
+            </span>
+          </article>
+        }
+      </div>
+    }
+  </div>
+</section>

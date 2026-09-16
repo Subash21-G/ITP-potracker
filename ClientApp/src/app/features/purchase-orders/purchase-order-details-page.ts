@@ -7,19 +7,23 @@ import {
   DestroyRef,
   computed,
   inject,
+  HostListener,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-} from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
-import { PurchaseOrderDetails } from '../../core/models/purchase-order-details.model';
+import {
+  PurchaseOrderDetails,
+  PurchaseOrderMaterialExcelFilterColumn,
+  PurchaseOrderMaterialExcelFilterSelections,
+  PurchaseOrderMaterialExcelFilterValue,
+  PurchaseOrderMaterialSortDirection,
+} from '../../core/models/purchase-order-details.model';
 import { PurchaseOrdersApiService } from '../../core/services/purchase-orders-api.service';
+import { ServerExcelFilter } from '../../shared/server-excel-filter/server-excel-filter';
 
 @Component({
   selector: 'app-purchase-order-details-page',
@@ -29,6 +33,7 @@ import { PurchaseOrdersApiService } from '../../core/services/purchase-orders-ap
     DecimalPipe,
     ReactiveFormsModule,
     RouterLink,
+    ServerExcelFilter,
   ],
   templateUrl: './purchase-order-details-page.html',
   styleUrl: './purchase-order-details-page.css',
@@ -40,102 +45,93 @@ export class PurchaseOrderDetailsPage {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly purchaseOrderId = Number(this.route.snapshot.paramMap.get('id'));
-  readonly materialFilters =
-    new FormGroup({
-      lineItem:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+  readonly materialFilters = new FormGroup({
+    lineItem: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      material:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    material: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      description:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    description: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minQuantity:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minQuantity: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxQuantity:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxQuantity: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minUnitPrice:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minUnitPrice: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxUnitPrice:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxUnitPrice: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minInvoiceBalance:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minInvoiceBalance: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxInvoiceBalance:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxInvoiceBalance: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      minDispatchBalance:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    minDispatchBalance: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      maxDispatchBalance:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    maxDispatchBalance: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      deliveryDateFrom:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    deliveryDateFrom: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      deliveryDateTo:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    deliveryDateTo: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      overdueStatus:
-        new FormControl<
-          'all' | 'overdue' | 'not-overdue'
-        >(
-          'all',
-          {
-            nonNullable: true,
-          },
-        ),
+    overdueStatus: new FormControl<'all' | 'overdue' | 'not-overdue'>('all', {
+      nonNullable: true,
+    }),
 
-      processStatus:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    processStatus: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      invoiceStatus:
-        new FormControl('', {
-          nonNullable: true,
-        }),
+    invoiceStatus: new FormControl('', {
+      nonNullable: true,
+    }),
 
-      dispatchStatus:
-        new FormControl('', {
-          nonNullable: true,
-        }),
-    });
+    dispatchStatus: new FormControl('', {
+      nonNullable: true,
+    }),
+  });
 
   readonly details = signal<PurchaseOrderDetails | null>(null);
   readonly materialPage = signal(1);
   readonly materialPageSize = signal(25);
+  readonly materialSortColumn = signal<PurchaseOrderMaterialExcelFilterColumn | null>(null);
+  readonly materialSortDirection = signal<PurchaseOrderMaterialSortDirection | null>(null);
+  readonly materialExcelFilterSelections = signal<PurchaseOrderMaterialExcelFilterSelections>({});
+  readonly materialExcelFilterOptions = signal<
+    Partial<
+      Record<
+        PurchaseOrderMaterialExcelFilterColumn,
+        readonly PurchaseOrderMaterialExcelFilterValue[]
+      >
+    >
+  >({});
+  readonly materialExcelFilterLoadingColumns = signal<
+    ReadonlySet<PurchaseOrderMaterialExcelFilterColumn>
+  >(new Set<PurchaseOrderMaterialExcelFilterColumn>());
   readonly loading = signal(false);
   readonly errorMessage = signal('');
   readonly errorStatus = signal<number | null>(null);
@@ -152,6 +148,45 @@ export class PurchaseOrderDetailsPage {
     Math.min(this.materialPage() * this.materialPageSize(), this.materialTotalRecords()),
   );
 
+  readonly materialExcelColumns = [
+    { key: 'line', title: 'Line', numeric: false },
+    { key: 'material', title: 'Material', numeric: false },
+    { key: 'description', title: 'Description', numeric: false },
+    { key: 'quantity', title: 'PO qty', numeric: true },
+    { key: 'unitPrice', title: 'Price per No', numeric: true },
+    { key: 'invoiceBalance', title: 'Invoice balance', numeric: true },
+    { key: 'dispatchBalance', title: 'Dispatch balance', numeric: true },
+    { key: 'delivery', title: 'Delivery', numeric: false },
+    { key: 'process', title: 'Process', numeric: false },
+    { key: 'invoice', title: 'Invoice', numeric: false },
+    { key: 'dispatch', title: 'Dispatch', numeric: false },
+  ] as const;
+
+  @HostListener('click', ['$event'])
+  closeOtherFilterMenus(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    const summary = target?.closest('details.server-column-filter > summary');
+    if (!summary) {
+      return;
+    }
+
+    const current = summary.parentElement as HTMLDetailsElement;
+    queueMicrotask(() => {
+      this.closeFilterMenus(current);
+    });
+  }
+
+  private closeFilterMenus(current: HTMLDetailsElement): void {
+    const host = current.closest('.table-panel');
+    host
+      ?.querySelectorAll<HTMLDetailsElement>('details.server-column-filter[open]')
+      .forEach((menu) => {
+        if (menu !== current) {
+          menu.open = false;
+        }
+      });
+  }
+
   constructor() {
     if (!Number.isInteger(this.purchaseOrderId) || this.purchaseOrderId < 1) {
       this.errorStatus.set(400);
@@ -162,9 +197,7 @@ export class PurchaseOrderDetailsPage {
     this.loadDetails();
   }
 
-  applyMaterialFilter(
-    filter: HTMLDetailsElement,
-  ): void {
+  applyMaterialFilter(filter: HTMLDetailsElement): void {
     filter.open = false;
     this.materialPage.set(1);
     this.loadDetails();
@@ -187,18 +220,15 @@ export class PurchaseOrderDetailsPage {
   ): void {
     switch (column) {
       case 'line':
-        this.materialFilters.controls
-          .lineItem.setValue('');
+        this.materialFilters.controls.lineItem.setValue('');
         break;
 
       case 'material':
-        this.materialFilters.controls
-          .material.setValue('');
+        this.materialFilters.controls.material.setValue('');
         break;
 
       case 'description':
-        this.materialFilters.controls
-          .description.setValue('');
+        this.materialFilters.controls.description.setValue('');
         break;
 
       case 'quantity':
@@ -238,18 +268,15 @@ export class PurchaseOrderDetailsPage {
         break;
 
       case 'process':
-        this.materialFilters.controls
-          .processStatus.setValue('');
+        this.materialFilters.controls.processStatus.setValue('');
         break;
 
       case 'invoice':
-        this.materialFilters.controls
-          .invoiceStatus.setValue('');
+        this.materialFilters.controls.invoiceStatus.setValue('');
         break;
 
       case 'dispatch':
-        this.materialFilters.controls
-          .dispatchStatus.setValue('');
+        this.materialFilters.controls.dispatchStatus.setValue('');
         break;
     }
 
@@ -272,73 +299,170 @@ export class PurchaseOrderDetailsPage {
       | 'invoice'
       | 'dispatch',
   ): boolean {
-    const values =
-      this.materialFilters.getRawValue();
+    const values = this.materialFilters.getRawValue();
 
     switch (column) {
       case 'line':
-        return Boolean(
-          values.lineItem.trim(),
-        );
+        return Boolean(values.lineItem.trim());
 
       case 'material':
-        return Boolean(
-          values.material.trim(),
-        );
+        return Boolean(values.material.trim());
 
       case 'description':
-        return Boolean(
-          values.description.trim(),
-        );
+        return Boolean(values.description.trim());
 
       case 'quantity':
-        return Boolean(
-          values.minQuantity.trim() ||
-          values.maxQuantity.trim(),
-        );
+        return Boolean(values.minQuantity.trim() || values.maxQuantity.trim());
 
       case 'unitPrice':
-        return Boolean(
-          values.minUnitPrice.trim() ||
-          values.maxUnitPrice.trim(),
-        );
+        return Boolean(values.minUnitPrice.trim() || values.maxUnitPrice.trim());
 
       case 'invoiceBalance':
-        return Boolean(
-          values.minInvoiceBalance.trim() ||
-          values.maxInvoiceBalance.trim(),
-        );
+        return Boolean(values.minInvoiceBalance.trim() || values.maxInvoiceBalance.trim());
 
       case 'dispatchBalance':
-        return Boolean(
-          values.minDispatchBalance.trim() ||
-          values.maxDispatchBalance.trim(),
-        );
+        return Boolean(values.minDispatchBalance.trim() || values.maxDispatchBalance.trim());
 
       case 'delivery':
         return Boolean(
-          values.deliveryDateFrom ||
-          values.deliveryDateTo ||
-          values.overdueStatus !== 'all',
+          values.deliveryDateFrom || values.deliveryDateTo || values.overdueStatus !== 'all',
         );
 
       case 'process':
-        return Boolean(
-          values.processStatus.trim(),
-        );
+        return Boolean(values.processStatus.trim());
 
       case 'invoice':
-        return Boolean(
-          values.invoiceStatus.trim(),
-        );
+        return Boolean(values.invoiceStatus.trim());
 
       case 'dispatch':
-        return Boolean(
-          values.dispatchStatus.trim(),
-        );
+        return Boolean(values.dispatchStatus.trim());
     }
 
     return false;
+  }
+
+  materialExcelFilterOptionsFor(
+    column: PurchaseOrderMaterialExcelFilterColumn,
+  ): readonly PurchaseOrderMaterialExcelFilterValue[] {
+    return this.materialExcelFilterOptions()[column] ?? [];
+  }
+
+  materialExcelFilterSelectedValues(
+    column: PurchaseOrderMaterialExcelFilterColumn,
+  ): readonly string[] {
+    return this.materialExcelFilterSelections()[column] ?? [];
+  }
+
+  materialExcelFilterActive(column: PurchaseOrderMaterialExcelFilterColumn): boolean {
+    return Object.prototype.hasOwnProperty.call(this.materialExcelFilterSelections(), column);
+  }
+
+  materialExcelFilterLoading(column: PurchaseOrderMaterialExcelFilterColumn): boolean {
+    return this.materialExcelFilterLoadingColumns().has(column);
+  }
+
+  materialExcelSortDirection(
+    column: PurchaseOrderMaterialExcelFilterColumn,
+  ): PurchaseOrderMaterialSortDirection | null {
+    return this.materialSortColumn() === column ? this.materialSortDirection() : null;
+  }
+
+  loadMaterialExcelFilterValues(column: PurchaseOrderMaterialExcelFilterColumn): void {
+    if (this.materialExcelFilterLoading(column)) {
+      return;
+    }
+
+    this.materialExcelFilterLoadingColumns.update((columns) => {
+      const updated = new Set(columns);
+
+      updated.add(column);
+
+      return updated;
+    });
+
+    this.purchaseOrdersApi
+      .getPurchaseOrderMaterialExcelFilterValues(
+        this.purchaseOrderId,
+        column,
+        this.buildMaterialQuery(false),
+      )
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() =>
+          this.materialExcelFilterLoadingColumns.update((columns) => {
+            const updated = new Set(columns);
+
+            updated.delete(column);
+
+            return updated;
+          }),
+        ),
+      )
+      .subscribe({
+        next: (options) => {
+          this.materialExcelFilterOptions.update((current) => ({
+            ...current,
+            [column]: options,
+          }));
+        },
+        error: (error: HttpErrorResponse) => {
+          this.errorMessage.set(this.describeError(error));
+        },
+      });
+  }
+
+  applyMaterialExcelSort(
+    column: PurchaseOrderMaterialExcelFilterColumn,
+    direction: PurchaseOrderMaterialSortDirection | null,
+  ): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.materialSortColumn.set(direction === null ? null : column);
+    this.materialSortDirection.set(direction);
+    this.materialPage.set(1);
+    this.loadDetails();
+  }
+
+  applyMaterialExcelFilter(
+    column: PurchaseOrderMaterialExcelFilterColumn,
+    values: readonly string[],
+  ): void {
+    const availableValues = this.materialExcelFilterOptions()[column] ?? [];
+    const selected = new Set(values);
+    const selectsEverything =
+      availableValues.length > 0 &&
+      availableValues.length === selected.size &&
+      availableValues.every((option) => selected.has(option.value));
+
+    this.materialExcelFilterSelections.update((current) => {
+      const updated = { ...current };
+
+      if (selectsEverything) {
+        delete updated[column];
+      } else {
+        updated[column] = [...values];
+      }
+
+      return updated;
+    });
+
+    this.materialPage.set(1);
+    this.loadDetails();
+  }
+
+  clearMaterialExcelFilter(column: PurchaseOrderMaterialExcelFilterColumn): void {
+    this.materialExcelFilterSelections.update((current) => {
+      const updated = { ...current };
+
+      delete updated[column];
+
+      return updated;
+    });
+
+    this.materialPage.set(1);
+    this.loadDetails();
   }
 
   changePageSize(event: Event): void {
@@ -410,22 +534,8 @@ export class PurchaseOrderDetailsPage {
     this.errorMessage.set('');
     this.errorStatus.set(null);
 
-    const materialFilters =
-      this.materialFilters.getRawValue();
-
     this.purchaseOrdersApi
-      .getPurchaseOrderDetailsFiltered(
-        this.purchaseOrderId,
-        {
-          materialPage:
-            this.materialPage(),
-
-          materialPageSize:
-            this.materialPageSize(),
-
-          ...materialFilters,
-        },
-      )
+      .getPurchaseOrderDetailsFiltered(this.purchaseOrderId, this.buildMaterialQuery(true))
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loading.set(false)),
@@ -442,6 +552,22 @@ export class PurchaseOrderDetailsPage {
           this.errorMessage.set(this.describeError(error));
         },
       });
+  }
+
+  private buildMaterialQuery(includePaging: boolean) {
+    return {
+      materialPage: includePaging ? this.materialPage() : 1,
+      materialPageSize: this.materialPageSize(),
+      materialSortColumn: this.materialSortColumn() ?? undefined,
+      materialSortDirection: this.materialSortDirection() ?? undefined,
+      materialExcelFilters: this.serializeMaterialExcelFilters(),
+    };
+  }
+
+  private serializeMaterialExcelFilters(): string | undefined {
+    const selections = this.materialExcelFilterSelections();
+
+    return Object.keys(selections).length > 0 ? JSON.stringify(selections) : undefined;
   }
 
   private describeError(error: HttpErrorResponse): string {
@@ -468,4 +594,3 @@ export class PurchaseOrderDetailsPage {
       : 'Purchase Order details could not be loaded. Please try again.';
   }
 }
-

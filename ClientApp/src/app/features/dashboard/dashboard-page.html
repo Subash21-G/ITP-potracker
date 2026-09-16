@@ -147,7 +147,7 @@
       aria-label="Dashboard totals">
       <a
         class="dashboard-kpi dashboard-kpi--blue"
-        routerLink="/purchase-orders">
+        routerLink="/completed-status">
         <span class="dashboard-kpi__icon">PO</span>
         <div>
           <small>Purchase Orders</small>
@@ -164,6 +164,28 @@
           <small>Materials</small>
           <strong>{{ data.overview.totalMaterials | number }}</strong>
           <span>All PO line materials</span>
+        </div>
+      </a>
+
+      <a
+        class="dashboard-kpi dashboard-kpi--emerald"
+        routerLink="/purchase-orders">
+        <span class="dashboard-kpi__icon">PO</span>
+        <div>
+          <small>Completed POs</small>
+          <strong>{{ data.overview.completedPurchaseOrders | number }}</strong>
+          <span>Purchase orders completed</span>
+        </div>
+      </a>
+
+      <a
+        class="dashboard-kpi dashboard-kpi--violet"
+        routerLink="/completed-status">
+        <span class="dashboard-kpi__icon">IN</span>
+        <div>
+          <small>Completed Invoices</small>
+          <strong>{{ data.overview.completedInvoices | number }}</strong>
+          <span>Materials fully invoiced</span>
         </div>
       </a>
 
@@ -487,7 +509,7 @@
 
             <tbody>
               @for (
-                material of data.recentMaterials;
+                material of pagedRecentMaterials();
                 track material.id
               ) {
                 <tr>
@@ -551,6 +573,22 @@
             </tbody>
           </table>
         </div>
+        <nav class="dashboard-pagination" aria-label="Recent materials pagination">
+          <label>Rows per page
+            <select [value]="recentPageSize()" (change)="changeRecentPageSize($any($event.target).value)">
+              @for (size of recentPageSizes; track size) {
+                <option [value]="size">{{ size }}</option>
+              }
+            </select>
+          </label>
+          <span role="status">{{ data.recentMaterials.length }} records | Page {{ recentPage() }} of {{ recentTotalPages() }}</span>
+          <div class="dashboard-pagination__actions">
+            <button type="button" (click)="recentPage.set(1)" [disabled]="recentPage() === 1">First</button>
+            <button type="button" (click)="recentPage.set(recentPage() - 1)" [disabled]="recentPage() === 1">Previous</button>
+            <button type="button" (click)="recentPage.set(recentPage() + 1)" [disabled]="recentPage() >= recentTotalPages()">Next</button>
+            <button type="button" (click)="recentPage.set(recentTotalPages())" [disabled]="recentPage() >= recentTotalPages()">Last</button>
+          </div>
+        </nav>
       } @else {
         <div class="dashboard-empty">
           <span aria-hidden="true">MT</span>
