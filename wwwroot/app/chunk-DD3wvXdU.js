@@ -1,0 +1,1 @@
+import {g,aa as bm,ay as l,ap as R}from'./main-B6OKQK23.js';var s=class e{http=g(bm);cache=g(l);getDashboard(t=false){return this.cache.get("dashboard:overview",()=>this.http.get("/api/dashboard",{withCredentials:true}),1e4,t)}static \u0275fac=function(n){return new(n||e)};static \u0275prov=R({token:e,factory:e.\u0275fac,providedIn:"root"})};export{s};

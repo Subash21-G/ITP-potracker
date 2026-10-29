@@ -129,6 +129,78 @@
         </header>
 
         <div class="form-grid">
+          <label class="field">
+            <span>Purchase order *</span>
+            <select formControlName="purchaseOrderId">
+              <option [ngValue]="0">Select purchase order</option>
+              @for (purchaseOrder of purchaseOrders(); track purchaseOrder.id) {
+                <option [ngValue]="purchaseOrder.id">
+                  {{ purchaseOrder.poNumber }}
+                </option>
+              }
+            </select>
+            @if (fieldInvalid('purchaseOrderId')) {
+              <small>Select a purchase order.</small>
+            }
+          </label>
+
+          <label class="field">
+            <span>Line item</span>
+            <input type="text" formControlName="lineItem" />
+          </label>
+
+          <label class="field">
+            <span>Item type</span>
+            <input type="text" formControlName="itemType" />
+          </label>
+
+          <label class="field">
+            <span>Material number</span>
+            <input type="text" formControlName="materialNo" />
+          </label>
+
+          <label class="field">
+            <span>HSN/SAC code</span>
+            <input type="text" formControlName="hsnSacCode" />
+          </label>
+
+          <label class="field">
+            <span>Short description</span>
+            <input type="text" formControlName="shortDescription" />
+          </label>
+
+          <label class="field">
+            <span>Description</span>
+            <input type="text" formControlName="briefDescription" />
+          </label>
+
+          <label class="field">
+            <span>Receiver</span>
+            <input type="text" formControlName="receiver" />
+          </label>
+
+          <label class="field">
+            <span>Unloading point</span>
+            <input type="text" formControlName="unloadingPoint" />
+          </label>
+
+          <label class="field">
+            <span>Quantity *</span>
+            <input type="number" min="0.01" step="any" formControlName="qty" />
+            @if (fieldInvalid('qty')) {
+              <small>Enter a quantity greater than zero.</small>
+            }
+          </label>
+
+          <label class="field">
+            <span>Unit</span>
+            <input type="text" formControlName="unit" />
+          </label>
+
+          <label class="field">
+            <span>Department</span>
+            <input type="text" formControlName="dep" />
+          </label>
 
           <label class="field">
             <span>Process status</span>
