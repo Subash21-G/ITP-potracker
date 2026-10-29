@@ -115,6 +115,7 @@ export class DrawingsPage {
   readonly totalRecords = signal(0);
   readonly totalPages = signal(1);
   readonly loading = signal(false);
+  readonly exporting = signal(false);
   readonly errorMessage = signal('');
 
   readonly hasPreviousPage = computed(() => this.page() > 1);
@@ -385,6 +386,53 @@ export class DrawingsPage {
 
   retry(): void {
     this.load();
+  }
+
+  downloadSource(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const url = select.value;
+    select.value = '';
+    if (!url.startsWith('/api/private-documents/')) {
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  exportExcel(): void {
+    if (this.exporting() || this.loading() || this.totalRecords() === 0) {
+      return;
+    }
+    this.exporting.set(true);
+    this.errorMessage.set('');
+    this.api.exportDrawingsExcel(this.buildDrawingQuery(false))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.exporting.set(false)),
+      )
+      .subscribe({
+        next: (file) => {
+          if (file.size === 0) {
+            this.errorMessage.set('The drawing Excel export was empty.');
+            return;
+          }
+          const url = URL.createObjectURL(file);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `Drawing_Revisions_${new Date().toISOString().slice(0, 10)}.xlsx`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.errorMessage.set(this.describeError(error));
+        },
+      });
   }
 
   private buildDrawingQuery(includePaging: boolean) {

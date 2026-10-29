@@ -1,4 +1,5 @@
-﻿import { ManageOnlyDirective } from '../../../core/directives/manage-only.directive';
+import { NumericLinePipe } from '../../../shared/numeric-line.pipe';
+import { ManageOnlyDirective } from '../../../core/directives/manage-only.directive';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -64,7 +65,7 @@ interface DocumentPreview {
 
 @Component({
   selector: 'app-material-details-page',
-  imports: [ManageOnlyDirective, 
+  imports: [NumericLinePipe, ManageOnlyDirective, 
     CommonModule,
     PdfRedactionEditor,
     RouterLink,
@@ -242,6 +243,7 @@ export class MaterialDetailsPage implements OnInit, OnDestroy {
           error.status === 403 ? 'You do not have permission to save material files.' :
           error.status === 401 ? 'Your session has expired. Please sign in again.' :
           message || 'PDF edits could not be saved. Your edits are still in the preview; please try again.',
+          { cause: error },
         );
       }
       throw error;

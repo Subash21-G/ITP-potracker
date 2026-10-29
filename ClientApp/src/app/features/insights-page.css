@@ -250,6 +250,17 @@ tbody tr:hover {
   text-decoration: none;
 }
 
+.source-select {
+  max-width: 11rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #4338ca;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .status {
   display: inline-flex;
   padding: 0.35rem 0.62rem;

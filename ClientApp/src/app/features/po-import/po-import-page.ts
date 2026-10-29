@@ -1,4 +1,5 @@
-﻿import {
+import { NumericLinePipe } from '../../shared/numeric-line.pipe';
+import {
   DatePipe,
   DecimalPipe,
 } from '@angular/common';
@@ -39,7 +40,7 @@ type ImportMode =
 
 @Component({
   selector: 'app-po-import-page',
-  imports: [
+  imports: [NumericLinePipe, 
     DatePipe,
     DecimalPipe,
     RouterLink,

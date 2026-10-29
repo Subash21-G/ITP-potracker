@@ -7,6 +7,20 @@ namespace POTracker.Models
     {
         public int Id { get; set; }
 
+        [StringLength(100)]
+        public string? SourceSystem { get; set; }
+
+        [StringLength(100)]
+        public string? QuotationNumber { get; set; }
+
+        public int? QuotationRevision { get; set; }
+
+        [StringLength(100)]
+        public string? RfqNumber { get; set; }
+
+        [StringLength(100)]
+        public string? CustomerCode { get; set; }
+
         // Existing Purchaser relationship
         public int PurchaserId { get; set; }
 

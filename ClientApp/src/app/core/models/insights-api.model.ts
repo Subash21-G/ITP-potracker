@@ -10,9 +10,13 @@ export interface DrawingListItem {
   readonly materialNo: string;
   readonly description: string;
   readonly poNumber: string;
+  readonly drawingNo: string;
   readonly drawingVersion: string;
   readonly drawingUpdatedDate: string | null;
   readonly drawingFilePath: string | null;
+  readonly handSketchFilePath: string | null;
+  readonly outsourceDrawingFilePath: string | null;
+  readonly webDrawingFilePath: string | null;
   readonly pdfFilePath: string | null;
   readonly hasDrawing: boolean;
 }

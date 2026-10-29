@@ -1,4 +1,4 @@
-﻿<section class="material-files-page">
+<section class="material-files-page">
   <header class="page-header">
     <div>
       <a
@@ -18,7 +18,7 @@
         <p>
           {{ item.materialNo || 'Material' }}
           · PO {{ item.poNumber || '—' }}
-          · Line {{ item.lineItem || '—' }}
+          · Line {{ item.lineItem | numericLine }}
         </p>
       } @else {
         <p>
@@ -92,6 +92,10 @@
       <article class="file-card">
         <div>
           <span class="file-label">Current CAD drawing</span>
+          <small>
+            Drawing code: {{ item.drawingNo || 'Not set' }}
+            · Version: {{ item.drawingVersion || 'Not set' }}
+          </small>
 
           @if (item.drawingFilePath) {
             <strong>{{ fileName(item.drawingFilePath) }}</strong>
@@ -102,6 +106,10 @@
             <strong>Not uploaded</strong>
             <small>No CAD drawing is currently attached.</small>
           }
+          <small>
+            Uploading here shares the drawing with all material numbers
+            that have this drawing code and version.
+          </small>
         </div>
 
         @if (item.drawingFilePath) {

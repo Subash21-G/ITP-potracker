@@ -24,7 +24,7 @@ import {
   InvoiceListResponse,
   PendingInvoiceExcelFilterColumn,
   PendingInvoiceExcelFilterValue,
-  PendingInvoiceItem,
+  PendingInvoicePage,
   PendingInvoiceManualMatchRequest,
   PendingInvoiceSortColumn,
   PendingInvoiceSortDirection,
@@ -282,16 +282,21 @@ export class InvoiceApiService {
 
   getPendingItems(
     search = '',
-    take = 500,
+    page = 1,
+    pageSize = 25,
     sortColumn?: PendingInvoiceSortColumn,
     sortDirection?: PendingInvoiceSortDirection,
     excelFilters?: string,
-  ): Observable<PendingInvoiceItem[]> {
+  ): Observable<PendingInvoicePage> {
     let params =
       new HttpParams()
         .set(
-          'take',
-          String(take),
+          'page',
+          String(page),
+        )
+        .set(
+          'pageSize',
+          String(pageSize),
         );
 
     const optionalValues:
@@ -323,13 +328,38 @@ export class InvoiceApiService {
       }
     }
 
-    return this.http.get<PendingInvoiceItem[]>(
+    return this.http.get<PendingInvoicePage>(
       '/api/invoices/pending',
       {
         params,
         withCredentials: true,
       },
     );
+  }
+
+  downloadPendingItemsExcel(
+    search: string,
+    sortColumn?: PendingInvoiceSortColumn,
+    sortDirection?: PendingInvoiceSortDirection,
+    excelFilters?: string,
+  ): Observable<Blob> {
+    let params = new HttpParams();
+    for (const [name, value] of [
+      ['search', search],
+      ['sortColumn', sortColumn],
+      ['sortDirection', sortDirection],
+      ['excelFilters', excelFilters],
+    ] as const) {
+      if (value?.trim()) {
+        params = params.set(name, value.trim());
+      }
+    }
+
+    return this.http.get('/api/invoices/pending/export-excel', {
+      params,
+      responseType: 'blob',
+      withCredentials: true,
+    });
   }
 
   getPendingExcelFilterValues(

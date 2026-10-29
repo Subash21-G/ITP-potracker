@@ -19,7 +19,7 @@ namespace POTracker.UnitTests;
 public sealed class MaterialsApiControllerDrawingTests
 {
     [Fact]
-    public async Task UploadFiles_AppliesDrawingToEveryMatchingMaterialNumber()
+    public async Task UploadFiles_AppliesDrawingToEveryMatchingDrawingCode()
     {
         var environment =
             CreateTestEnvironment();
@@ -32,13 +32,17 @@ public sealed class MaterialsApiControllerDrawingTests
             var selectedMaterial =
                 new Material
                 {
-                    MaterialNo = "MAT-100"
+                    MaterialNo = "MAT-100",
+                    DrawingNo = "SWD 10007338793 000",
+                    DrawingVersion = "00"
                 };
 
             var matchingMaterial =
                 new Material
                 {
-                    MaterialNo = " mat-100 ",
+                    MaterialNo = "MAT-200",
+                    DrawingNo = " swd 10007338793 000 ",
+                    DrawingVersion = " 00 ",
                     DrawingFilePath =
                         "/api/private-documents/drawings/old.pdf"
                 };
@@ -46,7 +50,9 @@ public sealed class MaterialsApiControllerDrawingTests
             var unrelatedMaterial =
                 new Material
                 {
-                    MaterialNo = "MAT-200"
+                    MaterialNo = "MAT-100",
+                    DrawingNo = "SWD 10007338793 000",
+                    DrawingVersion = "01"
                 };
 
             context.Materials.AddRange(

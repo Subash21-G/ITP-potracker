@@ -1,3 +1,4 @@
+import { NumericLinePipe } from '../../shared/numeric-line.pipe';
 import { DatePipe, DecimalPipe, Location } from '@angular/common';
 
 import { HttpErrorResponse } from '@angular/common/http';
@@ -83,7 +84,7 @@ const EMPTY_RESPONSE: AlertsPagedResponse = {
 
 @Component({
   selector: 'app-alerts-page',
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink, ServerExcelFilter],
+  imports: [NumericLinePipe, DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink, ServerExcelFilter],
   templateUrl: './alerts-page.html',
   styleUrl: './alerts-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

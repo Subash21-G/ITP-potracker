@@ -1,4 +1,4 @@
-﻿import {
+import {
   DatePipe,
 } from '@angular/common';
 import {
@@ -219,12 +219,12 @@ export class InvoiceImportPage implements OnDestroy {
 
     if (
       this.mode() === 'batch' &&
-      files.length > 100
+      files.length > 300
     ) {
       this.selectedFiles.set([]);
 
       this.errorMessage.set(
-        'You can select a maximum of 100 invoice files.',
+        'You can select a maximum of 300 invoice files.',
       );
 
       input.value = '';

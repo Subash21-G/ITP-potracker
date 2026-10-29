@@ -20,6 +20,7 @@ import {
   InvoiceExcelFilterValue,
   InvoiceListItem,
   InvoiceListSummary,
+  InvoiceDetails,
   InvoiceSortColumn,
   InvoiceSortDirection,
 } from '../../core/models/invoice-api.model';
@@ -122,6 +123,10 @@ export class InvoicesPage {
   });
 
   readonly items = signal<readonly InvoiceListItem[]>([]);
+  readonly invoiceDetails = signal<Readonly<Record<number, InvoiceDetails>>>({});
+  readonly expandedInvoiceId = signal<number | null>(null);
+  readonly loadingDetailsId = signal<number | null>(null);
+  readonly detailsErrorId = signal<number | null>(null);
   readonly summary = signal<InvoiceListSummary>(EMPTY_SUMMARY);
   readonly page = signal(1);
   readonly pageSize = signal(25);
@@ -173,6 +178,64 @@ export class InvoicesPage {
   applyFilters(): void {
     this.page.set(1);
     this.loadInvoices();
+  }
+
+  toggleInvoiceDetails(invoiceId: number): void {
+    if (this.expandedInvoiceId() === invoiceId) {
+      this.expandedInvoiceId.set(null);
+      return;
+    }
+
+    this.expandedInvoiceId.set(invoiceId);
+    this.detailsErrorId.set(null);
+
+    if (this.invoiceDetails()[invoiceId] || this.loadingDetailsId() === invoiceId) {
+      return;
+    }
+
+    this.loadingDetailsId.set(invoiceId);
+    this.invoiceApi
+      .getDetails(invoiceId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.loadingDetailsId.set(null)),
+      )
+      .subscribe({
+        next: (details) => {
+          this.invoiceDetails.update((current) => ({
+            ...current,
+            [invoiceId]: details,
+          }));
+        },
+        error: () => this.detailsErrorId.set(invoiceId),
+      });
+  }
+
+  retryInvoiceDetails(invoiceId: number): void {
+    this.invoiceDetails.update((current) => {
+      const next = { ...current };
+      delete next[invoiceId];
+      return next;
+    });
+    this.expandedInvoiceId.set(null);
+    this.toggleInvoiceDetails(invoiceId);
+  }
+
+  visibleInvoiceDetails(invoiceId: number) {
+    const details = this.invoiceDetails()[invoiceId];
+    const search = this.filters.controls.search.value.trim().toLocaleLowerCase();
+    const invoiceItems = details?.items ?? [];
+
+    if (!search) {
+      return invoiceItems;
+    }
+
+    const matches = invoiceItems.filter((item) =>
+      [item.poNumber, item.materialNo, item.poMaterialNo, item.lineItem]
+        .some((value) => value?.toLocaleLowerCase().includes(search)),
+    );
+
+    return matches.length > 0 ? matches : invoiceItems;
   }
 
   excelFilterOptionsFor(column: InvoiceExcelFilterColumn): readonly InvoiceExcelFilterValue[] {
@@ -778,6 +841,10 @@ export class InvoicesPage {
           this.pageSize.set(response.pageSize);
           this.totalCount.set(response.totalCount);
           this.totalPages.set(Math.max(1, response.totalPages));
+          this.expandedInvoiceId.set(null);
+          if (this.filters.controls.search.value.trim() && response.items.length > 0) {
+            this.toggleInvoiceDetails(response.items[0].id);
+          }
         },
         error: (error: HttpErrorResponse) => {
           this.items.set([]);

@@ -207,11 +207,15 @@ export class PdfRedactionEditor implements OnChanges, OnDestroy {
       return;
     }
 
-    const {
-      startX: _startX,
-      startY: _startY,
-      ...mask
-    } = draft;
+    const mask: PdfMask = {
+      id: draft.id,
+      pageNumber: draft.pageNumber,
+      x: draft.x,
+      y: draft.y,
+      width: draft.width,
+      height: draft.height,
+      fill: draft.fill,
+    };
 
     this.nextMaskId += 1;
     this.saveMessage.set('');

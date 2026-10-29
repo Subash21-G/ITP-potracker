@@ -1,4 +1,5 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { NumericLinePipe } from '../../../shared/numeric-line.pipe';
+import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -18,8 +19,7 @@ import { InvoiceApiService } from '../../../core/services/invoice-api.service';
 
 @Component({
   selector: 'app-invoice-details-page',
-  imports: [
-    DatePipe,
+  imports: [NumericLinePipe,
     DecimalPipe,
     ManageOnlyDirective,
     RouterLink,
@@ -38,8 +38,26 @@ export class InvoiceDetailsPage {
   readonly loading = signal(false);
   readonly deleting = signal(false);
   readonly errorMessage = signal('');
+  readonly searchTerm = signal('');
 
   readonly itemCount = computed(() => this.invoice()?.items.length ?? 0);
+  readonly filteredItems = computed(() => {
+    const term = this.searchTerm().trim().toLocaleLowerCase();
+    const items = this.invoice()?.items ?? [];
+
+    if (!term) {
+      return items;
+    }
+
+    return items.filter((item) =>
+      [item.poNumber, item.materialNo, item.poMaterialNo, item.lineItem]
+        .some((value) => value?.toLocaleLowerCase().includes(term)),
+    );
+  });
+
+  onSearchInput(event: Event): void {
+    this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
 
   private readonly invoiceId = Number(
     this.route.snapshot.paramMap.get('id'),

@@ -82,7 +82,8 @@
         </a>
 
         <details
-          class="nav-group"
+          class="nav-group nav-group--invoices"
+          aria-label="Invoices menu"
           routerLinkActive="nav-group--active">
           <summary
             (click)="prepareNavigationGroup($event)">
@@ -179,16 +180,48 @@
           Live Stock
         </a>
 
-        <a
-          class="nav-link nav-link--primary"
-          routerLink="/invoices"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{
-            exact: false
-          }"
-          (click)="closeNavigation()">
-          Invoices
-        </a>
+        <details
+          class="nav-group"
+          routerLinkActive="nav-group--active">
+          <summary
+            (click)="prepareNavigationGroup($event)">
+            <span>Invoices</span>
+            <span
+              class="nav-chevron"
+              aria-hidden="true">
+              &#8964;
+            </span>
+          </summary>
+
+          <div class="nav-dropdown">
+            <p class="nav-dropdown__section-label">INVOICE WORKSPACE</p>
+            <a
+              class="nav-dropdown__link"
+              routerLink="/invoices"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              (click)="closeNavigation()">
+              <span class="nav-dropdown__icon" aria-hidden="true">IN</span>
+              <span>
+                <strong>Invoice Details</strong>
+                <small>Browse invoice numbers, materials and totals</small>
+              </span>
+            </a>
+
+            <a
+              class="nav-dropdown__link"
+              routerLink="/invoices/pending"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              (click)="closeNavigation()">
+              <span class="nav-dropdown__icon" aria-hidden="true">PI</span>
+              <span>
+                <strong>Pending Invoice Rows</strong>
+                <small>Review unmatched invoice material lines</small>
+              </span>
+            </a>
+          </div>
+        </details>
 
         <details
           class="nav-group"
@@ -513,21 +546,6 @@
                 </span>
               </a>
 
-              <a
-                class="nav-dropdown__link"
-                routerLink="/invoices/pending"
-                routerLinkActive="active"
-                (click)="closeNavigation()">
-                <span
-                  class="nav-dropdown__icon"
-                  aria-hidden="true">
-                  PI
-                </span>
-                <span>
-                  <strong>Pending Invoices</strong>
-                  <small>Unmatched invoice rows</small>
-                </span>
-              </a>
             </div>
           </details>
         }

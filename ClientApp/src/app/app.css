@@ -290,6 +290,14 @@
     transform 130ms ease;
 }
 
+.nav-dropdown__section-label {
+  margin: 3px 10px 5px;
+  color: #64748b;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
 .nav-dropdown__link:hover,
 .nav-dropdown__link.active {
   color: #172554;

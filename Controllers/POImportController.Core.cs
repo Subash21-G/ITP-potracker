@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
 using POTracker.Models;
@@ -246,13 +246,16 @@ namespace POTracker.Controllers
                         NormalizeLineItem(
                             item.LineItem);
 
-                    var existingMaterial =
+                    var existingMaterialCandidates =
                         await _context.Materials
-                            .FirstOrDefaultAsync(x =>
-                                x.PurchaseOrderId ==
-                                purchaseOrder.Id &&
-                                x.LineItem ==
-                                normalizedLineItem);
+                            .Where(x =>
+                                x.PurchaseOrderId == purchaseOrder.Id)
+                            .ToListAsync();
+
+                    var existingMaterial =
+                        existingMaterialCandidates.FirstOrDefault(x =>
+                            NormalizeLineItem(x.LineItem) == normalizedLineItem &&
+                            (x.MaterialNo ?? "").Trim().ToUpper() == (item.MaterialNo ?? "").Trim().ToUpper());
 
                     if (existingMaterial != null)
                     {
@@ -1313,7 +1316,7 @@ namespace POTracker.Controllers
                     PurchaseOrderNo =
                         GetSingleValue(
                             text,
-                            @"Order\s*N[º°o]?\s*:\s*([0-9]+)"),
+                            @"Order\s*N[ÂºÂ°o]?\s*:\s*([0-9]+)"),
 
                     // Date of Order in the PDF.
                     PODate =
@@ -1847,7 +1850,7 @@ namespace POTracker.Controllers
             }
 
             var firstPattern =
-                @"Order\s*N[º°o]?\s*:\s*\d+\s+" +
+                @"Order\s*N[ÂºÂ°o]?\s*:\s*\d+\s+" +
                 @"(?<buyer>[A-Za-z][A-Za-z\s.]{1,60}?)\s+" +
                 @"Vendor\s*:";
 
@@ -2092,3 +2095,4 @@ namespace POTracker.Controllers
         }
     }
 }
+

@@ -1,3 +1,4 @@
+import { NumericLinePipe } from '../../../shared/numeric-line.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,7 +19,7 @@ import { MaterialCrudApiService } from '../../../core/services/material-crud-api
 
 @Component({
   selector: 'app-material-files-page',
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [NumericLinePipe, CommonModule, FormsModule, RouterLink],
   templateUrl: './material-files-page.html',
   styleUrl: './material-files-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,4 +1,4 @@
-﻿<section class="page-heading">
+<section class="page-heading">
   <div>
     <p class="eyebrow">DISPATCH MANAGEMENT</p>
 
@@ -64,7 +64,7 @@
       </h2>
 
       <p>
-        Line {{ data.material.lineItem || '—' }}
+        Line {{ data.material.lineItem | numericLine }}
         ·
         {{ data.material.materialNo || 'No material number' }}
       </p>

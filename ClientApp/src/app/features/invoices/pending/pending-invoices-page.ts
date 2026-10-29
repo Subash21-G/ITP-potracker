@@ -1,3 +1,4 @@
+import { NumericLinePipe } from '../../../shared/numeric-line.pipe';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -27,7 +28,7 @@ import { ServerExcelFilter } from '../../../shared/server-excel-filter/server-ex
 
 @Component({
   selector: 'app-pending-invoices-page',
-  imports: [
+  imports: [NumericLinePipe,
     DatePipe,
     DecimalPipe,
     ManageOnlyDirective,
@@ -47,12 +48,26 @@ export class PendingInvoicesPage {
 
   readonly filters = new FormGroup({
     search: new FormControl('', { nonNullable: true }),
-    take: new FormControl(500, { nonNullable: true }),
+    pageSize: new FormControl(25, { nonNullable: true }),
   });
 
   readonly items = signal<readonly PendingInvoiceItem[]>([]);
+  readonly page = signal(1);
+  readonly pageSize = signal(25);
+  readonly totalRecords = signal(0);
+  private readonly appliedSearch = signal('');
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.totalRecords() / this.pageSize())),
+  );
+  readonly showingFrom = computed(() =>
+    this.totalRecords() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
+  );
+  readonly showingTo = computed(() =>
+    Math.min(this.page() * this.pageSize(), this.totalRecords()),
+  );
   readonly loading = signal(false);
   readonly retrying = signal(false);
+  readonly downloadingExcel = signal(false);
   readonly loadingCandidates = signal(false);
   readonly matchingMaterialId = signal<number | null>(null);
   readonly selectedPendingItem = signal<PendingInvoiceItem | null>(null);
@@ -111,8 +126,68 @@ export class PendingInvoicesPage {
     this.loadPendingItems();
   }
 
+  downloadPendingExcel(): void {
+    if (this.downloadingExcel() || this.loading() || this.totalRecords() === 0) {
+      return;
+    }
+
+    this.downloadingExcel.set(true);
+    this.errorMessage.set('');
+    this.invoiceApi.downloadPendingItemsExcel(
+      this.appliedSearch(),
+      this.sortColumn() ?? undefined,
+      this.sortDirection() ?? undefined,
+      this.serializeExcelFilters(),
+    ).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.downloadingExcel.set(false)),
+    ).subscribe({
+      next: (file) => {
+        if (!file.size) {
+          this.errorMessage.set('The pending invoice Excel export was empty.');
+          return;
+        }
+        const url = URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Pending_Invoice_Rows_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+      },
+      error: () => this.errorMessage.set('The pending invoice Excel export could not be downloaded.'),
+    });
+  }
+
   applyFilters(): void {
     this.successMessage.set('');
+    this.page.set(1);
+    this.pageSize.set(this.filters.controls.pageSize.value);
+    this.loadPendingItems();
+  }
+
+  changePage(page: number): void {
+    const normalizedPage = Math.min(Math.max(page, 1), this.totalPages());
+
+    if (normalizedPage === this.page() || this.loading()) {
+      return;
+    }
+
+    this.page.set(normalizedPage);
+    this.loadPendingItems();
+  }
+
+  changePageSize(event: Event): void {
+    const pageSize = Number((event.target as HTMLSelectElement).value);
+
+    if (![25, 50, 100].includes(pageSize) || this.loading()) {
+      return;
+    }
+
+    this.pageSize.set(pageSize);
+    this.filters.controls.pageSize.setValue(pageSize);
+    this.page.set(1);
     this.loadPendingItems();
   }
 
@@ -196,6 +271,7 @@ export class PendingInvoicesPage {
     this.sortDirection.set(direction);
 
     this.successMessage.set('');
+    this.page.set(1);
     this.loadPendingItems();
   }
 
@@ -224,6 +300,7 @@ export class PendingInvoicesPage {
     });
 
     this.successMessage.set('');
+    this.page.set(1);
     this.loadPendingItems();
   }
 
@@ -239,6 +316,7 @@ export class PendingInvoicesPage {
     });
 
     this.successMessage.set('');
+    this.page.set(1);
     this.loadPendingItems();
   }
 
@@ -247,9 +325,11 @@ export class PendingInvoicesPage {
 
     this.filters.reset({
       search: '',
-      take: 500,
+      pageSize: 25,
     });
 
+    this.page.set(1);
+    this.pageSize.set(25);
     this.excelFilterSelections.set({});
 
     this.loadPendingItems();
@@ -270,7 +350,8 @@ export class PendingInvoicesPage {
   togglePendingSelection(id: number, checked: boolean): void {
     this.selectedIds.update(current => {
       const next = new Set(current);
-      checked ? next.add(id) : next.delete(id);
+      if (checked) next.add(id);
+      else next.delete(id);
       return next;
     });
   }
@@ -331,7 +412,7 @@ export class PendingInvoicesPage {
     const confirmed = window.confirm(
       `Match invoice ${pending.invoiceNumber} row to:\n` +
         `PO: ${candidate.poNumber}\n` +
-        `Line: ${candidate.lineItem || '—'}\n` +
+        `Line: ${new NumericLinePipe().transform(candidate.lineItem)}\n` +
         `Material: ${candidate.materialNo}\n` +
         `Invoice Qty: ${pending.qty}\n` +
         `Available Balance: ${candidate.balanceQty}` +
@@ -507,7 +588,8 @@ export class PendingInvoicesPage {
     this.invoiceApi
       .getPendingItems(
         values.search,
-        values.take,
+        this.page(),
+        this.pageSize(),
         this.sortColumn() ?? undefined,
         this.sortDirection() ?? undefined,
         this.serializeExcelFilters(),
@@ -518,10 +600,15 @@ export class PendingInvoicesPage {
       )
       .subscribe({
         next: (items) => {
-          this.items.set(items);
+          this.appliedSearch.set(values.search);
+          this.items.set(items.items);
+          this.page.set(items.page);
+          this.pageSize.set(items.pageSize);
+          this.totalRecords.set(items.totalRecords);
         },
         error: (error: HttpErrorResponse) => {
           this.items.set([]);
+          this.totalRecords.set(0);
           this.errorMessage.set(this.describeError(error));
         },
       });

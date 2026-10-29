@@ -722,7 +722,7 @@
         <tbody>
           @for (material of materials(); track material.id) {
             <tr [class.overdue-row]="material.isOverdue">
-              <td>{{ material.lineItem || '—' }}</td>
+              <td>{{ material.lineItem | numericLine }}</td>
               <td>
                 <a class="material-number" [routerLink]="['/materials', material.id]">
                   {{ material.materialNo || '—' }}

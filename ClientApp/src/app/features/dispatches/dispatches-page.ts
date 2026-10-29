@@ -1,4 +1,5 @@
-﻿import {
+import { NumericLinePipe } from '../../shared/numeric-line.pipe';
+import {
   DatePipe,
   DecimalPipe,
 } from '@angular/common';
@@ -39,7 +40,7 @@ const EMPTY_SUMMARY: DispatchSummary = {
 
 @Component({
   selector: 'app-dispatches-page',
-  imports: [
+  imports: [NumericLinePipe, 
     DatePipe,
     DecimalPipe,
     ReactiveFormsModule,

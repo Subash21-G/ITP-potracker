@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using POTracker.Data;
 using POTracker.Models;
 using System.Text.RegularExpressions;
@@ -13,6 +13,35 @@ namespace POTracker.Services
             ApplicationDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<int> MatchAllPendingInvoicesAsync(CancellationToken cancellationToken = default)
+        {
+            var pendingKeys = (await _context.PendingInvoiceItems.AsNoTracking()
+                .Where(x => x.Status == "Pending")
+                .Select(x => new { x.PONumber, x.MaterialNo })
+                .ToListAsync(cancellationToken))
+                .Select(x => (NormalizeKey(x.PONumber), NormalizeKey(x.MaterialNo)))
+                .ToHashSet();
+            if (pendingKeys.Count == 0) return 0;
+
+            var candidates = await _context.Materials.AsNoTracking()
+                .Where(x => x.PurchaseOrder != null)
+                .Select(x => new { x.Id, x.PurchaseOrder!.PONumber, x.MaterialNo })
+                .ToListAsync(cancellationToken);
+            var matched = 0;
+            foreach (var candidate in candidates.Where(x =>
+                pendingKeys.Contains((NormalizeKey(x.PONumber), NormalizeKey(x.MaterialNo)))))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                // Lock the balance and pending rows together during each match.
+                await using var transaction = await _context.Database.BeginTransactionAsync(
+                    System.Data.IsolationLevel.Serializable, cancellationToken);
+                matched += await MatchPendingInvoicesForMaterialAsync(candidate.Id);
+                await transaction.CommitAsync(cancellationToken);
+                _context.ChangeTracker.Clear();
+            }
+            return matched;
         }
 
         // ============================================================
@@ -37,13 +66,24 @@ namespace POTracker.Services
                 return 0;
             }
 
+            // Reuse these tracked rows for every material in the PO. Loading
+            // them inside the loop caused one full pending-row query and one
+            // same-PO material query per material.
+            var pendingItems =
+                await _context.PendingInvoiceItems
+                    .Where(item => item.Status == "Pending")
+                    .OrderBy(item => item.Id)
+                    .ToListAsync();
+
             var totalMatched = 0;
 
             foreach (var material in materials)
             {
                 totalMatched +=
                     await MatchPendingInvoicesForMaterialInternalAsync(
-                        material);
+                        material,
+                        materials,
+                        pendingItems);
             }
 
             await _context.SaveChangesAsync();
@@ -85,7 +125,9 @@ namespace POTracker.Services
 
         private async Task<int>
             MatchPendingInvoicesForMaterialInternalAsync(
-                Material material)
+                Material material,
+                List<Material>? samePoMaterials = null,
+                List<PendingInvoiceItem>? pendingItemsForPurchaseOrder = null)
         {
             if (material.PurchaseOrder == null)
             {
@@ -120,7 +162,7 @@ namespace POTracker.Services
             // FIND ALL MATERIAL CANDIDATES WITH SAME PO + MATERIAL
             // --------------------------------------------------------
 
-            var samePoMaterials =
+            samePoMaterials ??=
                 await _context.Materials
                     .Include(x => x.PurchaseOrder)
                     .Where(x =>
@@ -140,23 +182,18 @@ namespace POTracker.Services
                         materialKey)
                     .ToList();
 
-            var isSingleCandidate =
-                candidateMaterials.Count == 1;
-
             // --------------------------------------------------------
             // LOAD PENDING ITEMS
             // --------------------------------------------------------
 
-            var pendingItems =
+            pendingItemsForPurchaseOrder ??=
                 await _context.PendingInvoiceItems
-                    .Include(x => x.Invoice)
-                    .Where(x =>
-                        x.Status == "Pending")
+                    .Where(x => x.Status == "Pending")
                     .OrderBy(x => x.Id)
                     .ToListAsync();
 
-            pendingItems =
-                pendingItems
+            var pendingItems =
+                pendingItemsForPurchaseOrder
                     .Where(x =>
                         NormalizeKey(x.PONumber) ==
                         poKey &&
@@ -183,25 +220,16 @@ namespace POTracker.Services
                     !string.IsNullOrWhiteSpace(
                         materialLineItem) &&
                     pendingLineItem ==
-                    materialLineItem;
+                    materialLineItem &&
+                    candidateMaterials.Count(candidate =>
+                        NormalizeLineItem(candidate.LineItem) == pendingLineItem) == 1;
 
-                var canUseSingleCandidateFallback =
-                    isSingleCandidate &&
-                    (string.IsNullOrWhiteSpace(
-                         pendingLineItem) ||
-                     string.IsNullOrWhiteSpace(
-                         materialLineItem));
-
-                if (!hasExactLineMatch &&
-                    !canUseSingleCandidateFallback)
+                if (!hasExactLineMatch)
                 {
                     pending.ErrorMessage =
                         candidateMaterials.Count > 1
                             ? "Multiple material lines found for the same PO and material. Line item is required for safe matching."
                             : "Pending invoice line item does not match this material line item.";
-
-                    _context.PendingInvoiceItems.Update(
-                        pending);
 
                     continue;
                 }
@@ -211,9 +239,6 @@ namespace POTracker.Services
                     pending.ErrorMessage =
                         "Pending invoice qty must be greater than 0.";
 
-                    _context.PendingInvoiceItems.Update(
-                        pending);
-
                     continue;
                 }
 
@@ -221,17 +246,27 @@ namespace POTracker.Services
                 // DUPLICATE PROTECTION
                 // ----------------------------------------------------
 
-                var alreadySaved =
+                var savedLineItems =
                     await _context.InvoiceItems
-                        .AnyAsync(x =>
-                            x.InvoiceId ==
-                            pending.InvoiceId &&
-                            x.MaterialId ==
-                            material.Id &&
-                            x.LineItem ==
-                            pending.LineItem &&
-                            x.InvoiceQty ==
-                            pending.InvoiceQty);
+                        .Where(x =>
+                            x.InvoiceId == pending.InvoiceId &&
+                            x.MaterialId == material.Id &&
+                            x.InvoiceQty == pending.InvoiceQty)
+                        .Select(x => x.LineItem)
+                        .ToListAsync();
+
+                var resolvedLineKey =
+                    string.IsNullOrWhiteSpace(pendingLineItem)
+                        ? materialLineItem
+                        : pendingLineItem;
+
+                var alreadySaved = savedLineItems.Any(savedLine =>
+                    NormalizeLineItem(savedLine) == resolvedLineKey) ||
+                    _context.InvoiceItems.Local.Any(item =>
+                        item.InvoiceId == pending.InvoiceId &&
+                        item.MaterialId == material.Id &&
+                        item.InvoiceQty == pending.InvoiceQty &&
+                        NormalizeLineItem(item.LineItem) == resolvedLineKey);
 
                 if (alreadySaved)
                 {
@@ -249,9 +284,6 @@ namespace POTracker.Services
                     pending.ErrorMessage =
                         null;
 
-                    _context.PendingInvoiceItems.Update(
-                        pending);
-
                     await MarkImportAuditAsSuccessAsync(
                         pending);
 
@@ -262,23 +294,8 @@ namespace POTracker.Services
                 // CHECK CURRENT BALANCE
                 // ----------------------------------------------------
 
-                var balanceQty =
-                    material.BalanceQty > 0
-                        ? material.BalanceQty
-                        : material.Qty -
-                          material.InvoiceQty;
-
-                if (material.InvoiceQty == 0 &&
-                    material.BalanceQty == 0)
-                {
-                    balanceQty =
-                        material.Qty;
-                }
-
-                if (balanceQty < 0)
-                {
-                    balanceQty = 0;
-                }
+                var balanceQty = Math.Max(
+                    0m, material.Qty - material.InvoiceQty);
 
                 if (pending.InvoiceQty >
                     balanceQty)
@@ -288,9 +305,6 @@ namespace POTracker.Services
                         $"{pending.InvoiceQty} is greater " +
                         $"than material balance qty " +
                         $"{balanceQty}.";
-
-                    _context.PendingInvoiceItems.Update(
-                        pending);
 
                     continue;
                 }
@@ -408,12 +422,6 @@ namespace POTracker.Services
                 pending.ErrorMessage =
                     null;
 
-                _context.Materials.Update(
-                    material);
-
-                _context.PendingInvoiceItems.Update(
-                    pending);
-
                 await MarkImportAuditAsSuccessAsync(
                     pending);
 
@@ -481,9 +489,6 @@ namespace POTracker.Services
                 auditRow.ErrorMessage =
                     "Automatically matched after PO/material became available.";
 
-                _context
-                    .VyaparInvoiceImportRows
-                    .Update(auditRow);
             }
         }
 
@@ -532,7 +537,7 @@ namespace POTracker.Services
                 return "";
             }
 
-            return "N-" + value;
+            return value;
         }
 
         // ============================================================

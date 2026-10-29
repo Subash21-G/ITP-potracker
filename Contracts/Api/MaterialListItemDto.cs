@@ -27,6 +27,7 @@ namespace POTracker.Contracts.Api
         public string? HsnSacCode { get; init; }
 
         public string Description { get; init; } = string.Empty;
+        public string FullDescription { get; init; } = string.Empty;
 
         public decimal Quantity { get; init; }
 

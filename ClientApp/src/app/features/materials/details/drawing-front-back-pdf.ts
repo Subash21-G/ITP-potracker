@@ -49,7 +49,7 @@ export async function createDrawingFrontBackPdf(
   details: DrawingBacksideDetails,
 ): Promise<Uint8Array> {
   const output = await PDFDocument.create();
-  let frontSize = a4Landscape;
+  let frontSize: { width: number; height: number };
 
   if (source.kind === 'pdf') {
     const sourcePdf = await PDFDocument.load(source.bytes);
@@ -418,7 +418,6 @@ function wrapText(
 
     if (current) {
       lines.push(current);
-      current = '';
     }
 
     if (

@@ -273,6 +273,7 @@ describe('MaterialFilesPage', () => {
       materialApi.deleteDrawing,
     ).toHaveBeenCalledWith(
       material.id,
+      'drawing',
     );
 
     expect(

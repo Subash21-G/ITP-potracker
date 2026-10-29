@@ -805,6 +805,10 @@ namespace POTracker.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("CustomerCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("DeliveryCondition")
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
@@ -835,8 +839,23 @@ namespace POTracker.Migrations
                     b.Property<int>("PurchaserId")
                         .HasColumnType("int");
 
+                    b.Property<string>("QuotationNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("QuotationRevision")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("ReceivedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("RfqNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SourceSystem")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -867,6 +886,10 @@ namespace POTracker.Migrations
                     b.HasIndex("PurchaserId", "PODate");
 
                     b.HasIndex("Status", "CreatedDate");
+
+                    b.HasIndex("SourceSystem", "QuotationNumber", "QuotationRevision")
+                        .IsUnique()
+                        .HasFilter("[SourceSystem] IS NOT NULL AND [QuotationNumber] IS NOT NULL AND [QuotationRevision] IS NOT NULL");
 
                     b.ToTable("PurchaseOrders");
                 });

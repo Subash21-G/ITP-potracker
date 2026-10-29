@@ -1,4 +1,4 @@
-﻿<section class="material-details-layout">
+<section class="material-details-layout">
   <div class="material-details-page">
   <header class="page-header">
     <div>
@@ -15,7 +15,7 @@
       @if (material(); as item) {
         <p>
           PO {{ item.poNumber || '—' }}
-          · Line {{ item.lineItem || '—' }}
+          · Line {{ item.lineItem | numericLine }}
           · {{ item.shortDescription || item.briefDescription || 'No description' }}
         </p>
       }
@@ -153,7 +153,7 @@
 
           <div class="detail-item">
             <span>Line item</span>
-            <strong>{{ item.lineItem || '—' }}</strong>
+            <strong>{{ item.lineItem | numericLine }}</strong>
           </div>
 
           <div class="detail-item">
@@ -705,7 +705,7 @@
             <div><span>2. Short description</span><strong>{{ item.shortDescription || '' }}</strong></div>
             <div><span>3. Grade</span><strong>{{ item.rmGrade || '' }}</strong></div>
             <div><span>4. Process qty</span><strong>{{ item.dispatchQty > 0 ? item.dispatchQty : '' }}</strong></div>
-            <div><span>5. Required qty</span><strong>{{ item.requiredQty ?? item.pendingQty }}</strong></div>
+            <div><span>5. Required qty</span><strong>{{ item.requiredQty }}</strong></div>
             <div><span>6. Stock qty</span><strong></strong></div>
             <div><span>7. Drawing version</span><strong>{{ item.drawingVersion || '' }}</strong></div>
             <div><span>8. Finish size</span><strong></strong></div>
@@ -756,7 +756,7 @@
                   <div><span>2. Short description</span><strong>{{ item.shortDescription || '' }}</strong></div>
                   <div><span>3. Grade</span><strong>{{ item.rmGrade || '' }}</strong></div>
                   <div><span>4. Process qty</span><strong>{{ item.dispatchQty > 0 ? item.dispatchQty : '' }}</strong></div>
-                  <div><span>5. Required qty</span><strong>{{ item.requiredQty ?? item.pendingQty }}</strong></div>
+                  <div><span>5. Required qty</span><strong>{{ item.requiredQty }}</strong></div>
                   <div><span>6. Stock qty</span><strong></strong></div>
                   <div><span>7. Drawing version</span><strong>{{ item.drawingVersion || '' }}</strong></div>
                   <div><span>8. Finish size</span><strong></strong></div>

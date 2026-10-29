@@ -329,6 +329,74 @@ select:focus {
   opacity: 0.58;
 }
 
+.invoice-details-row > td {
+  padding: 0;
+  background: #f8faff;
+}
+
+.inline-details {
+  padding: 18px 22px 20px;
+  border-left: 3px solid #7c3aed;
+}
+
+.inline-details__heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #172033;
+  font-size: 0.8rem;
+}
+
+.inline-details__heading span {
+  color: #64748b;
+  font-weight: 650;
+}
+
+.inline-details__table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.inline-details__table {
+  min-width: 950px;
+  background: #ffffff;
+}
+
+.inline-details__table th {
+  position: static;
+  font-size: 0.62rem;
+}
+
+.inline-details__table td {
+  font-size: 0.72rem;
+}
+
+.inline-details__empty,
+.inline-details-message {
+  padding: 16px !important;
+  color: #64748b;
+  text-align: center;
+}
+
+.inline-details-message--error {
+  color: #b91c1c;
+}
+
+.inline-details__link {
+  display: inline-block;
+  margin-top: 12px;
+  color: #5b21b6;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.inline-details__link:hover {
+  text-decoration: underline;
+}
+
 table {
   width: 100%;
   min-width: 1320px;

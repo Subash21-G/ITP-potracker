@@ -1,3 +1,4 @@
+import { NumericLinePipe } from '../../shared/numeric-line.pipe';
 import {
   CommonModule,
 } from '@angular/common';
@@ -44,7 +45,7 @@ import {
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [
+  imports: [NumericLinePipe, 
     CommonModule,
     RouterLink,
   ],

@@ -71,6 +71,7 @@ builder.Services.AddAntiforgery(options =>
 // ============================================================
 
 builder.Services.AddScoped<PendingInvoiceMatcher>();
+builder.Services.AddHostedService<PendingInvoiceAutoMatchService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 
 builder.Services.Configure<PrivateDocumentStorageOptions>(
@@ -237,7 +238,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseResponseCompression();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // ============================================================
 // BLOCK DIRECT PUBLIC DOCUMENT ACCESS

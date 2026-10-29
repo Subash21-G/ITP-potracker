@@ -705,3 +705,22 @@ tbody tr:last-child td {
   border-color: #fecaca;
   opacity: 1;
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 14px 18px;
+  border-top: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+@media (max-width: 520px) {
+  .pagination {
+    justify-content: center;
+    gap: 8px;
+  }
+}

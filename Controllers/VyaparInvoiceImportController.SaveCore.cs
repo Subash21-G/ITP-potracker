@@ -278,29 +278,6 @@ namespace POTracker.Controllers
                         storePendingItem =
                             false;
                     }
-                    else
-                    {
-                        var alreadyImported =
-                            existingSuccessRows.Any(x =>
-                                NormalizeKey(
-                                    x.PONumber) ==
-                                    poKey &&
-                                NormalizeKey(
-                                    x.MaterialNumber) ==
-                                    materialKey &&
-                                NormalizeLineItem(
-                                    x.LineItem) ==
-                                    lineItem);
-
-                        if (alreadyImported)
-                        {
-                            pendingReason =
-                                "This invoice row was already imported successfully. Stored as Pending for review.";
-
-                            storePendingItem =
-                                false;
-                        }
-                    }
 
                     if (pendingReason != null)
                     {
@@ -449,53 +426,73 @@ namespace POTracker.Controllers
                                 material.LineItem)
                             : lineItem;
 
-                    var invoiceItemAlreadyExists =
+                    var existingInvoiceItems =
                         await _context.InvoiceItems
-                            .AnyAsync(x =>
-                                x.InvoiceId ==
-                                    invoice.Id &&
-                                x.MaterialId ==
-                                    material.Id &&
-                                x.LineItem ==
-                                    resolvedLineItem);
+                            .Where(x =>
+                                x.InvoiceId == invoice.Id &&
+                                x.MaterialId == material.Id)
+                            .ToListAsync();
 
-                    if (invoiceItemAlreadyExists)
+                    var matchingInvoiceItems = existingInvoiceItems
+                        .Where(x => NormalizeLineItem(x.LineItem) == resolvedLineItem)
+                        .ToList();
+
+                    if (matchingInvoiceItems.Count > 1)
                     {
                         pendingReason =
-                            "This invoice item is already saved. Stored as Pending for review.";
-
-                        AddImportRow(
-                            batch.Id,
-                            poNumber,
-                            resolvedLineItem,
-                            materialNo,
-                            invoiceQty,
-                            invoiceNumber,
-                            "Pending",
-                            pendingReason);
-
+                            "Multiple saved invoice lines have this PO, material and numeric line. Manual review is required.";
+                        AddImportRow(batch.Id, poNumber, resolvedLineItem,
+                            materialNo, invoiceQty, invoiceNumber, "Pending", pendingReason);
                         pendingRows++;
-
                         continue;
                     }
 
-                    var balanceQty =
-                        material.BalanceQty > 0
-                            ? material.BalanceQty
-                            : material.Qty -
-                                material.InvoiceQty;
-
-                    if (material.InvoiceQty == 0 &&
-                        material.BalanceQty == 0)
+                    if (matchingInvoiceItems.Count == 1)
                     {
-                        balanceQty =
-                            material.Qty;
+                        var existingInvoiceItem = matchingInvoiceItems[0];
+                        var oldQuantity = existingInvoiceItem.InvoiceQty;
+                        var quantityDelta = invoiceQty - oldQuantity;
+                        var availableForUpdate = Math.Max(
+                            0m, material.Qty - material.InvoiceQty + oldQuantity);
+
+                        if (invoiceQty <= 0 || invoiceQty > availableForUpdate)
+                        {
+                            pendingReason =
+                                $"Updated invoice quantity {invoiceQty} exceeds the available PO balance {availableForUpdate}.";
+                            AddImportRow(batch.Id, poNumber, resolvedLineItem,
+                                materialNo, invoiceQty, invoiceNumber, "Pending", pendingReason);
+                            pendingRows++;
+                            continue;
+                        }
+
+                        existingInvoiceItem.PONumber = poNumber;
+                        existingInvoiceItem.LineItem = resolvedLineItem;
+                        existingInvoiceItem.MaterialNo = materialNo;
+                        existingInvoiceItem.Description = item.Description;
+                        existingInvoiceItem.HsnSacCode = item.HsnSacCode;
+                        existingInvoiceItem.InvoiceQty = invoiceQty;
+                        existingInvoiceItem.PriceUnit = item.PriceUnit;
+                        existingInvoiceItem.GstAmount = item.GstAmount;
+                        existingInvoiceItem.Amount = item.Amount;
+
+                        material.InvoiceQty = Math.Max(0m, material.InvoiceQty + quantityDelta);
+                        material.BalanceQty = Math.Max(0m, material.Qty - material.InvoiceQty);
+                        material.InvoiceStatus = GetInvoiceStatus(
+                            material.Qty, material.InvoiceQty, material.BalanceQty);
+                        material.DispatchQty = Math.Max(0m, material.DispatchQty + quantityDelta);
+                        material.PendingQty = Math.Max(0m, material.Qty - material.DispatchQty);
+                        material.DispatchStatus = GetDispatchStatus(
+                            material.Qty, material.DispatchQty, material.PendingQty);
+                        _context.Materials.Update(material);
+
+                        AddImportRow(batch.Id, poNumber, resolvedLineItem,
+                            materialNo, invoiceQty, invoiceNumber, "Success", null);
+                        successRows++;
+                        continue;
                     }
 
-                    if (balanceQty < 0)
-                    {
-                        balanceQty = 0;
-                    }
+                    var balanceQty = Math.Max(
+                        0m, material.Qty - material.InvoiceQty);
 
                     if (invoiceQty >
                         balanceQty)

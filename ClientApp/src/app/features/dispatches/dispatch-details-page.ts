@@ -1,4 +1,5 @@
-﻿import {
+import { NumericLinePipe } from '../../shared/numeric-line.pipe';
+import {
   DatePipe,
   DecimalPipe,
 } from '@angular/common';
@@ -52,7 +53,7 @@ function todayValue(): string {
 
 @Component({
   selector: 'app-dispatch-details-page',
-  imports: [
+  imports: [NumericLinePipe, 
     DatePipe,
     DecimalPipe,
     ManageOnlyDirective,

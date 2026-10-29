@@ -1,3 +1,4 @@
+import { NumericLinePipe } from '../../../../shared/numeric-line.pipe';
 import {
   DatePipe,
   DecimalPipe,
@@ -38,7 +39,7 @@ import {
 
 @Component({
   selector: 'app-invoice-import-report-page',
-  imports: [
+  imports: [NumericLinePipe, 
     DatePipe,
     DecimalPipe,
     FormsModule,

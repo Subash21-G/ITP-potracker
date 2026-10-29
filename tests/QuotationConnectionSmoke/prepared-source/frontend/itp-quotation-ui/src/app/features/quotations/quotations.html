@@ -1,0 +1,54 @@
+<div class="page-heading">
+  <div><h2>Quotations</h2><p>Commercial offers with protected costing revisions.</p></div>
+  <button mat-flat-button routerLink="/new-quotation">New quotation</button>
+</div>
+
+@if (error()) { <div class="error-banner" role="alert">{{ error() }}</div> }
+@if (message()) { <p role="status">{{ message() }}</p> }
+@if (selected(); as quote) {
+  <section class="surface list-card">
+    <h3>Send {{ quote.quotationNumber }} to POTracker</h3>
+    <p>Use the confirmed customer PO number. Item prices are rounded to two decimal places. Tax is excluded.</p>
+    <form (ngSubmit)="sendToPoTracker()">
+      <label for="customer-po">Customer PO number</label>
+      <input id="customer-po" name="customerPoNumber" [(ngModel)]="customerPoNumber" required maxlength="100" [disabled]="exporting()" />
+      <button mat-flat-button type="submit" [disabled]="exporting() || !customerPoNumber.trim()">{{ exporting() ? 'Sending…' : 'Send to POTracker' }}</button>
+      <button mat-button type="button" [disabled]="exporting()" (click)="selected.set(null)">Cancel</button>
+    </form>
+  </section>
+}
+
+<section class="surface list-card">
+  <div class="list-toolbar">
+    <div><strong>{{ rows().length }} quotations</strong><span>Each revision preserves its original rates</span></div>
+    <span class="legend"><i></i> Revision history on</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Quotation</th><th>Customer</th><th>RFQ</th><th>Date</th><th>Status</th><th class="right">Value</th><th>Actions</th></tr></thead>
+      <tbody>
+        @for (quote of rows(); track quote.id) {
+          <tr>
+            <td><strong>{{ quote.quotationNumber }}</strong><small>Revision {{ quote.revision }}</small></td>
+            <td>{{ quote.customerName }}</td>
+            <td>{{ quote.rfqNumber }}</td>
+            <td>{{ quote.quotationDate | date: 'dd MMM yyyy' }}</td>
+            <td><span class="status-pill">{{ quote.status }}</span></td>
+            <td class="right money">{{ quote.totalPrice | currency: 'INR' : 'symbol' : '1.2-2' }}</td>
+            <td class="right">
+              <a mat-button [href]="api.quotationPdfUrl(quote.id)" target="_blank" rel="noopener">PDF</a>
+              @if (quote.status === 'Accepted' || quote.status === 'POReceived') {
+                <button mat-button type="button" [disabled]="exporting()" (click)="selectExport(quote)">Send to POTracker</button>
+              }
+              @if (quote.poTrackerPurchaseOrderId) {
+                <small>POTracker: {{ quote.poTrackerPoNumber }} · ID {{ quote.poTrackerPurchaseOrderId }} · Revision {{ quote.poTrackerExportedRevision }}</small>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty-row">{{ loading() ? 'Loading quotations…' : 'No quotations created yet.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

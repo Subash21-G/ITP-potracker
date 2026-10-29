@@ -1,3 +1,4 @@
+import { NumericLinePipe } from '../../shared/numeric-line.pipe';
 import {
   DatePipe,
   DecimalPipe,
@@ -42,7 +43,7 @@ type MaterialImportMode =
 
 @Component({
   selector: 'app-material-import-page',
-  imports: [
+  imports: [NumericLinePipe, 
     DatePipe,
     DecimalPipe,
     RouterLink,

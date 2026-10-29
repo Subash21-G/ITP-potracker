@@ -203,6 +203,43 @@ h2 {
   border-bottom: 1px solid #e8edf4;
 }
 
+.invoice-search {
+  display: grid;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e8edf4;
+}
+
+.invoice-search label {
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.invoice-search__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.invoice-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 12px;
+  color: #172033;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.invoice-search input:focus {
+  outline: 3px solid rgba(109, 40, 217, 0.15);
+  border-color: #7c3aed;
+}
+
 .metadata-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(150px, 1fr));
@@ -254,6 +291,10 @@ table {
   border-collapse: collapse;
 }
 
+.material-comparison-table {
+  min-width: 1080px;
+}
+
 th,
 td {
   padding: 13px 14px;
@@ -302,6 +343,71 @@ tbody tr:last-child td {
 .row-number {
   color: #94a3b8;
   font-weight: 800;
+}
+
+.match-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.match-status--matched {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.match-status--different {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.match-status--pending {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.match-status--saved {
+  color: #334155;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.match-status--dispatched {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.match-status--not-dispatched {
+  color: #64748b;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.dispatch-list {
+  display: grid;
+  gap: 5px;
+}
+
+.dispatch-list__item {
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.dispatch-empty {
+  color: #94a3b8;
+  font-size: 0.72rem;
 }
 
 .empty-state {
@@ -404,6 +510,11 @@ tbody tr:last-child td {
 
   .message__actions {
     width: 100%;
+  }
+
+  .invoice-search__controls {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .message__actions .button {

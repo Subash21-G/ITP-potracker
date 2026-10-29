@@ -78,6 +78,18 @@ namespace POTracker.Contracts.Api
 
         public string MaterialNo { get; init; } = string.Empty;
 
+        public string POMaterialNo { get; init; } = string.Empty;
+
+        public bool MaterialNumbersMatch { get; set; }
+
+        public bool IsPending { get; init; }
+
+        public decimal DispatchedQty { get; set; }
+
+        public string DispatchStatus { get; set; } = string.Empty;
+
+        public List<InvoiceDispatchApiDto> Dispatches { get; set; } = new();
+
         public decimal Qty { get; init; }
 
         public decimal PriceUnit { get; init; }
@@ -87,6 +99,13 @@ namespace POTracker.Contracts.Api
         public decimal Amount { get; init; }
 
         public DateTime? PODate { get; init; }
+    }
+
+    public sealed class InvoiceDispatchApiDto
+    {
+        public string DispatchNo { get; init; } = string.Empty;
+
+        public decimal DispatchQty { get; init; }
     }
 
     /// <summary>
@@ -115,6 +134,7 @@ namespace POTracker.Contracts.Api
         public decimal TotalAmount { get; init; }
 
         public List<InvoiceItemApiDto> Items { get; init; } = new();
+
     }
 
     /// <summary>
@@ -145,6 +165,8 @@ namespace POTracker.Contracts.Api
     public sealed class PendingInvoiceItemApiDto
     {
         public int Id { get; init; }
+
+        public int InvoiceId { get; init; }
 
         public string InvoiceNumber { get; init; } = string.Empty;
 

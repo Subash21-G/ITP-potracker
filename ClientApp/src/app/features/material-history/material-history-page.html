@@ -372,7 +372,7 @@
                 </td>
                 <td data-label="PO / line">
                   <strong>{{ item.poNumber || '—' }}</strong>
-                  <small>Line {{ item.lineItem || '—' }}</small>
+                  <small>Line {{ item.lineItem | numericLine }}</small>
                 </td>
                 <td data-label="Result">
                   <span [class]="'outcome-badge outcome-badge--' + outcomeClass(item.outcome)">

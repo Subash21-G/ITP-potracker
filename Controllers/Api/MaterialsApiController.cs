@@ -161,7 +161,10 @@ namespace POTracker.Controllers.Api
                         HsnSacCode =
                             material.HsnSacCode,
 
+                        FullDescription = material.BriefDescription ?? string.Empty,
+
                         Description =
+
                             material.ShortDescription != null &&
                             material.ShortDescription !=
                                 string.Empty
@@ -1504,6 +1507,7 @@ namespace POTracker.Controllers.Api
             var replacedWebDrawingPaths = new List<string>();
 
             List<Material>? sharedMaterials = null;
+            List<Material>? drawingCodeMaterials = null;
 
             if (
                 (drawingFile != null && drawingFile.Length > 0) ||
@@ -1521,6 +1525,13 @@ namespace POTracker.Controllers.Api
                     sharedMaterials.Count;
             }
 
+            if (drawingFile != null && drawingFile.Length > 0)
+            {
+                drawingCodeMaterials = await LoadMaterialsSharingDrawingCodeAsync(
+                    material, cancellationToken);
+                sharedDocumentMaterialCount = drawingCodeMaterials.Count;
+            }
+
             if (drawingFile != null &&
                 drawingFile.Length > 0)
             {
@@ -1531,7 +1542,7 @@ namespace POTracker.Controllers.Api
                         cancellationToken);
 
                 replacedDrawingPaths =
-                    sharedMaterials!
+                    drawingCodeMaterials!
                         .Select(item =>
                             item.DrawingFilePath)
                         .Where(path =>
@@ -1545,7 +1556,7 @@ namespace POTracker.Controllers.Api
 
                 foreach (
                     var drawingMaterial
-                    in sharedMaterials!)
+                    in drawingCodeMaterials!)
                 {
                     drawingMaterial.DrawingFilePath =
                         drawingFilePath;
@@ -1689,8 +1700,7 @@ namespace POTracker.Controllers.Api
                     Message =
                         sharedDocumentMaterialCount > 1
                             ? "Material files uploaded successfully. " +
-                              $"The shared drawings were applied to {sharedDocumentMaterialCount} records " +
-                              $"with material number {material.MaterialNo!.Trim()}."
+                              $"The shared drawings were applied to {sharedDocumentMaterialCount} records."
                             : "Material files uploaded successfully.",
                     MaterialId =
                         material.Id,
@@ -1738,12 +1748,10 @@ namespace POTracker.Controllers.Api
                     });
             }
 
-            var drawingMaterials =
-                await LoadMaterialsSharingMaterialNumberAsync(
-                    material,
-                    cancellationToken);
-
             var normalizedDocumentType = (documentType ?? "drawing").Trim().ToLowerInvariant();
+            var drawingMaterials = normalizedDocumentType == "drawing"
+                ? await LoadMaterialsSharingDrawingCodeAsync(material, cancellationToken)
+                : await LoadMaterialsSharingMaterialNumberAsync(material, cancellationToken);
             var documentPaths = drawingMaterials.Select(item => normalizedDocumentType == "hand-sketch" || normalizedDocumentType == "handsketch" ? item.HandSketchFilePath : normalizedDocumentType == "outsource" || normalizedDocumentType == "outsource-drawing" ? item.OutsourceDrawingFilePath : normalizedDocumentType == "web" || normalizedDocumentType == "web-drawing" ? item.WebDrawingFilePath : item.DrawingFilePath)
                     .Where(path =>
                         !string.IsNullOrWhiteSpace(
@@ -1790,19 +1798,14 @@ namespace POTracker.Controllers.Api
                     material.Id,
                     cancellationToken);
 
-            var materialNumber =
-                Clean(material.MaterialNo);
-
             return Ok(
                 new MaterialSaveResponseDto
                 {
                     Success = true,
                     Message =
-                        drawingMaterials.Count > 1 &&
-                        materialNumber != null
+                        drawingMaterials.Count > 1
                             ? "Drawing deleted successfully from " +
-                              $"{drawingMaterials.Count} records with " +
-                              $"material number {materialNumber}."
+                              $"{drawingMaterials.Count} records."
                             : "Drawing deleted successfully.",
                     MaterialId =
                         material.Id,
@@ -2101,6 +2104,12 @@ namespace POTracker.Controllers.Api
             WriteMaterialExcel(
                 worksheet,
                 items);
+            worksheet.Column(21).Width = 65;
+            if (items.Count > 0)
+            {
+                worksheet.Range(6, 21, items.Count + 5, 21)
+                    .Style.Alignment.WrapText = true;
+            }
 
             using var stream =
                 new MemoryStream();
@@ -2587,7 +2596,7 @@ namespace POTracker.Controllers.Api
                         POReceivedDate = first.POReceivedDate, LineItem = first.LineItem,
                         MaterialNo = first.MaterialNo, DuplicateCount = group.Count(),
                         LatestHistoryOutcome = first.LatestHistoryOutcome, HsnSacCode = first.HsnSacCode,
-                        Description = first.Description, Quantity = group.Sum(x => x.Quantity),
+                        Description = first.Description, FullDescription = first.FullDescription, Quantity = group.Sum(x => x.Quantity),
                         Unit = first.Unit, UnitPrice = first.UnitPrice, PriceUnit = first.PriceUnit,
                         TotalValue = group.Sum(x => x.TotalValue),
                         InvoiceQuantity = group.Sum(x => x.InvoiceQuantity),
@@ -2624,17 +2633,17 @@ namespace POTracker.Controllers.Api
             worksheet.Cell("A1").Value =
                 "PO TRACKER - MATERIAL LIST";
 
-            worksheet.Range("A1:T1").Merge();
+            worksheet.Range("A1:U1").Merge();
 
             worksheet.Cell("A2").Value =
                 $"Generated: {DateTime.Now:dd-MM-yyyy hh:mm tt}";
 
-            worksheet.Range("A2:T2").Merge();
+            worksheet.Range("A2:U2").Merge();
 
             worksheet.Cell("A3").Value =
                 $"Total materials: {items.Count}";
 
-            worksheet.Range("A3:T3").Merge();
+            worksheet.Range("A3:U3").Merge();
 
             var headers = new[]
             {
@@ -2657,7 +2666,8 @@ namespace POTracker.Controllers.Api
                 "Live Stock",
                 "Shortage",
                 "Stock Status",
-                "Drawing Number"
+                "Drawing Number",
+                "Full Description"
             };
 
             for (
@@ -2751,6 +2761,7 @@ namespace POTracker.Controllers.Api
 
                 worksheet.Cell(row, 20).Value =
                     item.DrawingNo;
+                worksheet.Cell(row, 21).Value = item.FullDescription;
 
                 StyleMaterialExcelStatus(
                     worksheet,
@@ -2759,7 +2770,7 @@ namespace POTracker.Controllers.Api
             }
 
             var title =
-                worksheet.Range("A1:T1");
+                worksheet.Range("A1:U1");
 
             title.Style.Fill.BackgroundColor =
                 XLColor.FromHtml("#31587A");
@@ -2773,12 +2784,12 @@ namespace POTracker.Controllers.Api
             title.Style.Alignment.Horizontal =
                 XLAlignmentHorizontalValues.Center;
 
-            worksheet.Range("A2:T3")
+            worksheet.Range("A2:U3")
                 .Style.Alignment.Horizontal =
                 XLAlignmentHorizontalValues.Center;
 
             var header =
-                worksheet.Range("A5:T5");
+                worksheet.Range("A5:U5");
 
             header.Style.Fill.BackgroundColor =
                 XLColor.FromHtml("#E8F0FA");
@@ -5022,6 +5033,33 @@ namespace POTracker.Controllers.Api
         // ============================================================
         // FILE HELPERS
         // ============================================================
+
+        private async Task<List<Material>>
+            LoadMaterialsSharingDrawingCodeAsync(
+                Material material,
+                CancellationToken cancellationToken)
+        {
+            var drawingCode = Clean(material.DrawingNo)?
+                .Replace(" ", string.Empty)
+                .ToLowerInvariant();
+            if (drawingCode == null)
+            {
+                return await LoadMaterialsSharingMaterialNumberAsync(
+                    material, cancellationToken);
+            }
+
+            var drawingVersion = Clean(material.DrawingVersion)?
+                .ToLowerInvariant();
+
+            return await _context.Materials
+                .Where(item => item.DrawingNo != null &&
+                    item.DrawingNo.Replace(" ", string.Empty).ToLower() == drawingCode &&
+                    (drawingVersion == null
+                        ? item.DrawingVersion == null || item.DrawingVersion.Trim() == ""
+                        : item.DrawingVersion != null &&
+                          item.DrawingVersion.Trim().ToLower() == drawingVersion))
+                .ToListAsync(cancellationToken);
+        }
 
         private async Task<List<Material>>
             LoadMaterialsSharingMaterialNumberAsync(

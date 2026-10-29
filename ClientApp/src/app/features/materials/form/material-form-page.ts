@@ -1,3 +1,4 @@
+import { NumericLinePipe } from '../../../shared/numeric-line.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -43,7 +44,7 @@ interface PendingInvoiceMaterialPrefill {
 
 @Component({
   selector: 'app-material-form-page',
-  imports: [
+  imports: [NumericLinePipe, 
     CommonModule,
     ReactiveFormsModule,
     RouterLink,

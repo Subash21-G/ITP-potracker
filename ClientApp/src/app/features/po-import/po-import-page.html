@@ -1,4 +1,4 @@
-﻿<section class="page-heading">
+<section class="page-heading">
   <div>
     <p class="eyebrow">
       PURCHASE ORDER AUTOMATION
@@ -260,7 +260,7 @@
           ) {
           <tr>
             <td>
-              {{ item.lineItem || '—' }}
+              {{ item.lineItem | numericLine }}
             </td>
 
             <td>

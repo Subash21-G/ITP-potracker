@@ -16,7 +16,7 @@ namespace POTracker.Controllers
 {
     public partial class VyaparInvoiceImportController : ControllerBase
     {
-        private const int MaxBatchFileCount = 100;
+        private const int MaxBatchFileCount = 300;
 
         private const long MaxInvoiceFileSize =
             20L * 1024L * 1024L;
@@ -1167,7 +1167,7 @@ namespace POTracker.Controllers
                 return "";
             }
 
-            return "N-" + value;
+            return value;
         }
 
         private static string GetInvoiceStatus(decimal poQty, decimal invoiceQty, decimal balanceQty)

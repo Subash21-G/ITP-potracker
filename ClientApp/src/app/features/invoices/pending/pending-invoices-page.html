@@ -10,6 +10,14 @@
 
   <div class="heading-actions">
     <button
+      class="button"
+      type="button"
+      [disabled]="downloadingExcel() || loading() || totalRecords() === 0"
+      (click)="downloadPendingExcel()"
+    >
+      {{ downloadingExcel() ? 'Exporting…' : 'Export Excel' }}
+    </button>
+    <button
       appManageOnly
       class="button button--primary"
       type="button"
@@ -23,33 +31,33 @@
 
 <section class="summary-grid" aria-label="Pending invoice summary">
   <article class="summary-card summary-card--red">
-    <span>Pending Rows</span>
-    <strong>{{ rowCount() | number }}</strong>
+    <span>Matching Rows</span>
+    <strong>{{ totalRecords() | number }}</strong>
     <small>Rows waiting for material match</small>
   </article>
 
   <article class="summary-card summary-card--violet">
-    <span>Invoices</span>
+    <span>Invoices on page</span>
     <strong>{{ invoiceCount() | number }}</strong>
-    <small>Invoices with pending rows</small>
+    <small>Invoices in this result page</small>
   </article>
 
   <article class="summary-card summary-card--blue">
-    <span>Purchase Orders</span>
+    <span>Purchase Orders on page</span>
     <strong>{{ purchaseOrderCount() | number }}</strong>
-    <small>Referenced PO numbers</small>
+    <small>PO numbers in this result page</small>
   </article>
 
   <article class="summary-card summary-card--green">
-    <span>Total Quantity</span>
+    <span>Quantity on page</span>
     <strong>{{ totalQuantity() | number: '1.0-2' }}</strong>
-    <small>Quantity waiting for match</small>
+    <small>Quantity in this result page</small>
   </article>
 
   <article class="summary-card summary-card--amber">
-    <span>Pending Amount</span>
+    <span>Amount on page</span>
     <strong>₹{{ totalAmount() | number: '1.2-2' }}</strong>
-    <small>Value in pending rows</small>
+    <small>Value in this result page</small>
   </article>
 </section>
 
@@ -90,11 +98,11 @@
     </label>
 
     <label class="field">
-      <span>Maximum rows</span>
-      <select formControlName="take">
+      <span>Rows per page</span>
+      <select formControlName="pageSize" (change)="changePageSize($event)">
+        <option [ngValue]="25">25</option>
+        <option [ngValue]="50">50</option>
         <option [ngValue]="100">100</option>
-        <option [ngValue]="500">500</option>
-        <option [ngValue]="1000">1000</option>
       </select>
     </label>
 
@@ -141,7 +149,7 @@
   <div class="panel__heading">
     <div>
       <h2 id="pending-results-title">Unmatched invoice register</h2>
-      <p>{{ rowCount() | number }} pending rows displayed</p>
+      <p>Showing {{ showingFrom() | number }}–{{ showingTo() | number }} of {{ totalRecords() | number }} pending rows</p>
     </div>
 
     @if (loading()) {
@@ -372,12 +380,12 @@
         @for (item of items(); track item.id; let rowIndex = $index) {
           <tr>
             <td><input type="checkbox" [attr.aria-label]="'Select pending invoice row ' + (rowIndex + 1)" [checked]="selectedIds().has(item.id)" (change)="togglePendingSelection(item.id, $any($event.target).checked)"></td>
-            <td class="row-number">{{ rowIndex + 1 }}</td>
+            <td class="row-number">{{ (page() - 1) * pageSize() + rowIndex + 1 }}</td>
 
             <td>
-              <span class="invoice-number">
+              <a class="invoice-number" [routerLink]="['/invoices', item.invoiceId]">
                 {{ item.invoiceNumber || '—' }}
-              </span>
+              </a>
             </td>
 
             <td class="date-cell">
@@ -388,7 +396,7 @@
               <span class="primary-value">{{ item.poNumber || '—' }}</span>
             </td>
 
-            <td>{{ item.lineItem || '—' }}</td>
+            <td>{{ item.lineItem | numericLine }}</td>
 
             <td>
               <span class="material-number">
@@ -458,6 +466,26 @@
       </tbody>
     </table>
   </div>
+
+  <nav class="pagination" aria-label="Pending invoice pages">
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="page() <= 1 || loading()"
+      (click)="changePage(page() - 1)"
+    >
+      Previous
+    </button>
+    <span>Page {{ page() }} of {{ totalPages() }}</span>
+    <button
+      class="button button--quiet"
+      type="button"
+      [disabled]="page() >= totalPages() || loading()"
+      (click)="changePage(page() + 1)"
+    >
+      Next
+    </button>
+  </nav>
 </section>
 
 
@@ -481,7 +509,7 @@
           </h2>
           <p>
             Imported: PO {{ selectedPending.poNumber || '—' }},
-            line {{ selectedPending.lineItem || '—' }},
+            line {{ selectedPending.lineItem | numericLine }},
             material {{ selectedPending.materialNo || '—' }},
             qty {{ selectedPending.qty | number: '1.0-2' }}.
             @if (selectedPending.description) {
@@ -556,7 +584,7 @@
                   PO {{ candidate.poNumber || '—' }}
                 </strong>
                 <span>
-                  Line {{ candidate.lineItem || '—' }} ·
+                  Line {{ candidate.lineItem | numericLine }} ·
                   Material {{ candidate.materialNo || '—' }}
                 </span>
               </div>

@@ -1,3 +1,4 @@
+import { NumericLinePipe } from '../../shared/numeric-line.pipe';
 import { ManageOnlyDirective } from '../../core/directives/manage-only.directive';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -29,7 +30,7 @@ import { ServerExcelFilter } from '../../shared/server-excel-filter/server-excel
 
 @Component({
   selector: 'app-materials-page',
-  imports: [
+  imports: [NumericLinePipe, 
     ManageOnlyDirective,
     DatePipe,
     DecimalPipe,

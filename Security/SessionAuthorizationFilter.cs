@@ -35,6 +35,13 @@ namespace POTracker.Security
         public void OnAuthorization(
             AuthorizationFilterContext context)
         {
+            if (context.ActionDescriptor.EndpointMetadata
+                .OfType<QuotationIntegrationAttribute>().Any())
+            {
+                QuotationIntegrationAttribute.Authorize(context);
+                return;
+            }
+
             var controller =
                 GetRouteValue(
                     context,

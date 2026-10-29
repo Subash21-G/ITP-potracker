@@ -14,6 +14,14 @@
     </div>
 
     <div class="actions">
+      <button
+        class="button button--primary"
+        type="button"
+        [disabled]="loading() || exporting() || totalRecords() === 0"
+        (click)="exportExcel()"
+      >
+        {{ exporting() ? 'Exporting…' : 'Export Excel' }}
+      </button>
       <a
         appManageOnly
         class="button button--primary"
@@ -68,7 +76,7 @@
         <h2>Material drawings</h2>
 
         <p>
-          Search by material, PO or drawing version.
+          Search by material, PO, drawing code or version.
         </p>
       </div>
     </header>
@@ -84,7 +92,7 @@
           <input
             type="search"
             [formControl]="searchControl"
-            placeholder="Material, PO or drawing version"
+            placeholder="Material, PO, drawing code or version"
           />
         </label>
 
@@ -197,6 +205,7 @@
                   />
                 </div>
               </th>
+              <th>Drawing code</th>
               <th>
                 <div class="server-table-heading">
                   <span>Version</span>
@@ -321,6 +330,7 @@
                 </td>
 
                 <td>{{ item.poNumber || '-' }}</td>
+                <td>{{ item.drawingNo || '-' }}</td>
                 <td>{{ item.drawingVersion || '-' }}</td>
 
                 <td>
@@ -350,15 +360,29 @@
                 </td>
 
                 <td>
-                  @if (item.pdfFilePath) {
-                    <a
-                      class="file-link"
-                      [href]="item.pdfFilePath"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  @if (item.pdfFilePath || item.webDrawingFilePath || item.drawingFilePath || item.handSketchFilePath || item.outsourceDrawingFilePath) {
+                    <select
+                      class="source-select"
+                      aria-label="Download file source"
+                      (change)="downloadSource($event)"
                     >
-                      Open PDF
-                    </a>
+                      <option value="">Download source…</option>
+                      @if (item.pdfFilePath) {
+                        <option [value]="item.pdfFilePath">Material PDF</option>
+                      }
+                      @if (item.webDrawingFilePath) {
+                        <option [value]="item.webDrawingFilePath">WEG drawing</option>
+                      }
+                      @if (item.drawingFilePath) {
+                        <option [value]="item.drawingFilePath">CAD drawing</option>
+                      }
+                      @if (item.handSketchFilePath) {
+                        <option [value]="item.handSketchFilePath">Hand sketch</option>
+                      }
+                      @if (item.outsourceDrawingFilePath) {
+                        <option [value]="item.outsourceDrawingFilePath">Outsourced drawing</option>
+                      }
+                    </select>
                   } @else {
                     <span>-</span>
                   }

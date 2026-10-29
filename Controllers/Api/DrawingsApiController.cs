@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POTracker.Contracts.Api;
@@ -78,24 +79,52 @@ namespace POTracker.Controllers.Api
                     ? pageSize
                     : 25;
 
+            var query = BuildDrawingQuery(
+                search, status, material, poNumber, drawingVersion,
+                updatedDateFrom, updatedDateTo, drawingAvailability,
+                pdfAvailability, columnStatus);
+            var selections = ParseDrawingExcelFilters(excelFilters);
+
+            // The usual list request can be counted and paged by SQL. Loading every
+            // material first makes even the first 25 rows wait for the whole table.
+            if (selections.Count == 0 && string.IsNullOrWhiteSpace(sortColumn))
+            {
+                var fastWeekStart = DateTime.Today.AddDays(-7);
+                var fastSummary = await query.GroupBy(_ => 1)
+                    .Select(group => new DrawingSummaryDto
+                    {
+                        TotalMaterials = group.Count(),
+                        MissingDrawings = group.Count(item =>
+                            item.DrawingFilePath == null || item.DrawingFilePath == ""),
+                        UpdatedThisWeek = group.Count(item =>
+                            item.DrawingUpdatedDate.HasValue &&
+                            item.DrawingUpdatedDate.Value >= fastWeekStart),
+                        WithVersion = group.Count(item =>
+                            item.DrawingVersion != null && item.DrawingVersion != "")
+                    })
+                    .FirstOrDefaultAsync(cancellationToken) ?? new DrawingSummaryDto();
+
+                var fastTotalPages = Math.Max(1, (int)Math.Ceiling(
+                    fastSummary.TotalMaterials / (double)pageSize));
+                page = Math.Min(page, fastTotalPages);
+                var fastItems = await LoadDrawingRows(
+                    query, cancellationToken, (page - 1) * pageSize, pageSize);
+                ApplySecureDocumentUrls(fastItems);
+                return Ok(new DrawingListResponseDto
+                {
+                    Summary = fastSummary,
+                    Items = fastItems,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalRecords = fastSummary.TotalMaterials,
+                    TotalPages = fastTotalPages
+                });
+            }
+
             var rows =
                 await LoadDrawingRows(
-                    BuildDrawingQuery(
-                        search,
-                        status,
-                        material,
-                        poNumber,
-                        drawingVersion,
-                        updatedDateFrom,
-                        updatedDateTo,
-                        drawingAvailability,
-                        pdfAvailability,
-                        columnStatus),
+                    query,
                     cancellationToken);
-
-            var selections =
-                ParseDrawingExcelFilters(
-                    excelFilters);
 
             var filteredRows =
                 rows
@@ -169,6 +198,59 @@ namespace POTracker.Controllers.Api
                     TotalRecords = totalRecords,
                     TotalPages = totalPages
                 });
+        }
+
+        [HttpGet("export-excel")]
+        public async Task<IActionResult> ExportExcel(
+            string? search, string? status, string? material, string? poNumber,
+            string? drawingVersion, DateTime? updatedDateFrom, DateTime? updatedDateTo,
+            string? drawingAvailability, string? pdfAvailability, string? columnStatus,
+            string? sortColumn, string? sortDirection, string? excelFilters,
+            CancellationToken cancellationToken = default)
+        {
+            var rows = await LoadDrawingRows(
+                BuildDrawingQuery(search, status, material, poNumber, drawingVersion,
+                    updatedDateFrom, updatedDateTo, drawingAvailability, pdfAvailability,
+                    columnStatus), cancellationToken);
+            var selections = ParseDrawingExcelFilters(excelFilters);
+            var filteredRows = ApplyDrawingSort(
+                rows.Where(row => MatchesDrawingExcelFilters(row, selections)),
+                sortColumn, sortDirection).ToList();
+
+            using var workbook = new XLWorkbook();
+            var sheet = workbook.Worksheets.Add("Drawing revisions");
+            var headers = new[] { "Material", "Description", "PO", "Drawing code", "Version", "Updated",
+                "Drawing", "PDF", "Status" };
+            for (var column = 0; column < headers.Length; column++)
+                sheet.Cell(1, column + 1).Value = headers[column];
+
+            for (var index = 0; index < filteredRows.Count; index++)
+            {
+                var item = filteredRows[index];
+                var row = index + 2;
+                sheet.Cell(row, 1).Value = item.MaterialNo;
+                sheet.Cell(row, 2).Value = item.Description;
+                sheet.Cell(row, 3).Value = item.PONumber;
+                sheet.Cell(row, 4).Value = item.DrawingNo;
+                sheet.Cell(row, 5).Value = item.DrawingVersion;
+                if (item.DrawingUpdatedDate.HasValue)
+                {
+                    sheet.Cell(row, 6).Value = item.DrawingUpdatedDate.Value;
+                    sheet.Cell(row, 6).Style.DateFormat.Format = "dd mmm yyyy";
+                }
+                sheet.Cell(row, 7).Value = item.HasDrawing ? "Available" : "Missing";
+                sheet.Cell(row, 8).Value = HasFile(item.PdfFilePath) ? "Available" : "Missing";
+                sheet.Cell(row, 9).Value = item.HasDrawing ? "Available" : "Missing";
+            }
+
+            sheet.Range(1, 1, Math.Max(1, filteredRows.Count + 1), headers.Length)
+                .CreateTable();
+            sheet.Columns().AdjustToContents();
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Drawing_Revisions_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
         }
 
         [HttpGet("excel-filter-values")]
@@ -309,6 +391,10 @@ namespace POTracker.Controllers.Api
                                 normalizedSearch)
                         ) ||
                         (
+                            item.DrawingNo != null &&
+                            item.DrawingNo.Contains(normalizedSearch)
+                        ) ||
+                        (
                             item.DrawingVersion != null &&
                             item.DrawingVersion.Contains(
                                 normalizedSearch)
@@ -420,14 +506,20 @@ namespace POTracker.Controllers.Api
             List<DrawingListItemDto>>
             LoadDrawingRows(
                 IQueryable<POTracker.Models.Material> query,
-                CancellationToken cancellationToken)
+                CancellationToken cancellationToken,
+                int skip = 0,
+                int? take = null)
         {
-            return await query
+            var ordered = query
                 .OrderByDescending(item =>
                     item.DrawingUpdatedDate ??
                     item.CreatedDate)
                 .ThenByDescending(item =>
-                    item.Id)
+                    item.Id);
+            var paged = ordered.Skip(skip);
+            if (take.HasValue)
+                paged = paged.Take(take.Value);
+            var rows = await paged
                 .Select(item =>
                     new DrawingListItemDto
                     {
@@ -448,6 +540,8 @@ namespace POTracker.Controllers.Api
                                 ? item.PurchaseOrder.PONumber
                                 : string.Empty,
 
+                        DrawingNo = item.DrawingNo ?? string.Empty,
+
                         DrawingVersion =
                             item.DrawingVersion ??
                             string.Empty,
@@ -458,6 +552,12 @@ namespace POTracker.Controllers.Api
                         DrawingFilePath =
                             item.DrawingFilePath,
 
+                        HandSketchFilePath = item.HandSketchFilePath,
+
+                        OutsourceDrawingFilePath = item.OutsourceDrawingFilePath,
+
+                        WebDrawingFilePath = item.WebDrawingFilePath,
+
                         PdfFilePath =
                             item.PDFFilePath,
 
@@ -467,6 +567,19 @@ namespace POTracker.Controllers.Api
                     })
                 .ToListAsync(
                     cancellationToken);
+
+            // SWP is the separate "Drawing: SWP ..." reference on some PO
+            // lines, not the drawing code shown in this register.
+            foreach (var row in rows)
+            {
+                if (row.DrawingNo.TrimStart().StartsWith(
+                    "SWP ", StringComparison.OrdinalIgnoreCase))
+                {
+                    row.DrawingNo = string.Empty;
+                }
+            }
+
+            return rows;
         }
 
         private void ApplySecureDocumentUrls(
@@ -478,6 +591,15 @@ namespace POTracker.Controllers.Api
                     _documentReferences.ToDownloadUrl(
                         item.DrawingFilePath,
                         "drawings");
+
+                item.HandSketchFilePath = _documentReferences.ToDownloadUrl(
+                    item.HandSketchFilePath, "hand-sketches");
+
+                item.OutsourceDrawingFilePath = _documentReferences.ToDownloadUrl(
+                    item.OutsourceDrawingFilePath, "outsource-drawings");
+
+                item.WebDrawingFilePath = _documentReferences.ToDownloadUrl(
+                    item.WebDrawingFilePath, "web-drawings");
 
                 item.PdfFilePath =
                     _documentReferences.ToDownloadUrl(

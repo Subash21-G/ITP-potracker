@@ -213,7 +213,7 @@ describe('MaterialDetailsPage edited PDFs', () => {
       drawingNo: 'SWD 10001238633 000 01', finishSize: 'M 325X253X20',
       processSteps: [{ sequence: 1, processName: 'RM Procurement', vendorName: 'KG engg' }],
     } as never));
-    vi.spyOn(page as any, 'loadDrawingFrontSource').mockResolvedValue({ kind: 'pdf', bytes: new Uint8Array() });
+    vi.spyOn(page as unknown as { loadDrawingFrontSource: (path: string) => Promise<drawingPdf.DrawingFrontSource> }, 'loadDrawingFrontSource').mockResolvedValue({ kind: 'pdf', bytes: new Uint8Array() });
     const createPdf = vi.spyOn(drawingPdf, 'createDrawingFrontBackPdf').mockResolvedValue(new Uint8Array([1]));
     vi.spyOn(window, 'open').mockReturnValue({ document: { body: {} }, location: { replace: vi.fn() }, close: vi.fn() } as unknown as Window);
     vi.stubGlobal('URL', { createObjectURL: () => 'blob:preview', revokeObjectURL: vi.fn() });

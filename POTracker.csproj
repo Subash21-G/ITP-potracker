@@ -47,6 +47,11 @@
     <Content Remove="tests\**\*" />
     <EmbeddedResource Remove="tests\**\*" />
     <None Remove="tests\**\*" />
+    <!-- Local scratch copies can contain nested projects and thousands of assets. -->
+    <Compile Remove="tmp\**\*" />
+    <Content Remove="tmp\**\*" />
+    <EmbeddedResource Remove="tmp\**\*" />
+    <None Remove="tmp\**\*" />
   </ItemGroup>
   <!-- Runtime documents live outside the deployed application package. -->
   <ItemGroup>

@@ -1,0 +1,1 @@
+import {b0 as eo}from'./main-MDWOMTJ6.js';var n=class e{transform(r){return (r??"").replace(/[^0-9]/g,"")||"\u2014"}static \u0275fac=function(t){return new(t||e)};static \u0275pipe=eo({name:"numericLine",type:e,pure:true})};export{n};

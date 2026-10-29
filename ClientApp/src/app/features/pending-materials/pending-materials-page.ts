@@ -1,3 +1,4 @@
+import { NumericLinePipe } from '../../shared/numeric-line.pipe';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -55,7 +56,7 @@ const EMPTY_RESPONSE: PendingMaterialsResponse = {
 
 @Component({
   selector: 'app-pending-materials-page',
-  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, ServerExcelFilter],
+  imports: [NumericLinePipe, DatePipe, DecimalPipe, FormsModule, RouterLink, ServerExcelFilter],
   templateUrl: './pending-materials-page.html',
   styleUrl: './pending-materials-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

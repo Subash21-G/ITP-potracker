@@ -24,11 +24,19 @@ namespace POTracker.Contracts.Api
 
         public string PONumber { get; init; } = string.Empty;
 
+        public string DrawingNo { get; set; } = string.Empty;
+
         public string DrawingVersion { get; init; } = string.Empty;
 
         public DateTime? DrawingUpdatedDate { get; init; }
 
         public string? DrawingFilePath { get; set; }
+
+        public string? HandSketchFilePath { get; set; }
+
+        public string? OutsourceDrawingFilePath { get; set; }
+
+        public string? WebDrawingFilePath { get; set; }
 
         public string? PdfFilePath { get; set; }
 

@@ -58,6 +58,11 @@ namespace POTracker.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<PurchaseOrder>()
+                .HasIndex(x => new { x.SourceSystem, x.QuotationNumber, x.QuotationRevision })
+                .IsUnique()
+                .HasFilter("[SourceSystem] IS NOT NULL AND [QuotationNumber] IS NOT NULL AND [QuotationRevision] IS NOT NULL");
+
             // =====================================================
             // USER LOOKUP
             // =====================================================

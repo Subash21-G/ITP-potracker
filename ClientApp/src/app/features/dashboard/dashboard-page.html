@@ -526,7 +526,7 @@
 
                   <td>
                     <strong>{{ material.materialNo || '—' }}</strong>
-                    <small>Line {{ material.lineItem || '—' }}</small>
+                    <small>Line {{ material.lineItem | numericLine }}</small>
                   </td>
 
                   <td class="description-cell">

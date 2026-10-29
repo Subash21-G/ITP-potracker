@@ -125,7 +125,7 @@
                 <a [routerLink]="['/purchase-orders', material.purchaseOrderId]">
                   {{ material.poNumber || '—' }}
                 </a>
-                <small>Line {{ material.lineItem || '—' }}</small>
+                <small>Line {{ material.lineItem | numericLine }}</small>
               </td>
               <td>
                 <a class="material-link" [routerLink]="['/materials', material.id]">

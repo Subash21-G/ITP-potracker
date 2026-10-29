@@ -26,6 +26,35 @@ export class InsightsApiService {
   private readonly http =
     inject(HttpClient);
 
+  exportDrawingsExcel(query: DrawingListQuery): Observable<Blob> {
+    let params = new HttpParams();
+    const values: Record<string, string | undefined> = {
+      search: query.search,
+      status: query.status,
+      material: query.material,
+      poNumber: query.poNumber,
+      drawingVersion: query.drawingVersion,
+      updatedDateFrom: query.updatedDateFrom,
+      updatedDateTo: query.updatedDateTo,
+      drawingAvailability: query.drawingAvailability,
+      pdfAvailability: query.pdfAvailability,
+      columnStatus: query.columnStatus,
+      sortColumn: query.sortColumn,
+      sortDirection: query.sortDirection,
+      excelFilters: query.excelFilters,
+    };
+    for (const [name, value] of Object.entries(values)) {
+      if (value?.trim()) {
+        params = params.set(name, value.trim());
+      }
+    }
+    return this.http.get('/api/drawings/export-excel', {
+      params,
+      responseType: 'blob',
+      withCredentials: true,
+    });
+  }
+
   getDrawings(
     query: DrawingListQuery,
   ): Observable<DrawingListResponse> {

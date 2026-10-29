@@ -104,11 +104,22 @@ export interface InvoiceItem {
   poNumber: string;
   lineItem: string;
   materialNo: string;
+  poMaterialNo: string;
+  materialNumbersMatch: boolean;
+  isPending: boolean;
+  dispatchedQty: number;
+  dispatchStatus: string;
+  dispatches: InvoiceDispatch[];
   qty: number;
   priceUnit: number;
   gstAmount: number;
   amount: number;
   poDate: string | null;
+}
+
+export interface InvoiceDispatch {
+  dispatchNo: string;
+  dispatchQty: number;
 }
 
 export interface InvoiceDetails {
@@ -138,6 +149,7 @@ export interface InvoiceImportBatch {
 
 export interface PendingInvoiceItem {
   id: number;
+  invoiceId: number;
   invoiceNumber: string;
   invoiceDate: string | null;
   poNumber: string;
@@ -152,6 +164,16 @@ export interface PendingInvoiceItem {
   amount: number;
   errorMessage: string;
   createdDate: string;
+}
+
+export interface PendingInvoicePage {
+  items: PendingInvoiceItem[];
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
 export type PendingInvoiceSortColumn =

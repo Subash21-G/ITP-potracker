@@ -1,10 +1,10 @@
-﻿<section class="page-heading">
+<section class="page-heading">
   <div>
     <a class="back-link" routerLink="/invoices">← Back to invoices</a>
     <p class="eyebrow">INVOICE DETAILS</p>
     <h1>{{ invoice()?.invoiceNumber || 'Invoice' }}</h1>
     <p class="page-heading__description">
-      Review the invoice header, totals and imported line items.
+      Compare each invoice material number with its purchase order material number.
     </p>
   </div>
 
@@ -55,122 +55,107 @@
 }
 
 @if (invoice(); as currentInvoice) {
-  <section class="summary-grid" aria-label="Invoice totals">
-    <article class="summary-card summary-card--blue">
-      <span>Line Items</span>
-      <strong>{{ itemCount() | number }}</strong>
-      <small>Imported rows</small>
-    </article>
-
-    <article class="summary-card summary-card--green">
-      <span>Total Quantity</span>
-      <strong>{{ currentInvoice.totalQuantity | number: '1.0-2' }}</strong>
-      <small>Quantity invoiced</small>
-    </article>
-
-    <article class="summary-card summary-card--amber">
-      <span>Total GST</span>
-      <strong>₹{{ currentInvoice.totalGstAmount | number: '1.2-2' }}</strong>
-      <small>GST value</small>
-    </article>
-
-    <article class="summary-card summary-card--violet">
-      <span>Invoice Amount</span>
-      <strong>₹{{ currentInvoice.totalAmount | number: '1.2-2' }}</strong>
-      <small>Total invoice value</small>
-    </article>
-  </section>
-
-  <section class="panel metadata-panel" aria-labelledby="invoice-header-title">
-    <div class="panel__heading">
-      <div>
-        <h2 id="invoice-header-title">Invoice header</h2>
-        <p>Imported document information.</p>
-      </div>
-    </div>
-
-    <dl class="metadata-grid">
-      <div>
-        <dt>Invoice Number</dt>
-        <dd>{{ currentInvoice.invoiceNumber || '—' }}</dd>
-      </div>
-
-      <div>
-        <dt>Invoice Date</dt>
-        <dd>
-          {{ (currentInvoice.invoiceDate | date: 'dd MMM yyyy') || '—' }}
-        </dd>
-      </div>
-
-      <div>
-        <dt>Customer</dt>
-        <dd>{{ currentInvoice.customerName || '—' }}</dd>
-      </div>
-
-      <div>
-        <dt>Imported On</dt>
-        <dd>{{ currentInvoice.createdDate | date: 'dd MMM yyyy, hh:mm a' }}</dd>
-      </div>
-
-      <div class="metadata-grid__wide">
-        <dt>Uploaded File</dt>
-        <dd>{{ currentInvoice.uploadedFileName || 'No uploaded file name' }}</dd>
-      </div>
-    </dl>
-  </section>
-
   <section class="panel items-panel" aria-labelledby="invoice-items-title">
     <div class="panel__heading">
       <div>
-        <h2 id="invoice-items-title">Invoice line items</h2>
-        <p>{{ itemCount() | number }} imported rows</p>
+        <h2 id="invoice-items-title">PO and invoice material number comparison</h2>
+        <p>Invoice {{ currentInvoice.invoiceNumber }} · Showing {{ filteredItems().length | number }} of {{ itemCount() | number }} material lines</p>
+      </div>
+    </div>
+
+    <div class="invoice-search">
+      <label for="invoice-material-search">Search by PO or material number</label>
+      <div class="invoice-search__controls">
+        <input
+          id="invoice-material-search"
+          type="search"
+          autocomplete="off"
+          placeholder="Enter PO number, PO material number, or invoice material number"
+          [value]="searchTerm()"
+          (input)="onSearchInput($event)"
+        />
+        @if (searchTerm()) {
+          <button class="button button--quiet" type="button" (click)="searchTerm.set('')">
+            Clear search
+          </button>
+        }
       </div>
     </div>
 
     <div class="table-wrap">
-      <table data-excel-filter-mode="local">
+      <table class="material-comparison-table">
         <thead>
           <tr>
             <th>#</th>
             <th>PO Number</th>
             <th>Line Item</th>
-            <th>Material Number</th>
-            <th class="number-cell">Quantity</th>
-            <th class="number-cell">Price Unit</th>
-            <th class="number-cell">GST</th>
-            <th class="number-cell">Amount</th>
+            <th>PO Material Number</th>
+            <th>Invoice Material Number</th>
+            <th>Match Result</th>
+            <th>Invoice Status</th>
+            <th>Dispatch Status</th>
+            <th class="number-cell">Dispatched Qty</th>
+            <th>Dispatch Details</th>
           </tr>
         </thead>
 
         <tbody>
-          @for (item of currentInvoice.items; track item.id; let rowIndex = $index) {
+          @for (item of filteredItems(); track item.id; let rowIndex = $index) {
             <tr>
               <td class="row-number">{{ rowIndex + 1 }}</td>
+              <td><span class="primary-value">{{ item.poNumber || '—' }}</span></td>
+              <td>{{ item.lineItem | numericLine }}</td>
+              <td><span class="material-number">{{ item.poMaterialNo || 'Not linked' }}</span></td>
+              <td><span class="material-number">{{ item.materialNo || 'Missing' }}</span></td>
               <td>
-                <span class="primary-value">{{ item.poNumber || '—' }}</span>
+                <span
+                  class="match-status"
+                  [class.match-status--matched]="item.materialNumbersMatch"
+                  [class.match-status--different]="!item.materialNumbersMatch"
+                >
+                  {{ item.materialNumbersMatch ? 'Matched' : 'Different' }}
+                </span>
               </td>
-              <td>{{ item.lineItem || '—' }}</td>
               <td>
-                <span class="material-number">{{ item.materialNo || '—' }}</span>
+                <span
+                  class="match-status"
+                  [class.match-status--pending]="item.isPending"
+                  [class.match-status--saved]="!item.isPending"
+                >
+                  {{ item.isPending ? 'Pending match' : 'Saved to invoice' }}
+                </span>
+              </td>
+              <td>
+                <span
+                  class="match-status"
+                  [class.match-status--dispatched]="item.dispatchedQty > 0 || item.dispatchStatus.toLowerCase() === 'dispatched'"
+                  [class.match-status--not-dispatched]="item.dispatchedQty <= 0 && item.dispatchStatus.toLowerCase() !== 'dispatched'"
+                >
+                  {{ item.dispatchStatus || (item.dispatchedQty > 0 ? 'Dispatched' : 'Not dispatched') }}
+                </span>
               </td>
               <td class="number-cell number-cell--strong">
-                {{ item.qty | number: '1.0-2' }}
+                {{ item.dispatchedQty | number: '1.0-2' }}
               </td>
-              <td class="number-cell">
-                ₹{{ item.priceUnit | number: '1.2-2' }}
-              </td>
-              <td class="number-cell">
-                ₹{{ item.gstAmount | number: '1.2-2' }}
-              </td>
-              <td class="number-cell number-cell--strong">
-                ₹{{ item.amount | number: '1.2-2' }}
+              <td>
+                @if (item.dispatches.length > 0) {
+                  <div class="dispatch-list">
+                    @for (dispatch of item.dispatches; track $index) {
+                      <span class="dispatch-list__item">
+                        {{ dispatch.dispatchNo }} · {{ dispatch.dispatchQty | number: '1.0-2' }}
+                      </span>
+                    }
+                  </div>
+                } @else {
+                  <span class="dispatch-empty">Not dispatched</span>
+                }
               </td>
             </tr>
           } @empty {
             <tr>
-              <td class="empty-state" colspan="8">
-                <strong>No invoice items found</strong>
-                <span>This invoice does not contain imported line items.</span>
+              <td class="empty-state" colspan="10">
+                <strong>{{ searchTerm() ? 'No matching material details' : 'No material details found' }}</strong>
+                <span>{{ searchTerm() ? 'Try another PO or material number.' : 'This invoice has no imported material lines to compare.' }}</span>
               </td>
             </tr>
           }

@@ -69,7 +69,7 @@
   <div class="panel__heading">
     <div>
       <h2 id="invoice-filter-title">Filters</h2>
-      <p>Search by invoice number, customer or uploaded file name.</p>
+      <p>Search by invoice, customer, file, PO number or material number.</p>
     </div>
 
     <button class="button button--quiet"
@@ -85,7 +85,7 @@
       <span>Search</span>
       <input type="search"
              formControlName="search"
-             placeholder="Invoice number, customer or file name" />
+             placeholder="Invoice, customer, file, PO or material number" />
     </label>
 
     <label class="field">
@@ -418,6 +418,13 @@
                 View
               </a>
 
+              <button class="button button--quiet"
+                      type="button"
+                      [attr.aria-expanded]="expandedInvoiceId() === invoice.id"
+                      (click)="toggleInvoiceDetails(invoice.id)">
+                {{ expandedInvoiceId() === invoice.id ? 'Hide lines' : 'Show lines' }}
+              </button>
+
               <button appManageOnly
                       class="button button--danger"
                       type="button"
@@ -428,6 +435,60 @@
             </div>
           </td>
         </tr>
+        @if (expandedInvoiceId() === invoice.id) {
+        <tr class="invoice-details-row">
+          <td colspan="11">
+            @if (loadingDetailsId() === invoice.id) {
+              <div class="inline-details-message" aria-live="polite">Loading invoice material details…</div>
+            } @else if (detailsErrorId() === invoice.id) {
+              <div class="inline-details-message inline-details-message--error">
+                Could not load this invoice’s material details.
+                <button class="button button--quiet" type="button" (click)="retryInvoiceDetails(invoice.id)">Retry</button>
+              </div>
+            } @else if (invoiceDetails()[invoice.id]; as details) {
+              <div class="inline-details">
+                <div class="inline-details__heading">
+                  <strong>Material details for {{ details.invoiceNumber }}</strong>
+                  <span>{{ visibleInvoiceDetails(invoice.id).length | number }} lines shown</span>
+                </div>
+                <div class="inline-details__table-wrap">
+                  <table class="inline-details__table">
+                    <thead>
+                      <tr>
+                        <th>PO Number</th>
+                        <th>Line</th>
+                        <th>PO Material No.</th>
+                        <th>Invoice Material No.</th>
+                        <th>Match</th>
+                        <th>Invoice Status</th>
+                        <th>Dispatch Status</th>
+                        <th>Dispatched Qty</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (line of visibleInvoiceDetails(invoice.id); track line.id) {
+                        <tr>
+                          <td>{{ line.poNumber || '—' }}</td>
+                          <td>{{ line.lineItem || '—' }}</td>
+                          <td>{{ line.poMaterialNo || 'Not linked' }}</td>
+                          <td>{{ line.materialNo || 'Missing' }}</td>
+                          <td>{{ line.materialNumbersMatch ? 'Matched' : 'Different' }}</td>
+                          <td>{{ line.isPending ? 'Pending match' : 'Saved to invoice' }}</td>
+                          <td>{{ line.dispatchStatus || (line.dispatchedQty > 0 ? 'Dispatched' : 'Not dispatched') }}</td>
+                          <td class="number-cell">{{ line.dispatchedQty | number: '1.0-2' }}</td>
+                        </tr>
+                      } @empty {
+                        <tr><td colspan="8" class="inline-details__empty">No material lines found for this invoice.</td></tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <a class="inline-details__link" [routerLink]="['/invoices', invoice.id]">Open full invoice details</a>
+              </div>
+            }
+          </td>
+        </tr>
+        }
         } @empty {
         <tr>
           <td class="empty-state" colspan="11">

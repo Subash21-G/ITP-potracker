@@ -357,7 +357,7 @@ namespace POTracker.Controllers.Api
             return Ok(values);
         }
 
-        private static IQueryable<Invoice>
+        private IQueryable<Invoice>
             ApplyInvoiceFilters(
                 IQueryable<Invoice> query,
                 string? search,
@@ -392,6 +392,20 @@ namespace POTracker.Controllers.Api
                         invoice =>
                             invoice.InvoiceNumber.Contains(
                                 searchValue) ||
+                            invoice.Items.Any(item =>
+                                (item.PONumber != null &&
+                                 item.PONumber.Contains(searchValue)) ||
+                                (item.MaterialNo != null &&
+                                 item.MaterialNo.Contains(searchValue)) ||
+                                (item.Material != null &&
+                                 item.Material.MaterialNo != null &&
+                                 item.Material.MaterialNo.Contains(searchValue))) ||
+                            _context.PendingInvoiceItems.Any(pending =>
+                                pending.InvoiceId == invoice.Id &&
+                                ((pending.PONumber != null &&
+                                  pending.PONumber.Contains(searchValue)) ||
+                                 (pending.MaterialNo != null &&
+                                  pending.MaterialNo.Contains(searchValue)))) ||
                             (
                                 invoice.CustomerName != null &&
                                 invoice.CustomerName.Contains(
@@ -1292,6 +1306,15 @@ namespace POTracker.Controllers.Api
                     PONumber = item.PONumber ?? string.Empty,
                     LineItem = item.LineItem ?? string.Empty,
                     MaterialNo = item.MaterialNo ?? string.Empty,
+                    POMaterialNo = item.Material != null
+                        ? item.Material.MaterialNo ?? string.Empty
+                        : string.Empty,
+                    DispatchedQty = item.Material != null
+                        ? item.Material.DispatchQty
+                        : 0m,
+                    DispatchStatus = item.Material != null
+                        ? item.Material.DispatchStatus ?? string.Empty
+                        : string.Empty,
                     Qty = item.InvoiceQty,
                     PriceUnit = item.PriceUnit,
                     GstAmount = item.GstAmount,
@@ -1299,6 +1322,147 @@ namespace POTracker.Controllers.Api
                     PODate = null
                 })
                 .ToListAsync();
+
+            var materialIdsByInvoiceItemId = await _context.InvoiceItems
+                .AsNoTracking()
+                .Where(item => item.InvoiceId == id)
+                .ToDictionaryAsync(item => item.Id, item => item.MaterialId);
+
+            // Imported rows that could not be safely matched are stored in
+            // PendingInvoiceItems, so include them in the invoice's material
+            // comparison as well. Otherwise their invoice material numbers
+            // appear to be missing from this page.
+            var pendingRows = await _context.PendingInvoiceItems
+                .AsNoTracking()
+                .Where(item =>
+                    item.InvoiceId == id && item.Status == "Pending")
+                .OrderBy(item => item.Id)
+                .Select(item => new
+                {
+                    item.Id,
+                    item.PONumber,
+                    item.LineItem,
+                    item.MaterialNo,
+                    item.InvoiceQty,
+                    item.PriceUnit,
+                    item.GstAmount,
+                    item.Amount
+                })
+                .ToListAsync();
+
+            if (pendingRows.Count > 0)
+            {
+                var poNumbers = pendingRows
+                    .Select(item => item.PONumber)
+                    .Where(value => !string.IsNullOrWhiteSpace(value))
+                    .Distinct()
+                    .ToList();
+
+                var poMaterials = await _context.Materials
+                    .AsNoTracking()
+                    .Where(material => material.PurchaseOrder != null &&
+                        poNumbers.Contains(material.PurchaseOrder.PONumber))
+                    .Select(material => new
+                    {
+                        material.Id,
+                        PONumber = material.PurchaseOrder!.PONumber,
+                        material.LineItem,
+                        material.MaterialNo,
+                        material.DispatchQty,
+                        material.DispatchStatus
+                    })
+                    .ToListAsync();
+
+                foreach (var pending in pendingRows)
+                {
+                    var pendingPoKey = NormalizeKey(pending.PONumber);
+                    var pendingMaterialKey = NormalizeKey(pending.MaterialNo);
+                    var matchedPoMaterial = poMaterials.FirstOrDefault(material =>
+                        NormalizeKey(material.PONumber) == pendingPoKey &&
+                        NormalizeKey(material.MaterialNo) == pendingMaterialKey);
+
+                    var pendingItem = new InvoiceItemApiDto
+                    {
+                        Id = -pending.Id,
+                        PONumber = pending.PONumber ?? string.Empty,
+                        LineItem = pending.LineItem ?? string.Empty,
+                        MaterialNo = pending.MaterialNo ?? string.Empty,
+                        POMaterialNo = matchedPoMaterial?.MaterialNo ?? string.Empty,
+                        DispatchedQty = matchedPoMaterial?.DispatchQty ?? 0m,
+                        DispatchStatus = matchedPoMaterial?.DispatchStatus ?? string.Empty,
+                        IsPending = true,
+                        Qty = pending.InvoiceQty,
+                        PriceUnit = pending.PriceUnit,
+                        GstAmount = pending.GstAmount,
+                        Amount = pending.Amount
+                    };
+
+                    if (matchedPoMaterial != null)
+                    {
+                        materialIdsByInvoiceItemId[pendingItem.Id] =
+                            matchedPoMaterial.Id;
+                    }
+
+                    pendingItem.MaterialNumbersMatch =
+                        !string.IsNullOrWhiteSpace(pendingItem.MaterialNo) &&
+                        NormalizeKey(pendingItem.MaterialNo) ==
+                        NormalizeKey(pendingItem.POMaterialNo);
+                    invoiceItems.Add(pendingItem);
+                }
+            }
+
+            var relatedMaterialIds = materialIdsByInvoiceItemId.Values
+                .Distinct()
+                .ToList();
+
+            if (relatedMaterialIds.Count > 0)
+            {
+                var dispatchRows = await _context.Dispatches
+                    .AsNoTracking()
+                    .Where(dispatch => relatedMaterialIds.Contains(dispatch.MaterialId))
+                    .OrderBy(dispatch => dispatch.DispatchDate)
+                    .ThenBy(dispatch => dispatch.Id)
+                    .Select(dispatch => new
+                    {
+                        dispatch.MaterialId,
+                        dispatch.DispatchNo,
+                        dispatch.DispatchQty
+                    })
+                    .ToListAsync();
+
+                var dispatchesByMaterialId = dispatchRows
+                    .GroupBy(dispatch => dispatch.MaterialId)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group.Select(dispatch => new InvoiceDispatchApiDto
+                        {
+                            DispatchNo = dispatch.DispatchNo,
+                            DispatchQty = dispatch.DispatchQty
+                        }).ToList());
+
+                foreach (var item in invoiceItems)
+                {
+                    if (!materialIdsByInvoiceItemId.TryGetValue(item.Id, out var materialId) ||
+                        !dispatchesByMaterialId.TryGetValue(materialId, out var dispatches))
+                    {
+                        continue;
+                    }
+
+                    item.Dispatches = dispatches;
+                    if (item.DispatchedQty <= 0)
+                    {
+                        item.DispatchedQty = dispatches.Sum(dispatch => dispatch.DispatchQty);
+                    }
+                }
+            }
+
+            foreach (var item in invoiceItems)
+            {
+                item.MaterialNumbersMatch =
+                    !string.IsNullOrWhiteSpace(item.MaterialNo) &&
+                    NormalizeKey(item.MaterialNo) ==
+                    NormalizeKey(item.POMaterialNo);
+            }
 
             return Ok(new InvoiceDetailsApiDto
             {
@@ -1378,57 +1542,48 @@ namespace POTracker.Controllers.Api
         // ============================================================
 
         [HttpGet("pending")]
-        public async Task<ActionResult<List<PendingInvoiceItemApiDto>>>
+        public async Task<ActionResult<PagedResult<PendingInvoiceItemApiDto>>>
             Pending(
                 string? search,
-                int take = 500)
+                int page = 1,
+                int pageSize = 25,
+                string? sortColumn = null,
+                string? sortDirection = null,
+                string? excelFilters = null,
+                CancellationToken cancellationToken = default)
         {
-            take = Math.Clamp(take, 10, 1000);
+            page = Math.Max(1, page);
+            pageSize = Math.Clamp(pageSize, 10, 100);
 
-            var query = _context.PendingInvoiceItems
+            var query = ApplyPendingInvoiceSearch(
+                _context.PendingInvoiceItems
                 .AsNoTracking()
-                .Where(item => item.Status == "Pending");
+                .Where(item => item.Status == "Pending"),
+                search);
 
-            if (!string.IsNullOrWhiteSpace(search))
+            query = ApplyPendingInvoiceExcelFilters(query, excelFilters);
+
+            var totalRecords = await query.CountAsync(cancellationToken);
+            var totalPages = Math.Max(
+                1,
+                (int)Math.Ceiling(totalRecords / (double)pageSize));
+            page = Math.Min(page, totalPages);
+
+            var entities = await ApplyPendingInvoiceSort(
+                    query,
+                    sortColumn,
+                    sortDirection)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return Ok(new PagedResult<PendingInvoiceItemApiDto>
             {
-                var searchValue = search.Trim();
-
-                query = query.Where(item =>
-                    item.InvoiceNumber.Contains(searchValue) ||
-                    (item.PONumber != null &&
-                     item.PONumber.Contains(searchValue)) ||
-                    (item.MaterialNo != null &&
-                     item.MaterialNo.Contains(searchValue)) ||
-                    (item.LineItem != null &&
-                     item.LineItem.Contains(searchValue)) ||
-                    (item.Description != null &&
-                     item.Description.Contains(searchValue)));
-            }
-
-            var items = await query
-                .OrderByDescending(item => item.CreatedDate)
-                .Take(take)
-                .Select(item => new PendingInvoiceItemApiDto
-                {
-                    Id = item.Id,
-                    InvoiceNumber = item.InvoiceNumber,
-                    InvoiceDate = item.InvoiceDate,
-                    PONumber = item.PONumber ?? string.Empty,
-                    LineItem = item.LineItem ?? string.Empty,
-                    MaterialNo = item.MaterialNo ?? string.Empty,
-                    CustomerName = item.CustomerName ?? string.Empty,
-                    Description = item.Description ?? string.Empty,
-                    HsnSacCode = item.HsnSacCode ?? string.Empty,
-                    Qty = item.InvoiceQty,
-                    PriceUnit = item.PriceUnit,
-                    GstAmount = item.GstAmount,
-                    Amount = item.Amount,
-                    ErrorMessage = item.ErrorMessage ?? string.Empty,
-                    CreatedDate = item.CreatedDate
-                })
-                .ToListAsync();
-
-            return Ok(items);
+                Items = entities.Select(MapPendingInvoiceItem).ToList(),
+                Page = page,
+                PageSize = pageSize,
+                TotalRecords = totalRecords
+            });
         }
 
 
@@ -1832,17 +1987,18 @@ namespace POTracker.Controllers.Api
                         ? pending.LineItem ?? string.Empty
                         : actualLineItem;
 
-                var alreadySaved =
+                var savedLineItems =
                     await _context.InvoiceItems
-                        .AnyAsync(item =>
-                            item.InvoiceId ==
-                                pending.InvoiceId &&
-                            item.MaterialId ==
-                                material.Id &&
-                            item.LineItem ==
-                                resolvedLineItem &&
-                            item.InvoiceQty ==
-                                pending.InvoiceQty);
+                        .Where(item =>
+                            item.InvoiceId == pending.InvoiceId &&
+                            item.MaterialId == material.Id &&
+                            item.InvoiceQty == pending.InvoiceQty)
+                        .Select(item => item.LineItem)
+                        .ToListAsync();
+
+                var alreadySaved = savedLineItems.Any(savedLine =>
+                    NormalizeLineItem(savedLine) ==
+                    NormalizeLineItem(resolvedLineItem));
 
                 if (!alreadySaved)
                 {
@@ -2578,6 +2734,7 @@ namespace POTracker.Controllers.Api
             return new PendingInvoiceItemApiDto
             {
                 Id = item.Id,
+                InvoiceId = item.InvoiceId,
                 InvoiceNumber =
                     item.InvoiceNumber ?? string.Empty,
                 InvoiceDate = item.InvoiceDate,
@@ -2606,19 +2763,7 @@ namespace POTracker.Controllers.Api
         private static decimal GetAvailableInvoiceBalance(
             Material material)
         {
-            var balanceQty =
-                material.BalanceQty > 0
-                    ? material.BalanceQty
-                    : material.Qty -
-                      material.InvoiceQty;
-
-            if (material.InvoiceQty == 0 &&
-                material.BalanceQty == 0)
-            {
-                balanceQty = material.Qty;
-            }
-
-            return Math.Max(0m, balanceQty);
+            return Math.Max(0m, material.Qty - material.InvoiceQty);
         }
 
         private async Task MarkImportAuditAsManualSuccessAsync(
@@ -2689,7 +2834,7 @@ namespace POTracker.Controllers.Api
 
             return string.IsNullOrWhiteSpace(digits)
                 ? string.Empty
-                : "N-" + digits;
+                : digits;
         }
 
         // ============================================================

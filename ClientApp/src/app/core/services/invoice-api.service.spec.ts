@@ -51,6 +51,24 @@ describe(
       httpController.verify();
     });
 
+    it('exports all pending rows with the active search, sort, and column filters', () => {
+      const filters = JSON.stringify({ material: ['Spool'] });
+      service.downloadPendingItemsExcel('INV-001', 'amount', 'desc', filters)
+        .subscribe();
+
+      const request = httpController.expectOne(
+        candidate => candidate.url === '/api/invoices/pending/export-excel',
+      );
+      expect(request.request.method).toBe('GET');
+      expect(request.request.responseType).toBe('blob');
+      expect(request.request.params.get('search')).toBe('INV-001');
+      expect(request.request.params.get('sortColumn')).toBe('amount');
+      expect(request.request.params.get('sortDirection')).toBe('desc');
+      expect(request.request.params.get('excelFilters')).toBe(filters);
+      expect(request.request.params.has('page')).toBe(false);
+      request.flush(new Blob());
+    });
+
     it(
       'requests a sorted filtered paginated invoice page',
       () => {
